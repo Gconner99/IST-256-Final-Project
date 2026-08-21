@@ -146,12 +146,16 @@ describe("effects registry", () => {
     expect(Number(idol.params.find((p) => p.id === "size")?.default)).toBeLessThan(0.8);
     expect(idol.params.find((p) => p.id === "place")?.default).toBe("center");
     expect(idol.params.find((p) => p.id === "crowd")?.default).toBe("normal");
+    expect(idol.params.find((p) => p.id === "move")?.default).toBe("dance");
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
     expect(idolSrc.includes("figureMap")).toBe(true);
     expect(idolSrc.includes("figureFace")).toBe(true);
     expect(idolSrc.includes("figureRender")).toBe(true);
     expect(idolSrc.includes("figureRenderMini")).toBe(false);
+    expect(idolSrc.includes("figTravel")).toBe(true);
+    expect(idolSrc.includes("figCarry")).toBe(true);
+    expect(idolSrc.includes("u_move")).toBe(true);
     expect(idolSrc.includes("figCrowdOff")).toBe(true);
     expect(idolSrc.includes("figPlace")).toBe(true);
     expect(idolSrc.includes("figDanceStyle")).toBe(true);

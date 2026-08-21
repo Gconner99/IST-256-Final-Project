@@ -325,6 +325,47 @@ vec3 figPlace(int i, float n, float seed, float scatter) {
   }
   return mix(crowd, cell, clamp(scatter, 0.0, 1.0));
 }
+vec3 figTravel(float sid, float time, float move) {
+  vec3 o = vec3(0.0);
+  if (move < 0.5) return o;
+  if (move < 1.5) {
+    float dir = figH(sid + 0.23) > 0.5 ? 1.0 : -1.0;
+    float spd = mix(0.07, 0.2, figH(sid + 0.27));
+    float axis = figH(sid + 0.19);
+    vec2 vel = vec2(dir * spd, (figH(sid + 0.33) - 0.5) * spd * 0.38);
+    if (axis >= 0.38 && axis < 0.68) vel = vec2((figH(sid + 0.34) - 0.5) * spd * 0.42, dir * spd * 0.8);
+    if (axis >= 0.68) vel = vec2(dir * spd * 0.78, (figH(sid + 0.35) > 0.5 ? 1.0 : -1.0) * spd * 0.52);
+    vec2 start = vec2(figH(sid + 0.13), mix(0.16, 0.84, figH(sid + 0.14)));
+    vec2 pos = fract(start + vel * time);
+    return vec3((pos.x * 2.0 - 1.0) * 2.62, (pos.y * 2.0 - 1.0) * 1.48, mix(-0.35, 0.35, figH(sid + 0.16)));
+  }
+  if (move < 2.5) {
+    float t = time * mix(0.11, 0.26, figH(sid + 0.41));
+    o.x = sin(t + sid) * 1.82 + sin(t * 0.37 + sid * 2.1) * 0.52;
+    o.y = sin(t * 0.73 + sid * 1.4) * 0.68 + 0.05;
+    o.z = sin(t * 0.44 + sid) * 0.38;
+    return o;
+  }
+  float w = mix(0.12, 0.28, figH(sid + 0.51));
+  float a = time * w + figH(sid + 0.52) * 6.2831853;
+  float rx = mix(1.05, 2.28, figH(sid + 0.53));
+  float ry = mix(0.32, 0.82, figH(sid + 0.54));
+  return vec3(cos(a) * rx, sin(a) * ry, sin(a * 0.65) * 0.32);
+}
+vec3 figCarry(vec3 home, float sid, float time, float move) {
+  vec3 travel = figTravel(sid, time, move);
+  if (move > 0.5 && move < 1.5) return travel;
+  return home + travel;
+}
+Fig figSoften(Fig f, float move) {
+  if (move > 1.5 && move < 2.5) {
+    f.kickAmt *= 0.42;
+    f.peck *= 0.22;
+    f.spin *= 0.12;
+    f.sway *= 0.78;
+  }
+  return f;
+}
 vec4 figureShade(vec3 p, vec3 rd, Fig f, float seed, float matId) {
   vec3 n = figNormal(p, f, seed);
   vec3 l = normalize(vec3(0.35, 0.95, 0.55));
@@ -347,13 +388,13 @@ bool figRaySphere(vec3 ro, vec3 rd, vec3 c, float r, out float tEnter) {
   tEnter = max(0.0, -b - sqrt(h));
   return tEnter < 8.0;
 }
-vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, float scatter, float echo) {
+vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, float scatter, float echo, float move) {
   float aspect = uResolution.x / max(uResolution.y, 1.0);
   vec2 q = (uv - vec2(0.5, 0.42)) * vec2(aspect, 1.0);
   vec4 miss = vec4(0.0);
   float n = clamp(count, 1.0, 4.0);
   float spread = max(step(1.5, n), scatter);
-  if (dot(q, q) > mix(0.7, 2.2, spread) && uv.y > 0.1) return miss;
+  if (move < 0.5 && dot(q, q) > mix(0.7, 2.2, spread) && uv.y > 0.1) return miss;
   float camZ = mix(4.55, 1.72, clamp((sizeMul - 0.25) / 2.25, 0.0, 1.0));
   float camA = figH(seed + 0.5) * 0.22 - 0.11;
   vec3 ro = figRotY(vec3(0.0, 0.42, camZ), camA);
@@ -381,10 +422,10 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, f
   for (int i = 0; i < 4; i++) {
     if (i >= k) break;
     float sid = seed + float(i) * 17.31 + 0.07;
-    vec3 off = figPlace(i, n, seed, scatter);
+    vec3 off = figCarry(figPlace(i, n, seed, scatter), sid, time, move);
     float tEnter;
     if (!figRaySphere(ro, rd, off, 1.55, tEnter)) continue;
-    Fig f = figRoll(sid, time);
+    Fig f = figSoften(figRoll(sid, time), move);
     float tRay = tEnter;
     vec2 hit = vec2(1e5, 0.0);
     float minD = 1e5;
@@ -477,7 +518,7 @@ vec3 figMiniPlace(int i, float n, float seed, float aspect) {
   float z = mix(-0.18, 0.18, figH(seed + fi * 4.4 + 2.8));
   return vec3(u * 2.52, v * 1.48 + 0.04, z);
 }
-vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float count, float echo) {
+vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float count, float echo, float move) {
   float aspect = uResolution.x / max(uResolution.y, 1.0);
   vec2 q = (uv - vec2(0.5, 0.42)) * vec2(aspect, 1.0);
   vec4 miss = vec4(0.0);
@@ -502,7 +543,7 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   float bestSeed = seed;
   vec3 bestOff = vec3(0.0);
   float bestSc = figScale;
-  Fig lead = figRoll(seed, time);
+  Fig lead = figSoften(figRoll(seed, time), move);
   Fig bestF = figWildMini(seed, time, lead);
   float trailSid = seed;
   vec3 trailOff = vec3(0.0);
@@ -513,7 +554,7 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
     if (i >= k) break;
     float sid = seed + float(i) * 91.73 + 13.1 + figH(seed * 0.11 + float(i) + 2.3) * 47.0;
     float sc = figScale * mix(0.92, 1.1, figH(sid + 0.61));
-    vec3 off = figMiniPlace(i, n, seed, aspect);
+    vec3 off = figCarry(figMiniPlace(i, n, seed, aspect), sid, time, move);
     float tEnter;
     if (!figRaySphere(ro, rd, off, 2.45 * sc, tEnter)) continue;
     Fig f = figWildMini(sid, time, lead);

@@ -47,6 +47,7 @@ const LOOKS: Look[] = [
   { name: "carnival", mood: "mix", stack: ["duotone", "kaleido", "bloom", "critters"], blend: "screen" },
   { name: "field notes", mood: "mix", stack: ["grade", "posterize", "grain", "critters"], blend: "normal" },
   { name: "toy pop", mood: "mix", stack: ["duotone", "bloom", "grain", "critters"], blend: "screen" },
+  { name: "flower drift", mood: "lush", stack: ["grade", "bloom", "grain", "dancer"], blend: "normal" },
   { name: "prism marsh", mood: "mix", stack: ["kaleido", "chroma", "bloom", "duotone"], blend: "overlay" },
   { name: "outsider silk", mood: "mix", stack: ["grade", "bloom", "analog", "critters"], blend: "normal" },
   { name: "candy idol", mood: "mix", stack: ["grade", "bloom", "critters", "dancer"], blend: "normal" },
@@ -188,9 +189,13 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.count = 1;
     p.crowd = "normal";
     p.place = "center";
+    const mv = rng();
+    if (mood === "lush") p.move = mv > 0.38 ? "float" : mv > 0.18 ? "drift" : "dance";
+    else if (mood === "mix") p.move = mv > 0.52 ? "float" : mv > 0.3 ? "drift" : mv > 0.16 ? "orbit" : "dance";
+    else p.move = mv > 0.78 ? "drift" : "dance";
     p.echo = 0.35 + rng() * 0.5;
     p.amount = 1;
-    p.speed = 0.55 + rng() * 1.5;
+    p.speed = p.move === "dance" ? 0.55 + rng() * 1.5 : 0.32 + rng() * 0.7;
     p.seed = 1 + Math.floor(rng() * 9998);
   }
   if (fx.typeId === "kaleido") {
@@ -240,9 +245,13 @@ function rebuildLayer(layer: Layer, seed: number, amount: number): Layer {
   const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
   const stack = look.stack.filter((id) => getEffect(id));
   const effects = stack.map((id, i) => applyMood(makeFx(id, seed + i * 997, amount), look.mood, palette, rng));
-  if (look.name === "toy pop" || look.name === "candy idol") {
+  if (look.name === "toy pop" || look.name === "candy idol" || look.name === "flower drift") {
     for (const fx of effects) {
-      if (fx.typeId === "critters") fx.params.kit = look.name === "toy pop" ? "toy pop" : "mix";
+      if (fx.typeId === "critters") fx.params.kit = look.name === "candy idol" ? "mix" : "toy pop";
+      if (fx.typeId === "dancer") {
+        fx.params.move = "float";
+        fx.params.speed = 0.35 + rng() * 0.45;
+      }
     }
   }
   const feedbackAmt = look.mood === "lush" ? 0.06 + rng() * 0.16 : 0.04 + rng() * 0.28;
