@@ -362,13 +362,22 @@ vec4 figureShadeMini(vec3 p, vec3 rd, Fig f, float seed, float matId) {
   vec3 col = albedo * dif + albedo * rim;
   return vec4(col, 1.0);
 }
-Fig figWildMini(float seed, float time) {
-  float t = time + mix(0.0, 3.6, figH(seed + 0.29));
-  Fig f = figRoll(seed, t);
+Fig figWildMini(float seed, float time, Fig lead) {
+  Fig f = figRoll(seed, time);
+  f.t = lead.t;
+  f.style = lead.style;
+  f.sway = lead.sway;
+  f.bob = lead.bob;
+  f.spin = lead.spin;
+  f.lean = lead.lean;
+  f.slide = lead.slide;
+  f.peck = lead.peck;
+  f.kickHz = lead.kickHz;
+  f.kickAmt = lead.kickAmt;
+  f.facing = lead.facing;
   f.sx = mix(0.55, 1.7, figH(seed + 31.1));
   f.sz = mix(0.6, 1.55, figH(seed + 31.2));
   f.hs *= mix(0.78, 1.55, figH(seed + 31.3));
-  f.facing = mix(-0.22, 0.22, figH(seed + 31.4));
   f.headKind = figH(seed + 31.5);
   f.torsoKind = figH(seed + 31.6);
   f.mouth = figH(seed + 31.7);
@@ -388,26 +397,35 @@ Fig figWildMini(float seed, float time) {
   );
   return f;
 }
-vec3 figMiniPlace(int i, float n, float seed) {
+vec3 figMiniPlace(int i, float n, float seed, float aspect) {
+  float cols = max(ceil(sqrt(n * max(aspect, 1.15))), 3.0);
+  float rows = max(ceil(n / cols), 3.0);
   float fi = float(i);
-  float u = (fi + 0.5) / max(n, 1.0) * 2.0 - 1.0;
-  u += mix(-0.012, 0.012, figH(seed + fi * 3.7 + 0.4));
-  float arc = u * u;
-  float y = -0.04 + mix(-0.018, 0.018, figH(seed + fi * 2.1 + 1.2));
-  float z = 0.42 - arc * 0.62 + mix(-0.05, 0.05, figH(seed + fi * 4.4 + 2.8));
-  return vec3(u * 2.46, y, z);
+  float col = mod(fi, cols);
+  float row = floor(fi / cols);
+  float inRow = cols;
+  if (row >= rows - 0.5) inRow = max(n - row * cols, 1.0);
+  float u = (col + 0.5) / inRow * 2.0 - 1.0;
+  float v = (row + 0.5) / rows * 2.0 - 1.0;
+  if (mod(row, 2.0) > 0.5) u += 0.42 / cols;
+  u += mix(-0.04, 0.04, figH(seed + fi * 3.7 + 0.4));
+  v += mix(-0.035, 0.035, figH(seed + fi * 2.1 + 1.2));
+  u = clamp(u, -0.98, 0.98);
+  v = clamp(v, -0.96, 0.96);
+  float z = mix(-0.22, 0.22, figH(seed + fi * 4.4 + 2.8));
+  return vec3(u * 2.58, v * 1.52 + 0.04, z);
 }
 vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float count, float echo) {
   float aspect = uResolution.x / max(uResolution.y, 1.0);
   vec2 q = (uv - vec2(0.5, 0.42)) * vec2(aspect, 1.0);
   vec4 miss = vec4(0.0);
-  float n = mix(13.0, 21.0, clamp((count - 1.0) / 3.0, 0.0, 1.0));
+  float n = mix(30.0, 48.0, clamp((count - 1.0) / 3.0, 0.0, 1.0));
   n = floor(n + 0.5);
-  float figScale = mix(0.15, 0.3, clamp((sizeMul - 0.25) / 2.25, 0.0, 1.0));
-  float camZ = 4.2;
-  float camA = figH(seed + 0.5) * 0.06 - 0.03;
-  vec3 ro = figRotY(vec3(0.0, 0.28, camZ), camA);
-  vec3 ta = vec3(0.0, 0.12, 0.18);
+  float figScale = mix(0.07, 0.14, clamp((sizeMul - 0.25) / 2.25, 0.0, 1.0));
+  float camZ = 4.05;
+  float camA = figH(seed + 0.5) * 0.08 - 0.04;
+  vec3 ro = figRotY(vec3(0.0, 0.42, camZ), camA);
+  vec3 ta = vec3(0.0, 0.32, 0.0);
   vec3 ww = normalize(ta - ro);
   vec3 uu = normalize(cross(vec3(0.0, 1.0, 0.0), ww));
   vec3 vv = cross(ww, uu);
@@ -422,7 +440,8 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   float bestSeed = seed;
   vec3 bestOff = vec3(0.0);
   float bestSc = figScale;
-  Fig bestF = figWildMini(seed, time);
+  Fig lead = figRoll(seed, time);
+  Fig bestF = figWildMini(seed, time, lead);
   float trailSid = seed;
   vec3 trailOff = vec3(0.0);
   float trailEnter = 0.0;
@@ -431,11 +450,11 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   for (int i = 0; i < 48; i++) {
     if (i >= k) break;
     float sid = seed + float(i) * 91.73 + 13.1 + figH(seed * 0.11 + float(i) + 2.3) * 47.0;
-    float sc = figScale * mix(0.88, 1.16, figH(sid + 0.61));
-    vec3 off = figMiniPlace(i, n, seed);
+    float sc = figScale * mix(0.9, 1.12, figH(sid + 0.61));
+    vec3 off = figMiniPlace(i, n, seed, aspect);
     float tEnter;
     if (!figRaySphere(ro, rd, off, 2.7 * sc, tEnter)) continue;
-    Fig f = figWildMini(sid, time);
+    Fig f = figWildMini(sid, time, lead);
     float tRay = tEnter;
     vec2 hit = vec2(1e5, 0.0);
     float minD = 1e5;
@@ -475,7 +494,8 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
     return figureShadeMini(p, rd, bestF, bestSeed, bestM);
   }
   if (echo < 0.03 || !trail) return miss;
-  Fig gf = figWildMini(trailSid, time - mix(0.1, 0.2, echo));
+  Fig leadGhost = figRoll(seed, time - mix(0.1, 0.2, echo));
+  Fig gf = figWildMini(trailSid, time - mix(0.1, 0.2, echo), leadGhost);
   float tRay = trailEnter;
   float minD = 1e5;
   float minM = 0.0;
