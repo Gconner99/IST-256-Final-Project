@@ -6,6 +6,7 @@
   "type": "module",
   "main": "electron/main.mjs",
   "scripts": {
+    "start": "vite",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",

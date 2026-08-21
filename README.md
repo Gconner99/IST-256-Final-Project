@@ -6,6 +6,22 @@ Not a Premiere or Photoshop clone. Phosphene is a GPU effect pipeline with a tac
 
 ## Run
 
+**Repo:** [Gconner99/IST-256-Final-Project](https://github.com/Gconner99/IST-256-Final-Project)
+
+Open that folder in Cursor — the repo root is the directory that contains `package.json`.
+
+### In Cursor (click Run)
+
+1. Open the repo folder (not a parent folder).
+2. Run **Phosphene** from the Run and Debug view (play button / `F5`).
+3. The first time it runs `npm install`, then starts the app and opens http://127.0.0.1:5173.
+
+Pick **Phosphene (desktop)** in the same dropdown if you want the Electron window.
+
+You can also use Terminal → Run Task → `phosphene: serve`.
+
+### From a terminal
+
 ```bash
 npm install
 npm run dev          # browser instrument at http://127.0.0.1:5173
