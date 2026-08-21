@@ -7,6 +7,7 @@ import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, randomizeProject } from "../src/core/randomize";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
+import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, samplePaletteFromImageData } from "../src/generate/imagine";
@@ -150,10 +151,7 @@ describe("effects registry", () => {
     expect(idolSrc.includes("figureMap")).toBe(true);
     expect(idolSrc.includes("figureFace")).toBe(true);
     expect(idolSrc.includes("figureRender")).toBe(true);
-    expect(idolSrc.includes("figureRenderMini")).toBe(true);
-    expect(idolSrc.includes("figureShadeMini")).toBe(true);
-    expect(idolSrc.includes("figWildMini")).toBe(true);
-    expect(idolSrc.includes("figMiniPlace")).toBe(true);
+    expect(idolSrc.includes("figureRenderMini")).toBe(false);
     expect(idolSrc.includes("figCrowdOff")).toBe(true);
     expect(idolSrc.includes("figPlace")).toBe(true);
     expect(idolSrc.includes("figDanceStyle")).toBe(true);
@@ -162,6 +160,10 @@ describe("effects registry", () => {
     expect(idolSrc.includes("figRaySphere")).toBe(true);
     expect(idolSrc.includes("figureHit")).toBe(true);
     expect(idolSrc.includes("u_echo")).toBe(true);
+    const miniSrc = compileEffectSource(dancerForCompile(true));
+    expect(miniSrc.includes("figureRenderMini")).toBe(true);
+    expect(miniSrc.includes("figWildMini")).toBe(true);
+    expect(miniSrc.includes("figMiniPlace")).toBe(true);
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {

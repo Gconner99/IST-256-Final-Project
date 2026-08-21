@@ -1,5 +1,36 @@
 import type { EffectType } from "../core/types";
-import { DANCER_GLSL } from "../engine/dancer.glsl";
+import { DANCER_GLSL, DANCER_MINI_GLSL } from "../engine/dancer.glsl";
+
+const APPLY_NORMAL = `
+vec4 apply(vec2 uv) {
+  vec3 src = sampleSrc(uv).rgb;
+  vec4 f = figureRender(uv, u_seed, uTime * u_speed, u_size, u_count, u_place, u_echo);
+  float cover = f.a >= 0.95 ? 1.0 : f.a;
+  vec3 placed = mix(src, f.rgb, clamp(cover * u_amount, 0.0, 1.0));
+  return vec4(placed, 1.0);
+}
+`;
+
+const APPLY_MINI = `
+vec4 apply(vec2 uv) {
+  vec3 src = sampleSrc(uv).rgb;
+  vec4 f = figureRenderMini(uv, u_seed, uTime * u_speed, u_size, u_count, u_echo);
+  float cover = f.a >= 0.95 ? 1.0 : f.a;
+  vec3 placed = mix(src, f.rgb, clamp(cover * u_amount, 0.0, 1.0));
+  return vec4(placed, 1.0);
+}
+`;
+
+const UNIFORMS = `
+uniform float u_count;
+uniform float u_size;
+uniform float u_crowd;
+uniform float u_place;
+uniform float u_echo;
+uniform float u_seed;
+uniform float u_speed;
+uniform float u_amount;
+`;
 
 export const dancer: EffectType = {
   id: "dancer",
@@ -36,24 +67,15 @@ export const dancer: EffectType = {
     { id: "amount", label: "Amount", kind: "float", min: 0, max: 1, step: 0.01, default: 1 },
     { id: "mix", label: "Mix", kind: "float", min: 0, max: 1, step: 0.01, default: 1, randomizable: false },
   ],
-  extraUniforms: `
-uniform float u_count;
-uniform float u_size;
-uniform float u_crowd;
-uniform float u_place;
-uniform float u_echo;
-uniform float u_seed;
-uniform float u_speed;
-uniform float u_amount;
-${DANCER_GLSL}
-`,
-  applyGlsl: `
-vec4 apply(vec2 uv) {
-  vec3 src = sampleSrc(uv).rgb;
-  vec4 f = figureRender(uv, u_seed, uTime * u_speed, u_size, u_count, u_place, u_echo, u_crowd);
-  float cover = f.a >= 0.95 ? 1.0 : f.a;
-  vec3 placed = mix(src, f.rgb, clamp(cover * u_amount, 0.0, 1.0));
-  return vec4(placed, 1.0);
-}
-`,
+  extraUniforms: `${UNIFORMS}${DANCER_GLSL}`,
+  applyGlsl: APPLY_NORMAL,
 };
+
+export function dancerForCompile(mini: boolean): EffectType {
+  if (!mini) return dancer;
+  return {
+    ...dancer,
+    extraUniforms: `${UNIFORMS}${DANCER_GLSL}${DANCER_MINI_GLSL}`,
+    applyGlsl: APPLY_MINI,
+  };
+}

@@ -347,177 +347,7 @@ bool figRaySphere(vec3 ro, vec3 rd, vec3 c, float r, out float tEnter) {
   tEnter = max(0.0, -b - sqrt(h));
   return tEnter < 8.0;
 }
-vec4 figureShadeMini(vec3 p, vec3 rd, Fig f, float seed, float matId) {
-  vec3 n = figNormal(p, f, seed);
-  vec3 l = normalize(vec3(0.35, 0.95, 0.55));
-  float ndv = max(0.0, dot(n, -rd));
-  float dif = 0.9 + 0.1 * max(0.0, dot(n, l));
-  float rim = pow(1.0 - ndv, 2.8) * 0.1;
-  vec3 albedo = figPal(seed, matId);
-  vec3 hsv = rgb2hsv(albedo);
-  hsv.x = fract(hsv.x + figH(seed + 40.1) * 0.94);
-  hsv.y = clamp(hsv.y * mix(0.8, 1.28, figH(seed + 40.2)), 0.32, 1.0);
-  hsv.z = mix(0.78, 1.0, figH(seed + 40.3));
-  albedo = hsv2rgb(hsv);
-  vec3 col = albedo * dif + albedo * rim;
-  return vec4(col, 1.0);
-}
-Fig figWildMini(float seed, float time, Fig lead) {
-  Fig f = figRoll(seed, time);
-  f.t = lead.t;
-  f.style = lead.style;
-  f.sway = lead.sway;
-  f.bob = lead.bob;
-  f.spin = lead.spin;
-  f.lean = lead.lean;
-  f.slide = lead.slide;
-  f.peck = lead.peck;
-  f.kickHz = lead.kickHz;
-  f.kickAmt = lead.kickAmt;
-  f.facing = lead.facing;
-  f.sx = mix(0.55, 1.7, figH(seed + 31.1));
-  f.sz = mix(0.6, 1.55, figH(seed + 31.2));
-  f.hs *= mix(0.78, 1.55, figH(seed + 31.3));
-  f.headKind = figH(seed + 31.5);
-  f.torsoKind = figH(seed + 31.6);
-  f.mouth = figH(seed + 31.7);
-  f.nEyes = 1.0 + floor(figH(seed + 31.8) * 3.0);
-  f.arms = figH(seed + 31.9) > 0.4 ? 4.0 : 2.0;
-  f.extraLeg = step(0.48, figH(seed + 32.0));
-  f.horn = step(0.32, figH(seed + 32.1));
-  f.ears = step(0.12, figH(seed + 32.2));
-  f.tusks = step(0.2, figH(seed + 32.3));
-  f.tail = step(0.32, figH(seed + 32.4));
-  f.pack = step(0.5, figH(seed + 32.5));
-  f.orb = step(0.48, figH(seed + 32.6));
-  f.ts *= vec3(
-    mix(0.78, 1.28, figH(seed + 32.8)),
-    mix(0.8, 1.22, figH(seed + 32.9)),
-    mix(0.78, 1.22, figH(seed + 33.0))
-  );
-  return f;
-}
-vec3 figMiniPlace(int i, float n, float seed, float aspect) {
-  float cols = max(ceil(sqrt(n * max(aspect, 1.15))), 3.0);
-  float rows = max(ceil(n / cols), 3.0);
-  float fi = float(i);
-  float col = mod(fi, cols);
-  float row = floor(fi / cols);
-  float inRow = cols;
-  if (row >= rows - 0.5) inRow = max(n - row * cols, 1.0);
-  float u = (col + 0.5) / inRow * 2.0 - 1.0;
-  float v = (row + 0.5) / rows * 2.0 - 1.0;
-  if (mod(row, 2.0) > 0.5) u += 0.42 / cols;
-  u += mix(-0.04, 0.04, figH(seed + fi * 3.7 + 0.4));
-  v += mix(-0.035, 0.035, figH(seed + fi * 2.1 + 1.2));
-  u = clamp(u, -0.98, 0.98);
-  v = clamp(v, -0.96, 0.96);
-  float z = mix(-0.22, 0.22, figH(seed + fi * 4.4 + 2.8));
-  return vec3(u * 2.58, v * 1.52 + 0.04, z);
-}
-vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float count, float echo) {
-  float aspect = uResolution.x / max(uResolution.y, 1.0);
-  vec2 q = (uv - vec2(0.5, 0.42)) * vec2(aspect, 1.0);
-  vec4 miss = vec4(0.0);
-  float n = mix(30.0, 48.0, clamp((count - 1.0) / 3.0, 0.0, 1.0));
-  n = floor(n + 0.5);
-  float figScale = mix(0.07, 0.14, clamp((sizeMul - 0.25) / 2.25, 0.0, 1.0));
-  float camZ = 4.05;
-  float camA = figH(seed + 0.5) * 0.08 - 0.04;
-  vec3 ro = figRotY(vec3(0.0, 0.42, camZ), camA);
-  vec3 ta = vec3(0.0, 0.32, 0.0);
-  vec3 ww = normalize(ta - ro);
-  vec3 uu = normalize(cross(vec3(0.0, 1.0, 0.0), ww));
-  vec3 vv = cross(ww, uu);
-  vec3 rd = normalize(q.x * uu + q.y * vv + 1.35 * ww);
-  int k = int(n + 0.5);
-  float stepF = mix(6.0, 8.0, min(uQuality, 1.0));
-  if (uQuality > 1.5) stepF = 9.0;
-  int steps = int(max(stepF, 6.0));
-  float bestT = 9.0;
-  float bestH = 1e5;
-  float bestM = 0.0;
-  float bestSeed = seed;
-  vec3 bestOff = vec3(0.0);
-  float bestSc = figScale;
-  Fig lead = figRoll(seed, time);
-  Fig bestF = figWildMini(seed, time, lead);
-  float trailSid = seed;
-  vec3 trailOff = vec3(0.0);
-  float trailEnter = 0.0;
-  float trailSc = figScale;
-  bool trail = false;
-  for (int i = 0; i < 48; i++) {
-    if (i >= k) break;
-    float sid = seed + float(i) * 91.73 + 13.1 + figH(seed * 0.11 + float(i) + 2.3) * 47.0;
-    float sc = figScale * mix(0.9, 1.12, figH(sid + 0.61));
-    vec3 off = figMiniPlace(i, n, seed, aspect);
-    float tEnter;
-    if (!figRaySphere(ro, rd, off, 2.7 * sc, tEnter)) continue;
-    Fig f = figWildMini(sid, time, lead);
-    float tRay = tEnter;
-    vec2 hit = vec2(1e5, 0.0);
-    float minD = 1e5;
-    float minT = tEnter;
-    float minM = 0.0;
-    for (int s = 0; s < 10; s++) {
-      if (s >= steps) break;
-      vec3 p = (ro - off + rd * tRay) / sc;
-      hit = figureHit(p, f, sid);
-      hit.x *= sc;
-      if (hit.x < minD) {
-        minD = hit.x;
-        minT = tRay;
-        minM = hit.y;
-      }
-      if (hit.x < 0.002 || tRay > 8.0) break;
-      tRay += max(hit.x * 0.82, 0.008);
-    }
-    if (minD < 0.04 && minT < bestT) {
-      bestT = minT;
-      bestH = minD;
-      bestM = minM;
-      bestSeed = sid;
-      bestOff = off;
-      bestF = f;
-      bestSc = sc;
-    } else if (!trail) {
-      trail = true;
-      trailSid = sid;
-      trailOff = off;
-      trailEnter = tEnter;
-      trailSc = sc;
-    }
-  }
-  if (bestH <= 0.04 && bestT <= 8.0) {
-    vec3 p = (ro - bestOff + rd * bestT) / bestSc;
-    return figureShadeMini(p, rd, bestF, bestSeed, bestM);
-  }
-  if (echo < 0.03 || !trail) return miss;
-  Fig leadGhost = figRoll(seed, time - mix(0.1, 0.2, echo));
-  Fig gf = figWildMini(trailSid, time - mix(0.1, 0.2, echo), leadGhost);
-  float tRay = trailEnter;
-  float minD = 1e5;
-  float minM = 0.0;
-  for (int s = 0; s < 5; s++) {
-    vec2 hit = figureHit((ro - trailOff + rd * tRay) / trailSc, gf, trailSid);
-    hit.x *= trailSc;
-    if (hit.x < minD) {
-      minD = hit.x;
-      minM = hit.y;
-    }
-    if (hit.x < 0.003 || tRay > 8.0) break;
-    tRay += max(hit.x * 0.85, 0.015);
-  }
-  if (minD > 0.05) return miss;
-  vec3 albedo = figPal(trailSid, minM);
-  vec3 hsv = rgb2hsv(albedo);
-  hsv.x = fract(hsv.x + 0.16);
-  hsv.z = min(1.0, hsv.z * 1.06);
-  return vec4(hsv2rgb(hsv) * 0.9, clamp(echo * 0.78, 0.22, 0.82));
-}
-vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, float scatter, float echo, float crowd) {
-  if (crowd > 0.5) return figureRenderMini(uv, seed, time, sizeMul, count, echo);
+vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, float scatter, float echo) {
   float aspect = uResolution.x / max(uResolution.y, 1.0);
   vec2 q = (uv - vec2(0.5, 0.42)) * vec2(aspect, 1.0);
   vec4 miss = vec4(0.0);
@@ -605,6 +435,143 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, f
     tRay += max(hit.x * 0.85, 0.02);
   }
   if (minD > 0.06) return miss;
+  vec3 albedo = figPal(trailSid, minM);
+  vec3 hsv = rgb2hsv(albedo);
+  hsv.x = fract(hsv.x + 0.16);
+  hsv.z = min(1.0, hsv.z * 1.06);
+  return vec4(hsv2rgb(hsv) * 0.9, clamp(echo * 0.78, 0.22, 0.82));
+}
+`;
+
+export const DANCER_MINI_GLSL = `
+Fig figWildMini(float seed, float time, Fig lead) {
+  Fig f = figRoll(seed, time);
+  f.t = lead.t;
+  f.style = lead.style;
+  f.sway = lead.sway;
+  f.bob = lead.bob;
+  f.spin = lead.spin;
+  f.lean = lead.lean;
+  f.slide = lead.slide;
+  f.peck = lead.peck;
+  f.kickHz = lead.kickHz;
+  f.kickAmt = lead.kickAmt;
+  f.facing = lead.facing;
+  return f;
+}
+vec3 figMiniPlace(int i, float n, float seed, float aspect) {
+  float cols = max(ceil(sqrt(n * max(aspect, 1.15))), 3.0);
+  float rows = max(ceil(n / cols), 3.0);
+  float fi = float(i);
+  float col = mod(fi, cols);
+  float row = floor(fi / cols);
+  float inRow = cols;
+  if (row >= rows - 0.5) inRow = max(n - row * cols, 1.0);
+  float u = (col + 0.5) / inRow * 2.0 - 1.0;
+  float v = (row + 0.5) / rows * 2.0 - 1.0;
+  if (mod(row, 2.0) > 0.5) u += 0.38 / cols;
+  u += mix(-0.03, 0.03, figH(seed + fi * 3.7 + 0.4));
+  v += mix(-0.028, 0.028, figH(seed + fi * 2.1 + 1.2));
+  u = clamp(u, -0.97, 0.97);
+  v = clamp(v, -0.95, 0.95);
+  float z = mix(-0.18, 0.18, figH(seed + fi * 4.4 + 2.8));
+  return vec3(u * 2.52, v * 1.48 + 0.04, z);
+}
+vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float count, float echo) {
+  float aspect = uResolution.x / max(uResolution.y, 1.0);
+  vec2 q = (uv - vec2(0.5, 0.42)) * vec2(aspect, 1.0);
+  vec4 miss = vec4(0.0);
+  float n = mix(14.0, 24.0, clamp((count - 1.0) / 3.0, 0.0, 1.0));
+  n = floor(n + 0.5);
+  float figScale = mix(0.2, 0.34, clamp((sizeMul - 0.25) / 2.25, 0.0, 1.0));
+  float camZ = 4.05;
+  float camA = figH(seed + 0.5) * 0.08 - 0.04;
+  vec3 ro = figRotY(vec3(0.0, 0.42, camZ), camA);
+  vec3 ta = vec3(0.0, 0.32, 0.0);
+  vec3 ww = normalize(ta - ro);
+  vec3 uu = normalize(cross(vec3(0.0, 1.0, 0.0), ww));
+  vec3 vv = cross(ww, uu);
+  vec3 rd = normalize(q.x * uu + q.y * vv + 1.35 * ww);
+  int k = int(n + 0.5);
+  float stepF = mix(11.0, 14.0, min(uQuality, 1.0));
+  if (uQuality > 1.5) stepF = 16.0;
+  int steps = int(max(stepF, 10.0));
+  float bestT = 9.0;
+  float bestH = 1e5;
+  float bestM = 0.0;
+  float bestSeed = seed;
+  vec3 bestOff = vec3(0.0);
+  float bestSc = figScale;
+  Fig lead = figRoll(seed, time);
+  Fig bestF = figWildMini(seed, time, lead);
+  float trailSid = seed;
+  vec3 trailOff = vec3(0.0);
+  float trailEnter = 0.0;
+  float trailSc = figScale;
+  bool trail = false;
+  for (int i = 0; i < 24; i++) {
+    if (i >= k) break;
+    float sid = seed + float(i) * 91.73 + 13.1 + figH(seed * 0.11 + float(i) + 2.3) * 47.0;
+    float sc = figScale * mix(0.92, 1.1, figH(sid + 0.61));
+    vec3 off = figMiniPlace(i, n, seed, aspect);
+    float tEnter;
+    if (!figRaySphere(ro, rd, off, 2.45 * sc, tEnter)) continue;
+    Fig f = figWildMini(sid, time, lead);
+    float tRay = tEnter;
+    vec2 hit = vec2(1e5, 0.0);
+    float minD = 1e5;
+    float minT = tEnter;
+    float minM = 0.0;
+    for (int s = 0; s < 16; s++) {
+      if (s >= steps) break;
+      vec3 p = (ro - off + rd * tRay) / sc;
+      hit = figureHit(p, f, sid);
+      hit.x *= sc;
+      if (hit.x < minD) {
+        minD = hit.x;
+        minT = tRay;
+        minM = hit.y;
+      }
+      if (hit.x < 0.0025 || tRay > 8.0) break;
+      tRay += max(hit.x * 0.82, 0.01);
+    }
+    if (minD < 0.045 && minT < bestT) {
+      bestT = minT;
+      bestH = minD;
+      bestM = minM;
+      bestSeed = sid;
+      bestOff = off;
+      bestF = f;
+      bestSc = sc;
+    } else if (!trail) {
+      trail = true;
+      trailSid = sid;
+      trailOff = off;
+      trailEnter = tEnter;
+      trailSc = sc;
+    }
+  }
+  if (bestH <= 0.045 && bestT <= 8.0) {
+    vec3 p = (ro - bestOff + rd * bestT) / bestSc;
+    return figureShade(p, rd, bestF, bestSeed, bestM);
+  }
+  if (echo < 0.03 || !trail) return miss;
+  Fig leadGhost = figRoll(seed, time - mix(0.1, 0.2, echo));
+  Fig gf = figWildMini(trailSid, time - mix(0.1, 0.2, echo), leadGhost);
+  float tRay = trailEnter;
+  float minD = 1e5;
+  float minM = 0.0;
+  for (int s = 0; s < 5; s++) {
+    vec2 hit = figureHit((ro - trailOff + rd * tRay) / trailSc, gf, trailSid);
+    hit.x *= trailSc;
+    if (hit.x < minD) {
+      minD = hit.x;
+      minM = hit.y;
+    }
+    if (hit.x < 0.003 || tRay > 8.0) break;
+    tRay += max(hit.x * 0.85, 0.015);
+  }
+  if (minD > 0.05) return miss;
   vec3 albedo = figPal(trailSid, minM);
   vec3 hsv = rgb2hsv(albedo);
   hsv.x = fract(hsv.x + 0.16);

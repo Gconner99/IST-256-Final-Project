@@ -1,6 +1,7 @@
 import type { EffectInstance, Layer, MediaSource, Project, QualityMode } from "../core/types";
 import { resolvedLayerParams } from "../core/timeline";
-import { getEffect } from "../effects/registry";
+import { dancerForCompile } from "../effects/dancer";
+import { allEffects, getEffect } from "../effects/registry";
 import {
   BLEND_INDEX,
   bindTex,
@@ -79,20 +80,39 @@ export class Renderer {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
   }
 
-  private progFor(typeId: string): Program | null {
-    const cached = this.effectProg.get(typeId);
+  private compileType(typeId: string, mini = false): Program | null {
+    const key = mini ? "dancer:mini" : typeId;
+    const cached = this.effectProg.get(key);
     if (cached) return cached;
-    const def = getEffect(typeId);
+    const def = typeId === "dancer" ? dancerForCompile(mini) : getEffect(typeId);
     if (!def) return null;
     try {
       const p = compileEffectProgram(this.gl, def);
-      this.effectProg.set(typeId, p);
+      this.effectProg.set(key, p);
       return p;
     } catch (err) {
-      this.lastError = `${typeId}: ${err instanceof Error ? err.message : String(err)}`;
+      this.lastError = `${key}: ${err instanceof Error ? err.message : String(err)}`;
       console.warn(this.lastError);
       return null;
     }
+  }
+
+  /** Compile effect shaders a few at a time so the first Rand all does not hitch. */
+  prewarmEffects() {
+    const ids = allEffects()
+      .map((e) => e.id)
+      .sort((a, b) => Number(a !== "dancer" && a !== "critters") - Number(b !== "dancer" && b !== "critters"));
+    let i = 0;
+    const step = () => {
+      if (i >= ids.length) return;
+      this.compileType(ids[i++]);
+      if (i < ids.length) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  private progFor(fx: EffectInstance): Program | null {
+    return this.compileType(fx.typeId, fx.typeId === "dancer" && fx.params.crowd === "mini");
   }
 
   resetTemporal() {
@@ -186,7 +206,7 @@ export class Renderer {
     historyTex: WebGLTexture,
   ) {
     const def = getEffect(fx.typeId);
-    const prog = this.progFor(fx.typeId);
+    const prog = this.progFor(fx);
     if (!def || !prog) {
       this.blitTo(dest, srcTex);
       return;
