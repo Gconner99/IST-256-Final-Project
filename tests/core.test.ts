@@ -118,6 +118,7 @@ describe("effects registry", () => {
     }
     const idolSrc = compileEffectSource(getEffect("dancer")!);
     expect(idolSrc.includes("figureMap")).toBe(true);
+    expect(idolSrc.includes("figureFace")).toBe(true);
     expect(idolSrc.includes("figureRender")).toBe(true);
   });
 

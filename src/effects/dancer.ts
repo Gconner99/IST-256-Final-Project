@@ -5,7 +5,7 @@ export const dancer: EffectType = {
   id: "dancer",
   name: "Idol",
   category: "wacky",
-  description: "A seed-grown low-poly creature that dances in the middle of the frame",
+  description: "A seed-grown low-poly creature with a face like an animal that does not exist, dancing in the middle of the frame",
   params: [
     { id: "size", label: "Size", kind: "float", min: 0.4, max: 2.5, step: 0.01, default: 1.2 },
     { id: "seed", label: "Seed", kind: "int", min: 1, max: 9999, step: 1, default: 256 },
