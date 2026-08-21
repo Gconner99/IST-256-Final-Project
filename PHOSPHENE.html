@@ -1002,13 +1002,22 @@ vec4 figureShadeMini(vec3 p, vec3 rd, Fig f, float seed, float matId) {
   vec3 col = albedo * dif + albedo * rim;
   return vec4(col, 1.0);
 }
-Fig figWildMini(float seed, float time) {
-  float t = time + mix(0.0, 3.6, figH(seed + 0.29));
-  Fig f = figRoll(seed, t);
+Fig figWildMini(float seed, float time, Fig lead) {
+  Fig f = figRoll(seed, time);
+  f.t = lead.t;
+  f.style = lead.style;
+  f.sway = lead.sway;
+  f.bob = lead.bob;
+  f.spin = lead.spin;
+  f.lean = lead.lean;
+  f.slide = lead.slide;
+  f.peck = lead.peck;
+  f.kickHz = lead.kickHz;
+  f.kickAmt = lead.kickAmt;
+  f.facing = lead.facing;
   f.sx = mix(0.55, 1.7, figH(seed + 31.1));
   f.sz = mix(0.6, 1.55, figH(seed + 31.2));
   f.hs *= mix(0.78, 1.55, figH(seed + 31.3));
-  f.facing = mix(-0.22, 0.22, figH(seed + 31.4));
   f.headKind = figH(seed + 31.5);
   f.torsoKind = figH(seed + 31.6);
   f.mouth = figH(seed + 31.7);
@@ -1028,26 +1037,35 @@ Fig figWildMini(float seed, float time) {
   );
   return f;
 }
-vec3 figMiniPlace(int i, float n, float seed) {
+vec3 figMiniPlace(int i, float n, float seed, float aspect) {
+  float cols = max(ceil(sqrt(n * max(aspect, 1.15))), 3.0);
+  float rows = max(ceil(n / cols), 3.0);
   float fi = float(i);
-  float u = (fi + 0.5) / max(n, 1.0) * 2.0 - 1.0;
-  u += mix(-0.012, 0.012, figH(seed + fi * 3.7 + 0.4));
-  float arc = u * u;
-  float y = -0.04 + mix(-0.018, 0.018, figH(seed + fi * 2.1 + 1.2));
-  float z = 0.42 - arc * 0.62 + mix(-0.05, 0.05, figH(seed + fi * 4.4 + 2.8));
-  return vec3(u * 2.46, y, z);
+  float col = mod(fi, cols);
+  float row = floor(fi / cols);
+  float inRow = cols;
+  if (row >= rows - 0.5) inRow = max(n - row * cols, 1.0);
+  float u = (col + 0.5) / inRow * 2.0 - 1.0;
+  float v = (row + 0.5) / rows * 2.0 - 1.0;
+  if (mod(row, 2.0) > 0.5) u += 0.42 / cols;
+  u += mix(-0.04, 0.04, figH(seed + fi * 3.7 + 0.4));
+  v += mix(-0.035, 0.035, figH(seed + fi * 2.1 + 1.2));
+  u = clamp(u, -0.98, 0.98);
+  v = clamp(v, -0.96, 0.96);
+  float z = mix(-0.22, 0.22, figH(seed + fi * 4.4 + 2.8));
+  return vec3(u * 2.58, v * 1.52 + 0.04, z);
 }
 vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float count, float echo) {
   float aspect = uResolution.x / max(uResolution.y, 1.0);
   vec2 q = (uv - vec2(0.5, 0.42)) * vec2(aspect, 1.0);
   vec4 miss = vec4(0.0);
-  float n = mix(13.0, 21.0, clamp((count - 1.0) / 3.0, 0.0, 1.0));
+  float n = mix(30.0, 48.0, clamp((count - 1.0) / 3.0, 0.0, 1.0));
   n = floor(n + 0.5);
-  float figScale = mix(0.15, 0.3, clamp((sizeMul - 0.25) / 2.25, 0.0, 1.0));
-  float camZ = 4.2;
-  float camA = figH(seed + 0.5) * 0.06 - 0.03;
-  vec3 ro = figRotY(vec3(0.0, 0.28, camZ), camA);
-  vec3 ta = vec3(0.0, 0.12, 0.18);
+  float figScale = mix(0.07, 0.14, clamp((sizeMul - 0.25) / 2.25, 0.0, 1.0));
+  float camZ = 4.05;
+  float camA = figH(seed + 0.5) * 0.08 - 0.04;
+  vec3 ro = figRotY(vec3(0.0, 0.42, camZ), camA);
+  vec3 ta = vec3(0.0, 0.32, 0.0);
   vec3 ww = normalize(ta - ro);
   vec3 uu = normalize(cross(vec3(0.0, 1.0, 0.0), ww));
   vec3 vv = cross(ww, uu);
@@ -1062,7 +1080,8 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   float bestSeed = seed;
   vec3 bestOff = vec3(0.0);
   float bestSc = figScale;
-  Fig bestF = figWildMini(seed, time);
+  Fig lead = figRoll(seed, time);
+  Fig bestF = figWildMini(seed, time, lead);
   float trailSid = seed;
   vec3 trailOff = vec3(0.0);
   float trailEnter = 0.0;
@@ -1071,11 +1090,11 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   for (int i = 0; i < 48; i++) {
     if (i >= k) break;
     float sid = seed + float(i) * 91.73 + 13.1 + figH(seed * 0.11 + float(i) + 2.3) * 47.0;
-    float sc = figScale * mix(0.88, 1.16, figH(sid + 0.61));
-    vec3 off = figMiniPlace(i, n, seed);
+    float sc = figScale * mix(0.9, 1.12, figH(sid + 0.61));
+    vec3 off = figMiniPlace(i, n, seed, aspect);
     float tEnter;
     if (!figRaySphere(ro, rd, off, 2.7 * sc, tEnter)) continue;
-    Fig f = figWildMini(sid, time);
+    Fig f = figWildMini(sid, time, lead);
     float tRay = tEnter;
     vec2 hit = vec2(1e5, 0.0);
     float minD = 1e5;
@@ -1115,7 +1134,8 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
     return figureShadeMini(p, rd, bestF, bestSeed, bestM);
   }
   if (echo < 0.03 || !trail) return miss;
-  Fig gf = figWildMini(trailSid, time - mix(0.1, 0.2, echo));
+  Fig leadGhost = figRoll(seed, time - mix(0.1, 0.2, echo));
+  Fig gf = figWildMini(trailSid, time - mix(0.1, 0.2, echo), leadGhost);
   float tRay = trailEnter;
   float minD = 1e5;
   float minM = 0.0;
@@ -1231,7 +1251,7 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, f
   hsv.z = min(1.0, hsv.z * 1.06);
   return vec4(hsv2rgb(hsv) * 0.9, clamp(echo * 0.78, 0.22, 0.82));
 }
-`,bs={id:"dancer",name:"Idol",category:"wacky",description:"One seed-grown low-poly creature with a face like an animal that does not exist. Mini army plants a chorus line of tiny ones. Echo leaves a hue-shifted afterimage",params:[{id:"count",label:"Count",kind:"int",min:1,max:4,step:1,default:1},{id:"size",label:"Size",kind:"float",min:.25,max:2.5,step:.01,default:.65},{id:"crowd",label:"Crowd",kind:"enum",default:"normal",randomizable:!1,options:[{value:"normal",label:"Normal"},{value:"mini",label:"Mini army"}]},{id:"place",label:"Place",kind:"enum",default:"center",options:[{value:"center",label:"Center"},{value:"scatter",label:"Scatter + depth"}]},{id:"echo",label:"Echo",kind:"float",min:0,max:1,step:.01,default:.5},{id:"seed",label:"Seed",kind:"int",min:1,max:9999,step:1,default:256},{id:"speed",label:"Dance",kind:"float",min:0,max:3,step:.01,default:1},{id:"amount",label:"Amount",kind:"float",min:0,max:1,step:.01,default:1},{id:"mix",label:"Mix",kind:"float",min:0,max:1,step:.01,default:1,randomizable:!1}],extraUniforms:`
+`,bs={id:"dancer",name:"Idol",category:"wacky",description:"One seed-grown low-poly creature with a face like an animal that does not exist. Mini army fills the frame with tiny ones dancing in sync. Echo leaves a hue-shifted afterimage",params:[{id:"count",label:"Count",kind:"int",min:1,max:4,step:1,default:1},{id:"size",label:"Size",kind:"float",min:.25,max:2.5,step:.01,default:.65},{id:"crowd",label:"Crowd",kind:"enum",default:"normal",randomizable:!1,options:[{value:"normal",label:"Normal"},{value:"mini",label:"Mini army"}]},{id:"place",label:"Place",kind:"enum",default:"center",options:[{value:"center",label:"Center"},{value:"scatter",label:"Scatter + depth"}]},{id:"echo",label:"Echo",kind:"float",min:0,max:1,step:.01,default:.5},{id:"seed",label:"Seed",kind:"int",min:1,max:9999,step:1,default:256},{id:"speed",label:"Dance",kind:"float",min:0,max:3,step:.01,default:1},{id:"amount",label:"Amount",kind:"float",min:0,max:1,step:.01,default:1},{id:"mix",label:"Mix",kind:"float",min:0,max:1,step:.01,default:1,randomizable:!1}],extraUniforms:`
 uniform float u_count;
 uniform float u_size;
 uniform float u_crowd;
@@ -1971,7 +1991,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     <h1>PHOSPHENE</h1>
     <p>WebGL2 is required. ${t instanceof Error?t.message:String(t)}</p>
   </div>`,t}xd(Xi,Ki);const Qi=document.querySelector("#view"),Id=new ResizeObserver(()=>Un(Zi,Qi));Id.observe(Qi);Un(Zi,Qi);let Vr=performance.now(),Gr=60,bi=0,yi=performance.now();function Wn(t){const e=Math.min(.08,(t-Vr)/1e3);Vr=t;const i=B.state.ui.exporting,r=B.project,n=$s(r,r.playback.time);if(!i&&r.playback.playing&&!r.playback.freeze){let s=r.playback.time+e*n;const a=Math.max(r.duration,.001);r.playback.loop?s=(s%a+a)%a:s=Math.min(s,a),B.setProject(o=>({...o,playback:{...o.playback,time:s}}),!1)}for(const s of B.project.sources)if(s.kind==="video"&&s.video&&!B.project.playback.freeze){const a=Fi(B.project.playback.time,s.duration||s.video.duration||1,B.project.playback.mode,1,B.project.playback.loop);va(s,a)}if(!i)try{Ki.render(B.project,B.project.playback.time)}catch(s){B.patchUi({status:s instanceof Error?s.message:"render error"},!1)}bi++,t-yi>400&&(Gr=bi*1e3/(t-yi),yi=t,bi=0),Pd(Xi,Gr,B.project.playback.time),requestAnimationFrame(Wn)}requestAnimationFrame(Wn);
-//# sourceMappingURL=index-BRMZlr_M.js.map</script>
+//# sourceMappingURL=index-CbC2sges.js.map</script>
     <style rel="stylesheet" crossorigin>:root{--bg: #070709;--panel: #101116;--panel-2: #16171e;--ink: #ddd6c8;--dim: #7c776b;--line: #2a2c26;--acid: #d6ff3d;--hot: #ff2f86;--cyan: #3ee0ff;--warn: #ffb020;--shadow: rgba(0, 0, 0, .55);--mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;--display: ui-sans-serif, "Segoe UI", system-ui, sans-serif;font-synthesis:none}*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--mono)}body{overflow:hidden}button,input,select{font-family:inherit;color:inherit}button{cursor:pointer}.shell{height:100%;display:grid;grid-template-rows:46px 1fr 148px;background:radial-gradient(1200px 500px at 70% -10%,rgba(214,255,61,.05),transparent 50%),radial-gradient(900px 400px at -10% 110%,rgba(255,47,134,.07),transparent 45%),var(--bg)}.topbar,.rail,.stack,.transport{background:var(--panel);border:1px solid var(--line)}.topbar{display:flex;align-items:center;gap:12px;padding:0 12px;border-left:none;border-right:none;border-top:none}.brand{font-family:var(--display);font-weight:800;letter-spacing:.18em;font-size:15px;color:var(--acid)}.brand small{display:block;letter-spacing:.28em;font-size:8px;color:var(--hot);margin-top:-2px}.topbar .sp{flex:1}.topbar .check{margin:0;white-space:nowrap}.led{width:7px;height:7px;border-radius:50%;background:var(--acid);box-shadow:0 0 8px var(--acid)}.led.hot{background:var(--hot);box-shadow:0 0 8px var(--hot)}.workspace{display:grid;grid-template-columns:250px 1fr 320px;min-height:0}.rail,.stack{overflow:auto;padding:10px;border-top:none;border-bottom:none}.rail{border-left:none}.stack{border-right:none}.stage{min-width:0;min-height:0;display:grid;grid-template-rows:1fr auto;padding:12px 10px 8px}.viewport{position:relative;min-height:0;background:#050506;border:1px solid #333226;box-shadow:inset 0 0 80px #0000008c;overflow:hidden}.viewport canvas{width:100%;height:100%;display:block;image-rendering:auto}.viewport:after{content:"";pointer-events:none;position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.015) 0 1px,transparent 1px 3px);mix-blend-mode:overlay}.hud{position:absolute;left:8px;top:8px;font-size:10px;color:var(--acid);text-shadow:0 0 6px black;letter-spacing:.08em;pointer-events:none}.dropveil{display:none;position:absolute;inset:0;background:#d6ff3d1f;border:2px dashed var(--acid);align-items:center;justify-content:center;color:var(--acid);letter-spacing:.2em;font-size:12px}.dropveil.on{display:flex}h2,.sec{margin:0 0 8px;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:600}.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.row+.row,.block+.block{margin-top:8px}.btn,select,input[type=text],input[type=number],input[type=color]{background:var(--panel-2);border:1px solid var(--line);color:var(--ink);font-size:11px;padding:5px 8px;border-radius:1px}.btn{letter-spacing:.08em;text-transform:uppercase;font-size:10px}.btn:hover{border-color:var(--acid);color:var(--acid)}.btn.hot{border-color:var(--hot);color:var(--hot)}.btn.acid{background:#1c220c;border-color:var(--acid);color:var(--acid)}.btn.tiny{padding:3px 6px;font-size:9px}.btn[disabled]{opacity:.4;cursor:default}.thumb{display:grid;grid-template-columns:44px 1fr auto;gap:8px;align-items:center;padding:6px;border:1px solid var(--line);background:var(--panel-2);margin-bottom:6px;cursor:pointer}.thumb.on{border-color:var(--acid)}.thumb .sw{width:44px;height:28px;background:#222;overflow:hidden}.thumb .sw canvas,.thumb .sw video,.thumb .sw img{width:100%;height:100%;object-fit:cover}.thumb .meta{font-size:10px}.thumb .meta b{display:block;color:var(--ink);font-weight:500}.thumb .meta span{color:var(--dim)}.layer,.fx{border:1px solid var(--line);background:var(--panel-2);margin-bottom:6px;padding:6px}.layer.on,.fx.on{border-color:var(--cyan)}.fx.bypass{opacity:.45}.layer head,.fx .hd,.hd{display:flex;justify-content:space-between;gap:6px;align-items:center;font-size:11px}.name{letter-spacing:.06em}.param{display:grid;grid-template-columns:72px 1fr 52px 22px;gap:6px;align-items:center;margin:5px 0;font-size:10px;color:var(--dim)}.param input[type=range]{-webkit-appearance:none;appearance:none;height:3px;background:#2a2a22;outline:none;width:100%}.param input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:13px;background:var(--acid);border:0;box-shadow:0 0 8px #d6ff3d80}.param input[type=number]{padding:3px 4px;width:52px}.param input[type=color]{padding:0;width:100%;height:18px}.check{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:10px;color:var(--dim)}.transport{display:grid;grid-template-columns:250px 1fr 320px;border-left:none;border-right:none;border-bottom:none}.t-left,.t-mid,.t-right{padding:8px 10px;min-width:0}.t-right{overflow:auto}.t-mid{border-left:1px solid var(--line);border-right:1px solid var(--line)}.btn.export{padding:7px 16px;font-size:12px;letter-spacing:.12em}.timeline{position:relative;height:44px;background:#0c0c10;border:1px solid var(--line);margin-top:4px;overflow:hidden}.timeline .keys{position:absolute;inset:0}.key{position:absolute;top:10px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid var(--hot);transform:translate(-5px)}.playhead{position:absolute;top:0;bottom:0;width:1px;background:var(--acid);box-shadow:0 0 8px var(--acid)}.scrub{width:100%;margin-top:4px}.help{display:none;position:fixed;inset:0;background:#000000b8;z-index:20;align-items:center;justify-content:center}.help.on{display:flex}.help .card{width:min(560px,92vw);background:#0e0f14;border:1px solid var(--acid);padding:22px;box-shadow:0 20px 80px var(--shadow)}.help h3{font-family:var(--display);letter-spacing:.14em;margin:0 0 10px}.help kbd{border:1px solid var(--line);padding:1px 5px;font-size:10px;color:var(--acid)}.help p,.help li{font-size:12px;color:var(--dim);line-height:1.45}.status{font-size:10px;color:var(--dim);letter-spacing:.06em}textarea.prompt{width:100%;min-height:72px;margin:4px 0 6px;background:#0c0c10;border:1px solid var(--line);color:var(--ink);font-size:11px;line-height:1.4;padding:6px;resize:vertical;border-radius:1px}textarea.prompt:focus{outline:1px solid var(--acid)}.addfx{width:100%;margin-top:6px}hr.div{border:0;border-top:1px solid var(--line);margin:10px 0}@media(max-width:1100px){.workspace,.transport{grid-template-columns:210px 1fr 270px}}</style>
   </head>
   <body>
