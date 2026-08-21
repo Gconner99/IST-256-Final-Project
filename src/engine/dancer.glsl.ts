@@ -48,12 +48,13 @@ float figDanceT(float seed, float t) {
 }
 vec2 figureFace(vec3 hp, float seed, float hs) {
   vec2 d = vec2(1e5, 0.0);
+  d = figMin(d, vec2(figBox(hp - vec3(0.0, hs * 0.02, -hs * 0.82), vec3(hs * mix(0.58, 0.92, figH(seed + 6.06)), hs * mix(0.5, 0.78, figH(seed + 6.07)), hs * 0.14)), 2.4));
   float nEyes = 1.0 + floor(figH(seed + 6.1) * 3.0);
-  float eyeY = hs * mix(-0.04, 0.14, figH(seed + 6.2));
-  float eyeZ = -hs * mix(0.52, 0.98, figH(seed + 6.3));
-  float eyeSpread = hs * mix(0.16, 0.58, figH(seed + 6.4));
-  float eyeR = hs * mix(0.11, 0.3, figH(seed + 6.5));
-  float squash = mix(0.5, 1.55, figH(seed + 6.55));
+  float eyeY = hs * mix(0.02, 0.2, figH(seed + 6.2));
+  float eyeZ = -hs * mix(0.88, 1.28, figH(seed + 6.3));
+  float eyeSpread = hs * mix(0.24, 0.7, figH(seed + 6.4));
+  float eyeR = hs * mix(0.22, 0.48, figH(seed + 6.5));
+  float squash = mix(0.55, 1.4, figH(seed + 6.55));
   for (int i = 0; i < 3; i++) {
     if (float(i) >= nEyes) break;
     float xi = 0.0;
@@ -64,33 +65,33 @@ vec2 figureFace(vec3 hp, float seed, float hs) {
     vec3 ep = hp - vec3(xi, yi, eyeZ);
     ep.y *= squash;
     d = figMin(d, vec2(length(ep) - eyeR, 5.0));
-    d = figMin(d, vec2(length(ep - vec3(mix(-0.04, 0.04, figH(seed + 6.72)) * hs, mix(-0.03, 0.03, figH(seed + 6.73)) * hs, -eyeR * 0.42)) - eyeR * mix(0.28, 0.58, figH(seed + 6.7)), 5.6));
+    d = figMin(d, vec2(length(ep - vec3(mix(-0.05, 0.05, figH(seed + 6.72)) * hs, mix(-0.04, 0.04, figH(seed + 6.73)) * hs, -eyeR * 0.5)) - eyeR * mix(0.34, 0.62, figH(seed + 6.7)), 5.6));
   }
   float mouth = figH(seed + 7.0);
   if (mouth < 0.3) {
-    vec3 sn = hp - vec3(0.0, hs * mix(-0.1, 0.04, figH(seed + 7.1)), -hs * mix(0.75, 1.4, figH(seed + 7.2)));
-    d = figMin(d, vec2(figBox(sn, vec3(hs * mix(0.1, 0.3, figH(seed + 7.3)), hs * mix(0.07, 0.2, figH(seed + 7.4)), hs * mix(0.16, 0.42, figH(seed + 7.5)))), 6.0));
-    d = figMin(d, vec2(length(sn - vec3(0.0, hs * 0.07, -hs * 0.22)) - hs * mix(0.05, 0.1, figH(seed + 7.6)), 6.5));
+    vec3 sn = hp - vec3(0.0, hs * mix(-0.08, 0.06, figH(seed + 7.1)), -hs * mix(1.05, 1.75, figH(seed + 7.2)));
+    d = figMin(d, vec2(figBox(sn, vec3(hs * mix(0.16, 0.4, figH(seed + 7.3)), hs * mix(0.1, 0.26, figH(seed + 7.4)), hs * mix(0.22, 0.55, figH(seed + 7.5)))), 6.0));
+    d = figMin(d, vec2(length(sn - vec3(0.0, hs * 0.08, -hs * 0.28)) - hs * mix(0.07, 0.14, figH(seed + 7.6)), 6.5));
   } else if (mouth < 0.55) {
-    d = figMin(d, vec2(figCap(hp, vec3(0.0, -hs * 0.04, -hs * 0.35), vec3(0.0, hs * mix(-0.16, 0.1, figH(seed + 7.7)), -hs * mix(1.05, 1.85, figH(seed + 7.8))), hs * mix(0.035, 0.11, figH(seed + 7.9))), 7.0));
+    d = figMin(d, vec2(figCap(hp, vec3(0.0, -hs * 0.02, -hs * 0.4), vec3(0.0, hs * mix(-0.14, 0.12, figH(seed + 7.7)), -hs * mix(1.35, 2.15, figH(seed + 7.8))), hs * mix(0.05, 0.14, figH(seed + 7.9))), 7.0));
   } else if (mouth < 0.78) {
-    d = figMin(d, vec2(figCap(hp, vec3(0.0, -hs * 0.08, -hs * 0.45), vec3(hs * (figH(seed + 8.05) * 0.5 - 0.25), -hs * mix(0.25, 0.7, figH(seed + 8.1)), -hs * mix(0.9, 1.5, figH(seed + 8.12))), hs * mix(0.05, 0.1, figH(seed + 8.13))), 6.0));
+    d = figMin(d, vec2(figCap(hp, vec3(0.0, -hs * 0.06, -hs * 0.5), vec3(hs * (figH(seed + 8.05) * 0.5 - 0.25), -hs * mix(0.22, 0.7, figH(seed + 8.1)), -hs * mix(1.2, 1.85, figH(seed + 8.12))), hs * mix(0.07, 0.13, figH(seed + 8.13))), 6.0));
   } else {
-    d = figMin(d, vec2(figBox(hp - vec3(0.0, -hs * 0.14, -hs * 0.72), vec3(hs * mix(0.16, 0.34, figH(seed + 8.2)), hs * mix(0.035, 0.08, figH(seed + 8.21)), hs * 0.12)), 7.0));
+    d = figMin(d, vec2(figBox(hp - vec3(0.0, -hs * 0.12, -hs * 0.95), vec3(hs * mix(0.22, 0.42, figH(seed + 8.2)), hs * mix(0.05, 0.11, figH(seed + 8.21)), hs * 0.18)), 7.0));
   }
-  if (figH(seed + 8.3) > 0.2) {
+  if (figH(seed + 8.3) > 0.12) {
     for (int i = 0; i < 2; i++) {
       float side = float(i) < 0.5 ? -1.0 : 1.0;
-      vec3 earA = vec3(side * hs * 0.42, hs * 0.5, hs * 0.05);
-      vec3 earB = vec3(side * hs * mix(0.5, 1.15, figH(seed + 8.4)), hs * mix(0.65, 1.5, figH(seed + 8.5)), hs * mix(-0.15, 0.28, figH(seed + 8.6)));
-      if (figH(seed + 8.7) > 0.62) d = figMin(d, vec2(figBox(hp - earB, vec3(hs * 0.07, hs * mix(0.12, 0.22, figH(seed + 8.8)), hs * 0.04)), 7.5));
-      else d = figMin(d, vec2(figCap(hp, earA, earB, hs * mix(0.035, 0.11, figH(seed + 8.9))), 7.5));
+      vec3 earA = vec3(side * hs * 0.48, hs * 0.55, hs * 0.08);
+      vec3 earB = vec3(side * hs * mix(0.62, 1.35, figH(seed + 8.4)), hs * mix(0.75, 1.7, figH(seed + 8.5)), hs * mix(-0.1, 0.32, figH(seed + 8.6)));
+      if (figH(seed + 8.7) > 0.62) d = figMin(d, vec2(figBox(hp - earB, vec3(hs * 0.09, hs * mix(0.16, 0.28, figH(seed + 8.8)), hs * 0.055)), 7.5));
+      else d = figMin(d, vec2(figCap(hp, earA, earB, hs * mix(0.05, 0.14, figH(seed + 8.9))), 7.5));
     }
   }
-  if (figH(seed + 9.1) > 0.52) {
+  if (figH(seed + 9.1) > 0.42) {
     for (int i = 0; i < 2; i++) {
       float side = float(i) < 0.5 ? -1.0 : 1.0;
-      d = figMin(d, vec2(figCap(hp, vec3(side * hs * 0.14, -hs * 0.16, -hs * 0.5), vec3(side * hs * mix(0.12, 0.28, figH(seed + 9.2)), -hs * mix(0.32, 0.55, figH(seed + 9.3)), -hs * mix(0.7, 1.05, figH(seed + 9.4))), hs * 0.032), 8.0));
+      d = figMin(d, vec2(figCap(hp, vec3(side * hs * 0.16, -hs * 0.14, -hs * 0.62), vec3(side * hs * mix(0.14, 0.32, figH(seed + 9.2)), -hs * mix(0.36, 0.62, figH(seed + 9.3)), -hs * mix(0.95, 1.35, figH(seed + 9.4))), hs * 0.042), 8.0));
     }
   }
   return d;
@@ -98,46 +99,43 @@ vec2 figureFace(vec3 hp, float seed, float hs) {
 vec2 figureMap(vec3 p, float seed, float t) {
   t = figDanceT(seed, t);
   float style = figDanceStyle(seed);
-  float sway = sin(t * 3.4) * mix(0.08, 0.28, figH(seed + 0.31));
+  float facing = mix(-0.28, 0.28, figH(seed + 0.48));
+  float sway = sin(t * 3.4) * mix(0.06, 0.16, figH(seed + 0.31));
   float bob = abs(sin(t * 6.6)) * mix(0.02, 0.12, figH(seed + 0.37));
-  float spin = t * mix(-0.35, 0.35, figH(seed + 0.43));
+  float spin = 0.0;
   float lean = 0.0;
   float slide = 0.0;
   float peck = 0.0;
   if (style < 0.5) {
-    sway = sin(t * 3.4) * mix(0.08, 0.28, figH(seed + 0.31));
+    sway = sin(t * 3.4) * mix(0.06, 0.16, figH(seed + 0.31));
   } else if (style < 1.5) {
     bob = abs(sin(t * 9.4)) * 0.045;
-    sway = sin(t * 8.2) * 0.1;
-    peck = 0.85 * max(0.0, sin(t * 10.5));
-    spin *= 0.25;
+    sway = sin(t * 8.2) * 0.08;
+    peck = 0.7 * max(0.0, sin(t * 10.5));
   } else if (style < 2.5) {
-    spin = t * mix(2.2, 4.6, figH(seed + 0.44));
-    sway = sin(t * 1.15) * 0.42;
+    spin = t * mix(1.6, 3.2, figH(seed + 0.44));
+    sway = sin(t * 1.15) * 0.22;
     bob = abs(sin(t * 3.1)) * 0.07;
   } else if (style < 3.5) {
-    lean = 1.08 + 0.14 * sin(t * 2.4);
-    bob = -0.2 + 0.05 * sin(t * 1.6);
-    spin = t * 0.18;
+    lean = 0.85 + 0.12 * sin(t * 2.4);
+    bob = -0.18 + 0.05 * sin(t * 1.6);
   } else if (style < 4.5) {
     bob = 0.24 * max(0.0, sin(t * 5.9));
-    sway = sin(t * 5.9) * 0.08;
+    sway = sin(t * 5.9) * 0.06;
   } else if (style < 5.5) {
     slide = sin(t * 1.85) * 0.4;
-    sway = -0.2 * sign(cos(t * 1.85) + 0.0001);
+    sway = -0.16 * sign(cos(t * 1.85) + 0.0001);
     bob = abs(sin(t * 8.4)) * 0.03;
-    spin *= 0.15;
   } else if (style < 6.5) {
     bob = abs(sin(t * 12.5)) * 0.055;
-    sway = sin(t * 25.0) * 0.05;
-    spin *= 0.2;
+    sway = sin(t * 25.0) * 0.04;
   } else {
-    sway = sin(t * 5.6) * 0.48;
+    sway = sin(t * 5.6) * 0.28;
     bob = sin(t * 8.3) * 0.1;
-    p = figRotX(p, sin(t * 6.1) * 0.32);
+    p = figRotX(p, sin(t * 6.1) * 0.22);
   }
   p.x += slide;
-  p = figRotY(p, spin + sway);
+  p = figRotY(p, facing + spin + sway);
   p = figRotZ(p, lean);
   p.y -= bob;
   p.x *= mix(0.72, 1.38, figH(seed + 1.22));
@@ -157,11 +155,11 @@ vec2 figureMap(vec3 p, float seed, float t) {
     d = figMin(d, vec2(figCap(p, vec3(0.0, ts.y * 0.65, 0.0), vec3(0.0, ts.y + neck, 0.0), mix(0.035, 0.08, figH(seed + 2.06))), 1.0));
   }
   vec3 hp = p - vec3(0.0, ts.y + mix(0.16, 0.28, figH(seed + 2.1)) + neck, 0.0);
-  hp = figRotZ(hp, sin(t * 4.1) * 0.28);
-  hp = figRotX(hp, cos(t * 3.2) * 0.12 - peck);
+  hp = figRotZ(hp, sin(t * 4.1) * 0.1);
+  hp = figRotX(hp, cos(t * 3.2) * 0.06 - peck);
   float headKind = figH(seed + 2.2);
-  float hs = mix(0.1, 0.36, pow(figH(seed + 2.3), 0.82));
-  if (figH(seed + 2.35) > 0.84) hs *= 1.5;
+  float hs = mix(0.2, 0.46, pow(figH(seed + 2.3), 0.75));
+  if (figH(seed + 2.35) > 0.84) hs *= 1.35;
   if (headKind < 0.3) d = figMin(d, vec2(figOcta(hp, hs * 1.35), 2.0));
   else if (headKind < 0.6) d = figMin(d, vec2(figBox(hp, vec3(hs, hs * 1.05, hs * 0.85)), 2.0));
   else if (headKind < 0.82) {
@@ -278,6 +276,16 @@ vec3 figCrowdOff(int i, float n, float seed) {
   float r = mix(0.62, 1.08, figH(seed + float(i) * 4.7 + 2.2));
   return vec3(cos(a) * r, 0.0, sin(a) * r * 0.38);
 }
+vec3 figPlace(int i, float n, float seed, float scatter) {
+  vec3 crowd = figCrowdOff(i, n, seed);
+  crowd.z += (figH(seed + float(i) * 3.3 + 8.8) - 0.5) * 0.16;
+  vec3 rnd = vec3(
+    (figH(seed + float(i) * 11.7 + 1.1) * 2.0 - 1.0) * 1.48,
+    (figH(seed + float(i) * 11.7 + 2.4) * 2.0 - 1.0) * 0.64,
+    mix(-1.35, 0.95, figH(seed + float(i) * 11.7 + 3.9))
+  );
+  return mix(crowd, rnd, clamp(scatter, 0.0, 1.0));
+}
 vec4 figureShade(vec3 p, vec3 rd, float seed, float time, float matId) {
   vec3 n = figNormal(p, seed, time);
   vec3 l = normalize(vec3(0.45, 0.85, 0.4));
@@ -290,20 +298,20 @@ vec4 figureShade(vec3 p, vec3 rd, float seed, float time, float matId) {
   col = mix(col, albedo * 0.12, outline * 0.85);
   return vec4(col, 1.0);
 }
-vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count) {
+vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, float scatter) {
   float aspect = uResolution.x / max(uResolution.y, 1.0);
-  vec2 q = (uv - vec2(0.5, 0.40)) * vec2(aspect, 1.0);
+  vec2 q = (uv - vec2(0.5, 0.42)) * vec2(aspect, 1.0);
   vec4 miss = vec4(0.0);
   float shadow = smoothstep(0.22, 0.02, length((uv - vec2(0.5, 0.78)) * vec2(1.6, 3.2)));
   miss.rgb = vec3(0.0);
-  miss.a = shadow * 0.35;
+  miss.a = shadow * 0.35 * (1.0 - clamp(scatter, 0.0, 1.0));
   float n = clamp(count, 1.0, 4.0);
-  if (dot(q, q) > mix(0.62, 1.85, step(1.5, n)) && uv.y > 0.22) return miss;
+  float spread = max(step(1.5, n), scatter);
+  if (dot(q, q) > mix(0.72, 2.35, spread) && uv.y > 0.08) return miss;
   float camZ = mix(4.55, 1.72, clamp((sizeMul - 0.25) / 2.25, 0.0, 1.0));
-  float camA = figH(seed + 0.5) * 0.5 - 0.25;
-  if (figH(seed + 0.55) > 0.6) camA += time * mix(-0.25, 0.25, figH(seed + 0.56));
-  vec3 ro = figRotY(vec3(0.0, 0.5, camZ), camA);
-  vec3 ta = vec3(0.0, 0.16, 0.0);
+  float camA = figH(seed + 0.5) * 0.22 - 0.11;
+  vec3 ro = figRotY(vec3(0.0, 0.42, camZ), camA);
+  vec3 ta = vec3(0.0, 0.32, 0.0);
   vec3 ww = normalize(ta - ro);
   vec3 uu = normalize(cross(vec3(0.0, 1.0, 0.0), ww));
   vec3 vv = cross(ww, uu);
@@ -321,7 +329,7 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count) {
   for (int i = 0; i < 4; i++) {
     if (i >= k) break;
     float sid = seed + float(i) * 17.31 + 0.07;
-    vec3 off = figCrowdOff(i, n, seed);
+    vec3 off = figPlace(i, n, seed, scatter);
     float tRay = 0.0;
     vec2 hit = vec2(1e5, 0.0);
     for (int s = 0; s < 28; s++) {

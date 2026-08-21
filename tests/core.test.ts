@@ -119,12 +119,15 @@ describe("effects registry", () => {
     const idol = getEffect("dancer")!;
     expect(idol.params.find((p) => p.id === "count")?.default).toBe(1);
     expect(Number(idol.params.find((p) => p.id === "size")?.default)).toBeLessThan(0.8);
+    expect(idol.params.find((p) => p.id === "place")?.default).toBe("center");
     const idolSrc = compileEffectSource(idol);
     expect(idolSrc.includes("figureMap")).toBe(true);
     expect(idolSrc.includes("figureFace")).toBe(true);
     expect(idolSrc.includes("figureRender")).toBe(true);
     expect(idolSrc.includes("figCrowdOff")).toBe(true);
+    expect(idolSrc.includes("figPlace")).toBe(true);
     expect(idolSrc.includes("figDanceStyle")).toBe(true);
+    expect(idolSrc.includes("u_place")).toBe(true);
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {

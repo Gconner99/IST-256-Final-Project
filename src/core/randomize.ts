@@ -180,6 +180,7 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.size = 0.42 + rng() * 0.5;
     p.count = 1 + Math.floor(rng() * 3);
     if (rng() > 0.84) p.count = 4;
+    p.place = rng() > 0.48 ? "scatter" : "center";
     p.amount = 0.85 + rng() * 0.15;
     p.speed = 0.55 + rng() * 1.5;
     p.seed = 1 + Math.floor(rng() * 9998);
