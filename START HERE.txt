@@ -1,22 +1,31 @@
 PHOSPHENE
 =========
 
-This is a program that runs on YOUR computer.
-You do not need GitHub, Cursor, or any coding.
+Do NOT open the files inside Cursor.
+Cursor will show the code instead of running the program.
 
-HOW TO OPEN IT
---------------
+HOW TO OPEN IT (Windows)
+------------------------
 
-1. Unzip the folder if you have not already.
-2. Double-click the file named:
+1. Open File Explorer (folder icon on the taskbar, or Windows key + E).
+2. Go to the Phosphene folder on your Desktop / Downloads.
+3. Double-click:
 
-      PHOSPHENE.html
+      Start Phosphene.bat
 
-3. It will open in your web browser (Chrome, Edge, or Safari).
-   That browser window IS the program.
+   A black command window should flash, then Chrome or Edge opens.
+   THAT browser window is the program.
 
-The first time, if nothing happens, right-click PHOSPHENE.html
-and choose Open With → Chrome (or Edge).
+If you click PHOSPHENE.html inside Cursor, it will open as a text file.
+That is the wrong way. Use File Explorer and the .bat file.
+
+
+HOW TO OPEN IT (Mac)
+--------------------
+
+1. Open Finder (not Cursor).
+2. Go to the Phosphene folder.
+3. Right-click  Start Phosphene.command  → Open.
 
 
 HOW TO USE IT
@@ -25,13 +34,5 @@ HOW TO USE IT
 - Drag a photo or video onto the big dark area
   OR click Plasma / Noise / Bars on the left
 - Type a prompt on the left and click Generate to make a NEW image
-  (turn on “use selected source as reference” to keep the mood of your photo)
 - Click New at the top to start over
-- Move the sliders. The picture changes immediately.
-- Click Export (bottom right) to save a picture to Downloads.
-
-
-TO OPEN IT AGAIN LATER
-----------------------
-
-Find this same folder and double-click PHOSPHENE.html again.
+- Move the sliders. Click Export to save.
