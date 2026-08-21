@@ -10,8 +10,8 @@
   --cyan: #3ee0ff;
   --warn: #ffb020;
   --shadow: rgba(0, 0, 0, 0.55);
-  --mono: "IBM Plex Mono", ui-monospace, monospace;
-  --display: "Syne", "IBM Plex Mono", sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
+  --display: ui-sans-serif, "Segoe UI", system-ui, sans-serif;
   font-synthesis: none;
 }
 
