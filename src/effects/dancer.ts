@@ -5,7 +5,7 @@ export const dancer: EffectType = {
   id: "dancer",
   name: "Idol",
   category: "wacky",
-  description: "Seed-grown low-poly creatures with faces like animals that do not exist. Count plants a spaced crowd. Echo leaves a hue-shifted afterimage. Place can scatter them with depth",
+  description: "Seed-grown low-poly creatures with faces like animals that do not exist. Echo leaves a hue-shifted afterimage. Count plants a spaced crowd. Place can scatter them with depth",
   params: [
     { id: "count", label: "Count", kind: "int", min: 1, max: 4, step: 1, default: 1 },
     { id: "size", label: "Size", kind: "float", min: 0.25, max: 2.5, step: 0.01, default: 0.65 },
@@ -19,7 +19,7 @@ export const dancer: EffectType = {
         { value: "scatter", label: "Scatter + depth" },
       ],
     },
-    { id: "echo", label: "Echo", kind: "float", min: 0, max: 1, step: 0.01, default: 0.55 },
+    { id: "echo", label: "Echo", kind: "float", min: 0, max: 1, step: 0.01, default: 0.5 },
     { id: "seed", label: "Seed", kind: "int", min: 1, max: 9999, step: 1, default: 256 },
     { id: "speed", label: "Dance", kind: "float", min: 0, max: 3, step: 0.01, default: 1.0 },
     { id: "amount", label: "Amount", kind: "float", min: 0, max: 1, step: 0.01, default: 1 },
