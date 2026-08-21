@@ -40,6 +40,7 @@ Requires a browser (or Electron) with **WebGL2**.
 ## MVP
 
 - Image + video import (drag/drop, replace, freeze a video frame as a still)
+- **Soundtrack**: drop an MP3 / wav / ogg / m4a. Playback follows the song; idols and floaters move with the mix. Exported clips are visual-only for now.
 - Procedural generators (plasma, noise, bars, gradient, checker, **floaters**) so it makes pictures with no files
 - Real-time WebGL2 preview (draft / preview / full quality)
 - Layers: opacity, blend modes, transform, enable, duplicate
@@ -59,7 +60,7 @@ src/
   core/        project state, timeline, presets, RNG, JSON
   engine/      WebGL2 renderer, FBOs, shader compiler
   effects/     one EffectType per look — add files, don't rewrite the app
-  media/       image/video loaders
+  media/       image/video/audio loaders
   export/      still / sequence / webm / mp4 clips
   ui/          instrument chrome
 electron/      desktop window

@@ -1,5 +1,6 @@
 import { uid } from "../core/ids";
 import type { MediaSource } from "../core/types";
+import { isAudioFile, loadAudio } from "./audio";
 
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|bmp|tiff?|avif)$/i;
 const VIDEO_EXT = /\.(mp4|mov|webm|mkv|m4v|avi|ogv)$/i;
@@ -15,6 +16,7 @@ export function isImageFile(file: File): boolean {
 export async function loadMediaFile(file: File): Promise<MediaSource> {
   if (isVideoFile(file)) return loadVideo(file);
   if (isImageFile(file)) return loadImage(file);
+  if (isAudioFile(file)) return loadAudio(file);
   throw new Error(`Unsupported media: ${file.name}`);
 }
 
@@ -117,8 +119,11 @@ export async function freezeVideoFrame(source: MediaSource): Promise<MediaSource
 export function disposeSource(source: MediaSource) {
   if (source.objectUrl) URL.revokeObjectURL(source.objectUrl);
   source.video?.pause();
+  source.audio?.pause();
   source.bitmap = null;
   source.video = null;
+  source.audio = null;
+  source.pcm = null;
   source.frozenFrame = null;
 }
 

@@ -51,11 +51,12 @@ struct Fig {
   float sx, sz, torsoKind, neck, hs, headKind, horn;
   float kickHz, kickAmt, extraLeg, arms, pack, tail, orb;
   float nEyes, eyeY, eyeZ, eyeSpread, eyeR, eyeSq, mouth, ears, tusks;
+  float petals, skirt, antenna, halo, blush;
   vec3 ts;
 };
 Fig figRoll(float seed, float time) {
   Fig f;
-  f.t = figDanceT(seed, time);
+  f.t = figDanceT(seed, time + (u_audio > 0.001 ? u_audio * 0.12 : 0.0));
   f.style = figDanceStyle(seed);
   f.facing = mix(-0.28, 0.28, figH(seed + 0.48));
   f.sway = sin(f.t * 3.4) * mix(0.06, 0.16, figH(seed + 0.31));
@@ -126,6 +127,17 @@ Fig figRoll(float seed, float time) {
   f.mouth = figH(seed + 7.0);
   f.ears = step(0.06, figH(seed + 8.3));
   f.tusks = step(0.28, figH(seed + 9.1));
+  f.petals = step(0.62, figH(seed + 0.52));
+  f.skirt = step(0.58, figH(seed + 0.58));
+  f.antenna = step(0.66, figH(seed + 0.64));
+  f.halo = step(0.72, figH(seed + 0.70));
+  f.blush = step(0.42, figH(seed + 0.74));
+  if (f.petals > 0.5) f.halo = 0.0;
+  if (u_audio > 0.001) {
+    f.kickAmt *= mix(1.0, 1.65, u_bass);
+    f.bob += u_bass * 0.055;
+    f.sway += (u_audio - 0.35) * 0.05;
+  }
   return f;
 }
 vec2 figureFaceF(vec3 hp, Fig f) {
@@ -160,6 +172,30 @@ vec2 figureFaceF(vec3 hp, Fig f) {
   if (f.tusks > 0.5) {
     d = figMin(d, vec2(figCap(hp, vec3(-hs * 0.16, -hs * 0.14, -hs * 0.62), vec3(-hs * 0.22, -hs * 0.48, -hs * 1.1), hs * 0.042), 8.0));
     d = figMin(d, vec2(figCap(hp, vec3(hs * 0.16, -hs * 0.14, -hs * 0.62), vec3(hs * 0.22, -hs * 0.48, -hs * 1.1), hs * 0.042), 8.0));
+  }
+  if (f.blush > 0.5) {
+    d = figMin(d, vec2(length(hp - vec3(-hs * 0.42, -hs * 0.06, f.eyeZ * 0.62)) - hs * 0.12, 6.9));
+    d = figMin(d, vec2(length(hp - vec3(hs * 0.42, -hs * 0.06, f.eyeZ * 0.62)) - hs * 0.12, 6.9));
+  }
+  if (f.petals > 0.5 && uQuality >= 0.5) {
+    for (int k = 0; k < 5; k++) {
+      float a = float(k) * 1.25663706 + 0.18;
+      vec3 tip = vec3(sin(a) * hs * 1.32, cos(a) * hs * 1.18, -hs * 0.12);
+      d = figMin(d, vec2(figCap(hp, vec3(0.0, hs * 0.18, 0.0), tip, hs * 0.068), 6.9));
+    }
+  }
+  if (f.antenna > 0.5) {
+    vec3 al = vec3(-hs * 0.38, hs * 1.82, 0.06);
+    vec3 ar = vec3(hs * 0.4, hs * 1.72, 0.04);
+    d = figMin(d, vec2(figCap(hp, vec3(-hs * 0.22, hs * 0.62, 0.0), al, 0.026), 4.0));
+    d = figMin(d, vec2(figCap(hp, vec3(hs * 0.22, hs * 0.58, 0.0), ar, 0.024), 4.0));
+    d = figMin(d, vec2(length(hp - al) - 0.05, 6.9));
+    d = figMin(d, vec2(length(hp - ar) - 0.045, 6.9));
+  }
+  if (f.halo > 0.5) {
+    vec3 hz = hp - vec3(0.0, hs * 0.42, 0.0);
+    float ring = abs(length(hz.xy) - hs * 1.32) - 0.032;
+    d = figMin(d, vec2(max(ring, abs(hz.z) - 0.022), 8.0));
   }
   return d;
 }
@@ -234,6 +270,11 @@ vec2 figureHit(vec3 p, Fig f, float seed) {
     d = figMin(d, vec2(figCap(p, tb, te, 0.05), 1.5));
   }
   if (f.orb > 0.5) d = figMin(d, vec2(length(p - vec3(0.32, 0.12, 0.12)) - 0.1, 4.0));
+  if (f.skirt > 0.5) {
+    vec3 sp = p - vec3(0.0, -f.ts.y * 0.58, 0.0);
+    float ring = abs(length(sp.xz) - f.ts.x * 1.28) - 0.07;
+    d = figMin(d, vec2(max(ring, abs(sp.y) - 0.055), 6.9));
+  }
   float sMin = min(f.sx, f.sz);
   d.x *= sMin;
   return d;
@@ -424,7 +465,7 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, f
     float sid = seed + float(i) * 17.31 + 0.07;
     vec3 off = figCarry(figPlace(i, n, seed, scatter), sid, time, move);
     float tEnter;
-    if (!figRaySphere(ro, rd, off, 1.55, tEnter)) continue;
+    if (!figRaySphere(ro, rd, off, 1.88, tEnter)) continue;
     Fig f = figSoften(figRoll(sid, time), move);
     float tRay = tEnter;
     vec2 hit = vec2(1e5, 0.0);

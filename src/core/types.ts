@@ -1,5 +1,5 @@
 export type QualityMode = "draft" | "preview" | "export";
-export type SourceKind = "image" | "video" | "generator";
+export type SourceKind = "image" | "video" | "generator" | "audio";
 export type GeneratorType = "plasma" | "noise" | "bars" | "gradient" | "solid" | "checker" | "critters";
 export type BlendMode =
   | "normal"
@@ -107,6 +107,8 @@ export interface MediaSource {
   /** Runtime only — not serialized. */
   bitmap?: ImageBitmap | HTMLImageElement | null;
   video?: HTMLVideoElement | null;
+  audio?: HTMLAudioElement | null;
+  pcm?: AudioBuffer | null;
   objectUrl?: string | null;
   frozenFrame?: ImageBitmap | null;
   /** Optional generator inks. */

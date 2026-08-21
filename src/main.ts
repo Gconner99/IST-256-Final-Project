@@ -2,6 +2,7 @@ import "./styles/app.css";
 import { store } from "./core/store";
 import { mediaTime, resolvePlaybackSpeed } from "./core/timeline";
 import { Renderer } from "./engine/renderer";
+import { applyTransport, getSoundtrack } from "./media/audio";
 import { seekVideo } from "./media/sources";
 import { mount, resizeCanvas, tickHud } from "./ui/app";
 
@@ -40,12 +41,24 @@ function frame(now: number) {
   const exporting = store.state.ui.exporting;
   const p = store.project;
   const speed = resolvePlaybackSpeed(p, p.playback.time);
+  const track = getSoundtrack(p);
   if (!exporting && p.playback.playing && !p.playback.freeze) {
-    let t = p.playback.time + dt * speed;
-    const dur = Math.max(p.duration, 0.001);
-    if (p.playback.loop) t = ((t % dur) + dur) % dur;
-    else t = Math.min(t, dur);
-    store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, time: t } }), false);
+    if (track?.audio && p.playback.mode === "forward") {
+      applyTransport(track.audio, p.playback);
+      const at = track.audio.currentTime;
+      if (Number.isFinite(at)) {
+        store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, time: at } }), false);
+      }
+    } else {
+      let t = p.playback.time + dt * speed;
+      const dur = Math.max(p.duration, 0.001);
+      if (p.playback.loop) t = ((t % dur) + dur) % dur;
+      else t = Math.min(t, dur);
+      store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, time: t } }), false);
+      if (track?.audio) applyTransport(track.audio, { ...p.playback, playing: false, time: t });
+    }
+  } else if (track?.audio) {
+    applyTransport(track.audio, { ...p.playback, playing: false });
   }
 
   for (const src of store.project.sources) {

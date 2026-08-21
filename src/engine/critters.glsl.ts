@@ -325,6 +325,8 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, flo
 }
 vec4 critterField(vec2 uv, float count, float seed, float time, float sizeMul, float kit) {
   vec4 acc = vec4(0.0);
+  time += u_audio * 0.1;
+  sizeMul *= mix(1.0, 1.1, u_bass);
   float nFam = kit > 1.5 ? 18.0 : 9.0;
   float famSpin = floor(crHash(vec2(seed * 0.071, 4.4)) * nFam);
   for (int i = 0; i < 8; i++) {

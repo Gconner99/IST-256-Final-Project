@@ -6,6 +6,7 @@ import { downloadText, parseProject, serializeProject } from "../core/project";
 import { ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
+import { resumeAudio } from "../media/audio";
 import { buildPrompt, generateStill, samplePalette } from "../generate/imagine";
 
 export function selectedLayer(p: Project): Layer | undefined {
@@ -36,10 +37,42 @@ export function addSource(source: MediaSource, assignToSelected = true) {
   store.patchUi({ selectedSourceId: source.id, status: `loaded ${source.name}` });
 }
 
+export function setSoundtrack(source: MediaSource) {
+  const old = store.project.sources.filter((s) => s.kind === "audio");
+  for (const o of old) disposeSource(o);
+  store.setProject((p) => {
+    const keep = p.sources.filter((s) => s.kind !== "audio");
+    const layers = p.layers.map((l) =>
+      old.some((o) => o.id === l.sourceId) ? { ...l, sourceId: keep.find((s) => s.kind !== "audio")?.id ?? null } : l,
+    );
+    const duration = Math.max(p.duration, source.duration || 0);
+    return { ...p, sources: [...keep, source], layers, duration };
+  });
+  void resumeAudio();
+  if (store.project.playback.playing && source.audio) {
+    try {
+      const dur = source.duration || source.audio.duration || 1;
+      source.audio.currentTime = store.project.playback.time % Math.max(dur, 0.001);
+    } catch {
+      /* metadata may still be settling */
+    }
+    void source.audio.play().catch(() => undefined);
+  }
+  const secs = source.duration ? `${Math.floor(source.duration / 60)}:${String(Math.floor(source.duration % 60)).padStart(2, "0")}` : "";
+  store.patchUi({
+    selectedSourceId: source.id,
+    status: `soundtrack ${source.name}${secs ? ` · ${secs}` : ""} — hit Play; idols follow the mix`,
+  });
+}
+
 export async function importFiles(files: FileList | File[], replace = false) {
   for (const file of Array.from(files)) {
     try {
       const src = await loadMediaFile(file);
+      if (src.kind === "audio") {
+        setSoundtrack(src);
+        continue;
+      }
       if (replace) {
         const sel = store.state.ui.selectedSourceId;
         store.setProject((p) => ({
@@ -58,7 +91,7 @@ export async function importFiles(files: FileList | File[], replace = false) {
 
 export function addLayer() {
   store.setProject((p) => {
-    const src = p.sources[0]?.id ?? null;
+    const src = p.sources.find((s) => s.kind !== "audio")?.id ?? null;
     const layer = defaultLayer(`L${p.layers.length + 1}`, src, ["grade"]);
     return { ...p, layers: [...p.layers, layer] };
   });

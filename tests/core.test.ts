@@ -11,6 +11,7 @@ import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, samplePaletteFromImageData } from "../src/generate/imagine";
+import { isAudioFile, sampleLevelsFromSamples } from "../src/media/audio";
 
 describe("seeded random", () => {
   it("is reproducible", () => {
@@ -91,12 +92,27 @@ describe("project files", () => {
   it("round-trips JSON without runtime media", () => {
     const p = createDefaultProject();
     p.sources[0].bitmap = {} as ImageBitmap;
+    p.sources.push({
+      id: "aud",
+      name: "song.mp3",
+      kind: "audio",
+      width: 0,
+      height: 0,
+      duration: 12,
+      audio: {} as HTMLAudioElement,
+      pcm: {} as AudioBuffer,
+    });
     const json = serializeProject(p);
     const loaded = parseProject(json);
     expect(loaded.app).toBe("phosphene");
     expect(loaded.layers).toHaveLength(1);
     expect(loaded.sources[0].bitmap).toBeNull();
+    expect(loaded.sources[1].kind).toBe("audio");
+    expect(loaded.sources[1].audio).toBeNull();
+    expect(loaded.sources[1].pcm).toBeNull();
     expect(json).not.toContain("bitmap");
+    expect(json).not.toContain('"audio":');
+    expect(json).not.toContain('"pcm":');
   });
 
   it("rejects unknown files", () => {
@@ -164,6 +180,13 @@ describe("effects registry", () => {
     expect(idolSrc.includes("figRaySphere")).toBe(true);
     expect(idolSrc.includes("figureHit")).toBe(true);
     expect(idolSrc.includes("u_echo")).toBe(true);
+    expect(idolSrc.includes("f.petals")).toBe(true);
+    expect(idolSrc.includes("f.skirt")).toBe(true);
+    expect(idolSrc.includes("f.antenna")).toBe(true);
+    expect(idolSrc.includes("f.halo")).toBe(true);
+    expect(idolSrc.includes("f.blush")).toBe(true);
+    expect(idolSrc.includes("u_audio")).toBe(true);
+    expect(idolSrc.includes("u_bass")).toBe(true);
     const miniSrc = compileEffectSource(dancerForCompile(true));
     expect(miniSrc.includes("figureRenderMini")).toBe(true);
     expect(miniSrc.includes("figWildMini")).toBe(true);
@@ -252,5 +275,25 @@ describe("prompt generation", () => {
     const palette = samplePaletteFromImageData(data, 24, 24);
     expect(palette[0]).toBe("#0a141e");
     expect(palette.length).toBeGreaterThan(0);
+  });
+});
+
+describe("soundtrack", () => {
+  it("detects audio files by type or extension", () => {
+    expect(isAudioFile({ name: "song.mp3", type: "audio/mpeg" })).toBe(true);
+    expect(isAudioFile({ name: "mix.WAV", type: "" })).toBe(true);
+    expect(isAudioFile({ name: "pic.png", type: "image/png" })).toBe(false);
+    expect(isAudioFile({ name: "clip.mp4", type: "video/mp4" })).toBe(false);
+  });
+
+  it("reads energy from a loud sample window", () => {
+    const sr = 44100;
+    const ch = new Float32Array(sr);
+    for (let i = 0; i < ch.length; i++) ch[i] = Math.sin((i / sr) * Math.PI * 2 * 80) * 0.8;
+    const loud = sampleLevelsFromSamples(ch, sr, 1, 0.1);
+    const quiet = sampleLevelsFromSamples(new Float32Array(sr), sr, 1, 0.1);
+    expect(loud.energy).toBeGreaterThan(0.2);
+    expect(loud.bass).toBeGreaterThan(0.1);
+    expect(quiet.energy).toBeLessThan(0.05);
   });
 });

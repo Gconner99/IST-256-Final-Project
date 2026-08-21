@@ -25,6 +25,8 @@ uniform float uTime;
 uniform float uFrame;
 uniform float u_mix;
 uniform float uQuality;
+uniform float u_audio;
+uniform float u_bass;
 uniform vec2 uTexel;
 
 uniform int u_maskType;
@@ -219,6 +221,8 @@ uniform vec3 uColorA;
 uniform vec3 uColorB;
 uniform float uScale;
 uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
 ${CRITTER_GLSL}
 float hash21(vec2 p) {
   p = fract(p * vec2(123.34, 345.45));

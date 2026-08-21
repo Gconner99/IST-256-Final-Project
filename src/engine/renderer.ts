@@ -2,6 +2,7 @@ import type { EffectInstance, Layer, MediaSource, Project, QualityMode } from ".
 import { resolvedLayerParams } from "../core/timeline";
 import { dancerForCompile } from "../effects/dancer";
 import { allEffects, getEffect } from "../effects/registry";
+import { getSoundtrack, sampleAudio } from "../media/audio";
 import {
   BLEND_INDEX,
   bindTex,
@@ -48,6 +49,8 @@ export class Renderer {
   private ringIndex = 0;
   private layerHist = new Map<string, FBO>();
   private sourceTex = new Map<string, WebGLTexture>();
+  private audioEnergy = 0;
+  private audioBass = 0;
   private effectProg = new Map<string, Program>();
   private copy: Program;
   private blit: Program;
@@ -176,6 +179,8 @@ export class Renderer {
     this.generatorProg.v3("uColorB", b[0], b[1], b[2]);
     this.generatorProg.f("uScale", 6);
     this.generatorProg.f("uSeed", seed);
+    this.generatorProg.f("u_audio", this.audioEnergy);
+    this.generatorProg.f("u_bass", this.audioBass);
     drawTri(gl);
   }
 
@@ -226,6 +231,8 @@ export class Renderer {
     prog.f("uTime", time);
     prog.f("uFrame", frame);
     prog.f("uQuality", quality === "draft" ? 0 : quality === "preview" ? 1 : 2);
+    prog.f("u_audio", this.audioEnergy);
+    prog.f("u_bass", this.audioBass);
     prog.v2("u_translate", layer.transform.x, layer.transform.y);
     prog.f("u_scale", layer.transform.scale);
     prog.f("u_rotation", layer.transform.rotation);
@@ -276,13 +283,17 @@ export class Renderer {
     const readIdx = (this.ringIndex - 1 - delay + RING * 8) % RING;
     const feedbackTex = this.ring[readIdx].tex;
     const frame = Math.floor(time * project.fps);
+    const mix = sampleAudio(getSoundtrack(project), time);
+    this.audioEnergy = mix.energy;
+    this.audioBass = mix.bass;
 
     for (const rawLayer of project.layers) {
       if (!rawLayer.enabled) continue;
       const layer = resolvedLayerParams(project, rawLayer, time);
       const src = project.sources.find((s) => s.id === layer.sourceId) ?? null;
-      if (!src || src.kind === "generator") {
-        this.drawGenerator(this.ping, src ?? { generator: "plasma" } as MediaSource, time, project.seed);
+      if (!src || src.kind === "generator" || src.kind === "audio") {
+        const gen = src && src.kind !== "audio" ? src : ({ generator: "plasma" } as MediaSource);
+        this.drawGenerator(this.ping, gen, time, project.seed);
       } else {
         const tex = this.uploadSource(src);
         this.drawTexture(this.ping, tex, layer);

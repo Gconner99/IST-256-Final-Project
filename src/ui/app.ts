@@ -33,6 +33,7 @@ import {
   stampIdol,
   toggleEffect,
 } from "./actions";
+import { resumeAudio } from "../media/audio";
 import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
 import { defaultGeneratorSource } from "../core/defaults";
 
@@ -81,7 +82,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <section class="stage">
         <div class="viewport" id="view">
           <div class="hud" id="hud"></div>
-          <div class="dropveil" id="veil">DROP IMAGE / VIDEO</div>
+          <div class="dropveil" id="veil">DROP IMAGE / VIDEO / AUDIO</div>
         </div>
       </section>
       <aside class="stack" id="stack"></aside>
@@ -97,9 +98,10 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>K</kbd> keyframe selected parameter</li>
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
-          <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it.</li>
+          <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt, xerox, and drifting shapes. Keep the <em>floaters</em> box on to send one-off colored objects across the frame.</li>
-          <li><strong>Idol</strong> plants a small low-poly 3D creature — stamp it to grow a weirder one. Move can dance in place, drift across the frame, float, or orbit. Crowd can switch to a mini army. Keep the top-bar box on so Rand all includes it.</li>
+          <li><strong>Idol</strong> plants a small low-poly 3D creature — stamp it to grow a weirder one (petals, skirts, antennae, halos). Move can dance in place, drift across the frame, float, or orbit. Crowd can switch to a mini army. Keep the top-bar box on so Rand all includes it.</li>
+          <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass. Exported clips are silent for now — the motion still follows the mix.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
@@ -235,16 +237,22 @@ function bind(root: HTMLElement) {
       const p = store.project;
       const layer = selectedLayer(p);
       const src = p.sources.find((s) => s.id === (layer?.sourceId ?? p.sources[0]?.id));
-      const size = sizeFromSource(src?.width ?? 1280, src?.height ?? 720, 1280);
+      const pic = src?.kind === "audio"
+        ? p.sources.find((s) => s.kind !== "audio")
+        : src;
+      const size = sizeFromSource(pic?.width ?? 1280, pic?.height ?? 720, 1280);
       store.setProject((pr) => ({
         ...pr,
         exportSettings: { ...pr.exportSettings, width: size.width, height: size.height },
       }));
     }
     if (act === "play") {
+      void resumeAudio();
       store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: !p.playback.playing } }));
     }
     if (act === "use-src" && id) {
+      const picked = store.project.sources.find((s) => s.id === id);
+      if (picked?.kind === "audio") return;
       const lyr = selectedLayer(store.project);
       if (lyr) patchLayer(lyr.id, (l) => ({ ...l, sourceId: id }));
     }
@@ -371,6 +379,7 @@ function bind(root: HTMLElement) {
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
     if (e.code === "Space") {
       e.preventDefault();
+      void resumeAudio();
       store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: !p.playback.playing } }));
     }
     if (e.key === "r" || e.key === "R") randomize(e.shiftKey ? "all" : "selected");
@@ -435,8 +444,8 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="import">Import</button>
       <button class="btn tiny" data-act="replace">Replace</button>
       <button class="btn tiny" data-act="freeze">Still frame</button>
-      <input id="media-file" type="file" accept="image/*,video/*,.tif,.tiff,.mov,.webm,.mp4,.gif" multiple hidden />
-      <input id="replace-file" type="file" accept="image/*,video/*,.tif,.tiff,.mov,.webm,.mp4,.gif" hidden />
+      <input id="media-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" multiple hidden />
+      <input id="replace-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden />
     </div>
     <hr class="div" />
     <div class="sec">Generate new image</div>
@@ -456,14 +465,22 @@ function paintRail(n: HTMLElement) {
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Floaters drift across — Kit on the Floaters effect picks lumpy shapes, toy-pop music icons, or both. An idol is one small low-poly dancer. Move can drift, float, or orbit. Crowd → Mini army fills the frame with tiny ones.</div>
+    <div class="status" style="margin-top:4px">Floaters drift across — Kit on the Floaters effect picks lumpy shapes, toy-pop music icons, or both. An idol is one small low-poly dancer. Move can drift, float, or orbit. Crowd → Mini army fills the frame with tiny ones. Drop an MP3 to make them dance to the song.</div>
     <div style="margin-top:8px">
-      ${p.sources.map((s) => `
+      ${p.sources.map((s) => {
+        const meta = s.kind === "audio"
+          ? `soundtrack · ${fmtTime(s.duration || 0)}`
+          : `${s.kind} ${s.width}×${s.height}`;
+        const useBtn = s.kind === "audio"
+          ? `<span class="status">mix</span>`
+          : `<button class="btn tiny" data-act="use-src" data-id="${s.id}">use</button>`;
+        return `
         <div class="thumb ${s.id === ui.selectedSourceId ? "on" : ""}" data-act="sel-src" data-id="${s.id}">
           <div class="sw" style="background:linear-gradient(135deg,#2a1830,#c8ff3d33)"></div>
-          <div class="meta"><b>${esc(s.name)}</b><span>${s.kind} ${s.width}×${s.height}</span></div>
-          <button class="btn tiny" data-act="use-src" data-id="${s.id}">use</button>
-        </div>`).join("")}
+          <div class="meta"><b>${esc(s.name)}</b><span>${meta}</span></div>
+          ${useBtn}
+        </div>`;
+      }).join("")}
     </div>
     <hr class="div" />
     <div class="sec">Feedback bus</div>

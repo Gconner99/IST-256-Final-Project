@@ -1,6 +1,6 @@
 import type { MediaSource, Project } from "./types";
 
-const RUNTIME_KEYS = new Set(["bitmap", "video", "objectUrl", "frozenFrame"]);
+const RUNTIME_KEYS = new Set(["bitmap", "video", "audio", "pcm", "objectUrl", "frozenFrame"]);
 
 export function serializeProject(project: Project): string {
   const clean: Project = JSON.parse(
@@ -29,6 +29,8 @@ export function stripRuntime(source: MediaSource): MediaSource {
     ...source,
     bitmap: null,
     video: null,
+    audio: null,
+    pcm: null,
     objectUrl: null,
     frozenFrame: null,
   };
