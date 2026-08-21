@@ -1,0 +1,32 @@
+{
+  "name": "phosphene",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phosphene — a personal visual instrument / digital darkroom for experimental video and photo art.",
+  "type": "module",
+  "main": "electron/main.mjs",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "desktop": "concurrently -k \"vite --port 5173 --strictPort\" \"wait-on http://127.0.0.1:5173 && cross-env PHOSPHENE_DEV=1 electron electron/main.mjs\"",
+    "desktop:build": "vite build && electron electron/main.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.1",
+    "jsdom": "^25.0.1",
+    "jszip": "^3.10.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8",
+    "wait-on": "^8.0.1"
+  }
+}

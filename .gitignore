@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-electron
+release
+out
+.vite
+*.log
+.DS_Store
+coverage
+.cache
+*.local
+.idea
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+electron/user-data
