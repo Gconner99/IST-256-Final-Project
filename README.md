@@ -6,9 +6,11 @@ Not a Premiere or Photoshop clone. Phosphene is a GPU effect pipeline with a tac
 
 ## If you don’t write code
 
-Double-click **`PHOSPHENE.html`**. That is the whole program. No install.
+Do **not** open the files inside Cursor.
 
-If the zip is still zipped, unzip it first. Read `START HERE.txt` if you get stuck.
+On Windows, open the folder in **File Explorer** and double-click **`Start Phosphene.bat`**. A command window flashes, then Chrome or Edge opens — that browser window is the program.
+
+Read `START HERE.txt` if you get stuck.
 
 ## Run (developers)
 
