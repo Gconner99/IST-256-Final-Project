@@ -40,14 +40,14 @@ Requires a browser (or Electron) with **WebGL2**.
 ## MVP
 
 - Image + video import (drag/drop, replace, freeze a video frame as a still)
-- Procedural generators (plasma, noise, bars, gradient, checker, **critters**) so it makes pictures with no files
+- Procedural generators (plasma, noise, bars, gradient, checker, **floaters**) so it makes pictures with no files
 - Real-time WebGL2 preview (draft / preview / full quality)
 - Layers: opacity, blend modes, transform, enable, duplicate
 - Modular effects stack (bypass, reorder, per-effect mix + mask)
-- ~18 effects including a **Wacky** category: randomly generated little weird creature characters (stamp them on footage, or generate a critter field)
+- ~18 effects including **Floaters**: random colored shapes that drift across the frame (stamp them on footage, or generate a field of them)
 - Global + per-layer **feedback bus** (amount, delay, opacity, scale, rotation, distortion)
 - Basic masks (rect, circle, gradient, noise)
-- Seeded randomization (all / selected / single param + amount), with an option to include critters
+- Seeded randomization (all / selected / single param + amount), with an option to include floaters
 - Simple keyframe automation
 - JSON project files (`.phos.json`) and source-independent presets
 - Export: PNG, JPG, **short MP4 clips** (pauses the live view and encodes a small 960×540 clip), WebM, PNG image sequence (zip)

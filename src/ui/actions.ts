@@ -150,14 +150,14 @@ export function stampCritters() {
   const seed = 1 + ((store.project.seed + Date.now()) % 9998);
   if (existing) {
     setParam(layer.id, existing.id, "seed", seed);
-    store.patchUi({ selectedEffectId: existing.id, status: "rerolled weird critters" });
+    store.patchUi({ selectedEffectId: existing.id, status: "rerolled floaters" });
     return;
   }
   addEffect("critters");
   const nextLayer = selectedLayer(store.project);
   const fx = selectedEffect(nextLayer);
   if (nextLayer && fx?.typeId === "critters") setParam(nextLayer.id, fx.id, "seed", seed);
-  store.patchUi({ status: "stamped weird critters" });
+  store.patchUi({ status: "stamped floaters" });
 }
 
 export function bumpSeed(n: number) {

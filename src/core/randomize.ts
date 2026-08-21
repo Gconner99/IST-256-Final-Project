@@ -167,10 +167,10 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.soft = 0.04 + rng() * 0.18;
   }
   if (fx.typeId === "critters") {
-    p.count = mood === "lush" ? 2 + Math.floor(rng() * 3) : 3 + Math.floor(rng() * 4);
-    p.size = 0.55 + rng() * 0.7;
-    p.amount = mood === "lush" ? 0.32 + rng() * 0.32 : 0.5 + rng() * 0.4;
-    p.speed = 0.4 + rng() * 1.4;
+    p.count = mood === "lush" ? 3 + Math.floor(rng() * 3) : 4 + Math.floor(rng() * 4);
+    p.size = 0.85 + rng() * 0.7;
+    p.amount = 0.7 + rng() * 0.3;
+    p.speed = 0.7 + rng() * 1.3;
     p.seed = 1 + Math.floor(rng() * 9998);
   }
   if (fx.typeId === "kaleido") {

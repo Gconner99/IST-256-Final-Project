@@ -3,14 +3,14 @@ import { CRITTER_GLSL } from "../engine/critters.glsl";
 
 export const critters: EffectType = {
   id: "critters",
-  name: "Weird Critters",
+  name: "Floaters",
   category: "wacky",
-  description: "Little randomly generated blob creatures wandering the frame",
+  description: "Random colored shapes drifting across the frame",
   params: [
-    { id: "count", label: "Critters", kind: "int", min: 1, max: 8, step: 1, default: 4 },
-    { id: "size", label: "Size", kind: "float", min: 0.4, max: 2.5, step: 0.01, default: 1 },
+    { id: "count", label: "Shapes", kind: "int", min: 1, max: 8, step: 1, default: 5 },
+    { id: "size", label: "Size", kind: "float", min: 0.4, max: 2.5, step: 0.01, default: 1.1 },
     { id: "seed", label: "Seed", kind: "int", min: 1, max: 9999, step: 1, default: 77 },
-    { id: "speed", label: "Wiggle", kind: "float", min: 0, max: 3, step: 0.01, default: 1 },
+    { id: "speed", label: "Drift", kind: "float", min: 0, max: 3, step: 0.01, default: 1.15 },
     { id: "amount", label: "Amount", kind: "float", min: 0, max: 1, step: 0.01, default: 1 },
     { id: "mix", label: "Mix", kind: "float", min: 0, max: 1, step: 0.01, default: 1, randomizable: false },
   ],
@@ -26,7 +26,9 @@ ${CRITTER_GLSL}
 vec4 apply(vec2 uv) {
   vec3 src = sampleSrc(uv).rgb;
   vec4 c = critterField(uv, u_count, u_seed, uTime * u_speed, u_size);
-  vec3 outc = mix(src, c.rgb, c.a * u_amount);
+  vec3 placed = mix(src, c.rgb, c.a * u_amount);
+  vec3 screen = 1.0 - (1.0 - src) * (1.0 - c.rgb);
+  vec3 outc = mix(placed, mix(placed, screen, 0.4), c.a * u_amount);
   return vec4(outc, 1.0);
 }
 `,

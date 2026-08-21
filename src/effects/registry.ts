@@ -39,5 +39,5 @@ export const EFFECT_CATEGORIES: { id: string; label: string }[] = [
   { id: "analog", label: "Analog" },
   { id: "geometric", label: "Geometry" },
   { id: "temporal", label: "Time" },
-  { id: "wacky", label: "Wacky" },
+  { id: "wacky", label: "Shapes" },
 ];

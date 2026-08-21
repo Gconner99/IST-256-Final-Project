@@ -71,7 +71,7 @@ export function defaultExportSettings(): ExportSettings {
 export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"): MediaSource {
   return {
     id: uid("src"),
-    name: kind ? kind.toUpperCase() : "SIGNAL",
+    name: kind === "critters" ? "FLOATERS" : kind ? kind.toUpperCase() : "SIGNAL",
     kind: "generator",
     generator: kind ?? "plasma",
     colorA: "#140c10",

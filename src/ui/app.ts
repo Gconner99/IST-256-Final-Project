@@ -58,8 +58,8 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="status">RND</label>
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
-      <label class="check" title="Drop weird little creatures onto every layer when you hit Rand all">
-        <input type="checkbox" id="inc-critters" /> critters
+      <label class="check" title="Drop drifting colored shapes onto every layer when you hit Rand all">
+        <input type="checkbox" id="inc-critters" /> floaters
       </label>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
@@ -92,7 +92,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it.</li>
-          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt, xerox, and critters. Keep the <em>critters</em> box on to invite weirdos into the mix.</li>
+          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt, xerox, and drifting shapes. Keep the <em>floaters</em> box on to send colored shapes across the frame.</li>
           <li>Export <strong>2s / 4s / 8s mp4</strong> for a short clip. The live preview pauses while it cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
@@ -162,7 +162,7 @@ function bind(root: HTMLElement) {
       if (kind === "critters") {
         const lyr = selectedLayer(store.project);
         if (lyr) patchLayer(lyr.id, (l) => ({ ...l, sourceId: src.id }));
-        store.patchUi({ selectedSourceId: src.id, status: "critter field on this layer" });
+        store.patchUi({ selectedSourceId: src.id, status: "floaters on this layer" });
       } else {
         store.patchUi({ selectedSourceId: src.id, status: `generator ${kind}` });
       }
@@ -414,11 +414,11 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny" data-act="gen" data-kind="bars">Bars</button>
       <button class="btn tiny" data-act="gen" data-kind="gradient">Grad</button>
       <button class="btn tiny" data-act="gen" data-kind="checker">Check</button>
-      <button class="btn tiny acid" data-act="gen" data-kind="critters">Critters</button>
-      <button class="btn tiny acid" data-act="stamp-critters">Stamp critters</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="critters">Floaters</button>
+      <button class="btn tiny acid" data-act="stamp-critters">Stamp floaters</button>
     </div>
-    <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include critters in Rand all</label>
-    <div class="status" style="margin-top:4px">Random little weirdos. Stamp them on a photo, or make a whole creature field.</div>
+    <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
+    <div class="status" style="margin-top:4px">Colored shapes that fly across the picture. Stamp them on a photo, or make a whole field of them.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => `
         <div class="thumb ${s.id === ui.selectedSourceId ? "on" : ""}" data-act="sel-src" data-id="${s.id}">
@@ -517,7 +517,7 @@ function paintStack(n: HTMLElement) {
         }).join("")}
       </select>
       <div class="row" style="margin-top:4px">
-        <button class="btn tiny acid" data-act="stamp-critters">stamp critters</button>
+        <button class="btn tiny acid" data-act="stamp-critters">stamp floaters</button>
       </div>
       ${fx ? `
         <hr class="div" />
