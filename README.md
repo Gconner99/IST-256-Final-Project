@@ -4,11 +4,18 @@ A personal **visual instrument / digital darkroom** for experimental video art a
 
 Not a Premiere or Photoshop clone. Phosphene is a GPU effect pipeline with a tactile, slightly weird control surface: drop in images or video, stack modular GLSL effects, randomize, feed the output back into itself, and export stills or frame-by-frame video.
 
-## Run
+## If you don’t write code
 
-**Repo:** [Gconner99/IST-256-Final-Project](https://github.com/Gconner99/IST-256-Final-Project)
+Phosphene runs **on your computer**. It does not need GitHub, an account, or the internet after you have this folder.
 
-Open that folder in Cursor — the repo root is the directory that contains `package.json`.
+Open **`START HERE.txt`** and follow the two steps. After that, double-click:
+
+- Windows: `Start Phosphene.bat`
+- Mac: `Start Phosphene.command`
+
+## Run (developers)
+
+Open the folder that contains `package.json`.
 
 ### In Cursor (click Run)
 

@@ -1,0 +1,48 @@
+PHOSPHENE — how to open it on your computer
+==========================================
+
+You do NOT need GitHub to use this.
+This is a program that runs on your computer. Your pictures stay on your computer.
+
+You only need two things:
+
+  1. This folder (the whole Phosphene folder)
+  2. Node.js, installed once (free)
+
+
+STEP 1 — Install Node.js (one time only)
+----------------------------------------
+This is like installing Chrome. You do it once, then forget it.
+
+  1. Go to:  https://nodejs.org
+  2. Click the big button that says LTS (or “Recommended”)
+  3. Run the installer. Click Next until it is done.
+  4. Restart your computer if it asks you to.
+
+
+STEP 2 — Start Phosphene
+------------------------
+Windows:
+  Double-click   Start Phosphene.bat
+
+Mac:
+  Right-click   Start Phosphene.command
+  choose Open
+  (the first time, Mac may ask “are you sure?” — say Open)
+
+A black window may appear for a minute the first time (that is normal).
+Then a dark window called PHOSPHENE should open. That is the program.
+
+If a browser tab opens instead, that is also fine — it is the same program.
+
+
+How to use it
+-------------
+- Drag a photo or video onto the big dark area
+  OR click Plasma / Noise / Bars on the left to start with no file
+- Move the sliders on the right. The picture should change immediately.
+- Click Export at the bottom right to save a picture to your Downloads folder.
+
+
+You never need to “run code” or use GitHub after this.
+To open it again later, just double-click the same Start Phosphene file.
