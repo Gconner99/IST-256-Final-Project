@@ -3,7 +3,7 @@ import { store } from "../core/store";
 import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
-import { ensureCritters, randomizeProject } from "../core/randomize";
+import { ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
 import { buildPrompt, generateStill, samplePalette } from "../generate/imagine";
@@ -136,8 +136,10 @@ export function randomize(mode: "all" | "selected" | "param") {
   }
   store.setProject((p) => {
     const next = randomizeProject(p, mode, ui.selectedLayerId, ui.selectedEffectId, ui.selectedParam?.paramId ?? null);
-    if (mode === "all" && ui.includeCritters) return ensureCritters(next);
-    return next;
+    let out = next;
+    if (mode === "all" && ui.includeCritters) out = ensureCritters(out);
+    if (mode === "all" && ui.includeIdol) out = ensureIdol(out);
+    return out;
   });
   const names = store.project.layers[0]?.effects.map((e) => e.typeId).join(" · ");
   store.patchUi({ status: `look · ${names || mode} · seed ${store.project.seed}` });
@@ -158,6 +160,23 @@ export function stampCritters() {
   const fx = selectedEffect(nextLayer);
   if (nextLayer && fx?.typeId === "critters") setParam(nextLayer.id, fx.id, "seed", seed);
   store.patchUi({ status: "stamped floaters" });
+}
+
+export function stampIdol() {
+  const layer = selectedLayer(store.project);
+  if (!layer) return;
+  const existing = layer.effects.find((e) => e.typeId === "dancer");
+  const seed = 1 + ((store.project.seed + Date.now() + 17) % 9998);
+  if (existing) {
+    setParam(layer.id, existing.id, "seed", seed);
+    store.patchUi({ selectedEffectId: existing.id, status: "rerolled idol" });
+    return;
+  }
+  addEffect("dancer");
+  const nextLayer = selectedLayer(store.project);
+  const fx = selectedEffect(nextLayer);
+  if (nextLayer && fx?.typeId === "dancer") setParam(nextLayer.id, fx.id, "seed", seed);
+  store.patchUi({ status: "stamped idol" });
 }
 
 export function bumpSeed(n: number) {

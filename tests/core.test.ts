@@ -4,7 +4,7 @@ import { matchAspectId, sizeForAspect, sizeFromSource } from "../src/core/export
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, randomizeProject } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, randomizeProject } from "../src/core/randomize";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { compileEffectSource } from "../src/engine/compile";
@@ -106,15 +106,19 @@ describe("project files", () => {
 describe("effects registry", () => {
   it("ships a usable MVP library", () => {
     expect(allEffects().length).toBeGreaterThanOrEqual(15);
-    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters"]) {
+    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer"]) {
       expect(getEffect(id)).toBeTruthy();
     }
     expect(getEffect("critters")?.category).toBe("wacky");
     expect(getEffect("critters")?.name).toBe("Floaters");
+    expect(getEffect("dancer")?.name).toBe("Idol");
     const critterSrc = compileEffectSource(getEffect("critters")!);
     for (const family of ["classicBody", "constellation", "spikes", "cloud", "crescent", "scribble", "twins", "saw", "ring", "famSlot", "floaterId"]) {
       expect(critterSrc.includes(family)).toBe(true);
     }
+    const idolSrc = compileEffectSource(getEffect("dancer")!);
+    expect(idolSrc.includes("figureMap")).toBe(true);
+    expect(idolSrc.includes("figureRender")).toBe(true);
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
@@ -157,6 +161,14 @@ describe("randomize + presets", () => {
     const withC = ensureCritters(p);
     expect(withC.layers[0].effects.some((e) => e.typeId === "critters")).toBe(true);
     expect(ensureCritters(withC).layers[0].effects.filter((e) => e.typeId === "critters")).toHaveLength(1);
+  });
+
+  it("can stamp an idol onto layers that lack them", () => {
+    const p = createDefaultProject();
+    expect(p.layers[0].effects.some((e) => e.typeId === "dancer")).toBe(false);
+    const withI = ensureIdol(p);
+    expect(withI.layers[0].effects.some((e) => e.typeId === "dancer")).toBe(true);
+    expect(ensureIdol(withI).layers[0].effects.filter((e) => e.typeId === "dancer")).toHaveLength(1);
   });
 });
 

@@ -46,6 +46,9 @@ const LOOKS: Look[] = [
   { name: "field notes", mood: "mix", stack: ["grade", "posterize", "grain", "critters"], blend: "normal" },
   { name: "prism marsh", mood: "mix", stack: ["kaleido", "chroma", "bloom", "duotone"], blend: "overlay" },
   { name: "outsider silk", mood: "mix", stack: ["grade", "bloom", "analog", "critters"], blend: "normal" },
+  { name: "esoteric retina", mood: "mix", stack: ["grade", "bloom", "analog", "dancer"], blend: "normal" },
+  { name: "plaza idol", mood: "mix", stack: ["duotone", "grain", "warp", "dancer"], blend: "normal" },
+  { name: "night idol", mood: "outsider", stack: ["posterize", "chroma", "bloom", "dancer"], blend: "overlay" },
 ];
 
 function randForParam(rng: () => number, def: ParamDef, current: number | string | boolean, amount: number) {
@@ -173,6 +176,12 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.speed = 0.7 + rng() * 1.3;
     p.seed = 1 + Math.floor(rng() * 9998);
   }
+  if (fx.typeId === "dancer") {
+    p.size = 0.85 + rng() * 1.1;
+    p.amount = 0.85 + rng() * 0.15;
+    p.speed = 0.55 + rng() * 1.5;
+    p.seed = 1 + Math.floor(rng() * 9998);
+  }
   if (fx.typeId === "kaleido") {
     p.segments = mood === "lush" ? 4 + Math.floor(rng() * 4) : 5 + Math.floor(rng() * 8);
     p.zoom = 0.7 + rng() * 0.8;
@@ -189,7 +198,21 @@ function makeCrittersInstance(seed: number, mood: Mood = "mix"): EffectInstance 
   return applyMood(makeFx("critters", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
 }
 
-/** Drop a critter overlay onto every layer that doesn't already have one. */
+function makeIdolInstance(seed: number, mood: Mood = "mix"): EffectInstance {
+  const rng = mulberry32(seed >>> 0);
+  return applyMood(makeFx("dancer", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
+}
+
+/** Drop a dancing idol onto every layer that doesn't already have one. */
+export function ensureIdol(project: Project): Project {
+  return {
+    ...project,
+    layers: project.layers.map((layer, i) => {
+      if (layer.effects.some((e) => e.typeId === "dancer")) return layer;
+      return { ...layer, effects: [...layer.effects, makeIdolInstance(project.seed + i * 4243, "mix")] };
+    }),
+  };
+}
 export function ensureCritters(project: Project): Project {
   return {
     ...project,

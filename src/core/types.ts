@@ -196,6 +196,7 @@ export interface AppUi {
   useSourceForGen: boolean;
   generating: boolean;
   includeCritters: boolean;
+  includeIdol: boolean;
   exporting: boolean;
 }
 

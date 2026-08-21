@@ -30,6 +30,7 @@ import {
   setParam,
   startFromScratch,
   stampCritters,
+  stampIdol,
   toggleEffect,
 } from "./actions";
 import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
@@ -63,6 +64,9 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="check" title="Drop drifting colored shapes onto every layer when you hit Rand all">
         <input type="checkbox" id="inc-critters" /> floaters
       </label>
+      <label class="check" title="Drop a dancing 3D figure in the middle when you hit Rand all">
+        <input type="checkbox" id="inc-idol" /> idol
+      </label>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
       <select id="quality">
@@ -95,6 +99,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it.</li>
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt, xerox, and drifting shapes. Keep the <em>floaters</em> box on to send one-off colored objects across the frame.</li>
+          <li><strong>Idol</strong> plants a low-poly 3D creature in the middle of the frame — stamp it to grow a new one, keep the top-bar box on so Rand all includes it. Think Osamu Sato: weird dancer on a synth background.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
@@ -170,6 +175,7 @@ function bind(root: HTMLElement) {
       }
     }
     if (act === "stamp-critters") stampCritters();
+    if (act === "stamp-idol") stampIdol();
     if (act === "add-layer") addLayer();
     if (act === "dup-layer" && id) duplicateLayer(id);
     if (act === "del-layer" && id) removeLayer(id);
@@ -277,6 +283,9 @@ function bind(root: HTMLElement) {
     if (t.id === "inc-critters" || t.id === "inc-critters-rail") {
       store.patchUi({ includeCritters: (t as HTMLInputElement).checked });
     }
+    if (t.id === "inc-idol" || t.id === "inc-idol-rail") {
+      store.patchUi({ includeIdol: (t as HTMLInputElement).checked });
+    }
   });
 
   root.addEventListener("input", (e) => {
@@ -286,6 +295,9 @@ function bind(root: HTMLElement) {
     if (t.id === "gen-src") store.patchUi({ useSourceForGen: (t as HTMLInputElement).checked }, false);
     if (t.id === "inc-critters" || t.id === "inc-critters-rail") {
       store.patchUi({ includeCritters: (t as HTMLInputElement).checked });
+    }
+    if (t.id === "inc-idol" || t.id === "inc-idol-rail") {
+      store.patchUi({ includeIdol: (t as HTMLInputElement).checked });
     }
     if (t.id === "seed") store.setProject((pr) => ({ ...pr, seed: Number(t.value) || 0 }), false);
     if (t.id === "rnd-amt") store.setProject((pr) => ({ ...pr, randomAmount: Number(t.value) }), false);
@@ -403,6 +415,8 @@ function paint(root: HTMLElement) {
   if (topExp) topExp.disabled = ui.exporting;
   const crit = root.querySelector<HTMLInputElement>("#inc-critters");
   if (crit) crit.checked = ui.includeCritters;
+  const idol = root.querySelector<HTMLInputElement>("#inc-idol");
+  if (idol) idol.checked = ui.includeIdol;
   root.querySelector("#help")?.classList.toggle("on", ui.helpOpen);
   root.querySelector("#veil")?.classList.toggle("on", ui.dropActive);
   root.querySelector("#led")?.classList.toggle("hot", p.playback.playing);
@@ -438,9 +452,11 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny" data-act="gen" data-kind="checker">Check</button>
       <button class="btn tiny acid" data-act="gen" data-kind="critters">Floaters</button>
       <button class="btn tiny acid" data-act="stamp-critters">Stamp floaters</button>
+      <button class="btn tiny acid" data-act="stamp-idol">Stamp idol</button>
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
-    <div class="status" style="margin-top:4px">A field mixes different shapes, colors, and paths. Stamp again to reroll the whole set.</div>
+    <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
+    <div class="status" style="margin-top:4px">Floaters drift across. An idol is a low-poly dancer in the middle — stamp to grow a new one.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => `
         <div class="thumb ${s.id === ui.selectedSourceId ? "on" : ""}" data-act="sel-src" data-id="${s.id}">
@@ -540,6 +556,7 @@ function paintStack(n: HTMLElement) {
       </select>
       <div class="row" style="margin-top:4px">
         <button class="btn tiny acid" data-act="stamp-critters">stamp floaters</button>
+        <button class="btn tiny acid" data-act="stamp-idol">stamp idol</button>
       </div>
       ${fx ? `
         <hr class="div" />
