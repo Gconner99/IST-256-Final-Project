@@ -15,11 +15,16 @@ import { evenSize, fitEven } from "../core/random";
 import { mediaTime } from "../core/timeline";
 import type { Renderer } from "../engine/renderer";
 
-const CLIP_MAX_W = 960;
-const CLIP_MAX_H = 540;
+const CLIP_MAX = 960;
+const FULL_MAX = 1920;
+
+export function videoFrameSize(project: Project, clip = false) {
+  const max = clip ? CLIP_MAX : FULL_MAX;
+  return fitEven(project.exportSettings.width, project.exportSettings.height, max, max);
+}
 
 export function clipFrameSize(project: Project) {
-  return fitEven(project.exportSettings.width, project.exportSettings.height, CLIP_MAX_W, CLIP_MAX_H);
+  return videoFrameSize(project, true);
 }
 
 export async function exportStill(renderer: Renderer, project: Project, time: number): Promise<void> {
@@ -35,7 +40,7 @@ export async function exportImageSequence(
   onProgress?: (i: number, n: number) => void,
 ): Promise<void> {
   const { fps, duration, filename, quality } = project.exportSettings;
-  const { width, height } = clipFrameSize(project);
+  const { width, height } = videoFrameSize(project, false);
   const n = Math.max(1, Math.round(duration * fps));
   const zip = new JSZip();
   const folder = zip.folder(filename) ?? zip;
@@ -56,8 +61,9 @@ export async function exportWebM(
   renderer: Renderer,
   project: Project,
   onProgress?: (i: number, n: number) => void,
+  clip = false,
 ): Promise<void> {
-  const blob = await recordCanvasVideo(renderer, project, pickWebmMime(), onProgress);
+  const blob = await recordCanvasVideo(renderer, project, pickWebmMime(), onProgress, clip);
   downloadBlob(`${project.exportSettings.filename}.webm`, blob);
 }
 
@@ -65,18 +71,19 @@ export async function exportMp4(
   renderer: Renderer,
   project: Project,
   onProgress?: (i: number, n: number) => void,
+  clip = false,
 ): Promise<string> {
   try {
-    await exportMp4WebCodecs(renderer, project, onProgress);
+    await exportMp4WebCodecs(renderer, project, onProgress, clip);
     return "mp4 clip saved";
   } catch (err) {
     const mp4Mime = pickMp4Mime();
     if (mp4Mime) {
-      const blob = await recordCanvasVideo(renderer, project, mp4Mime, onProgress);
+      const blob = await recordCanvasVideo(renderer, project, mp4Mime, onProgress, clip);
       downloadBlob(`${project.exportSettings.filename}.mp4`, blob);
       return "mp4 clip saved";
     }
-    await exportWebM(renderer, project, onProgress);
+    await exportWebM(renderer, project, onProgress, clip);
     const why = err instanceof Error ? err.message : "MP4 encoder unavailable";
     return `MP4 not available (${why}) — saved WebM instead`;
   }
@@ -86,11 +93,12 @@ async function exportMp4WebCodecs(
   renderer: Renderer,
   project: Project,
   onProgress?: (i: number, n: number) => void,
+  clip = false,
 ): Promise<void> {
   if (typeof VideoEncoder === "undefined") throw new Error("this browser has no video encoder");
   const fps = Math.min(24, Math.max(12, project.exportSettings.fps || 24));
   const duration = Math.min(8, Math.max(1, project.exportSettings.duration || 4));
-  const { width, height } = clipFrameSize(project);
+  const { width, height } = videoFrameSize(project, clip);
   const quality = new Quality({ bitrate: Math.max(3, Math.min(8, project.exportSettings.bitrate)) * 1_000_000 });
   const format = new Mp4OutputFormat({ fastStart: "in-memory" });
   const prefer: VideoCodec[] = ["avc", "hevc"];
@@ -143,10 +151,11 @@ async function recordCanvasVideo(
   project: Project,
   mime: string,
   onProgress?: (i: number, n: number) => void,
+  clip = false,
 ): Promise<Blob> {
   const fps = Math.min(24, Math.max(12, project.exportSettings.fps || 24));
   const duration = Math.min(8, Math.max(1, project.exportSettings.duration || 4));
-  const { width, height } = clipFrameSize(project);
+  const { width, height } = videoFrameSize(project, clip);
   const recCanvas = document.createElement("canvas");
   recCanvas.width = width;
   recCanvas.height = height;
@@ -214,10 +223,11 @@ export async function runExport(
   project: Project,
   time: number,
   onProgress?: (i: number, n: number) => void,
+  clip = false,
 ): Promise<string | void> {
   const fmt = project.exportSettings.format;
-  if (fmt === "mp4") return exportMp4(renderer, project, onProgress);
-  if (fmt === "webm") return exportWebM(renderer, project, onProgress);
+  if (fmt === "mp4") return exportMp4(renderer, project, onProgress, clip);
+  if (fmt === "webm") return exportWebM(renderer, project, onProgress, clip);
   if (fmt === "sequence") return exportImageSequence(renderer, project, onProgress);
   return exportStill(renderer, project, time);
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { clamp, evenSize, fitEven, lerp, mulberry32 } from "../src/core/random";
+import { matchAspectId, sizeForAspect, sizeFromSource } from "../src/core/exportSize";
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
@@ -34,6 +35,34 @@ describe("seeded random", () => {
     expect(s.height).toBe(540);
     expect(s.width % 2).toBe(0);
     expect(s.height % 2).toBe(0);
+  });
+
+  it("fitEven keeps a tall frame tall", () => {
+    const s = fitEven(720, 960, 960, 960);
+    expect(s.width).toBe(720);
+    expect(s.height).toBe(960);
+  });
+});
+
+describe("export aspect sizes", () => {
+  it("builds even 16:9, 4:3, and 3:4 frames", () => {
+    const wide = sizeForAspect(16, 9, 1280);
+    expect(wide).toEqual({ width: 1280, height: 720 });
+    const photo = sizeForAspect(4, 3, 1280);
+    expect(photo.width / photo.height).toBeCloseTo(4 / 3, 2);
+    expect(photo.width % 2).toBe(0);
+    expect(photo.height % 2).toBe(0);
+    const tall = sizeForAspect(3, 4, 1280);
+    expect(tall.width).toBe(960);
+    expect(tall.height).toBe(1280);
+    expect(matchAspectId(tall.width, tall.height)).toBe("3:4");
+  });
+
+  it("matches a source's shape", () => {
+    const s = sizeFromSource(1080, 1920, 1280);
+    expect(s.height).toBe(1280);
+    expect(s.width).toBe(720);
+    expect(matchAspectId(s.width, s.height)).toBe("9:16");
   });
 });
 

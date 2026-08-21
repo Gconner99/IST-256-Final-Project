@@ -1,7 +1,8 @@
 import type { Renderer } from "../engine/renderer";
 import { store } from "../core/store";
 import { BLEND_MODES, type GeneratorType, type Layer, type ParamDef } from "../core/types";
-import { runExport, clipFrameSize } from "../export/export";
+import { runExport } from "../export/export";
+import { EXPORT_ASPECTS, matchAspectId, sizeForAspect, sizeFromSource } from "../core/exportSize";
 import {
   addEffect,
   addKeyframe,
@@ -93,7 +94,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it.</li>
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt, xerox, and drifting shapes. Keep the <em>floaters</em> box on to send one-off colored objects across the frame.</li>
-          <li>Export <strong>2s / 4s / 8s mp4</strong> for a short clip. The live preview pauses while it cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
+          <li>Pick an export shape (<strong>16:9</strong>, <strong>4:3</strong>, <strong>3:4</strong>, square, phone, etc.) then hit Export or a <strong>2s / 4s / 8s mp4</strong> clip. The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
         <button class="btn acid" data-act="help">close</button>
@@ -110,7 +111,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
   paint(root);
 }
 
-async function runCurrentExport() {
+async function runCurrentExport(clip = false) {
   if (!rendererRef) return;
   if (store.state.ui.exporting) return;
   store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: false } }));
@@ -118,7 +119,7 @@ async function runCurrentExport() {
   try {
     const note = await runExport(rendererRef, store.project, store.project.playback.time, (i, n) => {
       store.patchUi({ status: `export ${i + 1}/${n}`, exporting: true }, false);
-    });
+    }, clip);
     store.patchUi({ exporting: false, status: typeof note === "string" && note ? note : "export done" });
   } catch (err) {
     store.patchUi({ exporting: false, status: err instanceof Error ? err.message : "export failed" });
@@ -200,7 +201,6 @@ function bind(root: HTMLElement) {
     if (act === "export") void runCurrentExport();
     if (act === "clip") {
       const secs = Math.max(1, Number(t.dataset.secs || 4));
-      const size = clipFrameSize(store.project);
       store.setProject((p) => ({
         ...p,
         exportSettings: {
@@ -208,12 +208,30 @@ function bind(root: HTMLElement) {
           duration: secs,
           format: "mp4",
           fps: 24,
-          width: size.width,
-          height: size.height,
           bitrate: Math.min(p.exportSettings.bitrate, 8),
         },
       }));
-      void runCurrentExport();
+      void runCurrentExport(true);
+    }
+    if (act === "exp-aspect" && id) {
+      const aspect = EXPORT_ASPECTS.find((a) => a.id === id);
+      if (aspect) {
+        const size = sizeForAspect(aspect.rw, aspect.rh, 1280);
+        store.setProject((p) => ({
+          ...p,
+          exportSettings: { ...p.exportSettings, width: size.width, height: size.height },
+        }));
+      }
+    }
+    if (act === "exp-aspect-src") {
+      const p = store.project;
+      const layer = selectedLayer(p);
+      const src = p.sources.find((s) => s.id === (layer?.sourceId ?? p.sources[0]?.id));
+      const size = sizeFromSource(src?.width ?? 1280, src?.height ?? 720, 1280);
+      store.setProject((pr) => ({
+        ...pr,
+        exportSettings: { ...pr.exportSettings, width: size.width, height: size.height },
+      }));
     }
     if (act === "play") {
       store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: !p.playback.playing } }));
@@ -609,6 +627,13 @@ function paintTransport(n: HTMLElement) {
     <div class="t-right">
       <div class="sec">Export</div>
       <div class="row">
+        ${EXPORT_ASPECTS.map((a) => {
+          const on = matchAspectId(exp.width, exp.height) === a.id;
+          return `<button class="btn tiny ${on ? "acid" : ""}" data-act="exp-aspect" data-id="${a.id}">${a.label}</button>`;
+        }).join("")}
+        <button class="btn tiny" data-act="exp-aspect-src">match src</button>
+      </div>
+      <div class="row" style="margin-top:4px">
         <input id="exp-w" type="number" style="width:70px" value="${exp.width}" />
         <span>×</span>
         <input id="exp-h" type="number" style="width:70px" value="${exp.height}" />
