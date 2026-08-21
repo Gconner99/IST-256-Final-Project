@@ -50,6 +50,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <button class="btn tiny" data-act="save">Save</button>
       <button class="btn tiny" data-act="load">Load</button>
       <button class="btn tiny hot" data-act="scratch">New</button>
+      <button class="btn tiny acid" data-act="export" id="top-export">Export</button>
       <input type="file" id="proj-file" accept=".json,.phos.json" hidden />
       <div class="sp"></div>
       <label class="status">SEED</label>
@@ -94,7 +95,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it.</li>
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt, xerox, and drifting shapes. Keep the <em>floaters</em> box on to send one-off colored objects across the frame.</li>
-          <li>Pick an export shape (<strong>16:9</strong>, <strong>4:3</strong>, <strong>3:4</strong>, square, phone, etc.) then hit Export or a <strong>2s / 4s / 8s mp4</strong> clip. The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
+          <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
         <button class="btn acid" data-act="help">close</button>
@@ -203,6 +204,7 @@ function bind(root: HTMLElement) {
       const secs = Math.max(1, Number(t.dataset.secs || 4));
       store.setProject((p) => ({
         ...p,
+        duration: Math.max(p.duration, secs),
         exportSettings: {
           ...p.exportSettings,
           duration: secs,
@@ -211,7 +213,7 @@ function bind(root: HTMLElement) {
           bitrate: Math.min(p.exportSettings.bitrate, 8),
         },
       }));
-      void runCurrentExport(true);
+      store.patchUi({ status: `${secs}s clip ready — hit Export` });
     }
     if (act === "exp-aspect" && id) {
       const aspect = EXPORT_ASPECTS.find((a) => a.id === id);
@@ -397,6 +399,8 @@ function paint(root: HTMLElement) {
   if (seed && document.activeElement !== seed) seed.value = String(p.seed);
   if (rnd) rnd.value = String(p.randomAmount);
   if (quality) quality.value = p.quality;
+  const topExp = root.querySelector<HTMLButtonElement>("#top-export");
+  if (topExp) topExp.disabled = ui.exporting;
   const crit = root.querySelector<HTMLInputElement>("#inc-critters");
   if (crit) crit.checked = ui.includeCritters;
   root.querySelector("#help")?.classList.toggle("on", ui.helpOpen);
@@ -627,6 +631,7 @@ function paintTransport(n: HTMLElement) {
     <div class="t-right">
       <div class="sec">Export</div>
       <div class="row">
+        <span class="status">shape</span>
         ${EXPORT_ASPECTS.map((a) => {
           const on = matchAspectId(exp.width, exp.height) === a.id;
           return `<button class="btn tiny ${on ? "acid" : ""}" data-act="exp-aspect" data-id="${a.id}">${a.label}</button>`;
@@ -634,23 +639,21 @@ function paintTransport(n: HTMLElement) {
         <button class="btn tiny" data-act="exp-aspect-src">match src</button>
       </div>
       <div class="row" style="margin-top:4px">
-        <input id="exp-w" type="number" style="width:70px" value="${exp.width}" />
+        <span class="status">size</span>
+        <input id="exp-w" type="number" style="width:64px" value="${exp.width}" title="width" />
         <span>×</span>
-        <input id="exp-h" type="number" style="width:70px" value="${exp.height}" />
+        <input id="exp-h" type="number" style="width:64px" value="${exp.height}" title="height" />
         <select id="exp-format">
           ${["png","jpg","webm","mp4","sequence"].map((f) => `<option ${exp.format===f?"selected":""} value="${f}">${f}</option>`).join("")}
         </select>
       </div>
-      <div class="row" style="margin-top:4px">
-        <button class="btn tiny acid" data-act="clip" data-secs="2" ${busy ? "disabled" : ""}>2s mp4</button>
-        <button class="btn tiny acid" data-act="clip" data-secs="4" ${busy ? "disabled" : ""}>4s mp4</button>
-        <button class="btn tiny acid" data-act="clip" data-secs="8" ${busy ? "disabled" : ""}>8s mp4</button>
-      </div>
-      <div class="row" style="margin-top:4px">
-        <input id="exp-fps" type="number" style="width:54px" value="${exp.fps}" title="fps" />
-        <input id="exp-dur" type="number" style="width:54px" value="${exp.duration}" title="seconds" />
-        <input id="exp-name" type="text" style="width:90px" value="${esc(exp.filename)}" />
-        <button class="btn tiny acid" data-act="export" ${busy ? "disabled" : ""}>${busy ? "…" : "Export"}</button>
+      <div class="row" style="margin-top:6px">
+        <span class="status">length</span>
+        ${[2, 4, 6, 8].map((s) => `<button class="btn tiny ${Number(exp.duration) === s ? "acid" : ""}" data-act="clip" data-secs="${s}" ${busy ? "disabled" : ""}>${s}s</button>`).join("")}
+        <span class="status">sec</span>
+        <input id="exp-dur" type="number" min="1" max="8" step="1" style="width:48px" value="${exp.duration}" title="seconds" />
+        <span class="sp"></span>
+        <button class="btn acid export" data-act="export" ${busy ? "disabled" : ""}>${busy ? "exporting…" : "Export"}</button>
       </div>
     </div>
   `;
