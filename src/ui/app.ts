@@ -28,9 +28,10 @@ import {
   selectedLayer,
   setParam,
   startFromScratch,
+  stampCritters,
   toggleEffect,
 } from "./actions";
-import { effectsByCategory, getEffect } from "../effects/registry";
+import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
 import { defaultGeneratorSource } from "../core/defaults";
 
 let liveScrub = false;
@@ -57,6 +58,9 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="status">RND</label>
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
+      <label class="check" title="Drop weird little creatures onto every layer when you hit Rand all">
+        <input type="checkbox" id="inc-critters" /> critters
+      </label>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
       <select id="quality">
@@ -88,6 +92,8 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it.</li>
+          <li><strong>Critters</strong> on the left makes a field of randomly generated little weirdos. <strong>Stamp critters</strong> overlays them on whatever you’re looking at. Keep the top-bar <em>critters</em> box on so Rand all invites them in.</li>
+          <li>Export <strong>2s / 4s / 8s mp4</strong> for a short clip. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
         <button class="btn acid" data-act="help">close</button>
@@ -102,6 +108,19 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     if (!liveScrub) paint(root);
   });
   paint(root);
+}
+
+async function runCurrentExport() {
+  if (!rendererRef) return;
+  store.patchUi({ status: "exporting…" });
+  try {
+    const note = await runExport(rendererRef, store.project, store.project.playback.time, (i, n) => {
+      store.patchUi({ status: `export ${i + 1}/${n}` }, false);
+    });
+    store.patchUi({ status: typeof note === "string" && note ? note : "export done" });
+  } catch (err) {
+    store.patchUi({ status: err instanceof Error ? err.message : "export failed" });
+  }
 }
 
 function bind(root: HTMLElement) {
@@ -136,8 +155,17 @@ function bind(root: HTMLElement) {
     if (act === "freeze") void freezeSelected();
     if (act === "gen") {
       const kind = (t.dataset.kind ?? "plasma") as GeneratorType;
-      store.setProject((p) => ({ ...p, sources: [...p.sources, defaultGeneratorSource(kind)] }));
+      const src = defaultGeneratorSource(kind);
+      store.setProject((p) => ({ ...p, sources: [...p.sources, src] }));
+      if (kind === "critters") {
+        const lyr = selectedLayer(store.project);
+        if (lyr) patchLayer(lyr.id, (l) => ({ ...l, sourceId: src.id }));
+        store.patchUi({ selectedSourceId: src.id, status: "critter field on this layer" });
+      } else {
+        store.patchUi({ selectedSourceId: src.id, status: `generator ${kind}` });
+      }
     }
+    if (act === "stamp-critters") stampCritters();
     if (act === "add-layer") addLayer();
     if (act === "dup-layer" && id) duplicateLayer(id);
     if (act === "del-layer" && id) removeLayer(id);
@@ -167,17 +195,16 @@ function bind(root: HTMLElement) {
     if (act === "pst-load" && id) loadPreset(id);
     if (act === "pst-dup" && id) dupPreset(id);
     if (act === "pst-del" && id) delPreset(id);
-    if (act === "export") {
-      if (!rendererRef) return;
-      store.patchUi({ status: "exporting…" });
-      try {
-        await runExport(rendererRef, store.project, store.project.playback.time, (i, n) => {
-          store.patchUi({ status: `export ${i + 1}/${n}` }, false);
-        });
-        store.patchUi({ status: "export done" });
-      } catch (err) {
-        store.patchUi({ status: err instanceof Error ? err.message : "export failed" });
-      }
+    if (act === "export") void runCurrentExport();
+    if (act === "clip") {
+      const secs = Math.max(1, Number(t.dataset.secs || 4));
+      store.setProject((p) => ({
+        ...p,
+        duration: secs,
+        playback: { ...p.playback, duration: secs },
+        exportSettings: { ...p.exportSettings, duration: secs, format: "mp4" },
+      }));
+      void runCurrentExport();
     }
     if (act === "play") {
       store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: !p.playback.playing } }));
@@ -218,6 +245,9 @@ function bind(root: HTMLElement) {
     if (t.id === "preset-sel" && t.value) loadPreset(t.value);
     if (t.id === "exp-format") store.setProject((p) => ({ ...p, exportSettings: { ...p.exportSettings, format: t.value as typeof p.exportSettings.format } }));
     if (t.id === "play-mode") store.setProject((p) => ({ ...p, playback: { ...p.playback, mode: t.value as typeof p.playback.mode } }));
+    if (t.id === "inc-critters" || t.id === "inc-critters-rail") {
+      store.patchUi({ includeCritters: (t as HTMLInputElement).checked });
+    }
   });
 
   root.addEventListener("input", (e) => {
@@ -225,6 +255,9 @@ function bind(root: HTMLElement) {
     const p = store.project;
     if (t.id === "gen-prompt") store.patchUi({ prompt: t.value }, false);
     if (t.id === "gen-src") store.patchUi({ useSourceForGen: (t as HTMLInputElement).checked }, false);
+    if (t.id === "inc-critters" || t.id === "inc-critters-rail") {
+      store.patchUi({ includeCritters: (t as HTMLInputElement).checked });
+    }
     if (t.id === "seed") store.setProject((pr) => ({ ...pr, seed: Number(t.value) || 0 }), false);
     if (t.id === "rnd-amt") store.setProject((pr) => ({ ...pr, randomAmount: Number(t.value) }), false);
     if (t.id === "speed") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, speed: Number(t.value) } }), false);
@@ -337,6 +370,8 @@ function paint(root: HTMLElement) {
   if (seed && document.activeElement !== seed) seed.value = String(p.seed);
   if (rnd) rnd.value = String(p.randomAmount);
   if (quality) quality.value = p.quality;
+  const crit = root.querySelector<HTMLInputElement>("#inc-critters");
+  if (crit) crit.checked = ui.includeCritters;
   root.querySelector("#help")?.classList.toggle("on", ui.helpOpen);
   root.querySelector("#veil")?.classList.toggle("on", ui.dropActive);
   root.querySelector("#led")?.classList.toggle("hot", p.playback.playing);
@@ -370,7 +405,11 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny" data-act="gen" data-kind="bars">Bars</button>
       <button class="btn tiny" data-act="gen" data-kind="gradient">Grad</button>
       <button class="btn tiny" data-act="gen" data-kind="checker">Check</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="critters">Critters</button>
+      <button class="btn tiny acid" data-act="stamp-critters">Stamp critters</button>
     </div>
+    <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include critters in Rand all</label>
+    <div class="status" style="margin-top:4px">Random little weirdos. Stamp them on a photo, or make a whole creature field.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => `
         <div class="thumb ${s.id === ui.selectedSourceId ? "on" : ""}" data-act="sel-src" data-id="${s.id}">
@@ -462,8 +501,15 @@ function paintStack(n: HTMLElement) {
         </div>`).join("")}
       <select id="add-fx" class="addfx">
         <option value="">+ add effect</option>
-        ${Object.entries(groups).map(([cat, list]) => `<optgroup label="${cat}">${list.map((e) => `<option value="${e.id}">${e.name}</option>`).join("")}</optgroup>`).join("")}
+        ${EFFECT_CATEGORIES.map((cat) => {
+          const list = groups[cat.id] ?? [];
+          if (!list.length) return "";
+          return `<optgroup label="${cat.label}">${list.map((e) => `<option value="${e.id}">${e.name}</option>`).join("")}</optgroup>`;
+        }).join("")}
       </select>
+      <div class="row" style="margin-top:4px">
+        <button class="btn tiny acid" data-act="stamp-critters">stamp critters</button>
+      </div>
       ${fx ? `
         <hr class="div" />
         <div class="sec">${esc(getEffect(fx.typeId)?.name ?? "params")} · ${esc(getEffect(fx.typeId)?.description ?? "")}</div>
@@ -557,8 +603,13 @@ function paintTransport(n: HTMLElement) {
         <span>×</span>
         <input id="exp-h" type="number" style="width:70px" value="${exp.height}" />
         <select id="exp-format">
-          ${["png","jpg","webm","sequence"].map((f) => `<option ${exp.format===f?"selected":""} value="${f}">${f}</option>`).join("")}
+          ${["png","jpg","webm","mp4","sequence"].map((f) => `<option ${exp.format===f?"selected":""} value="${f}">${f}</option>`).join("")}
         </select>
+      </div>
+      <div class="row" style="margin-top:4px">
+        <button class="btn tiny acid" data-act="clip" data-secs="2">2s mp4</button>
+        <button class="btn tiny acid" data-act="clip" data-secs="4">4s mp4</button>
+        <button class="btn tiny acid" data-act="clip" data-secs="8">8s mp4</button>
       </div>
       <div class="row" style="margin-top:4px">
         <input id="exp-fps" type="number" style="width:54px" value="${exp.fps}" title="fps" />

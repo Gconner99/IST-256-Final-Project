@@ -60,6 +60,7 @@ button { cursor: pointer; }
   margin-top: -2px;
 }
 .topbar .sp { flex: 1; }
+.topbar .check { margin: 0; white-space: nowrap; }
 .led {
   width: 7px; height: 7px; border-radius: 50%;
   background: var(--acid);

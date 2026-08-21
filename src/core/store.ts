@@ -16,6 +16,7 @@ function defaultUi(project: Project): AppUi {
     prompt: "",
     useSourceForGen: true,
     generating: false,
+    includeCritters: true,
   };
 }
 

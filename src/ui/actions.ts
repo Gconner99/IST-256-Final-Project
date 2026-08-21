@@ -3,7 +3,7 @@ import { store } from "../core/store";
 import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
-import { randomizeProject } from "../core/randomize";
+import { ensureCritters, randomizeProject } from "../core/randomize";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
 import { buildPrompt, generateStill, samplePalette } from "../generate/imagine";
@@ -131,8 +131,29 @@ export function setParam(layerId: string, fxId: string, paramId: string, value: 
 
 export function randomize(mode: "all" | "selected" | "param") {
   const ui = store.state.ui;
-  store.setProject((p) => randomizeProject(p, mode, ui.selectedLayerId, ui.selectedEffectId, ui.selectedParam?.paramId ?? null));
+  store.setProject((p) => {
+    const next = randomizeProject(p, mode, ui.selectedLayerId, ui.selectedEffectId, ui.selectedParam?.paramId ?? null);
+    if (mode === "all" && ui.includeCritters) return ensureCritters(next);
+    return next;
+  });
   store.patchUi({ status: `randomized (${mode}) seed ${store.project.seed}` });
+}
+
+export function stampCritters() {
+  const layer = selectedLayer(store.project);
+  if (!layer) return;
+  const existing = layer.effects.find((e) => e.typeId === "critters");
+  const seed = 1 + ((store.project.seed + Date.now()) % 9998);
+  if (existing) {
+    setParam(layer.id, existing.id, "seed", seed);
+    store.patchUi({ selectedEffectId: existing.id, status: "rerolled weird critters" });
+    return;
+  }
+  addEffect("critters");
+  const nextLayer = selectedLayer(store.project);
+  const fx = selectedEffect(nextLayer);
+  if (nextLayer && fx?.typeId === "critters") setParam(nextLayer.id, fx.id, "seed", seed);
+  store.patchUi({ status: "stamped weird critters" });
 }
 
 export function bumpSeed(n: number) {

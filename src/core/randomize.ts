@@ -1,4 +1,5 @@
 import { getEffect } from "../effects/registry";
+import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
 import type { EffectInstance, Layer, ParamDef, Project } from "./types";
 
@@ -55,6 +56,32 @@ export function randomizeLayer(layer: Layer, seed: number, amount: number, selec
     return randomizeEffect(fx, seed + i * 997, amount);
   });
   return { ...layer, effects };
+}
+
+function makeCrittersInstance(seed: number): EffectInstance {
+  const def = getEffect("critters");
+  const params: Record<string, number | string | boolean> = {};
+  if (def) {
+    for (const p of def.params) params[p.id] = p.default;
+  }
+  const rng = mulberry32(seed >>> 0);
+  params.seed = 1 + Math.floor(rng() * 9998);
+  params.count = 3 + Math.floor(rng() * 10);
+  params.size = 0.65 + rng() * 1.3;
+  params.speed = 0.35 + rng() * 1.9;
+  params.amount = 0.75 + rng() * 0.25;
+  return { id: uid("fx"), typeId: "critters", enabled: true, params };
+}
+
+/** Drop a critter overlay onto every layer that doesn't already have one. */
+export function ensureCritters(project: Project): Project {
+  return {
+    ...project,
+    layers: project.layers.map((layer, i) => {
+      if (layer.effects.some((e) => e.typeId === "critters")) return layer;
+      return { ...layer, effects: [...layer.effects, makeCrittersInstance(project.seed + i * 7919)] };
+    }),
+  };
 }
 
 export function randomizeProject(

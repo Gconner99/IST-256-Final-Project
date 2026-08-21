@@ -91,6 +91,16 @@ export class Renderer {
     }
   }
 
+  resetTemporal() {
+    const gl = this.gl;
+    for (const f of [...this.ring, ...this.layerHist.values()]) {
+      f.bind();
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+    this.ringIndex = 0;
+  }
+
   private ensureSize(w: number, h: number) {
     if (w === this.width && h === this.height) return;
     this.width = w;
@@ -130,15 +140,17 @@ export class Renderer {
     drawTri(gl);
   }
 
-  private drawGenerator(target: FBO, src: MediaSource, time: number) {
+  private drawGenerator(target: FBO, src: MediaSource, time: number, seed = 77) {
     const gl = this.gl;
     target.bind();
     this.generatorProg.use();
+    const critter = src.generator === "critters";
     this.generatorProg.i("uMode", GEN_INDEX[src.generator ?? "plasma"] ?? 0);
     this.generatorProg.f("uTime", time);
     this.generatorProg.v3("uColorA", 0.05, 0.02, 0.12);
     this.generatorProg.v3("uColorB", 0.85, 0.95, 0.2);
-    this.generatorProg.f("uScale", 6);
+    this.generatorProg.f("uScale", critter ? 10 : 6);
+    this.generatorProg.f("uSeed", seed);
     drawTri(gl);
   }
 
@@ -245,7 +257,7 @@ export class Renderer {
       const layer = resolvedLayerParams(project, rawLayer, time);
       const src = project.sources.find((s) => s.id === layer.sourceId) ?? null;
       if (!src || src.kind === "generator") {
-        this.drawGenerator(this.ping, src ?? { generator: "plasma" } as MediaSource, time);
+        this.drawGenerator(this.ping, src ?? { generator: "plasma" } as MediaSource, time, project.seed);
       } else {
         const tex = this.uploadSource(src);
         this.drawTexture(this.ping, tex, layer);

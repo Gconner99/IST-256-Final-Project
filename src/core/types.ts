@@ -1,6 +1,6 @@
 export type QualityMode = "draft" | "preview" | "export";
 export type SourceKind = "image" | "video" | "generator";
-export type GeneratorType = "plasma" | "noise" | "bars" | "gradient" | "solid" | "checker";
+export type GeneratorType = "plasma" | "noise" | "bars" | "gradient" | "solid" | "checker" | "critters";
 export type BlendMode =
   | "normal"
   | "add"
@@ -13,7 +13,7 @@ export type BlendMode =
   | "darken";
 export type PlaybackMode = "forward" | "reverse" | "pingpong" | "random";
 export type MaskType = "none" | "rect" | "circle" | "gradient" | "noise" | "image";
-export type EffectCategory = "color" | "distort" | "analog" | "geometric" | "temporal";
+export type EffectCategory = "color" | "distort" | "analog" | "geometric" | "temporal" | "wacky";
 export type ParamKind = "float" | "int" | "bool" | "color" | "enum";
 export type Easing = "linear" | "smooth";
 
@@ -137,7 +137,7 @@ export interface ExportSettings {
   height: number;
   fps: number;
   duration: number;
-  format: "png" | "jpg" | "webm" | "sequence";
+  format: "png" | "jpg" | "webm" | "mp4" | "sequence";
   quality: number;
   bitrate: number;
   filename: string;
@@ -192,6 +192,7 @@ export interface AppUi {
   prompt: string;
   useSourceForGen: boolean;
   generating: boolean;
+  includeCritters: boolean;
 }
 
 export interface AppState {

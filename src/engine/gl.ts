@@ -193,4 +193,5 @@ export const GEN_INDEX: Record<string, number> = {
   gradient: 3,
   solid: 4,
   checker: 5,
+  critters: 6,
 };

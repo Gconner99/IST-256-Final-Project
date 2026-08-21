@@ -32,7 +32,9 @@ HOW TO USE IT
 -------------
 
 - Drag a photo or video onto the big dark area
-  OR click Plasma / Noise / Bars on the left
+  OR click Plasma / Noise / Bars / Critters on the left
 - Type a prompt on the left and click Generate to make a NEW image
+- Click Stamp critters to drop weird little creatures on your picture
 - Click New at the top to start over
 - Move the sliders. Click Export to save.
+- Click 2s / 4s / 8s mp4 for a short video clip

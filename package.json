@@ -30,5 +30,8 @@
     "vite-plugin-singlefile": "^2.3.3",
     "vitest": "^2.1.8",
     "wait-on": "^8.0.1"
+  },
+  "dependencies": {
+    "mediabunny": "^1.55.1"
   }
 }

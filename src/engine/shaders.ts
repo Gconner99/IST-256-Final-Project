@@ -1,3 +1,5 @@
+import { CRITTER_GLSL } from "./critters.glsl";
+
 export const VERT_SRC = `#version 300 es
 precision highp float;
 const vec2 POS[3] = vec2[3](vec2(-1.0, -1.0), vec2(3.0, -1.0), vec2(-1.0, 3.0));
@@ -216,7 +218,8 @@ uniform float uTime;
 uniform vec3 uColorA;
 uniform vec3 uColorB;
 uniform float uScale;
-
+uniform float uSeed;
+${CRITTER_GLSL}
 float hash21(vec2 p) {
   p = fract(p * vec2(123.34, 345.45));
   p += dot(p, p + 34.345);
@@ -248,9 +251,13 @@ void main() {
     col = mix(uColorA, uColorB, uv.x);
   } else if (uMode == 4) {
     col = uColorA;
-  } else {
+  } else if (uMode == 5) {
     vec2 c = floor(uv * uScale);
     col = mix(uColorA, uColorB, mod(c.x + c.y, 2.0));
+  } else {
+    vec3 bg = mix(vec3(0.07, 0.05, 0.1), vec3(0.02, 0.08, 0.04), uv.y);
+    vec4 cr = critterField(uv, max(uScale, 4.0), uSeed, uTime, 1.05);
+    col = mix(bg, cr.rgb, cr.a);
   }
   fragColor = vec4(col, 1.0);
 }

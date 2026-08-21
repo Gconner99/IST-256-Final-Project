@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { clamp, lerp, mulberry32 } from "../src/core/random";
+import { clamp, evenSize, lerp, mulberry32 } from "../src/core/random";
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { randomizeProject } from "../src/core/randomize";
+import { ensureCritters, randomizeProject } from "../src/core/randomize";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { compileEffectSource } from "../src/engine/compile";
@@ -20,6 +20,12 @@ describe("seeded random", () => {
   it("clamp and lerp", () => {
     expect(clamp(5, 0, 1)).toBe(1);
     expect(lerp(0, 10, 0.25)).toBe(2.5);
+  });
+
+  it("evenSize rounds to even H.264-safe dimensions", () => {
+    expect(evenSize(1280)).toBe(1280);
+    expect(evenSize(1281)).toBe(1280);
+    expect(evenSize(1)).toBe(16);
   });
 });
 
@@ -63,9 +69,11 @@ describe("project files", () => {
 describe("effects registry", () => {
   it("ships a usable MVP library", () => {
     expect(allEffects().length).toBeGreaterThanOrEqual(15);
-    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear"]) {
+    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters"]) {
       expect(getEffect(id)).toBeTruthy();
     }
+    expect(getEffect("critters")?.category).toBe("wacky");
+    expect(compileEffectSource(getEffect("critters")!).includes("critterField")).toBe(true);
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
@@ -92,6 +100,14 @@ describe("randomize + presets", () => {
     expect(applied.layers[0].effects.map((e) => e.typeId)).toEqual(p.layers[0].effects.map((e) => e.typeId));
     expect(applied.layers[0].effects[0].params).toEqual(p.layers[0].effects[0].params);
     expect(applied.globalFeedback.amount).toBe(p.globalFeedback.amount);
+  });
+
+  it("can stamp critters onto layers that lack them", () => {
+    const p = createDefaultProject();
+    expect(p.layers[0].effects.some((e) => e.typeId === "critters")).toBe(false);
+    const withC = ensureCritters(p);
+    expect(withC.layers[0].effects.some((e) => e.typeId === "critters")).toBe(true);
+    expect(ensureCritters(withC).layers[0].effects.filter((e) => e.typeId === "critters")).toHaveLength(1);
   });
 });
 

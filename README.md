@@ -40,17 +40,17 @@ Requires a browser (or Electron) with **WebGL2**.
 ## MVP
 
 - Image + video import (drag/drop, replace, freeze a video frame as a still)
-- Procedural generators (plasma, noise, bars, gradient, checker) so it makes pictures with no files
+- Procedural generators (plasma, noise, bars, gradient, checker, **critters**) so it makes pictures with no files
 - Real-time WebGL2 preview (draft / preview / full quality)
 - Layers: opacity, blend modes, transform, enable, duplicate
 - Modular effects stack (bypass, reorder, per-effect mix + mask)
-- ~17 effects: grade, posterize, threshold, duotone, solarize, channels, warp, aberration, displace, lens, pixel-sort, cathode, emulsion, bloom, kaleidoscope, mirror/tile, transform, echo, slit-scan, stutter
+- ~18 effects including a **Wacky** category: randomly generated little weird creature characters (stamp them on footage, or generate a critter field)
 - Global + per-layer **feedback bus** (amount, delay, opacity, scale, rotation, distortion)
 - Basic masks (rect, circle, gradient, noise)
-- Seeded randomization (all / selected / single param + amount)
+- Seeded randomization (all / selected / single param + amount), with an option to include critters
 - Simple keyframe automation
 - JSON project files (`.phos.json`) and source-independent presets
-- Export: PNG, JPG, WebM (frame-by-frame), PNG image sequence (zip)
+- Export: PNG, JPG, **short MP4 clips**, WebM, PNG image sequence (zip)
 
 ## Architecture
 
@@ -60,7 +60,7 @@ src/
   engine/      WebGL2 renderer, FBOs, shader compiler
   effects/     one EffectType per look — add files, don't rewrite the app
   media/       image/video loaders
-  export/      still / sequence / webm
+  export/      still / sequence / webm / mp4 clips
   ui/          instrument chrome
 electron/      desktop window
 ```
