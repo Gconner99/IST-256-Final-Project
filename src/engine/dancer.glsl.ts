@@ -363,12 +363,12 @@ vec4 figureShadeMini(vec3 p, vec3 rd, Fig f, float seed, float matId) {
   return vec4(col, 1.0);
 }
 Fig figWildMini(float seed, float time) {
-  float t = time + mix(0.0, 13.0, figH(seed + 0.29));
+  float t = time + mix(0.0, 3.6, figH(seed + 0.29));
   Fig f = figRoll(seed, t);
-  f.sx = mix(0.4, 1.95, figH(seed + 31.1));
-  f.sz = mix(0.48, 1.8, figH(seed + 31.2));
-  f.hs *= mix(0.68, 1.75, figH(seed + 31.3));
-  f.facing = mix(-0.95, 0.95, figH(seed + 31.4));
+  f.sx = mix(0.55, 1.7, figH(seed + 31.1));
+  f.sz = mix(0.6, 1.55, figH(seed + 31.2));
+  f.hs *= mix(0.78, 1.55, figH(seed + 31.3));
+  f.facing = mix(-0.22, 0.22, figH(seed + 31.4));
   f.headKind = figH(seed + 31.5);
   f.torsoKind = figH(seed + 31.6);
   f.mouth = figH(seed + 31.7);
@@ -382,42 +382,32 @@ Fig figWildMini(float seed, float time) {
   f.pack = step(0.5, figH(seed + 32.5));
   f.orb = step(0.48, figH(seed + 32.6));
   f.ts *= vec3(
-    mix(0.7, 1.45, figH(seed + 32.8)),
-    mix(0.65, 1.4, figH(seed + 32.9)),
-    mix(0.7, 1.35, figH(seed + 33.0))
+    mix(0.78, 1.28, figH(seed + 32.8)),
+    mix(0.8, 1.22, figH(seed + 32.9)),
+    mix(0.78, 1.22, figH(seed + 33.0))
   );
   return f;
 }
 vec3 figMiniPlace(int i, float n, float seed) {
-  float cols = ceil(sqrt(n * 1.5));
-  float rows = max(ceil(n / max(cols, 1.0)), 1.0);
   float fi = float(i);
-  float col = mod(fi, cols);
-  float row = floor(fi / cols);
-  float ju = mix(0.02, 0.98, figH(seed + fi * 7.13 + 0.17));
-  float jv = mix(0.02, 0.98, figH(seed + fi * 9.27 + 1.41));
-  ju += mix(-0.42, 0.42, figH(seed + fi * 4.8 + 2.2));
-  jv += mix(-0.38, 0.38, figH(seed + fi * 5.3 + 3.1));
-  float u = (col + ju) / cols * 2.0 - 1.0;
-  float v = (row + jv) / rows * 2.0 - 1.0;
-  u += mix(-0.12, 0.12, figH(seed + fi * 8.8 + 5.5));
-  v += mix(-0.1, 0.1, figH(seed + fi * 8.8 + 6.6));
-  u = clamp(u, -0.96, 0.96);
-  v = clamp(v, -0.94, 0.94);
-  float z = mix(-1.2, 1.0, figH(seed + fi * 6.1 + 4.4));
-  return vec3(u * 2.52, v * 1.46 + 0.05, z);
+  float u = (fi + 0.5) / max(n, 1.0) * 2.0 - 1.0;
+  u += mix(-0.012, 0.012, figH(seed + fi * 3.7 + 0.4));
+  float arc = u * u;
+  float y = -0.04 + mix(-0.018, 0.018, figH(seed + fi * 2.1 + 1.2));
+  float z = 0.42 - arc * 0.62 + mix(-0.05, 0.05, figH(seed + fi * 4.4 + 2.8));
+  return vec3(u * 2.46, y, z);
 }
 vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float count, float echo) {
   float aspect = uResolution.x / max(uResolution.y, 1.0);
   vec2 q = (uv - vec2(0.5, 0.42)) * vec2(aspect, 1.0);
   vec4 miss = vec4(0.0);
-  float n = mix(24.0, 48.0, clamp((count - 1.0) / 3.0, 0.0, 1.0));
+  float n = mix(13.0, 21.0, clamp((count - 1.0) / 3.0, 0.0, 1.0));
   n = floor(n + 0.5);
-  float figScale = mix(0.12, 0.26, clamp((sizeMul - 0.25) / 2.25, 0.0, 1.0));
-  float camZ = 4.05;
-  float camA = figH(seed + 0.5) * 0.12 - 0.06;
-  vec3 ro = figRotY(vec3(0.0, 0.42, camZ), camA);
-  vec3 ta = vec3(0.0, 0.32, 0.0);
+  float figScale = mix(0.15, 0.3, clamp((sizeMul - 0.25) / 2.25, 0.0, 1.0));
+  float camZ = 4.2;
+  float camA = figH(seed + 0.5) * 0.06 - 0.03;
+  vec3 ro = figRotY(vec3(0.0, 0.28, camZ), camA);
+  vec3 ta = vec3(0.0, 0.12, 0.18);
   vec3 ww = normalize(ta - ro);
   vec3 uu = normalize(cross(vec3(0.0, 1.0, 0.0), ww));
   vec3 vv = cross(ww, uu);
@@ -441,7 +431,7 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   for (int i = 0; i < 48; i++) {
     if (i >= k) break;
     float sid = seed + float(i) * 91.73 + 13.1 + figH(seed * 0.11 + float(i) + 2.3) * 47.0;
-    float sc = figScale * mix(0.48, 1.72, pow(figH(sid + 0.61), 0.62));
+    float sc = figScale * mix(0.88, 1.16, figH(sid + 0.61));
     vec3 off = figMiniPlace(i, n, seed);
     float tEnter;
     if (!figRaySphere(ro, rd, off, 2.7 * sc, tEnter)) continue;
