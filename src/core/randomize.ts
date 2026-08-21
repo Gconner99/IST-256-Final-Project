@@ -186,6 +186,7 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
   if (fx.typeId === "dancer") {
     p.size = 0.48 + rng() * 0.38;
     p.count = 1;
+    p.crowd = "normal";
     p.place = "center";
     p.echo = 0.35 + rng() * 0.5;
     p.amount = 1;

@@ -5,10 +5,21 @@ export const dancer: EffectType = {
   id: "dancer",
   name: "Idol",
   category: "wacky",
-  description: "One seed-grown low-poly creature with a face like an animal that does not exist. Echo leaves a hue-shifted afterimage. Count can plant a small crowd",
+  description: "One seed-grown low-poly creature with a face like an animal that does not exist. Mini army packs a field of tiny ones. Echo leaves a hue-shifted afterimage",
   params: [
     { id: "count", label: "Count", kind: "int", min: 1, max: 4, step: 1, default: 1 },
     { id: "size", label: "Size", kind: "float", min: 0.25, max: 2.5, step: 0.01, default: 0.65 },
+    {
+      id: "crowd",
+      label: "Crowd",
+      kind: "enum",
+      default: "normal",
+      randomizable: false,
+      options: [
+        { value: "normal", label: "Normal" },
+        { value: "mini", label: "Mini army" },
+      ],
+    },
     {
       id: "place",
       label: "Place",
@@ -28,6 +39,7 @@ export const dancer: EffectType = {
   extraUniforms: `
 uniform float u_count;
 uniform float u_size;
+uniform float u_crowd;
 uniform float u_place;
 uniform float u_echo;
 uniform float u_seed;
@@ -38,7 +50,7 @@ ${DANCER_GLSL}
   applyGlsl: `
 vec4 apply(vec2 uv) {
   vec3 src = sampleSrc(uv).rgb;
-  vec4 f = figureRender(uv, u_seed, uTime * u_speed, u_size, u_count, u_place, u_echo);
+  vec4 f = figureRender(uv, u_seed, uTime * u_speed, u_size, u_count, u_place, u_echo, u_crowd);
   float cover = f.a >= 0.95 ? 1.0 : f.a;
   vec3 placed = mix(src, f.rgb, clamp(cover * u_amount, 0.0, 1.0));
   return vec4(placed, 1.0);

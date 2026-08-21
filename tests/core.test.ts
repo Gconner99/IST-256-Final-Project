@@ -144,15 +144,19 @@ describe("effects registry", () => {
     expect(idol.params.find((p) => p.id === "count")?.default).toBe(1);
     expect(Number(idol.params.find((p) => p.id === "size")?.default)).toBeLessThan(0.8);
     expect(idol.params.find((p) => p.id === "place")?.default).toBe("center");
+    expect(idol.params.find((p) => p.id === "crowd")?.default).toBe("normal");
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
     expect(idolSrc.includes("figureMap")).toBe(true);
     expect(idolSrc.includes("figureFace")).toBe(true);
     expect(idolSrc.includes("figureRender")).toBe(true);
+    expect(idolSrc.includes("figureRenderMini")).toBe(true);
+    expect(idolSrc.includes("figMiniPlace")).toBe(true);
     expect(idolSrc.includes("figCrowdOff")).toBe(true);
     expect(idolSrc.includes("figPlace")).toBe(true);
     expect(idolSrc.includes("figDanceStyle")).toBe(true);
     expect(idolSrc.includes("u_place")).toBe(true);
+    expect(idolSrc.includes("u_crowd")).toBe(true);
     expect(idolSrc.includes("figRaySphere")).toBe(true);
     expect(idolSrc.includes("figureHit")).toBe(true);
     expect(idolSrc.includes("u_echo")).toBe(true);
@@ -210,6 +214,7 @@ describe("randomize + presets", () => {
     expect(Number(idol.params.size)).toBeLessThan(1.0);
     expect(Number(idol.params.count)).toBe(1);
     expect(idol.params.place).toBe("center");
+    expect(idol.params.crowd ?? "normal").toBe("normal");
   });
 });
 
