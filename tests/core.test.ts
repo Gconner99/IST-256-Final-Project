@@ -120,6 +120,7 @@ describe("effects registry", () => {
     expect(idol.params.find((p) => p.id === "count")?.default).toBe(1);
     expect(Number(idol.params.find((p) => p.id === "size")?.default)).toBeLessThan(0.8);
     expect(idol.params.find((p) => p.id === "place")?.default).toBe("center");
+    expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
     expect(idolSrc.includes("figureMap")).toBe(true);
     expect(idolSrc.includes("figureFace")).toBe(true);
@@ -130,6 +131,8 @@ describe("effects registry", () => {
     expect(idolSrc.includes("u_place")).toBe(true);
     expect(idolSrc.includes("figRaySphere")).toBe(true);
     expect(idolSrc.includes("figureHit")).toBe(true);
+    expect(idolSrc.includes("figMarchOne")).toBe(true);
+    expect(idolSrc.includes("u_echo")).toBe(true);
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {

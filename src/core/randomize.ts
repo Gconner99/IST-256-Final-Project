@@ -49,6 +49,10 @@ const LOOKS: Look[] = [
   { name: "esoteric retina", mood: "mix", stack: ["grade", "bloom", "analog", "dancer"], blend: "normal" },
   { name: "plaza idol", mood: "mix", stack: ["duotone", "grain", "warp", "dancer"], blend: "normal" },
   { name: "night idol", mood: "outsider", stack: ["posterize", "chroma", "bloom", "dancer"], blend: "overlay" },
+  { name: "echo plaza", mood: "mix", stack: ["duotone", "echo", "warp", "dancer"], blend: "normal" },
+  { name: "kaleid idol", mood: "mix", stack: ["kaleido", "bloom", "chroma", "dancer"], blend: "screen" },
+  { name: "xerox dancer", mood: "outsider", stack: ["posterize", "analog", "echo", "dancer"], blend: "overlay" },
+  { name: "carnival idol", mood: "mix", stack: ["duotone", "kaleido", "grain", "dancer"], blend: "screen" },
 ];
 
 function randForParam(rng: () => number, def: ParamDef, current: number | string | boolean, amount: number) {
@@ -180,7 +184,8 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.size = 0.42 + rng() * 0.5;
     p.count = 1 + Math.floor(rng() * 3);
     if (rng() > 0.84) p.count = 4;
-    p.place = rng() > 0.48 ? "scatter" : "center";
+    p.place = rng() > 0.38 ? "scatter" : "center";
+    p.echo = 0.4 + rng() * 0.55;
     p.amount = 1;
     p.speed = 0.55 + rng() * 1.5;
     p.seed = 1 + Math.floor(rng() * 9998);
@@ -244,7 +249,7 @@ function rebuildLayer(layer: Layer, seed: number, amount: number): Layer {
       opacity: 0.45 + rng() * 0.3,
       scale: 1.005 + rng() * 0.03,
       rotation: (rng() - 0.5) * 0.04,
-      distortion: look.mood === "outsider" ? rng() * 0.4 : rng() * 0.12,
+      distortion: look.mood === "outsider" ? rng() * 0.55 : rng() * 0.18,
     },
   };
 }
@@ -295,11 +300,11 @@ export function randomizeProject(
     mode === "all"
       ? {
           ...project.globalFeedback,
-          amount: 0.05 + rng() * 0.22,
-          opacity: 0.4 + rng() * 0.3,
-          scale: 1.004 + rng() * 0.02,
-          rotation: (rng() - 0.5) * 0.03,
-          distortion: rng() * 0.18,
+          amount: 0.07 + rng() * 0.26,
+          opacity: 0.42 + rng() * 0.32,
+          scale: 1.004 + rng() * 0.028,
+          rotation: (rng() - 0.5) * 0.045,
+          distortion: rng() * 0.24,
         }
       : project.globalFeedback;
 
