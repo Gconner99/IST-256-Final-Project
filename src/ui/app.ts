@@ -418,7 +418,7 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="stamp-critters">Stamp floaters</button>
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
-    <div class="status" style="margin-top:4px">Each floater is a one-off object: random points, weird sizes, flying across the picture.</div>
+    <div class="status" style="margin-top:4px">Each floater is a one-off object. The lumpy originals stay in the mix, plus spikes, clouds, bites, scribbles, twins, saws, and rings. Stamp again for a new set.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => `
         <div class="thumb ${s.id === ui.selectedSourceId ? "on" : ""}" data-act="sel-src" data-id="${s.id}">

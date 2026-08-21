@@ -1,4 +1,4 @@
-/** Unreal objects grown from random points — shared by generator and overlay. */
+/** Unreal objects grown from random points — several families, originals included. */
 export const CRITTER_GLSL = `
 float crHash(vec2 p) {
   p = fract(p * vec2(123.34, 345.45));
@@ -19,6 +19,9 @@ float crCap(vec2 p, vec2 a, vec2 b, float r) {
   float h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.0001), 0.0, 1.0);
   return length(pa - ba * h) - r;
 }
+vec2 crPt(float id, float k) {
+  return vec2(crHash(vec2(id, k)), crHash(vec2(id, k + 17.0))) * 2.0 - 1.0;
+}
 float vertexR(float id, float idx) {
   float h = crHash(vec2(id * 0.19 + 0.07, idx + 4.2));
   return mix(0.08, 1.55, pow(h, 0.45));
@@ -34,8 +37,7 @@ float polarPoly(vec2 p, float id, float n) {
   float r = mix(vertexR(id, i0), vertexR(id, i1), f);
   return length(p) - r;
 }
-float weirdBody(vec2 p, float id) {
-  p *= vec2(mix(0.42, 1.65, crHash(vec2(id, 1.3))), mix(0.48, 1.7, crHash(vec2(id, 2.4))));
+float classicBody(vec2 p, float id) {
   float n = 4.0 + floor(crHash(vec2(id, 0.7)) * 5.0);
   float d = polarPoly(p, id, n);
   for (int j = 0; j < 3; j++) {
@@ -59,6 +61,102 @@ float weirdBody(vec2 p, float id) {
     d = abs(d) - mix(0.05, 0.14, crHash(vec2(id, 13.0)));
   }
   return d;
+}
+float constellation(vec2 p, float id) {
+  float d = 1e5;
+  vec2 prev = vec2(0.0);
+  float n = 4.0 + floor(crHash(vec2(id, 0.4)) * 4.0);
+  for (int i = 0; i < 7; i++) {
+    if (float(i) >= n) break;
+    vec2 pt = crPt(id, 20.0 + float(i)) * 0.95;
+    d = min(d, length(p - pt) - mix(0.08, 0.3, crHash(vec2(id, 80.0 + float(i)))));
+    if (i > 0) d = min(d, crCap(p, prev, pt, mix(0.03, 0.11, crHash(vec2(id, 90.0 + float(i))))));
+    prev = pt;
+  }
+  return d;
+}
+float spikes(vec2 p, float id) {
+  float d = length(p) - mix(0.1, 0.38, crHash(vec2(id, 3.3)));
+  float n = 5.0 + floor(crHash(vec2(id, 4.4)) * 6.0);
+  for (int i = 0; i < 10; i++) {
+    if (float(i) >= n) break;
+    float ang = (float(i) / n) * 6.2831853 + crHash(vec2(id, float(i))) * 0.45;
+    vec2 tip = vec2(cos(ang), sin(ang)) * mix(0.45, 1.55, crHash(vec2(id, 15.0 + float(i))));
+    d = min(d, crCap(p, vec2(0.0), tip, mix(0.035, 0.13, crHash(vec2(id, 25.0 + float(i))))));
+  }
+  return d;
+}
+float cloud(vec2 p, float id) {
+  float d = 1e5;
+  for (int i = 0; i < 6; i++) {
+    vec2 pt = crPt(id, 5.0 + float(i)) * 0.72;
+    d = min(d, length(p - pt) - mix(0.2, 0.68, crHash(vec2(id, 40.0 + float(i)))));
+  }
+  return d;
+}
+float crescent(vec2 p, float id) {
+  vec2 c0 = crPt(id, 1.0) * 0.18;
+  float r0 = mix(0.72, 1.25, crHash(vec2(id, 2.0)));
+  vec2 c1 = c0 + crPt(id, 3.0) * mix(0.32, 0.82, crHash(vec2(id, 4.0)));
+  float r1 = r0 * mix(0.52, 0.92, crHash(vec2(id, 5.0)));
+  return max(length(p - c0) - r0, -(length(p - c1) - r1));
+}
+float scribble(vec2 p, float id) {
+  float d = 1e5;
+  vec2 prev = crPt(id, 0.0) * 0.9;
+  for (int i = 1; i < 6; i++) {
+    vec2 pt = crPt(id, float(i) * 3.1) * 0.95;
+    d = min(d, crCap(p, prev, pt, mix(0.055, 0.2, crHash(vec2(id, 10.0 + float(i))))));
+    prev = pt;
+  }
+  return d;
+}
+float twins(vec2 p, float id) {
+  vec2 off = crPt(id, 6.0) * 0.48;
+  float n = 4.0 + floor(crHash(vec2(id, 7.0)) * 3.0);
+  float d = polarPoly(p - off, id, n);
+  d = min(d, polarPoly(p + off, id + 9.1, n + 1.0));
+  d = min(d, crCap(p, off, -off, mix(0.045, 0.16, crHash(vec2(id, 8.0)))));
+  return d;
+}
+float saw(vec2 p, float id) {
+  float n = 8.0 + floor(crHash(vec2(id, 1.2)) * 5.0);
+  float a = atan(p.y, p.x);
+  float slice = 6.2831853 / n;
+  float t = (a + 3.14159265) / slice;
+  float idx = floor(t);
+  float f = fract(t);
+  float longR = mix(0.85, 1.52, crHash(vec2(id, 2.2)));
+  float shortR = mix(0.1, 0.42, crHash(vec2(id, 3.2)));
+  float r0 = mix(shortR, longR, step(0.5, mod(idx, 2.0)));
+  r0 *= mix(0.72, 1.22, crHash(vec2(id, idx + 0.2)));
+  float r1 = mix(shortR, longR, step(0.5, mod(idx + 1.0, 2.0)));
+  r1 *= mix(0.72, 1.22, crHash(vec2(id, idx + 1.2)));
+  return length(p) - mix(r0, r1, f);
+}
+float ring(vec2 p, float id) {
+  float r = mix(0.45, 1.05, crHash(vec2(id, 2.1)));
+  float w = mix(0.07, 0.26, crHash(vec2(id, 3.1)));
+  float d = abs(length(p) - r) - w;
+  vec2 bite = crPt(id, 4.1) * r;
+  if (crHash(vec2(id, 5.1)) > 0.4) {
+    d = max(d, -(length(p - bite) - mix(0.18, 0.52, crHash(vec2(id, 6.1)))));
+  }
+  return d;
+}
+float weirdBody(vec2 p, float id) {
+  p *= vec2(mix(0.42, 1.65, crHash(vec2(id, 1.3))), mix(0.48, 1.7, crHash(vec2(id, 2.4))));
+  float pick = crHash(vec2(id, 0.31));
+  if (pick < 0.34) return classicBody(p, id);
+  float fam = min(floor((pick - 0.34) / 0.66 * 8.0), 7.0);
+  if (fam < 0.5) return constellation(p, id);
+  if (fam < 1.5) return spikes(p, id);
+  if (fam < 2.5) return cloud(p, id);
+  if (fam < 3.5) return crescent(p, id);
+  if (fam < 4.5) return scribble(p, id);
+  if (fam < 5.5) return twins(p, id);
+  if (fam < 6.5) return saw(p, id);
+  return ring(p, id);
 }
 vec4 critterOne(vec2 uv, float id, float time, float sizeMul) {
   float h1 = crHash(vec2(id, 0.13));

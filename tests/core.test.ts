@@ -82,7 +82,10 @@ describe("effects registry", () => {
     }
     expect(getEffect("critters")?.category).toBe("wacky");
     expect(getEffect("critters")?.name).toBe("Floaters");
-    expect(compileEffectSource(getEffect("critters")!).includes("weirdBody")).toBe(true);
+    const critterSrc = compileEffectSource(getEffect("critters")!);
+    for (const family of ["classicBody", "constellation", "spikes", "cloud", "crescent", "scribble", "twins", "saw", "ring"]) {
+      expect(critterSrc.includes(family)).toBe(true);
+    }
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
