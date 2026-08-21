@@ -1,7 +1,7 @@
 import type { Renderer } from "../engine/renderer";
 import { store } from "../core/store";
 import { BLEND_MODES, type GeneratorType, type Layer, type ParamDef } from "../core/types";
-import { runExport } from "../export/export";
+import { runExport, clipFrameSize } from "../export/export";
 import {
   addEffect,
   addKeyframe,
@@ -87,13 +87,13 @@ export function mount(root: HTMLElement, renderer: Renderer) {
         <p>A digital darkroom / video synth. Drop media, stack effects, randomize, feed the output back into itself.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
-          <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> randomize all</li>
+          <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look (lush / outsider mix)</li>
           <li><kbd>K</kbd> keyframe selected parameter</li>
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it.</li>
-          <li><strong>Critters</strong> on the left makes a field of randomly generated little weirdos. <strong>Stamp critters</strong> overlays them on whatever you’re looking at. Keep the top-bar <em>critters</em> box on so Rand all invites them in.</li>
-          <li>Export <strong>2s / 4s / 8s mp4</strong> for a short clip. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
+          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt, xerox, and critters. Keep the <em>critters</em> box on to invite weirdos into the mix.</li>
+          <li>Export <strong>2s / 4s / 8s mp4</strong> for a short clip. The live preview pauses while it cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
         <button class="btn acid" data-act="help">close</button>
@@ -112,14 +112,16 @@ export function mount(root: HTMLElement, renderer: Renderer) {
 
 async function runCurrentExport() {
   if (!rendererRef) return;
-  store.patchUi({ status: "exporting…" });
+  if (store.state.ui.exporting) return;
+  store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: false } }));
+  store.patchUi({ exporting: true, status: "exporting clip…" });
   try {
     const note = await runExport(rendererRef, store.project, store.project.playback.time, (i, n) => {
-      store.patchUi({ status: `export ${i + 1}/${n}` }, false);
+      store.patchUi({ status: `export ${i + 1}/${n}`, exporting: true }, false);
     });
-    store.patchUi({ status: typeof note === "string" && note ? note : "export done" });
+    store.patchUi({ exporting: false, status: typeof note === "string" && note ? note : "export done" });
   } catch (err) {
-    store.patchUi({ status: err instanceof Error ? err.message : "export failed" });
+    store.patchUi({ exporting: false, status: err instanceof Error ? err.message : "export failed" });
   }
 }
 
@@ -198,11 +200,18 @@ function bind(root: HTMLElement) {
     if (act === "export") void runCurrentExport();
     if (act === "clip") {
       const secs = Math.max(1, Number(t.dataset.secs || 4));
+      const size = clipFrameSize(store.project);
       store.setProject((p) => ({
         ...p,
-        duration: secs,
-        playback: { ...p.playback, duration: secs },
-        exportSettings: { ...p.exportSettings, duration: secs, format: "mp4" },
+        exportSettings: {
+          ...p.exportSettings,
+          duration: secs,
+          format: "mp4",
+          fps: 24,
+          width: size.width,
+          height: size.height,
+          bitrate: Math.min(p.exportSettings.bitrate, 8),
+        },
       }));
       void runCurrentExport();
     }
@@ -565,6 +574,7 @@ function paintTransport(n: HTMLElement) {
   const p = store.project;
   const pb = p.playback;
   const exp = p.exportSettings;
+  const busy = store.state.ui.exporting;
   const dur = Math.max(p.duration, 0.1);
   const pct = (pb.time / dur) * 100;
   n.innerHTML = `
@@ -607,15 +617,15 @@ function paintTransport(n: HTMLElement) {
         </select>
       </div>
       <div class="row" style="margin-top:4px">
-        <button class="btn tiny acid" data-act="clip" data-secs="2">2s mp4</button>
-        <button class="btn tiny acid" data-act="clip" data-secs="4">4s mp4</button>
-        <button class="btn tiny acid" data-act="clip" data-secs="8">8s mp4</button>
+        <button class="btn tiny acid" data-act="clip" data-secs="2" ${busy ? "disabled" : ""}>2s mp4</button>
+        <button class="btn tiny acid" data-act="clip" data-secs="4" ${busy ? "disabled" : ""}>4s mp4</button>
+        <button class="btn tiny acid" data-act="clip" data-secs="8" ${busy ? "disabled" : ""}>8s mp4</button>
       </div>
       <div class="row" style="margin-top:4px">
         <input id="exp-fps" type="number" style="width:54px" value="${exp.fps}" title="fps" />
         <input id="exp-dur" type="number" style="width:54px" value="${exp.duration}" title="seconds" />
         <input id="exp-name" type="text" style="width:90px" value="${esc(exp.filename)}" />
-        <button class="btn tiny acid" data-act="export">Export</button>
+        <button class="btn tiny acid" data-act="export" ${busy ? "disabled" : ""}>${busy ? "…" : "Export"}</button>
       </div>
     </div>
   `;
@@ -644,7 +654,8 @@ function fmtTime(t: number) {
 }
 
 export function resizeCanvas(canvas: HTMLCanvasElement, host: HTMLElement) {
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (store.state.ui.exporting) return;
+  const dpr = 1;
   const r = host.getBoundingClientRect();
   const w = Math.max(16, Math.floor(r.width * dpr));
   const h = Math.max(16, Math.floor(r.height * dpr));

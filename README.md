@@ -50,7 +50,7 @@ Requires a browser (or Electron) with **WebGL2**.
 - Seeded randomization (all / selected / single param + amount), with an option to include critters
 - Simple keyframe automation
 - JSON project files (`.phos.json`) and source-independent presets
-- Export: PNG, JPG, **short MP4 clips**, WebM, PNG image sequence (zip)
+- Export: PNG, JPG, **short MP4 clips** (pauses the live view and encodes a small 960×540 clip), WebM, PNG image sequence (zip)
 
 ## Architecture
 

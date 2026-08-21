@@ -256,7 +256,7 @@ void main() {
     col = mix(uColorA, uColorB, mod(c.x + c.y, 2.0));
   } else {
     vec3 bg = mix(vec3(0.07, 0.05, 0.1), vec3(0.02, 0.08, 0.04), uv.y);
-    vec4 cr = critterField(uv, max(uScale, 4.0), uSeed, uTime, 1.05);
+    vec4 cr = critterField(uv, max(uScale, 3.0), uSeed, uTime, 1.0);
     col = mix(bg, cr.rgb, cr.a);
   }
   fragColor = vec4(col, 1.0);

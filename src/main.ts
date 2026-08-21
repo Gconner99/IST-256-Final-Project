@@ -36,9 +36,10 @@ let fpsLast = performance.now();
 function frame(now: number) {
   const dt = Math.min(0.08, (now - last) / 1000);
   last = now;
+  const exporting = store.state.ui.exporting;
   const p = store.project;
   const speed = resolvePlaybackSpeed(p, p.playback.time);
-  if (p.playback.playing && !p.playback.freeze) {
+  if (!exporting && p.playback.playing && !p.playback.freeze) {
     let t = p.playback.time + dt * speed;
     const dur = Math.max(p.duration, 0.001);
     if (p.playback.loop) t = ((t % dur) + dur) % dur;
@@ -59,10 +60,12 @@ function frame(now: number) {
     }
   }
 
-  try {
-    renderer.render(store.project, store.project.playback.time);
-  } catch (err) {
-    store.patchUi({ status: err instanceof Error ? err.message : "render error" }, false);
+  if (!exporting) {
+    try {
+      renderer.render(store.project, store.project.playback.time);
+    } catch (err) {
+      store.patchUi({ status: err instanceof Error ? err.message : "render error" }, false);
+    }
   }
 
   frames++;

@@ -131,12 +131,16 @@ export function setParam(layerId: string, fxId: string, paramId: string, value: 
 
 export function randomize(mode: "all" | "selected" | "param") {
   const ui = store.state.ui;
+  if (mode === "all" || mode === "selected") {
+    store.setProject((p) => ({ ...p, seed: (p.seed + 1 + (Date.now() & 255)) >>> 0 }), false);
+  }
   store.setProject((p) => {
     const next = randomizeProject(p, mode, ui.selectedLayerId, ui.selectedEffectId, ui.selectedParam?.paramId ?? null);
     if (mode === "all" && ui.includeCritters) return ensureCritters(next);
     return next;
   });
-  store.patchUi({ status: `randomized (${mode}) seed ${store.project.seed}` });
+  const names = store.project.layers[0]?.effects.map((e) => e.typeId).join(" · ");
+  store.patchUi({ status: `look · ${names || mode} · seed ${store.project.seed}` });
 }
 
 export function stampCritters() {

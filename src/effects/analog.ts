@@ -97,9 +97,9 @@ vec4 apply(vec2 uv) {
   vec3 src = sampleSrc(uv).rgb;
   vec3 acc = vec3(0.0);
   float wsum = 0.0;
-  float taps = mix(5.0, 11.0, uQuality);
-  for (float y = -5.0; y <= 5.0; y++) {
-    for (float x = -5.0; x <= 5.0; x++) {
+  float taps = mix(3.0, 6.0, uQuality);
+  for (float y = -3.0; y <= 3.0; y++) {
+    for (float x = -3.0; x <= 3.0; x++) {
       if (abs(x) + abs(y) > taps) continue;
       vec2 o = vec2(x, y) * uTexel * u_size;
       vec3 s = sampleSrc(uv + o).rgb;

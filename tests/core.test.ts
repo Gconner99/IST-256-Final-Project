@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clamp, evenSize, lerp, mulberry32 } from "../src/core/random";
+import { clamp, evenSize, fitEven, lerp, mulberry32 } from "../src/core/random";
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
@@ -26,6 +26,14 @@ describe("seeded random", () => {
     expect(evenSize(1280)).toBe(1280);
     expect(evenSize(1281)).toBe(1280);
     expect(evenSize(1)).toBe(16);
+  });
+
+  it("fitEven shrinks to an even box", () => {
+    const s = fitEven(1920, 1080, 960, 540);
+    expect(s.width).toBe(960);
+    expect(s.height).toBe(540);
+    expect(s.width % 2).toBe(0);
+    expect(s.height % 2).toBe(0);
   });
 });
 
@@ -100,6 +108,14 @@ describe("randomize + presets", () => {
     expect(applied.layers[0].effects.map((e) => e.typeId)).toEqual(p.layers[0].effects.map((e) => e.typeId));
     expect(applied.layers[0].effects[0].params).toEqual(p.layers[0].effects[0].params);
     expect(applied.globalFeedback.amount).toBe(p.globalFeedback.amount);
+  });
+
+  it("rebuilds a different look when the seed changes", () => {
+    const a = randomizeProject({ ...createDefaultProject(), seed: 3, randomAmount: 1 }, "all", null, null, null);
+    const b = randomizeProject({ ...createDefaultProject(), seed: 99, randomAmount: 1 }, "all", null, null, null);
+    const sig = (p: ReturnType<typeof createDefaultProject>) =>
+      `${p.layers[0].effects.map((e) => e.typeId).join(",")}|${JSON.stringify(p.layers[0].effects.map((e) => e.params))}`;
+    expect(sig(a)).not.toEqual(sig(b));
   });
 
   it("can stamp critters onto layers that lack them", () => {

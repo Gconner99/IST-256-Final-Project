@@ -129,8 +129,8 @@ vec4 apply(vec2 uv) {
   vec2 dir = vec2(cos(u_angle), sin(u_angle));
   vec3 acc = vec3(0.0);
   float wsum = 0.0;
-  float steps = mix(6.0, 18.0, uQuality);
-  for (float i = 0.0; i < 18.0; i++) {
+  float steps = mix(4.0, 10.0, uQuality);
+  for (float i = 0.0; i < 10.0; i++) {
     if (i >= steps) break;
     vec2 p = uv + dir * (i / steps) * u_amount * 0.35;
     vec3 s = sampleSrc(p).rgb;

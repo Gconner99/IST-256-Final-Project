@@ -7,7 +7,7 @@ export const critters: EffectType = {
   category: "wacky",
   description: "Little randomly generated blob creatures wandering the frame",
   params: [
-    { id: "count", label: "Critters", kind: "int", min: 1, max: 14, step: 1, default: 7 },
+    { id: "count", label: "Critters", kind: "int", min: 1, max: 8, step: 1, default: 4 },
     { id: "size", label: "Size", kind: "float", min: 0.4, max: 2.5, step: 0.01, default: 1 },
     { id: "seed", label: "Seed", kind: "int", min: 1, max: 9999, step: 1, default: 77 },
     { id: "speed", label: "Wiggle", kind: "float", min: 0, max: 3, step: 0.01, default: 1 },

@@ -23,7 +23,11 @@ import {
   TEXTURE_GLSL,
 } from "./shaders";
 
-const RING = 16;
+const RING = 8;
+
+function imageData(pixels: Uint8ClampedArray, width: number, height: number) {
+  return new ImageData(pixels as unknown as ImageDataArray, width, height);
+}
 
 function enumIndex(fxTypeParams: { id: string; options?: { value: string }[] }[], id: string, value: unknown): number {
   const def = fxTypeParams.find((p) => p.id === id);
@@ -144,12 +148,13 @@ export class Renderer {
     const gl = this.gl;
     target.bind();
     this.generatorProg.use();
-    const critter = src.generator === "critters";
     this.generatorProg.i("uMode", GEN_INDEX[src.generator ?? "plasma"] ?? 0);
     this.generatorProg.f("uTime", time);
-    this.generatorProg.v3("uColorA", 0.05, 0.02, 0.12);
-    this.generatorProg.v3("uColorB", 0.85, 0.95, 0.2);
-    this.generatorProg.f("uScale", critter ? 10 : 6);
+    const a = src.colorA ? hexToRgb(src.colorA) : ([0.07, 0.04, 0.1] as const);
+    const b = src.colorB ? hexToRgb(src.colorB) : ([0.92, 0.78, 0.55] as const);
+    this.generatorProg.v3("uColorA", a[0], a[1], a[2]);
+    this.generatorProg.v3("uColorB", b[0], b[1], b[2]);
+    this.generatorProg.f("uScale", 6);
     this.generatorProg.f("uSeed", seed);
     drawTri(gl);
   }
@@ -338,16 +343,10 @@ export class Renderer {
   }
 
   capture(project: Project, time: number, width: number, height: number, mime = "image/png", quality = 0.92): Promise<Blob> {
-    const prevW = this.canvas.width;
-    const prevH = this.canvas.height;
-    this.canvas.width = width;
-    this.canvas.height = height;
-    this.render(project, time, { width, height, quality: "export", vignette: 0 });
+    const canvas = this.paintFrame(project, time, width, height);
     return new Promise((resolve, reject) => {
-      this.canvas.toBlob(
+      canvas.toBlob(
         (blob) => {
-          this.canvas.width = prevW;
-          this.canvas.height = prevH;
           if (!blob) reject(new Error("Export failed"));
           else resolve(blob);
         },
@@ -357,13 +356,35 @@ export class Renderer {
     });
   }
 
+  /** Render at export size into a 2D canvas. Does not resize the live WebGL canvas. */
+  paintFrame(project: Project, time: number, width: number, height: number, target?: HTMLCanvasElement): HTMLCanvasElement {
+    const canvas = target ?? document.createElement("canvas");
+    if (canvas.width !== width) canvas.width = width;
+    if (canvas.height !== height) canvas.height = height;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) throw new Error("No 2d context");
+    this.render(project, time, { width, height, quality: "export", vignette: 0 });
+    this.gl.finish();
+    const pixels = this.readPixels(this.width, this.height);
+    if (this.width === width && this.height === height) {
+      ctx.putImageData(imageData(pixels, width, height), 0, 0);
+    } else {
+      const tmp = document.createElement("canvas");
+      tmp.width = this.width;
+      tmp.height = this.height;
+      tmp.getContext("2d")?.putImageData(imageData(pixels, this.width, this.height), 0, 0);
+      ctx.drawImage(tmp, 0, 0, width, height);
+    }
+    return canvas;
+  }
+
   readPixels(width: number, height: number): Uint8ClampedArray {
     const gl = this.gl;
     const pixels = new Uint8Array(width * height * 4);
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.composite.fbo);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    const flipped = new Uint8ClampedArray(pixels.length);
+    const flipped = new Uint8ClampedArray(new ArrayBuffer(pixels.length));
     const stride = width * 4;
     for (let y = 0; y < height; y++) {
       flipped.set(pixels.subarray((height - 1 - y) * stride, (height - y) * stride), y * stride);

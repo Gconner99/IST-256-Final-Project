@@ -109,6 +109,9 @@ export interface MediaSource {
   video?: HTMLVideoElement | null;
   objectUrl?: string | null;
   frozenFrame?: ImageBitmap | null;
+  /** Optional generator inks. */
+  colorA?: string;
+  colorB?: string;
 }
 
 export interface Keyframe {
@@ -193,6 +196,7 @@ export interface AppUi {
   useSourceForGen: boolean;
   generating: boolean;
   includeCritters: boolean;
+  exporting: boolean;
 }
 
 export interface AppState {

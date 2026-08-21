@@ -1,23 +1,31 @@
 import JSZip from "jszip";
 import {
   BufferTarget,
-  CanvasSource,
   Mp4OutputFormat,
   Output,
   Quality,
+  VideoSample,
+  VideoSampleSource,
   getFirstEncodableVideoCodec,
   type VideoCodec,
 } from "mediabunny";
 import type { Project } from "../core/types";
 import { downloadBlob } from "../core/project";
-import { evenSize } from "../core/random";
+import { evenSize, fitEven } from "../core/random";
 import { mediaTime } from "../core/timeline";
 import type { Renderer } from "../engine/renderer";
+
+const CLIP_MAX_W = 960;
+const CLIP_MAX_H = 540;
+
+export function clipFrameSize(project: Project) {
+  return fitEven(project.exportSettings.width, project.exportSettings.height, CLIP_MAX_W, CLIP_MAX_H);
+}
 
 export async function exportStill(renderer: Renderer, project: Project, time: number): Promise<void> {
   const { width, height, format, quality, filename } = project.exportSettings;
   const mime = format === "jpg" ? "image/jpeg" : "image/png";
-  const blob = await renderer.capture(project, time, width, height, mime, quality);
+  const blob = await renderer.capture(project, time, evenSize(width), evenSize(height), mime, quality);
   downloadBlob(`${filename}.${format === "jpg" ? "jpg" : "png"}`, blob);
 }
 
@@ -26,16 +34,19 @@ export async function exportImageSequence(
   project: Project,
   onProgress?: (i: number, n: number) => void,
 ): Promise<void> {
-  const { width, height, fps, duration, filename, quality } = project.exportSettings;
+  const { fps, duration, filename, quality } = project.exportSettings;
+  const { width, height } = clipFrameSize(project);
   const n = Math.max(1, Math.round(duration * fps));
   const zip = new JSZip();
   const folder = zip.folder(filename) ?? zip;
+  const frame = document.createElement("canvas");
   for (let i = 0; i < n; i++) {
     const t = i / fps;
     onProgress?.(i, n);
-    const blob = await renderer.capture(project, t, width, height, "image/png", quality);
-    const buf = await blob.arrayBuffer();
-    folder.file(`${filename}_${String(i).padStart(5, "0")}.png`, buf);
+    renderer.paintFrame(project, t, width, height, frame);
+    const blob = await canvasBlob(frame, "image/png", quality);
+    folder.file(`${filename}_${String(i).padStart(5, "0")}.png`, await blob.arrayBuffer());
+    await yieldFrame();
   }
   const out = await zip.generateAsync({ type: "blob" });
   downloadBlob(`${filename}_sequence.zip`, out);
@@ -76,50 +87,55 @@ async function exportMp4WebCodecs(
   project: Project,
   onProgress?: (i: number, n: number) => void,
 ): Promise<void> {
-  const { fps, duration, filename, bitrate } = project.exportSettings;
-  const width = evenSize(project.exportSettings.width);
-  const height = evenSize(project.exportSettings.height);
-  const quality = new Quality({ bitrate: Math.max(2, bitrate) * 1_000_000 });
+  if (typeof VideoEncoder === "undefined") throw new Error("this browser has no video encoder");
+  const fps = Math.min(24, Math.max(12, project.exportSettings.fps || 24));
+  const duration = Math.min(8, Math.max(1, project.exportSettings.duration || 4));
+  const { width, height } = clipFrameSize(project);
+  const quality = new Quality({ bitrate: Math.max(3, Math.min(8, project.exportSettings.bitrate)) * 1_000_000 });
   const format = new Mp4OutputFormat({ fastStart: "in-memory" });
-  const prefer: VideoCodec[] = ["avc", "hevc", "vp9", "av1"];
+  const prefer: VideoCodec[] = ["avc", "hevc"];
   const codec = await getFirstEncodableVideoCodec(
     prefer.filter((c) => format.getSupportedVideoCodecs().includes(c)),
     { width, height, quality },
   );
-  if (!codec) throw new Error("this browser cannot encode MP4");
+  if (!codec) throw new Error("this browser cannot encode H.264");
 
   const target = new BufferTarget();
   const output = new Output({ format, target });
-  const canvas = renderer.canvas;
-  const prevW = canvas.width;
-  const prevH = canvas.height;
-  canvas.width = width;
-  canvas.height = height;
-  const videoSource = new CanvasSource(canvas, {
+  const videoSource = new VideoSampleSource({
     codec,
     quality,
     keyFrameInterval: 1,
   });
   output.addVideoTrack(videoSource, { frameRate: fps });
   renderer.resetTemporal();
+  const frame = document.createElement("canvas");
+  await output.start();
   try {
-    await output.start();
     const n = Math.max(1, Math.round(duration * fps));
     const frameDur = 1 / fps;
     for (let i = 0; i < n; i++) {
       const t = mediaTime(i / fps, duration, project.playback.mode, 1, true);
       onProgress?.(i, n);
-      renderer.render(project, t, { width, height, quality: "export", vignette: 0 });
-      await videoSource.add(i * frameDur, frameDur, { keyFrame: i % fps === 0 });
+      renderer.paintFrame(project, t, width, height, frame);
+      const sample = new VideoSample(frame, { timestamp: i * frameDur, duration: frameDur });
+      await videoSource.add(sample, { keyFrame: i % fps === 0 });
+      sample.close();
+      await yieldFrame();
     }
     await output.finalize();
-  } finally {
-    canvas.width = prevW;
-    canvas.height = prevH;
+  } catch (err) {
+    try {
+      await output.cancel();
+    } catch {
+      /* ignore */
+    }
+    throw err;
   }
   const buffer = target.buffer;
-  if (!buffer) throw new Error("MP4 mux failed");
-  downloadBlob(`${filename}.mp4`, new Blob([buffer], { type: "video/mp4" }));
+  if (!buffer || buffer.byteLength < 32) throw new Error("MP4 mux produced an empty file");
+  const copy = buffer.slice(0);
+  downloadBlob(`${project.exportSettings.filename}.mp4`, new Blob([copy], { type: "video/mp4" }));
 }
 
 async function recordCanvasVideo(
@@ -128,9 +144,9 @@ async function recordCanvasVideo(
   mime: string,
   onProgress?: (i: number, n: number) => void,
 ): Promise<Blob> {
-  const { fps, duration, quality } = project.exportSettings;
-  const width = evenSize(project.exportSettings.width);
-  const height = evenSize(project.exportSettings.height);
+  const fps = Math.min(24, Math.max(12, project.exportSettings.fps || 24));
+  const duration = Math.min(8, Math.max(1, project.exportSettings.duration || 4));
+  const { width, height } = clipFrameSize(project);
   const recCanvas = document.createElement("canvas");
   recCanvas.width = width;
   recCanvas.height = height;
@@ -140,30 +156,30 @@ async function recordCanvasVideo(
   const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack & { requestFrame?: () => void };
   const rec = new MediaRecorder(stream, {
     mimeType: mime,
-    videoBitsPerSecond: Math.max(2, project.exportSettings.bitrate) * 1_000_000,
+    videoBitsPerSecond: Math.max(3, Math.min(8, project.exportSettings.bitrate)) * 1_000_000,
   });
   const chunks: Blob[] = [];
   rec.ondataavailable = (e) => {
     if (e.data.size) chunks.push(e.data);
   };
   renderer.resetTemporal();
-  rec.start();
+  rec.start(200);
   const n = Math.max(1, Math.round(duration * fps));
+  const frame = document.createElement("canvas");
   for (let i = 0; i < n; i++) {
     const t = mediaTime(i / fps, duration, project.playback.mode, 1, true);
     onProgress?.(i, n);
-    const blob = await renderer.capture(project, t, width, height, "image/png", quality);
-    const bmp = await createImageBitmap(blob);
-    ctx.drawImage(bmp, 0, 0, width, height);
-    bmp.close();
+    renderer.paintFrame(project, t, width, height, frame);
+    ctx.drawImage(frame, 0, 0, width, height);
     track.requestFrame?.();
-    await wait(Math.max(8, 1000 / fps));
+    await yieldFrame();
   }
   await new Promise<void>((resolve) => {
     rec.onstop = () => resolve();
     rec.stop();
   });
   stream.getTracks().forEach((tr) => tr.stop());
+  if (!chunks.length) throw new Error("recorder produced no data");
   return new Blob(chunks, { type: mime });
 }
 
@@ -178,8 +194,19 @@ function pickMp4Mime(): string | null {
   return opts.find((m) => MediaRecorder.isTypeSupported(m)) ?? null;
 }
 
-function wait(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
+function yieldFrame() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+}
+
+function canvasBlob(canvas: HTMLCanvasElement, mime: string, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) reject(new Error("frame capture failed"));
+      else resolve(blob);
+    }, mime, quality);
+  });
 }
 
 export async function runExport(

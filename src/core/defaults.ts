@@ -57,13 +57,13 @@ export function defaultPlayback(): PlaybackState {
 
 export function defaultExportSettings(): ExportSettings {
   return {
-    width: 1280,
-    height: 720,
-    fps: 30,
-    duration: 8,
+    width: 960,
+    height: 540,
+    fps: 24,
+    duration: 4,
     format: "png",
     quality: 0.92,
-    bitrate: 12,
+    bitrate: 8,
     filename: "phosphene",
   };
 }
@@ -74,6 +74,8 @@ export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"
     name: kind ? kind.toUpperCase() : "SIGNAL",
     kind: "generator",
     generator: kind ?? "plasma",
+    colorA: "#140c10",
+    colorB: "#f0d2b0",
     width: 1280,
     height: 720,
     duration: 0,
@@ -105,17 +107,20 @@ export function defaultLayer(name: string, sourceId: string | null, effects: str
 
 export function createDefaultProject(): Project {
   const plasma = defaultGeneratorSource("plasma");
-  const layer = defaultLayer("SIGNAL", plasma.id, ["grade", "warp", "chroma", "analog"]);
+  const layer = defaultLayer("SIGNAL", plasma.id, ["grade", "bloom", "grain"]);
   layer.effects.forEach((fx) => {
-    if (fx.typeId === "warp") {
-      fx.params.amount = 0.06;
-      fx.params.freq = 6;
+    if (fx.typeId === "grade") {
+      fx.params.saturation = 0.22;
+      fx.params.contrast = 0.12;
+      fx.params.gamma = 0.92;
     }
-    if (fx.typeId === "analog") {
-      fx.params.mixScan = 0.25;
+    if (fx.typeId === "bloom") {
+      fx.params.amount = 0.42;
+      fx.params.halation = 0.28;
     }
-    if (fx.typeId === "chroma") {
-      fx.params.amount = 0.004;
+    if (fx.typeId === "grain") {
+      fx.params.grain = 0.16;
+      fx.params.leak = 0.2;
     }
   });
   const project: Project = {
@@ -123,7 +128,7 @@ export function createDefaultProject(): Project {
     app: "phosphene",
     name: "untitled",
     seed: 256,
-    randomAmount: 0.55,
+    randomAmount: 0.82,
     quality: "preview",
     duration: 8,
     fps: 30,
