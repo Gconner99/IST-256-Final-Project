@@ -5,7 +5,7 @@ export const dancer: EffectType = {
   id: "dancer",
   name: "Idol",
   category: "wacky",
-  description: "Seed-grown low-poly creatures with faces like animals that do not exist. Echo leaves a hue-shifted afterimage. Count plants a spaced crowd. Place can scatter them with depth",
+  description: "One seed-grown low-poly creature with a face like an animal that does not exist. Echo leaves a hue-shifted afterimage. Count can plant a small crowd",
   params: [
     { id: "count", label: "Count", kind: "int", min: 1, max: 4, step: 1, default: 1 },
     { id: "size", label: "Size", kind: "float", min: 0.25, max: 2.5, step: 0.01, default: 0.65 },

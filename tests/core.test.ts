@@ -113,7 +113,31 @@ describe("effects registry", () => {
     expect(getEffect("critters")?.name).toBe("Floaters");
     expect(getEffect("dancer")?.name).toBe("Idol");
     const critterSrc = compileEffectSource(getEffect("critters")!);
-    for (const family of ["classicBody", "constellation", "spikes", "cloud", "crescent", "scribble", "twins", "saw", "ring", "famSlot", "floaterId"]) {
+    expect(getEffect("critters")?.params.find((p) => p.id === "kit")?.default).toBe("shapes");
+    for (const family of [
+      "classicBody",
+      "constellation",
+      "spikes",
+      "cloud",
+      "crescent",
+      "scribble",
+      "twins",
+      "saw",
+      "ring",
+      "famSlot",
+      "floaterId",
+      "musicNote",
+      "vinyl",
+      "cassette",
+      "headphones",
+      "heart",
+      "sparkle",
+      "mic",
+      "speaker",
+      "clef",
+      "u_kit",
+      "musicFam",
+    ]) {
       expect(critterSrc.includes(family)).toBe(true);
     }
     const idol = getEffect("dancer")!;
@@ -184,8 +208,8 @@ describe("randomize + presets", () => {
     expect(ensureIdol(withI).layers[0].effects.filter((e) => e.typeId === "dancer")).toHaveLength(1);
     const idol = withI.layers[0].effects.find((e) => e.typeId === "dancer")!;
     expect(Number(idol.params.size)).toBeLessThan(1.0);
-    expect(Number(idol.params.count)).toBeGreaterThanOrEqual(1);
-    expect(Number(idol.params.count)).toBeLessThanOrEqual(4);
+    expect(Number(idol.params.count)).toBe(1);
+    expect(idol.params.place).toBe("center");
   });
 });
 

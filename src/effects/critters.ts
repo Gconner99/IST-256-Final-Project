@@ -6,8 +6,19 @@ export const critters: EffectType = {
   id: "critters",
   name: "Floaters",
   category: "wacky",
-  description: "Unreal objects in mixed families — the original lumpy forms plus spikes, clouds, bites, scribbles, twins, saws, and rings",
+  description: "Drifting stickers. Kit picks lumpy families, toy-pop music icons (notes, vinyl, hearts, mics), or both",
   params: [
+    {
+      id: "kit",
+      label: "Kit",
+      kind: "enum",
+      default: "shapes",
+      options: [
+        { value: "shapes", label: "Shapes" },
+        { value: "toy pop", label: "Toy pop" },
+        { value: "mix", label: "Shapes + toy pop" },
+      ],
+    },
     { id: "count", label: "Shapes", kind: "int", min: 1, max: 8, step: 1, default: 5 },
     { id: "size", label: "Size", kind: "float", min: 0.4, max: 2.5, step: 0.01, default: 1.1 },
     { id: "seed", label: "Seed", kind: "int", min: 1, max: 9999, step: 1, default: 77 },
@@ -16,6 +27,7 @@ export const critters: EffectType = {
     { id: "mix", label: "Mix", kind: "float", min: 0, max: 1, step: 0.01, default: 1, randomizable: false },
   ],
   extraUniforms: `
+uniform float u_kit;
 uniform float u_count;
 uniform float u_size;
 uniform float u_seed;
@@ -26,7 +38,7 @@ ${CRITTER_GLSL}
   applyGlsl: `
 vec4 apply(vec2 uv) {
   vec3 src = sampleSrc(uv).rgb;
-  vec4 c = critterField(uv, u_count, u_seed, uTime * u_speed, u_size);
+  vec4 c = critterField(uv, u_count, u_seed, uTime * u_speed, u_size, u_kit);
   vec3 placed = mix(src, c.rgb, c.a * u_amount);
   vec3 screen = 1.0 - (1.0 - src) * (1.0 - c.rgb);
   vec3 outc = mix(placed, mix(placed, screen, 0.4), c.a * u_amount);

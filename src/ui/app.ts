@@ -456,7 +456,7 @@ function paintRail(n: HTMLElement) {
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Floaters drift across. An idol is a small low-poly dancer with a made-up animal face — stamp to grow a weirder one, Echo trails a ghost.</div>
+    <div class="status" style="margin-top:4px">Floaters drift across — Kit on the Floaters effect picks lumpy shapes, toy-pop music icons, or both. An idol is one small low-poly dancer with a made-up animal face — stamp to grow a weirder one, Echo trails a ghost.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => `
         <div class="thumb ${s.id === ui.selectedSourceId ? "on" : ""}" data-act="sel-src" data-id="${s.id}">

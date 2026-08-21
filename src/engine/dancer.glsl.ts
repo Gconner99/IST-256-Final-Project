@@ -252,39 +252,39 @@ vec3 figNormal(vec3 p, Fig f, float seed) {
 }
 vec3 figPal(float seed, float matId) {
   float hue = fract(figH(seed + matId * 1.71) * 0.92 + figH(seed) * 0.22);
-  float sat = mix(0.62, 1.0, figH(seed + matId + 8.2));
-  float val = mix(0.72, 1.0, figH(seed + matId + 9.1));
+  float sat = mix(0.72, 1.0, figH(seed + matId + 8.2));
+  float val = mix(0.84, 1.0, figH(seed + matId + 9.1));
   if (figH(seed + 0.03) > 0.55) hue = fract(hue + 0.18);
-  if (figH(seed + 0.04) > 0.72) {
+  if (figH(seed + 0.04) > 0.62) {
     sat = 1.0;
-    val = mix(0.85, 1.0, figH(seed + 0.05));
+    val = mix(0.9, 1.0, figH(seed + 0.05));
   }
-  if (figH(seed + 0.07) > 0.9) {
-    sat = mix(0.0, 0.18, figH(seed + matId));
-    val = mix(0.35, 0.95, figH(seed + matId + 1.0));
+  if (figH(seed + 0.07) > 0.97) {
+    sat = mix(0.08, 0.28, figH(seed + matId));
+    val = mix(0.7, 0.98, figH(seed + matId + 1.0));
   }
   if (matId > 1.5 && matId < 2.5) hue = fract(hue + 0.28);
   if (matId > 4.9 && matId < 5.4) {
     hue = fract(hue + 0.08);
     sat = mix(0.2, 0.7, figH(seed + 11.2));
-    val = mix(0.88, 1.0, figH(seed + 11.3));
+    val = mix(0.92, 1.0, figH(seed + 11.3));
   }
   if (matId > 5.4 && matId < 5.9) {
     sat = mix(0.0, 0.45, figH(seed + 11.4));
     val = mix(0.04, 0.16, figH(seed + 11.5));
   }
   if (matId > 6.4 && matId < 6.8) {
-    sat = mix(0.15, 0.55, figH(seed + 11.6));
-    val = mix(0.2, 0.4, figH(seed + 11.7));
+    sat = mix(0.25, 0.7, figH(seed + 11.6));
+    val = mix(0.35, 0.62, figH(seed + 11.7));
   }
   if (matId > 6.8 && matId < 7.3) {
     hue = fract(hue + 0.18);
-    sat = mix(0.55, 1.0, figH(seed + 11.8));
-    val = mix(0.55, 0.95, figH(seed + 11.9));
+    sat = mix(0.7, 1.0, figH(seed + 11.8));
+    val = mix(0.7, 1.0, figH(seed + 11.9));
   }
   if (matId > 7.8) {
     sat = mix(0.0, 0.22, figH(seed + 12.1));
-    val = mix(0.8, 1.0, figH(seed + 12.2));
+    val = mix(0.88, 1.0, figH(seed + 12.2));
   }
   return hsv2rgb(vec3(hue, sat, val));
 }
@@ -327,14 +327,15 @@ vec3 figPlace(int i, float n, float seed, float scatter) {
 }
 vec4 figureShade(vec3 p, vec3 rd, Fig f, float seed, float matId) {
   vec3 n = figNormal(p, f, seed);
-  vec3 l = normalize(vec3(0.45, 0.85, 0.4));
-  float dif = 0.68 + 0.32 * max(0.0, dot(n, l));
-  float rim = pow(1.0 - max(0.0, dot(n, -rd)), 3.0) * 0.16;
-  float spec = pow(max(0.0, dot(n, normalize(l - rd))), 14.0) * 0.18;
+  vec3 l = normalize(vec3(0.35, 0.95, 0.55));
+  float ndv = max(0.0, dot(n, -rd));
+  float dif = 0.86 + 0.14 * max(0.0, dot(n, l));
+  float rim = pow(1.0 - ndv, 2.4) * 0.28;
+  float spec = pow(max(0.0, dot(n, normalize(l - rd))), 18.0) * 0.12;
   vec3 albedo = figPal(seed, matId);
   vec3 col = albedo * dif + albedo * rim + vec3(spec);
-  float outline = smoothstep(0.18, 0.02, abs(dot(n, -rd)));
-  col = mix(col, albedo * 0.55, outline * 0.28);
+  float ink = 1.0 - smoothstep(0.1, 0.38, ndv);
+  col = mix(col, vec3(0.03, 0.015, 0.05), ink * 0.92);
   return vec4(col, 1.0);
 }
 bool figRaySphere(vec3 ro, vec3 rd, vec3 c, float r, out float tEnter) {

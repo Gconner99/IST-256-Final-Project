@@ -31,6 +31,8 @@ const PALETTES: Palette[] = [
   { shadow: "#0a0a0a", highlight: "#f2f0e6", leak: "#ffeeaa", inkA: "#050505", inkB: "#efece0" },
   { shadow: "#1a0820", highlight: "#d0ff3d", leak: "#ff4ad2", inkA: "#100414", inkB: "#e8ff88" },
   { shadow: "#3a0018", highlight: "#ffee55", leak: "#ff3355", inkA: "#220010", inkB: "#ffe98a" },
+  { shadow: "#2a0830", highlight: "#ffe66d", leak: "#ff4ad2", inkA: "#180420", inkB: "#ffd6f4" },
+  { shadow: "#082428", highlight: "#7dffc4", leak: "#ff8ad4", inkA: "#041418", inkB: "#d8fff0" },
 ];
 
 const LOOKS: Look[] = [
@@ -44,8 +46,10 @@ const LOOKS: Look[] = [
   { name: "marker night", mood: "outsider", stack: ["duotone", "posterize", "grain", "kaleido"], blend: "overlay" },
   { name: "carnival", mood: "mix", stack: ["duotone", "kaleido", "bloom", "critters"], blend: "screen" },
   { name: "field notes", mood: "mix", stack: ["grade", "posterize", "grain", "critters"], blend: "normal" },
+  { name: "toy pop", mood: "mix", stack: ["duotone", "bloom", "grain", "critters"], blend: "screen" },
   { name: "prism marsh", mood: "mix", stack: ["kaleido", "chroma", "bloom", "duotone"], blend: "overlay" },
   { name: "outsider silk", mood: "mix", stack: ["grade", "bloom", "analog", "critters"], blend: "normal" },
+  { name: "candy idol", mood: "mix", stack: ["grade", "bloom", "critters", "dancer"], blend: "normal" },
   { name: "esoteric retina", mood: "mix", stack: ["grade", "bloom", "analog", "dancer"], blend: "normal" },
   { name: "plaza idol", mood: "mix", stack: ["duotone", "grain", "warp", "dancer"], blend: "normal" },
   { name: "night idol", mood: "outsider", stack: ["posterize", "chroma", "bloom", "dancer"], blend: "overlay" },
@@ -175,12 +179,14 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.amount = 0.7 + rng() * 0.3;
     p.speed = 0.7 + rng() * 1.3;
     p.seed = 1 + Math.floor(rng() * 9998);
+    const roll = rng();
+    if (mood === "lush") p.kit = roll > 0.72 ? "toy pop" : roll > 0.4 ? "mix" : "shapes";
+    else p.kit = roll > 0.55 ? "toy pop" : roll > 0.22 ? "mix" : "shapes";
   }
   if (fx.typeId === "dancer") {
-    p.size = 0.42 + rng() * 0.5;
-    p.count = 1 + Math.floor(rng() * 3);
-    if (rng() > 0.84) p.count = 4;
-    p.place = rng() > 0.48 ? "scatter" : "center";
+    p.size = 0.48 + rng() * 0.38;
+    p.count = 1;
+    p.place = "center";
     p.echo = 0.35 + rng() * 0.5;
     p.amount = 1;
     p.speed = 0.55 + rng() * 1.5;
@@ -233,6 +239,11 @@ function rebuildLayer(layer: Layer, seed: number, amount: number): Layer {
   const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
   const stack = look.stack.filter((id) => getEffect(id));
   const effects = stack.map((id, i) => applyMood(makeFx(id, seed + i * 997, amount), look.mood, palette, rng));
+  if (look.name === "toy pop" || look.name === "candy idol") {
+    for (const fx of effects) {
+      if (fx.typeId === "critters") fx.params.kit = look.name === "toy pop" ? "toy pop" : "mix";
+    }
+  }
   const feedbackAmt = look.mood === "lush" ? 0.06 + rng() * 0.16 : 0.04 + rng() * 0.28;
   return {
     ...layer,

@@ -1,4 +1,4 @@
-/** Unreal objects grown from random points — previous look, with a scrambled field. */
+/** Unreal objects grown from random points, plus a toy-pop kit of music icons. */
 export const CRITTER_GLSL = `
 float crHash(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
@@ -144,8 +144,104 @@ float ring(vec2 p, float id) {
   }
   return d;
 }
-float weirdBody(vec2 p, float id, float famSlot) {
-  p *= vec2(mix(0.42, 1.65, crHash(vec2(id, 1.3))), mix(0.48, 1.7, crHash(vec2(id, 2.4))));
+float crBox2(vec2 p, vec2 b) {
+  vec2 q = abs(p) - b;
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+}
+float musicNote(vec2 p, float id) {
+  vec2 head = (p - vec2(-0.22, -0.48)) * vec2(1.4, 1.0);
+  float d = length(head) - 0.34;
+  d = min(d, crCap(p, vec2(0.14, -0.42), vec2(0.2, 0.98), 0.07));
+  d = min(d, crCap(p, vec2(0.2, 0.98), vec2(0.72, 0.62), 0.075));
+  d = min(d, crCap(p, vec2(0.72, 0.62), vec2(0.52, 0.22), 0.065));
+  if (crHash(vec2(id, 1.1)) > 0.45) {
+    vec2 head2 = (p - vec2(-0.85, -0.55)) * vec2(1.4, 1.0);
+    d = min(d, length(head2) - 0.3);
+    d = min(d, crCap(p, vec2(-0.52, -0.5), vec2(-0.48, 0.55), 0.06));
+    d = min(d, crCap(p, vec2(-0.48, 0.55), vec2(0.2, 0.7), 0.08));
+  }
+  return d;
+}
+float vinyl(vec2 p, float id) {
+  float r = mix(0.88, 1.08, crHash(vec2(id, 2.0)));
+  float d = length(p) - r;
+  d = max(d, -(length(p) - mix(0.1, 0.2, crHash(vec2(id, 3.0)))));
+  float label = abs(length(p) - mix(0.32, 0.5, crHash(vec2(id, 4.0)))) - mix(0.08, 0.14, crHash(vec2(id, 5.0)));
+  d = min(d, label);
+  return d;
+}
+float cassette(vec2 p, float id) {
+  vec2 body = vec2(mix(0.92, 1.12, crHash(vec2(id, 1.0))), mix(0.52, 0.68, crHash(vec2(id, 2.0))));
+  float d = crBox2(p, body);
+  float hole = mix(0.16, 0.24, crHash(vec2(id, 3.0)));
+  d = max(d, -(length(p - vec2(-0.38, 0.05)) - hole));
+  d = max(d, -(length(p - vec2(0.38, 0.05)) - hole));
+  d = min(d, crBox2(p - vec2(0.0, -body.y * 0.68), vec2(0.42, 0.1)));
+  return d;
+}
+float headphones(vec2 p, float id) {
+  float bandR = mix(0.7, 0.86, crHash(vec2(id, 1.0)));
+  float band = abs(length(p * vec2(1.05, 1.28)) - bandR) - 0.09;
+  band = max(band, -p.y + 0.05);
+  float cup = mix(0.28, 0.38, crHash(vec2(id, 2.0)));
+  float d = min(band, length(p - vec2(-0.72, -0.12)) - cup);
+  d = min(d, length(p - vec2(0.72, -0.12)) - cup);
+  return d;
+}
+float heart(vec2 p, float id) {
+  p.y -= 0.12;
+  float s = mix(0.9, 1.12, crHash(vec2(id, 1.0)));
+  p /= s;
+  float d = length(p - vec2(-0.34, 0.3)) - 0.44;
+  d = min(d, length(p - vec2(0.34, 0.3)) - 0.44);
+  d = min(d, crCap(p, vec2(-0.62, 0.08), vec2(0.0, -0.88), 0.3));
+  d = min(d, crCap(p, vec2(0.62, 0.08), vec2(0.0, -0.88), 0.3));
+  return d;
+}
+float sparkle(vec2 p, float id) {
+  float arm = mix(0.95, 1.28, crHash(vec2(id, 1.0)));
+  float d = crCap(p, vec2(0.0, -arm), vec2(0.0, arm), 0.075);
+  d = min(d, crCap(p, vec2(-arm, 0.0), vec2(arm, 0.0), 0.075));
+  d = min(d, crCap(p, vec2(-arm * 0.62, -arm * 0.62), vec2(arm * 0.62, arm * 0.62), 0.055));
+  d = min(d, crCap(p, vec2(-arm * 0.62, arm * 0.62), vec2(arm * 0.62, -arm * 0.62), 0.055));
+  d = min(d, length(p) - mix(0.12, 0.22, crHash(vec2(id, 2.0))));
+  return d;
+}
+float mic(vec2 p, float id) {
+  float head = mix(0.32, 0.46, crHash(vec2(id, 1.0)));
+  float d = length(p - vec2(0.0, 0.48)) - head;
+  d = min(d, crCap(p, vec2(0.0, 0.18), vec2(0.0, -0.72), mix(0.08, 0.13, crHash(vec2(id, 2.0)))));
+  d = min(d, crBox2(p - vec2(0.0, -0.88), vec2(0.3, 0.08)));
+  return d;
+}
+float speaker(vec2 p, float id) {
+  vec2 body = vec2(mix(0.62, 0.82, crHash(vec2(id, 1.0))), mix(0.78, 1.0, crHash(vec2(id, 2.0))));
+  float d = crBox2(p, body);
+  d = min(d, abs(length(p - vec2(0.0, 0.22)) - mix(0.26, 0.4, crHash(vec2(id, 3.0)))) - 0.08);
+  d = min(d, length(p - vec2(0.0, -0.48)) - mix(0.14, 0.24, crHash(vec2(id, 4.0))));
+  return d;
+}
+float clef(vec2 p, float id) {
+  p.x += mix(-0.08, 0.08, crHash(vec2(id, 1.0)));
+  float d = crCap(p, vec2(0.08, -1.0), vec2(-0.08, 1.02), 0.1);
+  d = min(d, abs(length(p - vec2(0.22, 0.52)) - mix(0.3, 0.42, crHash(vec2(id, 2.0)))) - 0.09);
+  d = min(d, length(p - vec2(-0.08, -0.58)) - 0.26);
+  d = min(d, length(p - vec2(0.38, 0.12)) - 0.15);
+  return d;
+}
+float musicFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 9.0);
+  if (k < 0.5) return musicNote(p, id);
+  if (k < 1.5) return vinyl(p, id);
+  if (k < 2.5) return cassette(p, id);
+  if (k < 3.5) return headphones(p, id);
+  if (k < 4.5) return heart(p, id);
+  if (k < 5.5) return sparkle(p, id);
+  if (k < 6.5) return mic(p, id);
+  if (k < 7.5) return speaker(p, id);
+  return clef(p, id);
+}
+float shapeFam(vec2 p, float id, float famSlot) {
   float fam = mod(famSlot, 9.0);
   if (fam < 0.5) return classicBody(p, id);
   if (fam < 1.5) return constellation(p, id);
@@ -157,7 +253,21 @@ float weirdBody(vec2 p, float id, float famSlot) {
   if (fam < 7.5) return saw(p, id);
   return ring(p, id);
 }
-vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul) {
+float weirdBody(vec2 p, float id, float famSlot, float kit) {
+  // Music icons stay readable; lumpy families keep the wilder squash.
+  if (kit > 0.5 && (kit < 1.5 || famSlot > 8.5)) {
+    p *= vec2(mix(0.78, 1.22, crHash(vec2(id, 1.3))), mix(0.82, 1.24, crHash(vec2(id, 2.4))));
+  } else {
+    p *= vec2(mix(0.42, 1.65, crHash(vec2(id, 1.3))), mix(0.48, 1.7, crHash(vec2(id, 2.4))));
+  }
+  if (kit > 1.5) {
+    if (famSlot < 8.5) return shapeFam(p, id, famSlot);
+    return musicFam(p, id, famSlot - 9.0);
+  }
+  if (kit > 0.5) return musicFam(p, id, famSlot);
+  return shapeFam(p, id, famSlot);
+}
+vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, float kit) {
   float hx = crHash(vec2(id, 0.13));
   float hy = crHash(vec2(id, 2.77));
   float hz = crHash(vec2(id, 8.14));
@@ -178,8 +288,16 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul) {
   float sz = mix(0.035, 0.17, crHash(vec2(id, 9.2))) * max(sizeMul, 0.2);
   sz *= 1.0 + 0.08 * sin(time * 1.7 + id);
   float hue = crHash(vec2(id, 0.41));
+  if (kit > 0.5) {
+    float candy = crHash(vec2(id, 0.47));
+    if (candy < 0.25) hue = mix(0.9, 0.02, crHash(vec2(id, 0.48)));
+    else if (candy < 0.5) hue = mix(0.1, 0.18, crHash(vec2(id, 0.48)));
+    else if (candy < 0.75) hue = mix(0.42, 0.55, crHash(vec2(id, 0.48)));
+    else hue = mix(0.72, 0.88, crHash(vec2(id, 0.48)));
+  }
   float vibe = crHash(vec2(id, 0.74));
   float sat = vibe < 0.22 ? mix(0.2, 0.48, crHash(vec2(id, 0.52))) : mix(0.62, 1.0, crHash(vec2(id, 0.52)));
+  if (kit > 0.5) sat = mix(0.7, 1.0, crHash(vec2(id, 0.52)));
   float val = mix(0.72, 1.0, crHash(vec2(id, 0.63)));
   vec3 fillCol = crHsv(vec3(hue, sat, val));
   vec3 rimCol = crHsv(vec3(fract(hue + mix(0.08, 0.52, crHash(vec2(id, 0.81)))), mix(0.28, 0.9, crHash(vec2(id, 0.82))), 1.0));
@@ -191,8 +309,9 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul) {
     vec2 dlt = uv - tp;
     dlt -= round(dlt);
     vec2 p = crRot(dlt, spin) / (sz * (1.0 - fk * 0.08));
-    float sd = weirdBody(p, id, famSlot);
-    float fill = 1.0 - smoothstep(-0.02, 0.14, sd);
+    float sd = weirdBody(p, id, famSlot, kit);
+    float fillSoft = kit > 0.5 ? 0.07 : 0.14;
+    float fill = 1.0 - smoothstep(-0.02, fillSoft, sd);
     float rim = 1.0 - smoothstep(0.0, 0.18, abs(sd + 0.02));
     float glow = exp(-max(sd, 0.0) * 3.6) * 0.48;
     float hl = fill * (1.0 - smoothstep(0.45, 0.0, length(p - vec2(-0.2, -0.25))));
@@ -204,15 +323,16 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul) {
   }
   return vec4(accCol, clamp(accA, 0.0, 1.0));
 }
-vec4 critterField(vec2 uv, float count, float seed, float time, float sizeMul) {
+vec4 critterField(vec2 uv, float count, float seed, float time, float sizeMul, float kit) {
   vec4 acc = vec4(0.0);
-  float famSpin = floor(crHash(vec2(seed * 0.071, 4.4)) * 9.0);
+  float nFam = kit > 1.5 ? 18.0 : 9.0;
+  float famSpin = floor(crHash(vec2(seed * 0.071, 4.4)) * nFam);
   for (int i = 0; i < 8; i++) {
     if (float(i) >= count) break;
     float slot = float(i);
     float floaterId = crHash(vec2(slot + 0.19, seed * 0.137 + 2.3)) * 91.0 + slot * 7.13;
-    float famSlot = mod(slot + famSpin, 9.0);
-    vec4 d = critterOne(uv, floaterId, famSlot, time, sizeMul);
+    float famSlot = mod(slot + famSpin, nFam);
+    vec4 d = critterOne(uv, floaterId, famSlot, time, sizeMul, kit);
     acc.rgb = mix(acc.rgb, d.rgb, d.a);
     acc.a = max(acc.a, d.a);
   }
