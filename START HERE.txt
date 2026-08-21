@@ -34,7 +34,7 @@ HOW TO USE IT
 - Drag a photo or video onto the big dark area
   OR click Plasma / Noise / Bars / Floaters on the left
 - Type a prompt on the left and click Generate to make a NEW image
-- Click Stamp floaters to send colored shapes flying across your picture
+- Click Stamp floaters to send weird one-off objects flying across your picture
 - Click Rand all for a new look (pretty + weird)
 - Click New at the top to start over
 - Move the sliders. Click Export to save.

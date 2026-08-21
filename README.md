@@ -44,7 +44,7 @@ Requires a browser (or Electron) with **WebGL2**.
 - Real-time WebGL2 preview (draft / preview / full quality)
 - Layers: opacity, blend modes, transform, enable, duplicate
 - Modular effects stack (bypass, reorder, per-effect mix + mask)
-- ~18 effects including **Floaters**: random colored shapes that drift across the frame (stamp them on footage, or generate a field of them)
+- ~18 effects including **Floaters**: unreal objects grown from random points that drift across the frame
 - Global + per-layer **feedback bus** (amount, delay, opacity, scale, rotation, distortion)
 - Basic masks (rect, circle, gradient, noise)
 - Seeded randomization (all / selected / single param + amount), with an option to include floaters

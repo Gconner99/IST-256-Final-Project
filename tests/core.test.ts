@@ -82,7 +82,7 @@ describe("effects registry", () => {
     }
     expect(getEffect("critters")?.category).toBe("wacky");
     expect(getEffect("critters")?.name).toBe("Floaters");
-    expect(compileEffectSource(getEffect("critters")!).includes("shapeSdf")).toBe(true);
+    expect(compileEffectSource(getEffect("critters")!).includes("weirdBody")).toBe(true);
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
