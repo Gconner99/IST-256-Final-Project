@@ -37,7 +37,8 @@ ${DANCER_GLSL}
 vec4 apply(vec2 uv) {
   vec3 src = sampleSrc(uv).rgb;
   vec4 f = figureRender(uv, u_seed, uTime * u_speed, u_size, u_count, u_place);
-  vec3 placed = mix(src, f.rgb, f.a * u_amount);
+  float cover = f.a > 0.5 ? 1.0 : 0.0;
+  vec3 placed = mix(src, f.rgb, cover * u_amount);
   return vec4(placed, 1.0);
 }
 `,

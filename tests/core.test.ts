@@ -128,6 +128,8 @@ describe("effects registry", () => {
     expect(idolSrc.includes("figPlace")).toBe(true);
     expect(idolSrc.includes("figDanceStyle")).toBe(true);
     expect(idolSrc.includes("u_place")).toBe(true);
+    expect(idolSrc.includes("figRaySphere")).toBe(true);
+    expect(idolSrc.includes("figureHit")).toBe(true);
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
