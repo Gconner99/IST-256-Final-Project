@@ -116,10 +116,15 @@ describe("effects registry", () => {
     for (const family of ["classicBody", "constellation", "spikes", "cloud", "crescent", "scribble", "twins", "saw", "ring", "famSlot", "floaterId"]) {
       expect(critterSrc.includes(family)).toBe(true);
     }
-    const idolSrc = compileEffectSource(getEffect("dancer")!);
+    const idol = getEffect("dancer")!;
+    expect(idol.params.find((p) => p.id === "count")?.default).toBe(1);
+    expect(Number(idol.params.find((p) => p.id === "size")?.default)).toBeLessThan(0.8);
+    const idolSrc = compileEffectSource(idol);
     expect(idolSrc.includes("figureMap")).toBe(true);
     expect(idolSrc.includes("figureFace")).toBe(true);
     expect(idolSrc.includes("figureRender")).toBe(true);
+    expect(idolSrc.includes("figCrowdOff")).toBe(true);
+    expect(idolSrc.includes("figDanceStyle")).toBe(true);
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
@@ -170,6 +175,10 @@ describe("randomize + presets", () => {
     const withI = ensureIdol(p);
     expect(withI.layers[0].effects.some((e) => e.typeId === "dancer")).toBe(true);
     expect(ensureIdol(withI).layers[0].effects.filter((e) => e.typeId === "dancer")).toHaveLength(1);
+    const idol = withI.layers[0].effects.find((e) => e.typeId === "dancer")!;
+    expect(Number(idol.params.size)).toBeLessThan(1.0);
+    expect(Number(idol.params.count)).toBeGreaterThanOrEqual(1);
+    expect(Number(idol.params.count)).toBeLessThanOrEqual(4);
   });
 });
 
