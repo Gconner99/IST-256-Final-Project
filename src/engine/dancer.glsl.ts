@@ -347,20 +347,65 @@ bool figRaySphere(vec3 ro, vec3 rd, vec3 c, float r, out float tEnter) {
   tEnter = max(0.0, -b - sqrt(h));
   return tEnter < 8.0;
 }
+vec4 figureShadeMini(vec3 p, vec3 rd, Fig f, float seed, float matId) {
+  vec3 n = figNormal(p, f, seed);
+  vec3 l = normalize(vec3(0.35, 0.95, 0.55));
+  float ndv = max(0.0, dot(n, -rd));
+  float dif = 0.9 + 0.1 * max(0.0, dot(n, l));
+  float rim = pow(1.0 - ndv, 2.8) * 0.1;
+  vec3 albedo = figPal(seed, matId);
+  vec3 hsv = rgb2hsv(albedo);
+  hsv.x = fract(hsv.x + figH(seed + 40.1) * 0.94);
+  hsv.y = clamp(hsv.y * mix(0.8, 1.28, figH(seed + 40.2)), 0.32, 1.0);
+  hsv.z = mix(0.78, 1.0, figH(seed + 40.3));
+  albedo = hsv2rgb(hsv);
+  vec3 col = albedo * dif + albedo * rim;
+  return vec4(col, 1.0);
+}
+Fig figWildMini(float seed, float time) {
+  float t = time + mix(0.0, 13.0, figH(seed + 0.29));
+  Fig f = figRoll(seed, t);
+  f.sx = mix(0.4, 1.95, figH(seed + 31.1));
+  f.sz = mix(0.48, 1.8, figH(seed + 31.2));
+  f.hs *= mix(0.68, 1.75, figH(seed + 31.3));
+  f.facing = mix(-0.95, 0.95, figH(seed + 31.4));
+  f.headKind = figH(seed + 31.5);
+  f.torsoKind = figH(seed + 31.6);
+  f.mouth = figH(seed + 31.7);
+  f.nEyes = 1.0 + floor(figH(seed + 31.8) * 3.0);
+  f.arms = figH(seed + 31.9) > 0.4 ? 4.0 : 2.0;
+  f.extraLeg = step(0.48, figH(seed + 32.0));
+  f.horn = step(0.32, figH(seed + 32.1));
+  f.ears = step(0.12, figH(seed + 32.2));
+  f.tusks = step(0.2, figH(seed + 32.3));
+  f.tail = step(0.32, figH(seed + 32.4));
+  f.pack = step(0.5, figH(seed + 32.5));
+  f.orb = step(0.48, figH(seed + 32.6));
+  f.ts *= vec3(
+    mix(0.7, 1.45, figH(seed + 32.8)),
+    mix(0.65, 1.4, figH(seed + 32.9)),
+    mix(0.7, 1.35, figH(seed + 33.0))
+  );
+  return f;
+}
 vec3 figMiniPlace(int i, float n, float seed) {
-  float cols = 6.0;
-  if (n > 28.5) cols = 7.0;
-  if (n > 36.5) cols = 8.0;
-  float rows = max(ceil(n / cols), 1.0);
+  float cols = ceil(sqrt(n * 1.5));
+  float rows = max(ceil(n / max(cols, 1.0)), 1.0);
   float fi = float(i);
   float col = mod(fi, cols);
   float row = floor(fi / cols);
-  float u = (col + 0.5) / cols * 2.0 - 1.0;
-  float v = (row + 0.5) / rows * 2.0 - 1.0;
-  u += (figH(seed + fi * 3.1 + 1.2) - 0.5) * 0.14;
-  v += (figH(seed + fi * 3.1 + 2.4) - 0.5) * 0.12;
-  float z = (figH(seed + fi * 3.1 + 3.7) - 0.5) * 0.55;
-  return vec3(u * 2.62, v * 1.52 + 0.06, z);
+  float ju = mix(0.02, 0.98, figH(seed + fi * 7.13 + 0.17));
+  float jv = mix(0.02, 0.98, figH(seed + fi * 9.27 + 1.41));
+  ju += mix(-0.42, 0.42, figH(seed + fi * 4.8 + 2.2));
+  jv += mix(-0.38, 0.38, figH(seed + fi * 5.3 + 3.1));
+  float u = (col + ju) / cols * 2.0 - 1.0;
+  float v = (row + jv) / rows * 2.0 - 1.0;
+  u += mix(-0.12, 0.12, figH(seed + fi * 8.8 + 5.5));
+  v += mix(-0.1, 0.1, figH(seed + fi * 8.8 + 6.6));
+  u = clamp(u, -0.96, 0.96);
+  v = clamp(v, -0.94, 0.94);
+  float z = mix(-1.2, 1.0, figH(seed + fi * 6.1 + 4.4));
+  return vec3(u * 2.52, v * 1.46 + 0.05, z);
 }
 vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float count, float echo) {
   float aspect = uResolution.x / max(uResolution.y, 1.0);
@@ -387,7 +432,7 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   float bestSeed = seed;
   vec3 bestOff = vec3(0.0);
   float bestSc = figScale;
-  Fig bestF = figRoll(seed, time);
+  Fig bestF = figWildMini(seed, time);
   float trailSid = seed;
   vec3 trailOff = vec3(0.0);
   float trailEnter = 0.0;
@@ -395,12 +440,12 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   bool trail = false;
   for (int i = 0; i < 48; i++) {
     if (i >= k) break;
-    float sid = seed + float(i) * 17.31 + 0.07;
-    float sc = figScale * mix(0.82, 1.18, figH(sid + 0.61));
+    float sid = seed + float(i) * 91.73 + 13.1 + figH(seed * 0.11 + float(i) + 2.3) * 47.0;
+    float sc = figScale * mix(0.48, 1.72, pow(figH(sid + 0.61), 0.62));
     vec3 off = figMiniPlace(i, n, seed);
     float tEnter;
-    if (!figRaySphere(ro, rd, off, 1.45 * sc, tEnter)) continue;
-    Fig f = figRoll(sid, time);
+    if (!figRaySphere(ro, rd, off, 2.7 * sc, tEnter)) continue;
+    Fig f = figWildMini(sid, time);
     float tRay = tEnter;
     vec2 hit = vec2(1e5, 0.0);
     float minD = 1e5;
@@ -437,10 +482,10 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   }
   if (bestH <= 0.04 && bestT <= 8.0) {
     vec3 p = (ro - bestOff + rd * bestT) / bestSc;
-    return figureShade(p, rd, bestF, bestSeed, bestM);
+    return figureShadeMini(p, rd, bestF, bestSeed, bestM);
   }
   if (echo < 0.03 || !trail) return miss;
-  Fig gf = figRoll(trailSid, time - mix(0.1, 0.2, echo));
+  Fig gf = figWildMini(trailSid, time - mix(0.1, 0.2, echo));
   float tRay = trailEnter;
   float minD = 1e5;
   float minM = 0.0;

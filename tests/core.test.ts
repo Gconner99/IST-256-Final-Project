@@ -151,6 +151,8 @@ describe("effects registry", () => {
     expect(idolSrc.includes("figureFace")).toBe(true);
     expect(idolSrc.includes("figureRender")).toBe(true);
     expect(idolSrc.includes("figureRenderMini")).toBe(true);
+    expect(idolSrc.includes("figureShadeMini")).toBe(true);
+    expect(idolSrc.includes("figWildMini")).toBe(true);
     expect(idolSrc.includes("figMiniPlace")).toBe(true);
     expect(idolSrc.includes("figCrowdOff")).toBe(true);
     expect(idolSrc.includes("figPlace")).toBe(true);
