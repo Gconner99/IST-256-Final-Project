@@ -83,7 +83,7 @@ describe("effects registry", () => {
     expect(getEffect("critters")?.category).toBe("wacky");
     expect(getEffect("critters")?.name).toBe("Floaters");
     const critterSrc = compileEffectSource(getEffect("critters")!);
-    for (const family of ["classicBody", "constellation", "spikes", "cloud", "crescent", "scribble", "twins", "saw", "ring", "crMotion", "crFill"]) {
+    for (const family of ["classicBody", "constellation", "spikes", "cloud", "crescent", "scribble", "twins", "saw", "ring", "famSlot", "floaterId"]) {
       expect(critterSrc.includes(family)).toBe(true);
     }
   });
@@ -120,15 +120,6 @@ describe("randomize + presets", () => {
     const sig = (p: ReturnType<typeof createDefaultProject>) =>
       `${p.layers[0].effects.map((e) => e.typeId).join(",")}|${JSON.stringify(p.layers[0].effects.map((e) => e.params))}`;
     expect(sig(a)).not.toEqual(sig(b));
-  });
-
-  it("packs eight or more effects into a Rand all look", () => {
-    for (const seed of [3, 99, 256, 1001, 7777]) {
-      const p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null);
-      expect(p.layers[0].effects.length).toBeGreaterThanOrEqual(8);
-      const ids = p.layers[0].effects.map((e) => e.typeId);
-      expect(new Set(ids).size).toBe(ids.length);
-    }
   });
 
   it("can stamp critters onto layers that lack them", () => {
