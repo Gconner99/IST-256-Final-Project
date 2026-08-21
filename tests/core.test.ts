@@ -8,6 +8,7 @@ import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { compileEffectSource } from "../src/engine/compile";
 import type { Keyframe } from "../src/core/types";
+import { buildPrompt, samplePaletteFromImageData } from "../src/generate/imagine";
 
 describe("seeded random", () => {
   it("is reproducible", () => {
@@ -91,5 +92,34 @@ describe("randomize + presets", () => {
     expect(applied.layers[0].effects.map((e) => e.typeId)).toEqual(p.layers[0].effects.map((e) => e.typeId));
     expect(applied.layers[0].effects[0].params).toEqual(p.layers[0].effects[0].params);
     expect(applied.globalFeedback.amount).toBe(p.globalFeedback.amount);
+  });
+});
+
+describe("prompt generation", () => {
+  it("asks for a new image, not a copy, when a source palette is provided", () => {
+    const prompt = buildPrompt("foggy marsh at dusk", ["#112233", "#aacc00"], true);
+    expect(prompt).toContain("foggy marsh at dusk");
+    expect(prompt).toMatch(/NEW original/i);
+    expect(prompt).toContain("#112233");
+    expect(prompt).toMatch(/not a copy/i);
+  });
+
+  it("skips reference language when not using a source", () => {
+    const prompt = buildPrompt("red room", ["#ff0000"], false);
+    expect(prompt).not.toContain("#ff0000");
+    expect(prompt).toContain("red room");
+  });
+
+  it("samples distinct palette swatches from pixels", () => {
+    const data = new Uint8ClampedArray(24 * 24 * 4);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = 10;
+      data[i + 1] = 20;
+      data[i + 2] = 30;
+      data[i + 3] = 255;
+    }
+    const palette = samplePaletteFromImageData(data, 24, 24);
+    expect(palette[0]).toBe("#0a141e");
+    expect(palette.length).toBeGreaterThan(0);
   });
 });

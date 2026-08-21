@@ -24,6 +24,9 @@ HOW TO USE IT
 
 - Drag a photo or video onto the big dark area
   OR click Plasma / Noise / Bars on the left
+- Type a prompt on the left and click Generate to make a NEW image
+  (turn on “use selected source as reference” to keep the mood of your photo)
+- Click New at the top to start over
 - Move the sliders. The picture changes immediately.
 - Click Export (bottom right) to save a picture to Downloads.
 

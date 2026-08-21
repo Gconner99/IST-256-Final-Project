@@ -12,6 +12,7 @@ import {
   dupPreset,
   duplicateLayer,
   freezeSelected,
+  generateFromPrompt,
   importFiles,
   loadPreset,
   loadProjectFile,
@@ -26,6 +27,7 @@ import {
   selectedEffect,
   selectedLayer,
   setParam,
+  startFromScratch,
   toggleEffect,
 } from "./actions";
 import { effectsByCategory, getEffect } from "../effects/registry";
@@ -45,6 +47,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <input type="text" id="proj-name" style="width:140px" />
       <button class="btn tiny" data-act="save">Save</button>
       <button class="btn tiny" data-act="load">Load</button>
+      <button class="btn tiny hot" data-act="scratch">New</button>
       <input type="file" id="proj-file" accept=".json,.phos.json" hidden />
       <div class="sp"></div>
       <label class="status">SEED</label>
@@ -82,8 +85,9 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> randomize all</li>
           <li><kbd>K</kbd> keyframe selected parameter</li>
-          <li><kbd>I</kbd> import &nbsp; <kbd>S</kbd> save project</li>
+          <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
+          <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
         <button class="btn acid" data-act="help">close</button>
@@ -108,6 +112,8 @@ function bind(root: HTMLElement) {
     const id = t.dataset.id;
     if (act === "save") saveProject();
     if (act === "load") root.querySelector<HTMLInputElement>("#proj-file")?.click();
+    if (act === "scratch") startFromScratch();
+    if (act === "imagine") void generateFromPrompt();
     if (act === "seed-") bumpSeed(-1);
     if (act === "seed+") bumpSeed(1);
     if (act === "rand-all") randomize("all");
@@ -217,7 +223,8 @@ function bind(root: HTMLElement) {
   root.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
     const p = store.project;
-    if (t.id === "proj-name") store.setProject((pr) => ({ ...pr, name: t.value }), false);
+    if (t.id === "gen-prompt") store.patchUi({ prompt: t.value }, false);
+    if (t.id === "gen-src") store.patchUi({ useSourceForGen: (t as HTMLInputElement).checked }, false);
     if (t.id === "seed") store.setProject((pr) => ({ ...pr, seed: Number(t.value) || 0 }), false);
     if (t.id === "rnd-amt") store.setProject((pr) => ({ ...pr, randomAmount: Number(t.value) }), false);
     if (t.id === "speed") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, speed: Number(t.value) } }), false);
@@ -294,6 +301,10 @@ function bind(root: HTMLElement) {
     }
     if (e.key === "r" || e.key === "R") randomize(e.shiftKey ? "all" : "selected");
     if (e.key === "k" || e.key === "K") addKeyframe();
+    if (e.key === "n" || e.key === "N") {
+      e.preventDefault();
+      startFromScratch();
+    }
     if (e.key === "?") store.patchUi({ helpOpen: !store.state.ui.helpOpen });
     if ((e.key === "s" || e.key === "S") && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
@@ -347,6 +358,12 @@ function paintRail(n: HTMLElement) {
       <input id="media-file" type="file" accept="image/*,video/*,.tif,.tiff,.mov,.webm,.mp4,.gif" multiple hidden />
       <input id="replace-file" type="file" accept="image/*,video/*,.tif,.tiff,.mov,.webm,.mp4,.gif" hidden />
     </div>
+    <hr class="div" />
+    <div class="sec">Generate new image</div>
+    <textarea id="gen-prompt" class="prompt" placeholder="describe a new image… e.g. grainy night photo of a flooded parking lot, sodium lights">${esc(ui.prompt)}</textarea>
+    <label class="check"><input type="checkbox" id="gen-src" ${ui.useSourceForGen ? "checked" : ""}/> use selected source as reference</label>
+    <button class="btn tiny acid" data-act="imagine" ${ui.generating ? "disabled" : ""}>${ui.generating ? "working…" : "Generate"}</button>
+    <div class="status" style="margin-top:4px">Makes a new picture from your prompt. Does not overwrite the upload.</div>
     <div class="row" style="margin-top:6px">
       <button class="btn tiny" data-act="gen" data-kind="plasma">Plasma</button>
       <button class="btn tiny" data-act="gen" data-kind="noise">Noise</button>

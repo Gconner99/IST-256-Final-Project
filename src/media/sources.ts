@@ -18,6 +18,11 @@ export async function loadMediaFile(file: File): Promise<MediaSource> {
   throw new Error(`Unsupported media: ${file.name}`);
 }
 
+export async function loadImageFromBlob(blob: Blob, name: string): Promise<MediaSource> {
+  const file = new File([blob], name, { type: blob.type || "image/jpeg" });
+  return loadImage(file);
+}
+
 async function loadImage(file: File): Promise<MediaSource> {
   const url = URL.createObjectURL(file);
   try {

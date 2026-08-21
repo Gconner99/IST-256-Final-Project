@@ -285,6 +285,21 @@ h2, .sec {
 
 .status { font-size: 10px; color: var(--dim); letter-spacing: 0.06em; }
 
+textarea.prompt {
+  width: 100%;
+  min-height: 72px;
+  margin: 4px 0 6px;
+  background: #0c0c10;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 6px;
+  resize: vertical;
+  border-radius: 1px;
+}
+textarea.prompt:focus { outline: 1px solid var(--acid); }
+
 .addfx {
   width: 100%;
   margin-top: 6px;

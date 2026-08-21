@@ -189,6 +189,9 @@ export interface AppUi {
   helpOpen: boolean;
   status: string;
   fps: number;
+  prompt: string;
+  useSourceForGen: boolean;
+  generating: boolean;
 }
 
 export interface AppState {

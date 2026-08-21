@@ -1,11 +1,12 @@
 import { uid } from "../core/ids";
 import { store } from "../core/store";
-import { defaultLayer, makeEffectInstance } from "../core/defaults";
+import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
 import { randomizeProject } from "../core/randomize";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
-import { freezeVideoFrame, loadMediaFile } from "../media/sources";
+import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
+import { buildPrompt, generateStill, samplePalette } from "../generate/imagine";
 
 export function selectedLayer(p: Project): Layer | undefined {
   const id = store.state.ui.selectedLayerId;
@@ -220,4 +221,45 @@ export async function freezeSelected() {
   if (!src) return;
   const still = await freezeVideoFrame(src);
   if (still) addSource(still, true);
+}
+
+export function startFromScratch() {
+  const ok = confirm("Start from scratch? This clears the canvas, sources, effects, and keyframes.");
+  if (!ok) return;
+  for (const src of store.project.sources) disposeSource(src);
+  store.replace(createDefaultProject());
+  store.patchUi({ status: "new piece", prompt: "", generating: false });
+}
+
+export async function generateFromPrompt() {
+  if (store.state.ui.generating) return;
+  const prompt = store.state.ui.prompt.trim();
+  if (!prompt) {
+    store.patchUi({ status: "type a prompt first" });
+    return;
+  }
+  store.patchUi({ generating: true, status: "generating new image…" });
+  try {
+    const src = store.project.sources.find((s) => s.id === store.state.ui.selectedSourceId);
+    const useSource = store.state.ui.useSourceForGen;
+    let palette: string[] = [];
+    const drawable = src?.frozenFrame || src?.bitmap || src?.video || null;
+    if (useSource && drawable) palette = samplePalette(drawable);
+    const full = buildPrompt(prompt, palette, useSource && palette.length > 0);
+    const seed = (store.project.seed + Date.now()) >>> 0;
+    const blob = await generateStill({
+      prompt: full,
+      seed,
+      width: store.project.exportSettings.width,
+      height: store.project.exportSettings.height,
+    });
+    const image = await loadImageFromBlob(blob, `gen_${seed}.jpg`);
+    addSource(image, true);
+    store.patchUi({ generating: false, status: useSource && palette.length ? "new image from prompt + source" : "new image from prompt" });
+  } catch (err) {
+    store.patchUi({
+      generating: false,
+      status: err instanceof Error ? err.message : "generation failed",
+    });
+  }
 }
