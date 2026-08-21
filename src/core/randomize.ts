@@ -34,19 +34,58 @@ const PALETTES: Palette[] = [
 ];
 
 const LOOKS: Look[] = [
-  { name: "silk garden", mood: "lush", stack: ["grade", "bloom", "grain", "warp"], blend: "normal" },
-  { name: "honey dusk", mood: "lush", stack: ["grade", "duotone", "bloom", "lens"], blend: "normal" },
-  { name: "lagoon", mood: "lush", stack: ["grade", "channels", "bloom", "chroma"], blend: "screen" },
-  { name: "rose room", mood: "lush", stack: ["grade", "grain", "warp", "bloom"], blend: "normal" },
-  { name: "holy smear", mood: "lush", stack: ["grade", "smear", "bloom", "echo"], blend: "lighten" },
-  { name: "xerox folk", mood: "outsider", stack: ["posterize", "threshold", "analog", "chroma"], blend: "normal" },
-  { name: "bruise print", mood: "outsider", stack: ["solarize", "channels", "warp", "analog"], blend: "difference" },
-  { name: "marker night", mood: "outsider", stack: ["duotone", "posterize", "grain", "kaleido"], blend: "overlay" },
-  { name: "carnival", mood: "mix", stack: ["duotone", "kaleido", "bloom", "critters"], blend: "screen" },
-  { name: "field notes", mood: "mix", stack: ["grade", "posterize", "grain", "critters"], blend: "normal" },
-  { name: "prism marsh", mood: "mix", stack: ["kaleido", "chroma", "bloom", "duotone"], blend: "overlay" },
-  { name: "outsider silk", mood: "mix", stack: ["grade", "bloom", "analog", "critters"], blend: "normal" },
+  { name: "silk garden", mood: "lush", stack: ["grade", "warp", "bloom", "grain", "channels", "lens", "chroma"], blend: "normal" },
+  { name: "honey dusk", mood: "lush", stack: ["grade", "duotone", "bloom", "lens", "grain", "smear", "chroma"], blend: "normal" },
+  { name: "lagoon", mood: "lush", stack: ["grade", "channels", "bloom", "chroma", "warp", "echo", "grain"], blend: "screen" },
+  { name: "rose room", mood: "lush", stack: ["grade", "grain", "warp", "bloom", "duotone", "lens", "displace"], blend: "normal" },
+  { name: "holy smear", mood: "lush", stack: ["grade", "smear", "bloom", "echo", "chroma", "grain", "warp"], blend: "lighten" },
+  { name: "glass hive", mood: "lush", stack: ["grade", "lens", "bloom", "kaleido", "chroma", "grain", "echo"], blend: "screen" },
+  { name: "xerox folk", mood: "outsider", stack: ["posterize", "threshold", "analog", "chroma", "grain", "solarize", "warp"], blend: "normal" },
+  { name: "bruise print", mood: "outsider", stack: ["solarize", "channels", "warp", "analog", "posterize", "displace", "grain"], blend: "difference" },
+  { name: "marker night", mood: "outsider", stack: ["duotone", "posterize", "grain", "kaleido", "analog", "chroma", "spin"], blend: "overlay" },
+  { name: "street xerox", mood: "outsider", stack: ["threshold", "analog", "slitscan", "chroma", "grain", "mirror", "posterize"], blend: "normal" },
+  { name: "carnival", mood: "mix", stack: ["duotone", "kaleido", "bloom", "critters", "chroma", "spin", "grain"], blend: "screen" },
+  { name: "field notes", mood: "mix", stack: ["grade", "posterize", "grain", "critters", "warp", "analog", "channels"], blend: "normal" },
+  { name: "prism marsh", mood: "mix", stack: ["kaleido", "chroma", "bloom", "duotone", "mirror", "warp", "echo"], blend: "overlay" },
+  { name: "outsider silk", mood: "mix", stack: ["grade", "bloom", "analog", "critters", "smear", "channels", "grain"], blend: "normal" },
+  { name: "wet market", mood: "mix", stack: ["grade", "displace", "bloom", "duotone", "stutter", "warp", "critters"], blend: "normal" },
 ];
+
+const EXTRA_POOL = [
+  "grade", "posterize", "threshold", "duotone", "solarize", "channels",
+  "warp", "chroma", "displace", "lens", "smear",
+  "analog", "grain", "bloom",
+  "kaleido", "mirror", "spin",
+  "echo", "slitscan", "stutter",
+  "critters",
+];
+
+const HEAVY = new Set(["bloom", "smear", "kaleido", "echo", "slitscan", "critters"]);
+const GEO = new Set(["kaleido", "mirror", "spin"]);
+const TEMPORAL = new Set(["echo", "slitscan", "stutter"]);
+
+function padStack(base: string[], rng: () => number): string[] {
+  const stack = base.filter((id) => getEffect(id));
+  const used = new Set(stack);
+  let heavy = stack.filter((id) => HEAVY.has(id)).length;
+  let geo = stack.filter((id) => GEO.has(id)).length;
+  let temporal = stack.filter((id) => TEMPORAL.has(id)).length;
+  const target = 8 + Math.floor(rng() * 4);
+  const pool = EXTRA_POOL.filter((id) => getEffect(id) && !used.has(id));
+  while (stack.length < target && pool.length) {
+    const i = Math.floor(rng() * pool.length);
+    const id = pool.splice(i, 1)[0];
+    if (HEAVY.has(id) && heavy >= 3) continue;
+    if (GEO.has(id) && geo >= 2) continue;
+    if (TEMPORAL.has(id) && temporal >= 2) continue;
+    if (HEAVY.has(id)) heavy += 1;
+    if (GEO.has(id)) geo += 1;
+    if (TEMPORAL.has(id)) temporal += 1;
+    const at = Math.min(stack.length, 1 + Math.floor(rng() * Math.max(1, stack.length)));
+    stack.splice(at, 0, id);
+  }
+  return stack;
+}
 
 function randForParam(rng: () => number, def: ParamDef, current: number | string | boolean, amount: number) {
   if (def.randomizable === false) return current;
@@ -167,10 +206,10 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.soft = 0.04 + rng() * 0.18;
   }
   if (fx.typeId === "critters") {
-    p.count = mood === "lush" ? 3 + Math.floor(rng() * 3) : 4 + Math.floor(rng() * 4);
-    p.size = 0.85 + rng() * 0.7;
-    p.amount = 0.7 + rng() * 0.3;
-    p.speed = 0.7 + rng() * 1.3;
+    p.count = 4 + Math.floor(rng() * 5);
+    p.size = 0.45 + rng() * 1.7;
+    p.amount = 0.65 + rng() * 0.35;
+    p.speed = 0.35 + rng() * 2.4;
     p.seed = 1 + Math.floor(rng() * 9998);
   }
   if (fx.typeId === "kaleido") {
@@ -180,6 +219,38 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
   if (fx.typeId === "channels") {
     p.tint = palette.leak;
     p.tintAmt = mood === "lush" ? 0.12 + rng() * 0.28 : rng() * 0.45;
+  }
+  if (fx.typeId === "displace") {
+    p.amount = mood === "lush" ? 0.01 + rng() * 0.05 : 0.04 + rng() * 0.14;
+    p.scale = 1.5 + rng() * 12;
+  }
+  if (fx.typeId === "lens") {
+    p.amount = (rng() - 0.5) * (mood === "outsider" ? 1.2 : 0.7);
+    p.zoom = 0.75 + rng() * 0.7;
+  }
+  if (fx.typeId === "smear") {
+    p.amount = mood === "lush" ? 0.12 + rng() * 0.28 : 0.25 + rng() * 0.5;
+  }
+  if (fx.typeId === "mirror") {
+    p.tiles = mood === "lush" ? 1 + rng() * 1.5 : 1 + rng() * 4;
+  }
+  if (fx.typeId === "spin") {
+    p.rotate = (rng() - 0.5) * (mood === "outsider" ? 1.2 : 0.45);
+    p.scale = 0.85 + rng() * 0.5;
+    p.stretch = 0.75 + rng() * 0.7;
+  }
+  if (fx.typeId === "echo") {
+    p.amount = 0.18 + rng() * 0.45;
+    p.decay = 0.4 + rng() * 0.5;
+  }
+  if (fx.typeId === "slitscan") {
+    p.amount = 0.25 + rng() * 0.5;
+  }
+  if (fx.typeId === "stutter") {
+    p.rate = 0.15 + rng() * 0.55;
+  }
+  if (fx.typeId === "solarize") {
+    p.cut = 0.25 + rng() * 0.55;
   }
   return { ...fx, params: p };
 }
@@ -204,7 +275,7 @@ function rebuildLayer(layer: Layer, seed: number, amount: number): Layer {
   const rng = mulberry32(seed >>> 0);
   const look = LOOKS[Math.floor(rng() * LOOKS.length)];
   const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
-  const stack = look.stack.filter((id) => getEffect(id));
+  const stack = padStack(look.stack, rng);
   const effects = stack.map((id, i) => applyMood(makeFx(id, seed + i * 997, amount), look.mood, palette, rng));
   const feedbackAmt = look.mood === "lush" ? 0.06 + rng() * 0.16 : 0.04 + rng() * 0.28;
   return {

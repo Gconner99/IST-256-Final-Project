@@ -7,10 +7,10 @@ export const critters: EffectType = {
   category: "wacky",
   description: "Unreal objects in mixed families — the original lumpy forms plus spikes, clouds, bites, scribbles, twins, saws, and rings",
   params: [
-    { id: "count", label: "Shapes", kind: "int", min: 1, max: 8, step: 1, default: 5 },
-    { id: "size", label: "Size", kind: "float", min: 0.4, max: 2.5, step: 0.01, default: 1.1 },
+    { id: "count", label: "Shapes", kind: "int", min: 1, max: 8, step: 1, default: 6 },
+    { id: "size", label: "Size", kind: "float", min: 0.3, max: 3, step: 0.01, default: 1.15 },
     { id: "seed", label: "Seed", kind: "int", min: 1, max: 9999, step: 1, default: 77 },
-    { id: "speed", label: "Drift", kind: "float", min: 0, max: 3, step: 0.01, default: 1.15 },
+    { id: "speed", label: "Drift", kind: "float", min: 0, max: 4, step: 0.01, default: 1.2 },
     { id: "amount", label: "Amount", kind: "float", min: 0, max: 1, step: 0.01, default: 1 },
     { id: "mix", label: "Mix", kind: "float", min: 0, max: 1, step: 0.01, default: 1, randomizable: false },
   ],
