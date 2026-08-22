@@ -163,12 +163,15 @@ describe("effects registry", () => {
     expect(idol.params.find((p) => p.id === "place")?.default).toBe("center");
     expect(idol.params.find((p) => p.id === "crowd")?.default).toBe("normal");
     expect(idol.params.find((p) => p.id === "move")?.default).toBe("dance");
+    expect(idol.params.find((p) => p.id === "form")?.default).toBe("idol");
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
     expect(idolSrc.includes("figureMap")).toBe(true);
     expect(idolSrc.includes("figureFace")).toBe(true);
     expect(idolSrc.includes("figureRender")).toBe(true);
     expect(idolSrc.includes("figureRenderMini")).toBe(false);
+    expect(idolSrc.includes("geomRender")).toBe(false);
+    expect(idolSrc.includes("geomRenderMini")).toBe(false);
     expect(idolSrc.includes("figTravel")).toBe(true);
     expect(idolSrc.includes("figCarry")).toBe(true);
     expect(idolSrc.includes("u_move")).toBe(true);
@@ -191,6 +194,18 @@ describe("effects registry", () => {
     expect(miniSrc.includes("figureRenderMini")).toBe(true);
     expect(miniSrc.includes("figWildMini")).toBe(true);
     expect(miniSrc.includes("figMiniPlace")).toBe(true);
+    expect(miniSrc.includes("geomRender")).toBe(false);
+    const morphSrc = compileEffectSource(dancerForCompile(false, "morph"));
+    expect(morphSrc.includes("geomRender")).toBe(true);
+    expect(morphSrc.includes("geomHit")).toBe(true);
+    expect(morphSrc.includes("geomSmin")).toBe(true);
+    expect(morphSrc.includes("geomStar")).toBe(true);
+    expect(morphSrc.includes("geomRenderMini")).toBe(false);
+    expect(morphSrc.includes("figureRenderMini")).toBe(false);
+    const crystalMini = compileEffectSource(dancerForCompile(true, "crystal"));
+    expect(crystalMini.includes("geomRenderMini")).toBe(true);
+    expect(crystalMini.includes("geomWildMini")).toBe(true);
+    expect(crystalMini.includes("figureRenderMini")).toBe(false);
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
@@ -246,6 +261,7 @@ describe("randomize + presets", () => {
     expect(Number(idol.params.count)).toBe(1);
     expect(idol.params.place).toBe("center");
     expect(idol.params.crowd ?? "normal").toBe("normal");
+    expect(idol.params.form ?? "idol").toBe("idol");
   });
 });
 

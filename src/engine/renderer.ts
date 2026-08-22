@@ -1,6 +1,6 @@
 import type { EffectInstance, Layer, MediaSource, Project, QualityMode } from "../core/types";
 import { resolvedLayerParams } from "../core/timeline";
-import { dancerForCompile } from "../effects/dancer";
+import { dancerForCompile, isGeomForm } from "../effects/dancer";
 import { allEffects, getEffect } from "../effects/registry";
 import { getSoundtrack, sampleAudio } from "../media/audio";
 import {
@@ -83,11 +83,12 @@ export class Renderer {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
   }
 
-  private compileType(typeId: string, mini = false): Program | null {
-    const key = mini ? "dancer:mini" : typeId;
+  private compileType(typeId: string, mini = false, form = "idol"): Program | null {
+    const geom = typeId === "dancer" && isGeomForm(form);
+    const key = typeId !== "dancer" ? typeId : geom ? (mini ? "dancer:geom:mini" : "dancer:geom") : mini ? "dancer:mini" : "dancer";
     const cached = this.effectProg.get(key);
     if (cached) return cached;
-    const def = typeId === "dancer" ? dancerForCompile(mini) : getEffect(typeId);
+    const def = typeId === "dancer" ? dancerForCompile(mini, form) : getEffect(typeId);
     if (!def) return null;
     try {
       const p = compileEffectProgram(this.gl, def);
@@ -107,15 +108,23 @@ export class Renderer {
       .sort((a, b) => Number(a !== "dancer" && a !== "critters") - Number(b !== "dancer" && b !== "critters"));
     let i = 0;
     const step = () => {
-      if (i >= ids.length) return;
-      this.compileType(ids[i++]);
-      if (i < ids.length) requestAnimationFrame(step);
+      if (i < ids.length) {
+        this.compileType(ids[i++]);
+        requestAnimationFrame(step);
+        return;
+      }
+      if (i === ids.length) {
+        this.compileType("dancer", false, "morph");
+        i++;
+        requestAnimationFrame(step);
+      }
     };
     requestAnimationFrame(step);
   }
 
   private progFor(fx: EffectInstance): Program | null {
-    return this.compileType(fx.typeId, fx.typeId === "dancer" && fx.params.crowd === "mini");
+    if (fx.typeId !== "dancer") return this.compileType(fx.typeId);
+    return this.compileType("dancer", fx.params.crowd === "mini", String(fx.params.form ?? "idol"));
   }
 
   resetTemporal() {

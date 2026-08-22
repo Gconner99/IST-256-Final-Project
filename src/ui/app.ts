@@ -100,7 +100,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt, xerox, and drifting shapes. Keep the <em>floaters</em> box on to send one-off colored objects across the frame.</li>
-          <li><strong>Idol</strong> plants a small low-poly 3D creature — stamp it to grow a weirder one (petals, skirts, antennae, halos). Move can dance in place, drift across the frame, float, or orbit. Crowd can switch to a mini army. Keep the top-bar box on so Rand all includes it.</li>
+          <li><strong>Idol</strong> plants a small low-poly 3D creature — stamp it to grow a weirder one (petals, skirts, antennae, halos). <em>Form</em> on the Idol effect keeps that dancer, or switches to morphing solids / folded crystals. Move can dance, drift, float, or orbit. Crowd can switch to a mini army. Keep the top-bar box on so Rand all includes it.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass. Exported clips are silent for now — the motion still follows the mix.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
@@ -465,7 +465,7 @@ function paintRail(n: HTMLElement) {
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Floaters drift across — Kit on the Floaters effect picks lumpy shapes, toy-pop music icons, or both. An idol is one small low-poly dancer. Move can drift, float, or orbit. Crowd → Mini army fills the frame with tiny ones. Drop an MP3 to make them dance to the song.</div>
+    <div class="status" style="margin-top:4px">Floaters drift across — Kit on the Floaters effect picks lumpy shapes, toy-pop music icons, or both. An idol is one small low-poly dancer. Form on the Idol effect can switch to morphing solids or folded crystals. Move can drift, float, or orbit. Crowd → Mini army fills the frame with tiny ones. Drop an MP3 to make them dance to the song.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
