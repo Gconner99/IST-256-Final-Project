@@ -1,4 +1,4 @@
-import type { GeneratorType, MediaSource, Project } from "./types";
+import type { EffectInstance, GeneratorType, MediaSource, Project } from "./types";
 
 const PLACE_FALLBACK: Record<string, GeneratorType> = {
   lot: "marsh",
@@ -7,6 +7,12 @@ const PLACE_FALLBACK: Record<string, GeneratorType> = {
   chapel: "cave",
   lamp: "stars",
 };
+
+const RETIRED_EFFECTS = new Set(["window"]);
+
+function keepEffect(fx: EffectInstance): boolean {
+  return !RETIRED_EFFECTS.has(fx.typeId);
+}
 
 const RUNTIME_KEYS = new Set(["bitmap", "video", "audio", "pcm", "objectUrl", "frozenFrame"]);
 
@@ -36,6 +42,22 @@ export function parseProject(json: string): Project {
     const next = PLACE_FALLBACK[s.generator ?? ""];
     return next ? { ...s, generator: next } : s;
   });
+  data.layers = data.layers.map((layer) => ({
+    ...layer,
+    effects: (layer.effects ?? []).filter(keepEffect),
+  }));
+  data.presets = data.presets.map((preset) => ({
+    ...preset,
+    data: preset.data
+      ? {
+          ...preset.data,
+          layers: (preset.data.layers ?? []).map((layer) => ({
+            ...layer,
+            effects: (layer.effects ?? []).filter(keepEffect),
+          })),
+        }
+      : preset.data,
+  }));
   return data;
 }
 

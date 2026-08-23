@@ -4,7 +4,7 @@ import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../s
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, ensureIdol, ensureWindow, chaosStamp, randomizeProject, windowStamp } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
@@ -127,17 +127,32 @@ describe("project files", () => {
     const loaded = parseProject(serializeProject(p));
     expect(loaded.sources[0].generator).toBe("cave");
   });
+
+  it("drops retired Window effects from old saves", () => {
+    const p = createDefaultProject();
+    p.layers[0].effects.push({
+      id: "fx-window",
+      typeId: "window",
+      enabled: true,
+      params: { shape: "circle", mix: 1 },
+    });
+    const loaded = parseProject(serializeProject(p));
+    expect(loaded.layers[0].effects.some((fx) => fx.typeId === "window")).toBe(false);
+    expect(getEffect("window")).toBeUndefined();
+  });
 });
 
 describe("effects registry", () => {
   it("ships a usable MVP library", () => {
     expect(allEffects().length).toBeGreaterThanOrEqual(15);
-    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer", "window"]) {
+    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer"]) {
       expect(getEffect(id)).toBeTruthy();
     }
     expect(getEffect("critters")?.category).toBe("wacky");
     expect(getEffect("critters")?.name).toBe("Floaters");
     expect(getEffect("dancer")?.name).toBe("Idol");
+    expect(getEffect("window")).toBeUndefined();
+    expect(allEffects().some((fx) => fx.id === "window")).toBe(false);
     const critterSrc = compileEffectSource(getEffect("critters")!);
     expect(getEffect("critters")?.params.find((p) => p.id === "kit")?.default).toBe("shapes");
     expect(getEffect("critters")?.params.find((p) => p.id === "kit")?.options?.map((o) => o.value)).toEqual([
@@ -230,27 +245,6 @@ describe("effects registry", () => {
     expect(miniSrc.includes("impRender")).toBe(false);
   });
 
-  it("ships a window frame with feather and a different inside", () => {
-    const win = getEffect("window");
-    expect(win?.name).toBe("Window");
-    expect(win?.params.find((p) => p.id === "shape")?.options?.map((o) => o.value)).toEqual(["square", "circle"]);
-    expect(win?.params.find((p) => p.id === "feather")?.default).toBe(0.1);
-    expect(win?.params.find((p) => p.id === "inside")?.options?.map((o) => o.value)).toEqual(["place", "other"]);
-    const src = compileEffectSource(win!);
-    expect(src).toContain("uInner");
-    expect(src).toContain("windowMask");
-    expect(src.includes("figureRenderMini")).toBe(false);
-    expect(src.includes("geomRender")).toBe(false);
-    const planted = ensureWindow(createDefaultProject());
-    expect(planted.layers[0].effects.some((e) => e.typeId === "window")).toBe(true);
-    expect(ensureWindow(planted).layers[0].effects.filter((e) => e.typeId === "window")).toHaveLength(1);
-    const a = windowStamp(planted, 11);
-    const b = windowStamp(planted, 99);
-    const pa = a.layers[0].effects.find((e) => e.typeId === "window")!.params;
-    const pb = b.layers[0].effects.find((e) => e.typeId === "window")!.params;
-    expect(pa.seed).not.toEqual(pb.seed);
-  });
-
   it("ships a short set of background places", () => {
     expect(GEN_INDEX.stars).toBe(7);
     expect(GEN_INDEX.marsh).toBe(8);
@@ -264,6 +258,9 @@ describe("effects registry", () => {
     expect(GENERATOR_GLSL).toContain("genOil");
     expect(GENERATOR_GLSL).toContain("genPaper");
     expect(GENERATOR_GLSL).toContain("genCave");
+    expect(GENERATOR_GLSL).toContain("halo");
+    expect(GENERATOR_GLSL).toContain("laid");
+    expect(GENERATOR_GLSL).toContain("spark");
     expect(GENERATOR_GLSL).not.toContain("genLot");
     expect(GENERATOR_GLSL).not.toContain("genChapel");
     expect(GENERATOR_GLSL).not.toContain("genLamp");

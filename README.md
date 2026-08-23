@@ -48,7 +48,7 @@ Requires a browser (or Electron) with **WebGL2**.
 - Floaters kits: lumpy shapes, toy-pop icons, votives, moths, charms
 - Idol Grow (petals / halo / antenna / skirt / quiet) and Coat (cream / moss / sodium / night / candy)
 - Procedural backgrounds: plasma, noise, bars, plus **Stars**, **Marsh**, **Oil**, **Paper**, and **Cave**
-- ~20 effects including **Floaters**, **Idol**, **Window** (frame-in-frame), **Luma key**, and **Dropout**
+- ~20 effects including **Floaters**, **Idol**, **Luma key**, and **Dropout**
 - Seeded randomization (all / selected / param) plus **Rand wacky** (outsider looks, short stacks)
 - **Stamp chaos** rerolls overlay seeds and generator inks; **Print frame** captures the live picture as a still
 - Global + per-layer **feedback bus** (amount, delay, opacity, scale, rotation, distortion)

@@ -238,20 +238,6 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.rate = 0.18 + rng() * 0.4;
     p.tear = mood === "outsider" ? 0.3 + rng() * 0.5 : rng() * 0.28;
   }
-  if (fx.typeId === "window") {
-    p.shape = rng() > 0.42 ? "circle" : "square";
-    p.x = 0.16 + rng() * 0.68;
-    p.y = 0.16 + rng() * 0.68;
-    p.size = 0.22 + rng() * 0.26;
-    p.feather = 0.05 + rng() * 0.16;
-    p.inside = "place";
-    const rooms = ["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave"] as const;
-    p.place = rooms[Math.floor(rng() * rooms.length)];
-    p.inkA = palette.inkA;
-    p.inkB = palette.inkB;
-    p.seed = 1 + Math.floor(rng() * 9998);
-    p.amount = 1;
-  }
   return { ...fx, params: p };
 }
 
@@ -265,11 +251,6 @@ function makeIdolInstance(seed: number, mood: Mood = "mix"): EffectInstance {
   return applyMood(makeFx("dancer", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
 }
 
-function makeWindowInstance(seed: number, mood: Mood = "mix"): EffectInstance {
-  const rng = mulberry32(seed >>> 0);
-  return applyMood(makeFx("window", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
-}
-
 /** Drop a dancing idol onto every layer that doesn't already have one. */
 export function ensureIdol(project: Project): Project {
   return {
@@ -280,50 +261,6 @@ export function ensureIdol(project: Project): Project {
     }),
   };
 }
-export function ensureWindow(project: Project): Project {
-  return {
-    ...project,
-    layers: project.layers.map((layer, i) => {
-      if (layer.effects.some((e) => e.typeId === "window")) return layer;
-      return { ...layer, effects: [...layer.effects, makeWindowInstance(project.seed + i * 3331, "mix")] };
-    }),
-  };
-}
-
-/** New picture + new spot for every window. Adds one if missing. */
-export function windowStamp(project: Project, seed: number): Project {
-  const rng = mulberry32(seed >>> 0);
-  const rooms = ["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave"] as const;
-  const next = ensureWindow({ ...project, seed: seed >>> 0 });
-  return {
-    ...next,
-    layers: next.layers.map((layer) => ({
-      ...layer,
-      effects: layer.effects.map((fx) => {
-        if (fx.typeId !== "window") return fx;
-        const pal = PALETTES[Math.floor(rng() * PALETTES.length)];
-        return {
-          ...fx,
-          params: {
-            ...fx.params,
-            seed: 1 + Math.floor(rng() * 9998),
-            shape: rng() > 0.42 ? "circle" : "square",
-            x: 0.16 + rng() * 0.68,
-            y: 0.16 + rng() * 0.68,
-            size: 0.22 + rng() * 0.26,
-            feather: 0.05 + rng() * 0.16,
-            inside: fx.params.inside ?? "place",
-            place: rooms[Math.floor(rng() * rooms.length)],
-            inkA: pal.inkA,
-            inkB: pal.inkB,
-            amount: 1,
-          },
-        };
-      }),
-    })),
-  };
-}
-
 export function ensureCritters(project: Project): Project {
   return {
     ...project,
@@ -467,24 +404,6 @@ export function chaosStamp(project: Project): Project {
               seed: 1 + Math.floor(rng() * 9998),
               grow: grows[Math.floor(rng() * grows.length)],
               coat: coats[Math.floor(rng() * coats.length)],
-            },
-          };
-        }
-        if (fx.typeId === "window") {
-          const rooms = ["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave"] as const;
-          return {
-            ...fx,
-            params: {
-              ...fx.params,
-              seed: 1 + Math.floor(rng() * 9998),
-              shape: rng() > 0.42 ? "circle" : "square",
-              x: 0.16 + rng() * 0.68,
-              y: 0.16 + rng() * 0.68,
-              size: 0.22 + rng() * 0.26,
-              feather: 0.05 + rng() * 0.16,
-              place: rooms[Math.floor(rng() * rooms.length)],
-              inkA: PALETTES[Math.floor(rng() * PALETTES.length)].inkA,
-              inkB: PALETTES[Math.floor(rng() * PALETTES.length)].inkB,
             },
           };
         }

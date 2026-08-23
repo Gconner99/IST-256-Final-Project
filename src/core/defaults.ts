@@ -70,11 +70,11 @@ export function defaultExportSettings(): ExportSettings {
 }
 
 const GEN_INK: Record<string, { a: string; b: string }> = {
-  stars: { a: "#060814", b: "#c8d4ff" },
-  marsh: { a: "#0c1410", b: "#ffb44a" },
-  oil: { a: "#12081c", b: "#3dffd0" },
-  paper: { a: "#e8dcc8", b: "#2a1810" },
-  cave: { a: "#08060c", b: "#7aa2ff" },
+  stars: { a: "#050712", b: "#d4dcff" },
+  marsh: { a: "#0a100e", b: "#ffb056" },
+  oil: { a: "#10061a", b: "#4affd4" },
+  paper: { a: "#f0e4d0", b: "#3a2418" },
+  cave: { a: "#07050a", b: "#8ab0ff" },
 };
 
 export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"): MediaSource {

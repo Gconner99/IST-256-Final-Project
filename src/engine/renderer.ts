@@ -45,7 +45,6 @@ export class Renderer {
   private pong: FBO;
   private composite: FBO;
   private post: FBO;
-  private inset: FBO;
   private ring: FBO[] = [];
   private ringIndex = 0;
   private layerHist = new Map<string, FBO>();
@@ -72,7 +71,6 @@ export class Renderer {
     this.pong = new FBO(gl);
     this.composite = new FBO(gl);
     this.post = new FBO(gl);
-    this.inset = new FBO(gl);
     for (let i = 0; i < RING; i++) this.ring.push(new FBO(gl));
     this.copy = new Program(gl, COPY_GLSL);
     this.blit = new Program(gl, BLIT_GLSL);
@@ -141,7 +139,7 @@ export class Renderer {
     if (w === this.width && h === this.height) return;
     this.width = w;
     this.height = h;
-    for (const f of [this.ping, this.pong, this.composite, this.post, this.inset, ...this.ring, ...this.layerHist.values()]) {
+    for (const f of [this.ping, this.pong, this.composite, this.post, ...this.ring, ...this.layerHist.values()]) {
       f.resize(w, h);
     }
   }
@@ -208,45 +206,11 @@ export class Renderer {
     drawTri(gl);
   }
 
-  private fillWindowInner(fx: EffectInstance, layer: Layer, project: Project, time: number) {
-    const inside = fx.params.inside;
-    if (inside === "other") {
-      const other = project.sources.find((s) => s.id !== layer.sourceId && s.kind !== "audio");
-      if (other?.kind === "generator") {
-        this.drawGenerator(this.inset, other, time, Number(fx.params.seed ?? 77));
-        return;
-      }
-      const media = other?.frozenFrame || other?.bitmap || other?.video;
-      if (other && media) {
-        this.blitTo(this.inset, this.uploadSource(other));
-        return;
-      }
-    }
-    const place = String(fx.params.place ?? "stars");
-    this.drawGenerator(
-      this.inset,
-      {
-        id: "window-inner",
-        name: "WINDOW",
-        kind: "generator",
-        generator: (GEN_INDEX[place] !== undefined ? place : "stars") as MediaSource["generator"],
-        colorA: typeof fx.params.inkA === "string" ? fx.params.inkA : "#060814",
-        colorB: typeof fx.params.inkB === "string" ? fx.params.inkB : "#c8d4ff",
-        width: this.width,
-        height: this.height,
-        duration: 0,
-      },
-      time,
-      Number(fx.params.seed ?? 77),
-    );
-  }
-
   private applyEffect(
     dest: FBO,
     srcTex: WebGLTexture,
     fx: EffectInstance,
     layer: Layer,
-    project: Project,
     time: number,
     frame: number,
     quality: QualityMode,
@@ -260,7 +224,6 @@ export class Renderer {
       return;
     }
     const gl = this.gl;
-    if (fx.typeId === "window") this.fillWindowInner(fx, layer, project, time);
     dest.bind();
     prog.use();
     bindTex(gl, 0, srcTex);
@@ -270,10 +233,6 @@ export class Renderer {
     prog.i("uFeedback", 1);
     prog.i("uHistory", 2);
     prog.i("uMask", 3);
-    if (fx.typeId === "window") {
-      bindTex(gl, 4, this.inset.tex);
-      prog.i("uInner", 4);
-    }
     prog.v2("uResolution", dest.w, dest.h);
     prog.v2("uTexel", 1 / dest.w, 1 / dest.h);
     prog.f("uTime", time);
@@ -352,7 +311,7 @@ export class Renderer {
       const hist = this.histFor(layer.id);
       for (const fx of layer.effects) {
         if (!fx.enabled) continue;
-        this.applyEffect(write, read.tex, fx, layer, project, time, frame, quality, feedbackTex, hist.tex);
+        this.applyEffect(write, read.tex, fx, layer, time, frame, quality, feedbackTex, hist.tex);
         const tmp = read;
         read = write;
         write = tmp;
