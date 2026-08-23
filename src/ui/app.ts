@@ -453,7 +453,7 @@ function paintRail(n: HTMLElement) {
     <textarea id="gen-prompt" class="prompt" placeholder="describe a new image… e.g. grainy night photo of a flooded parking lot, sodium lights">${esc(ui.prompt)}</textarea>
     <label class="check"><input type="checkbox" id="gen-src" ${ui.useSourceForGen ? "checked" : ""}/> use selected source as reference</label>
     <button class="btn tiny acid" data-act="imagine" ${ui.generating ? "disabled" : ""}>${ui.generating ? "working…" : "Generate"}</button>
-    <div class="status" style="margin-top:4px">Makes a new picture from your prompt. Does not overwrite the upload.</div>
+    <div class="status" style="margin-top:4px">Usually a few seconds. Does not overwrite the upload.</div>
     <div class="row" style="margin-top:6px">
       <button class="btn tiny" data-act="gen" data-kind="plasma">Plasma</button>
       <button class="btn tiny" data-act="gen" data-kind="noise">Noise</button>

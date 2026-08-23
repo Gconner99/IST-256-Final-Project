@@ -329,6 +329,7 @@ export async function generateFromPrompt() {
       seed,
       width: store.project.exportSettings.width,
       height: store.project.exportSettings.height,
+      onStatus: (msg) => store.patchUi({ generating: true, status: msg }, false),
     });
     const image = await loadImageFromBlob(blob, `gen_${seed}.jpg`);
     addSource(image, true);

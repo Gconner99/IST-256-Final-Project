@@ -12,7 +12,7 @@ import { compileEffectSource } from "../src/engine/compile";
 import { GENERATOR_GLSL } from "../src/engine/shaders";
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
-import { buildPrompt, samplePaletteFromImageData } from "../src/generate/imagine";
+import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
 import { isAudioFile, sampleLevelsFromSamples } from "../src/media/audio";
 
 describe("seeded random", () => {
@@ -277,18 +277,38 @@ describe("randomize + presets", () => {
 });
 
 describe("prompt generation", () => {
-  it("asks for a new image, not a copy, when a source palette is provided", () => {
+  it("turns a source palette into ink names, not a copy instruction", () => {
     const prompt = buildPrompt("foggy marsh at dusk", ["#112233", "#aacc00"], true);
     expect(prompt).toContain("foggy marsh at dusk");
-    expect(prompt).toMatch(/NEW original/i);
-    expect(prompt).toContain("#112233");
-    expect(prompt).toMatch(/not a copy/i);
+    expect(prompt).toMatch(/palette of/i);
+    expect(prompt).toMatch(/still photograph/i);
+    expect(prompt).not.toMatch(/not a copy/i);
+    expect(prompt).not.toContain("#112233");
+    expect(hexToInk("#112233")).toBeTruthy();
   });
 
   it("skips reference language when not using a source", () => {
     const prompt = buildPrompt("red room", ["#ff0000"], false);
     expect(prompt).not.toContain("#ff0000");
     expect(prompt).toContain("red room");
+    expect(prompt).toMatch(/still photograph/i);
+  });
+
+  it("snaps export sizes to Sana's 768px box", () => {
+    expect(snapGenSize(960, 540)).toEqual({ width: 768, height: 432 });
+    expect(snapGenSize(720, 960)).toEqual({ width: 576, height: 768 });
+    expect(snapGenSize(1024, 1024)).toEqual({ width: 768, height: 768 });
+    expect(snapGenSize(1280, 720)).toEqual({ width: 768, height: 432 });
+  });
+
+  it("asks Sana for a still without rewriting the prompt", () => {
+    const url = stillUrl("red room", 42, 768, 432);
+    expect(url).toContain("image.pollinations.ai/prompt/");
+    expect(url).toContain("model=sana");
+    expect(url).toContain("enhance=false");
+    expect(url).not.toContain("enhance=true");
+    expect(url).toContain("width=768");
+    expect(url).toContain("height=432");
   });
 
   it("samples distinct palette swatches from pixels", () => {
