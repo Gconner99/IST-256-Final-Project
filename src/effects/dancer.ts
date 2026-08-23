@@ -26,7 +26,8 @@ vec4 apply(vec2 uv) {
 const APPLY_GEOM = `
 vec4 apply(vec2 uv) {
   vec3 src = sampleSrc(uv).rgb;
-  vec4 f = geomRender(uv, u_seed, uTime * u_speed, u_size, u_count, u_place, u_echo, u_move, u_form);
+  float gform = u_form > 2.5 ? 2.0 : 1.0;
+  vec4 f = geomRender(uv, u_seed, uTime * u_speed, u_size, u_count, u_place, u_echo, u_move, gform);
   float cover = f.a >= 0.95 ? 1.0 : f.a;
   vec3 placed = mix(src, f.rgb, clamp(cover * u_amount, 0.0, 1.0));
   return vec4(placed, 1.0);
@@ -36,7 +37,8 @@ vec4 apply(vec2 uv) {
 const APPLY_GEOM_MINI = `
 vec4 apply(vec2 uv) {
   vec3 src = sampleSrc(uv).rgb;
-  vec4 f = geomRenderMini(uv, u_seed, uTime * u_speed, u_size, u_count, u_echo, u_move, u_form);
+  float gform = u_form > 2.5 ? 2.0 : 1.0;
+  vec4 f = geomRenderMini(uv, u_seed, uTime * u_speed, u_size, u_count, u_echo, u_move, gform);
   float cover = f.a >= 0.95 ? 1.0 : f.a;
   vec3 placed = mix(src, f.rgb, clamp(cover * u_amount, 0.0, 1.0));
   return vec4(placed, 1.0);
@@ -91,7 +93,7 @@ export const dancer: EffectType = {
   description: "Seed-grown 3D figure. Form keeps the current idols, switches to a squat horned Imp, or goes to morphing solids and folded crystals. Move, echo, mini army, and MP3 sync still apply",
   params: [
     { id: "count", label: "Count", kind: "int", min: 1, max: 4, step: 1, default: 1 },
-    { id: "size", label: "Size", kind: "float", min: 0.25, max: 2.5, step: 0.01, default: 0.5 },
+    { id: "size", label: "Size", kind: "float", min: 0.25, max: 2.5, step: 0.01, default: 0.4 },
     {
       id: "form",
       label: "Form",
@@ -100,9 +102,9 @@ export const dancer: EffectType = {
       randomizable: false,
       options: [
         { value: "idol", label: "Idol" },
+        { value: "imp", label: "Imp" },
         { value: "morph", label: "Morph" },
         { value: "crystal", label: "Crystal" },
-        { value: "imp", label: "Imp" },
       ],
     },
     {
