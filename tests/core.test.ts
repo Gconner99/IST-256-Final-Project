@@ -4,7 +4,7 @@ import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../s
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, ensureWindow, chaosStamp, randomizeProject, windowStamp } from "../src/core/randomize";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
@@ -132,7 +132,7 @@ describe("project files", () => {
 describe("effects registry", () => {
   it("ships a usable MVP library", () => {
     expect(allEffects().length).toBeGreaterThanOrEqual(15);
-    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer"]) {
+    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer", "window"]) {
       expect(getEffect(id)).toBeTruthy();
     }
     expect(getEffect("critters")?.category).toBe("wacky");
@@ -228,6 +228,27 @@ describe("effects registry", () => {
     expect(miniSrc.includes("figMiniPlace")).toBe(true);
     expect(miniSrc.includes("geomRender")).toBe(false);
     expect(miniSrc.includes("impRender")).toBe(false);
+  });
+
+  it("ships a window frame with feather and a different inside", () => {
+    const win = getEffect("window");
+    expect(win?.name).toBe("Window");
+    expect(win?.params.find((p) => p.id === "shape")?.options?.map((o) => o.value)).toEqual(["square", "circle"]);
+    expect(win?.params.find((p) => p.id === "feather")?.default).toBe(0.1);
+    expect(win?.params.find((p) => p.id === "inside")?.options?.map((o) => o.value)).toEqual(["place", "other"]);
+    const src = compileEffectSource(win!);
+    expect(src).toContain("uInner");
+    expect(src).toContain("windowMask");
+    expect(src.includes("figureRenderMini")).toBe(false);
+    expect(src.includes("geomRender")).toBe(false);
+    const planted = ensureWindow(createDefaultProject());
+    expect(planted.layers[0].effects.some((e) => e.typeId === "window")).toBe(true);
+    expect(ensureWindow(planted).layers[0].effects.filter((e) => e.typeId === "window")).toHaveLength(1);
+    const a = windowStamp(planted, 11);
+    const b = windowStamp(planted, 99);
+    const pa = a.layers[0].effects.find((e) => e.typeId === "window")!.params;
+    const pb = b.layers[0].effects.find((e) => e.typeId === "window")!.params;
+    expect(pa.seed).not.toEqual(pb.seed);
   });
 
   it("ships a short set of background places", () => {
