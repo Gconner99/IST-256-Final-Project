@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { clamp, evenSize, fitEven, lerp, mulberry32 } from "../src/core/random";
 import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../src/core/exportSize";
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
-import { createDefaultProject } from "../src/core/defaults";
+import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
+import { store } from "../src/core/store";
+import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
@@ -139,6 +141,19 @@ describe("project files", () => {
     const loaded = parseProject(serializeProject(p));
     expect(loaded.layers[0].effects.some((fx) => fx.typeId === "window")).toBe(false);
     expect(getEffect("window")).toBeUndefined();
+  });
+});
+
+describe("place buttons", () => {
+  it("puts a clicked place onto the selected layer", () => {
+    store.replace(createDefaultProject());
+    const stars = defaultGeneratorSource("stars");
+    addSource(stars, true);
+    expect(store.project.layers[0].sourceId).toBe(stars.id);
+    expect(store.project.sources.some((s) => s.generator === "stars")).toBe(true);
+    const marsh = defaultGeneratorSource("marsh");
+    addSource(marsh, true);
+    expect(store.project.layers[0].sourceId).toBe(marsh.id);
   });
 });
 

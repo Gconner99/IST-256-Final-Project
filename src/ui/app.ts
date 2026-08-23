@@ -7,6 +7,7 @@ import {
   addEffect,
   addKeyframe,
   addLayer,
+  addSource,
   bumpSeed,
   clearKeyframes,
   delPreset,
@@ -177,11 +178,8 @@ function bind(root: HTMLElement) {
     if (act === "gen") {
       const kind = (t.dataset.kind ?? "plasma") as GeneratorType;
       const src = defaultGeneratorSource(kind);
-      store.setProject((p) => ({ ...p, sources: [...p.sources, src] }));
-      const lyr = selectedLayer(store.project);
-      if (lyr) patchLayer(lyr.id, (l) => ({ ...l, sourceId: src.id }));
+      addSource(src, true);
       store.patchUi({
-        selectedSourceId: src.id,
         status: kind === "critters" ? "floaters on this layer" : `place · ${kind}`,
       });
     }
