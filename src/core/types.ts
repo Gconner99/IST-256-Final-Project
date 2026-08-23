@@ -1,6 +1,18 @@
 export type QualityMode = "draft" | "preview" | "export";
 export type SourceKind = "image" | "video" | "generator" | "audio";
-export type GeneratorType = "plasma" | "noise" | "bars" | "gradient" | "solid" | "checker" | "critters";
+export type GeneratorType =
+  | "plasma"
+  | "noise"
+  | "bars"
+  | "gradient"
+  | "solid"
+  | "checker"
+  | "critters"
+  | "stars"
+  | "marsh"
+  | "oil"
+  | "paper"
+  | "cave";
 export type BlendMode =
   | "normal"
   | "add"

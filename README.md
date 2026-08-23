@@ -45,7 +45,8 @@ Requires a browser (or Electron) with **WebGL2**.
 - Real-time WebGL2 preview (draft / preview / full quality)
 - Layers: opacity, blend modes, transform, enable, duplicate
 - Modular effects stack (bypass, reorder, per-effect mix + mask)
-- ~18 effects including **Floaters** and **Idol**. Idol **Form** keeps the current dancers, switches to a squat horned **Imp**, or goes to morphing solids / folded crystals
+- ~18 effects including **Floaters** and **Idol** (small low-poly dancers; stamp for a weirder seed)
+- Procedural backgrounds: plasma, noise, bars, plus **Stars**, **Marsh**, **Oil**, **Paper**, and **Cave**
 - Global + per-layer **feedback bus** (amount, delay, opacity, scale, rotation, distortion)
 - Basic masks (rect, circle, gradient, noise)
 - Seeded randomization (all / selected / single param + amount), with an option to include floaters

@@ -194,4 +194,9 @@ export const GEN_INDEX: Record<string, number> = {
   solid: 4,
   checker: 5,
   critters: 6,
+  stars: 7,
+  marsh: 8,
+  oil: 9,
+  paper: 10,
+  cave: 11,
 };

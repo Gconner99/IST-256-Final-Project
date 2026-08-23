@@ -1,6 +1,6 @@
 import type { EffectInstance, Layer, MediaSource, Project, QualityMode } from "../core/types";
 import { resolvedLayerParams } from "../core/timeline";
-import { dancerForCompile, isGeomForm, isImpForm } from "../effects/dancer";
+import { dancerForCompile } from "../effects/dancer";
 import { allEffects, getEffect } from "../effects/registry";
 import { getSoundtrack, sampleAudio } from "../media/audio";
 import {
@@ -83,26 +83,11 @@ export class Renderer {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
   }
 
-  private compileType(typeId: string, mini = false, form = "idol"): Program | null {
-    const geom = typeId === "dancer" && isGeomForm(form);
-    const imp = typeId === "dancer" && isImpForm(form);
-    const key =
-      typeId !== "dancer"
-        ? typeId
-        : geom
-          ? mini
-            ? "dancer:geom:mini"
-            : "dancer:geom"
-          : imp
-            ? mini
-              ? "dancer:imp:mini"
-              : "dancer:imp"
-            : mini
-              ? "dancer:mini"
-              : "dancer";
+  private compileType(typeId: string, mini = false): Program | null {
+    const key = typeId !== "dancer" ? typeId : mini ? "dancer:mini" : "dancer";
     const cached = this.effectProg.get(key);
     if (cached) return cached;
-    const def = typeId === "dancer" ? dancerForCompile(mini, form) : getEffect(typeId);
+    const def = typeId === "dancer" ? dancerForCompile(mini) : getEffect(typeId);
     if (!def) return null;
     try {
       const p = compileEffectProgram(this.gl, def);
@@ -128,15 +113,8 @@ export class Renderer {
         return;
       }
       if (i === ids.length) {
-        this.compileType("dancer", false, "morph");
+        this.compileType("dancer", true);
         i++;
-        requestAnimationFrame(step);
-        return;
-      }
-      if (i === ids.length + 1) {
-        this.compileType("dancer", false, "imp");
-        i++;
-        requestAnimationFrame(step);
       }
     };
     requestAnimationFrame(step);
@@ -144,7 +122,7 @@ export class Renderer {
 
   private progFor(fx: EffectInstance): Program | null {
     if (fx.typeId !== "dancer") return this.compileType(fx.typeId);
-    return this.compileType("dancer", fx.params.crowd === "mini", String(fx.params.form ?? "idol"));
+    return this.compileType("dancer", fx.params.crowd === "mini");
   }
 
   resetTemporal() {

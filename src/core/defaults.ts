@@ -68,14 +68,23 @@ export function defaultExportSettings(): ExportSettings {
   };
 }
 
+const GEN_INK: Record<string, { a: string; b: string }> = {
+  stars: { a: "#060814", b: "#c8d4ff" },
+  marsh: { a: "#0c1410", b: "#ffb44a" },
+  oil: { a: "#12081c", b: "#3dffd0" },
+  paper: { a: "#e8dcc8", b: "#2a1810" },
+  cave: { a: "#08060c", b: "#7aa2ff" },
+};
+
 export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"): MediaSource {
+  const ink = GEN_INK[kind ?? "plasma"] ?? { a: "#140c10", b: "#f0d2b0" };
   return {
     id: uid("src"),
     name: kind === "critters" ? "FLOATERS" : kind ? kind.toUpperCase() : "SIGNAL",
     kind: "generator",
     generator: kind ?? "plasma",
-    colorA: "#140c10",
-    colorB: "#f0d2b0",
+    colorA: ink.a,
+    colorB: ink.b,
     width: 1280,
     height: 720,
     duration: 0,

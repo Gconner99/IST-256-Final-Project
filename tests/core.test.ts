@@ -9,6 +9,8 @@ import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
+import { GENERATOR_GLSL } from "../src/engine/shaders";
+import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, samplePaletteFromImageData } from "../src/generate/imagine";
 import { isAudioFile, sampleLevelsFromSamples } from "../src/media/audio";
@@ -163,13 +165,7 @@ describe("effects registry", () => {
     expect(idol.params.find((p) => p.id === "place")?.default).toBe("center");
     expect(idol.params.find((p) => p.id === "crowd")?.default).toBe("normal");
     expect(idol.params.find((p) => p.id === "move")?.default).toBe("dance");
-    expect(idol.params.find((p) => p.id === "form")?.default).toBe("idol");
-    expect(idol.params.find((p) => p.id === "form")?.options?.map((o) => o.value)).toEqual([
-      "idol",
-      "imp",
-      "morph",
-      "crystal",
-    ]);
+    expect(idol.params.find((p) => p.id === "form")).toBeUndefined();
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
     expect(idolSrc.includes("figureMap")).toBe(true);
@@ -203,28 +199,22 @@ describe("effects registry", () => {
     expect(miniSrc.includes("figWildMini")).toBe(true);
     expect(miniSrc.includes("figMiniPlace")).toBe(true);
     expect(miniSrc.includes("geomRender")).toBe(false);
-    const morphSrc = compileEffectSource(dancerForCompile(false, "morph"));
-    expect(morphSrc.includes("geomRender")).toBe(true);
-    expect(morphSrc.includes("geomHit")).toBe(true);
-    expect(morphSrc.includes("geomSmin")).toBe(true);
-    expect(morphSrc.includes("geomStar")).toBe(true);
-    expect(morphSrc.includes("geomRenderMini")).toBe(false);
-    expect(morphSrc.includes("figureRenderMini")).toBe(false);
-    const crystalMini = compileEffectSource(dancerForCompile(true, "crystal"));
-    expect(crystalMini.includes("geomRenderMini")).toBe(true);
-    expect(crystalMini.includes("geomWildMini")).toBe(true);
-    expect(crystalMini.includes("figureRenderMini")).toBe(false);
-    const impSrc = compileEffectSource(dancerForCompile(false, "imp"));
-    expect(impSrc.includes("impRender")).toBe(true);
-    expect(impSrc.includes("impHit")).toBe(true);
-    expect(impSrc.includes("impFace")).toBe(true);
-    expect(impSrc.includes("geomRender")).toBe(false);
-    expect(impSrc.includes("figureRenderMini")).toBe(false);
-    const impMini = compileEffectSource(dancerForCompile(true, "imp"));
-    expect(impMini.includes("impRenderMini")).toBe(true);
-    expect(impMini.includes("impWildMini")).toBe(true);
-    expect(impMini.includes("figMiniPlace")).toBe(true);
-    expect(impMini.includes("geomRender")).toBe(false);
+    expect(miniSrc.includes("impRender")).toBe(false);
+  });
+
+  it("ships extra background generators", () => {
+    expect(GEN_INDEX.stars).toBe(7);
+    expect(GEN_INDEX.marsh).toBe(8);
+    expect(GEN_INDEX.oil).toBe(9);
+    expect(GEN_INDEX.paper).toBe(10);
+    expect(GEN_INDEX.cave).toBe(11);
+    expect(GENERATOR_GLSL).toContain("genStars");
+    expect(GENERATOR_GLSL).toContain("genMarsh");
+    expect(GENERATOR_GLSL).toContain("genOil");
+    expect(GENERATOR_GLSL).toContain("genPaper");
+    expect(GENERATOR_GLSL).toContain("genCave");
+    expect(GENERATOR_GLSL).toContain("uMode == 7");
+    expect(GENERATOR_GLSL).toContain("uMode == 10");
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
@@ -280,7 +270,7 @@ describe("randomize + presets", () => {
     expect(Number(idol.params.count)).toBe(1);
     expect(idol.params.place).toBe("center");
     expect(idol.params.crowd ?? "normal").toBe("normal");
-    expect(idol.params.form ?? "idol").toBe("idol");
+    expect(idol.params.form).toBeUndefined();
   });
 });
 
