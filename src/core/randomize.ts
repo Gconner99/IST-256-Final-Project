@@ -18,6 +18,7 @@ interface Look {
   mood: Mood;
   stack: string[];
   blend?: BlendMode;
+  wacky?: boolean;
 }
 
 const PALETTES: Palette[] = [
@@ -44,16 +45,24 @@ const LOOKS: Look[] = [
   { name: "xerox folk", mood: "outsider", stack: ["posterize", "threshold", "analog", "chroma"], blend: "normal" },
   { name: "bruise print", mood: "outsider", stack: ["solarize", "channels", "warp", "analog"], blend: "difference" },
   { name: "marker night", mood: "outsider", stack: ["duotone", "posterize", "grain", "kaleido"], blend: "overlay" },
-  { name: "carnival", mood: "mix", stack: ["duotone", "kaleido", "bloom", "critters"], blend: "screen" },
+  { name: "carnival", mood: "mix", wacky: true, stack: ["duotone", "kaleido", "bloom", "critters"], blend: "screen" },
   { name: "field notes", mood: "mix", stack: ["grade", "posterize", "grain", "critters"], blend: "normal" },
-  { name: "toy pop", mood: "mix", stack: ["duotone", "bloom", "grain", "critters"], blend: "screen" },
+  { name: "toy pop", mood: "mix", wacky: true, stack: ["duotone", "bloom", "grain", "critters"], blend: "screen" },
   { name: "flower drift", mood: "lush", stack: ["grade", "bloom", "grain", "dancer"], blend: "normal" },
   { name: "prism marsh", mood: "mix", stack: ["kaleido", "chroma", "bloom", "duotone"], blend: "overlay" },
   { name: "outsider silk", mood: "mix", stack: ["grade", "bloom", "analog", "critters"], blend: "normal" },
-  { name: "candy idol", mood: "mix", stack: ["grade", "bloom", "critters", "dancer"], blend: "normal" },
+  { name: "candy idol", mood: "mix", wacky: true, stack: ["grade", "bloom", "critters", "dancer"], blend: "normal" },
   { name: "esoteric retina", mood: "mix", stack: ["grade", "bloom", "analog", "dancer"], blend: "normal" },
   { name: "plaza idol", mood: "mix", stack: ["duotone", "grain", "warp", "dancer"], blend: "normal" },
-  { name: "night idol", mood: "outsider", stack: ["posterize", "chroma", "bloom", "dancer"], blend: "overlay" },
+  { name: "night idol", mood: "outsider", wacky: true, stack: ["posterize", "chroma", "bloom", "dancer"], blend: "overlay" },
+  { name: "copier saint", mood: "outsider", wacky: true, stack: ["posterize", "threshold", "grain", "dancer"], blend: "normal" },
+  { name: "lot opera", mood: "mix", wacky: true, stack: ["duotone", "bloom", "analog", "dancer"], blend: "normal" },
+  { name: "chapel smear", mood: "lush", stack: ["grade", "smear", "bloom", "grain"], blend: "normal" },
+  { name: "aquarium idol", mood: "lush", wacky: true, stack: ["grade", "chroma", "bloom", "dancer"], blend: "screen" },
+  { name: "moth lamp", mood: "outsider", wacky: true, stack: ["solarize", "bloom", "grain", "critters"], blend: "normal" },
+  { name: "sodium folk", mood: "mix", wacky: true, stack: ["duotone", "analog", "grain", "critters"], blend: "overlay" },
+  { name: "tv dropout", mood: "outsider", wacky: true, stack: ["analog", "dropout", "chroma", "dancer"], blend: "normal" },
+  { name: "print ghost", mood: "mix", wacky: true, stack: ["grade", "key", "echo", "dancer"], blend: "normal" },
 ];
 
 function randForParam(rng: () => number, def: ParamDef, current: number | string | boolean, amount: number) {
@@ -206,6 +215,17 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.tint = palette.leak;
     p.tintAmt = mood === "lush" ? 0.12 + rng() * 0.28 : rng() * 0.45;
   }
+  if (fx.typeId === "key") {
+    p.lo = 0.1 + rng() * 0.22;
+    p.hi = 0.5 + rng() * 0.35;
+    p.amount = 0.45 + rng() * 0.4;
+    p.invert = rng() > 0.72;
+  }
+  if (fx.typeId === "dropout") {
+    p.amount = 0.28 + rng() * 0.4;
+    p.rate = 0.18 + rng() * 0.4;
+    p.tear = mood === "outsider" ? 0.3 + rng() * 0.5 : rng() * 0.28;
+  }
   return { ...fx, params: p };
 }
 
@@ -239,11 +259,12 @@ export function ensureCritters(project: Project): Project {
   };
 }
 
-function rebuildLayer(layer: Layer, seed: number, amount: number): Layer {
+function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false): Layer {
   const rng = mulberry32(seed >>> 0);
-  const look = LOOKS[Math.floor(rng() * LOOKS.length)];
+  const pool = wacky ? LOOKS.filter((l) => l.wacky) : LOOKS;
+  const look = pool[Math.floor(rng() * pool.length)] ?? LOOKS[0];
   const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
-  const stack = look.stack.filter((id) => getEffect(id));
+  const stack = look.stack.filter((id) => getEffect(id)).slice(0, 5);
   const effects = stack.map((id, i) => applyMood(makeFx(id, seed + i * 997, amount), look.mood, palette, rng));
   if (look.name === "toy pop" || look.name === "candy idol" || look.name === "flower drift") {
     for (const fx of effects) {
@@ -254,7 +275,11 @@ function rebuildLayer(layer: Layer, seed: number, amount: number): Layer {
       }
     }
   }
-  const feedbackAmt = look.mood === "lush" ? 0.06 + rng() * 0.16 : 0.04 + rng() * 0.28;
+  const feedbackAmt = wacky
+    ? 0.1 + rng() * 0.28
+    : look.mood === "lush"
+      ? 0.06 + rng() * 0.16
+      : 0.04 + rng() * 0.28;
   return {
     ...layer,
     blendMode: look.blend ?? "normal",
@@ -266,7 +291,7 @@ function rebuildLayer(layer: Layer, seed: number, amount: number): Layer {
       opacity: 0.45 + rng() * 0.3,
       scale: 1.005 + rng() * 0.03,
       rotation: (rng() - 0.5) * 0.04,
-      distortion: look.mood === "outsider" ? rng() * 0.4 : rng() * 0.12,
+      distortion: look.mood === "outsider" || wacky ? rng() * 0.4 : rng() * 0.12,
     },
   };
 }
@@ -277,6 +302,7 @@ export function randomizeProject(
   selectedLayerId: string | null,
   selectedEffectId: string | null,
   selectedParamId: string | null,
+  wacky = false,
 ): Project {
   const amount = Math.max(project.randomAmount, mode === "all" ? 0.75 : 0);
   const seed = project.seed >>> 0;
@@ -295,19 +321,21 @@ export function randomizeProject(
         ),
       };
     }
-    if (mode === "all") return rebuildLayer(layer, seed + li * 7919, amount);
+    if (mode === "all") return rebuildLayer(layer, seed + li * 7919, amount, wacky);
     return randomizeLayer(layer, seed + li * 7919, amount, true, selectedEffectId);
   });
 
+  const places = wacky
+    ? (["lot", "xerox", "tank", "chapel", "lamp", "marsh", "cave", "stars", "oil"] as const)
+    : (["plasma", "noise", "gradient", "checker", "stars", "marsh", "oil", "paper", "cave", "lot", "xerox", "tank", "chapel", "lamp"] as const);
   const sources = project.sources.map((src, i) => {
     if (mode !== "all" || src.kind !== "generator") return src;
     const prng = mulberry32(seed + i * 131);
     const pal = PALETTES[Math.floor(prng() * PALETTES.length)];
-    const gens = ["plasma", "noise", "gradient", "checker", "stars", "marsh", "oil", "paper", "cave"] as const;
-    const keep = prng() > 0.35;
+    const keep = wacky ? false : prng() > 0.35;
     return {
       ...src,
-      generator: keep ? src.generator : gens[Math.floor(prng() * gens.length)],
+      generator: keep ? src.generator : places[Math.floor(prng() * places.length)],
       colorA: pal.inkA,
       colorB: pal.inkB,
     };
@@ -326,4 +354,47 @@ export function randomizeProject(
       : project.globalFeedback;
 
   return { ...project, layers, sources, globalFeedback };
+}
+
+const CHAOS_PLACES = ["lot", "xerox", "tank", "chapel", "lamp", "marsh", "cave", "stars", "oil", "paper"] as const;
+
+/** Reroll floater + idol seeds and the generator inks/place — same deck, new card. */
+export function chaosStamp(project: Project): Project {
+  const seed = (project.seed + 7919) >>> 0;
+  const rng = mulberry32(seed ^ 0x85ebca6b);
+  let next: Project = {
+    ...project,
+    seed,
+    layers: project.layers.map((layer) => ({
+      ...layer,
+      effects: layer.effects.map((fx) => {
+        if (fx.typeId !== "critters" && fx.typeId !== "dancer") return fx;
+        return { ...fx, params: { ...fx.params, seed: 1 + Math.floor(rng() * 9998) } };
+      }),
+    })),
+    sources: project.sources.map((src) => {
+      if (src.kind !== "generator") return src;
+      const pal = PALETTES[Math.floor(rng() * PALETTES.length)];
+      const swap = rng() > 0.4;
+      return {
+        ...src,
+        generator: swap ? CHAOS_PLACES[Math.floor(rng() * CHAOS_PLACES.length)] : src.generator,
+        colorA: pal.inkA,
+        colorB: pal.inkB,
+      };
+    }),
+  };
+  next = ensureCritters(next);
+  next = ensureIdol(next);
+  next = {
+    ...next,
+    layers: next.layers.map((layer) => ({
+      ...layer,
+      effects: layer.effects.map((fx) => {
+        if (fx.typeId !== "critters" && fx.typeId !== "dancer") return fx;
+        return { ...fx, params: { ...fx.params, seed: 1 + Math.floor(rng() * 9998) } };
+      }),
+    })),
+  };
+  return next;
 }

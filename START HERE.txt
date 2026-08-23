@@ -32,13 +32,14 @@ HOW TO USE IT
 -------------
 
 - Drag a photo, video, or MP3 onto the big dark area
-  OR click Plasma / Noise / Bars / Stars / Marsh / Oil / Paper / Cave / Floaters on the left
-- Type a prompt on the left and click Generate to make a NEW image
-- Drop an MP3 to use it as a soundtrack. Hit Play — idols dance to the mix
-- Click Stamp floaters to send weird one-off objects flying across your picture
-- Click Stamp idol for a small dancing creature. Move can drift, float, or orbit.
-- Click Rand all for a new look (pretty + weird)
+  OR click Plasma / Noise / Bars / Stars / Marsh / Oil / Paper / Cave / Lot / Xerox / Tank / Chapel / Lamp / Floaters on the left
+- Type a prompt on the left and click Generate to make a NEW image. Again rolls a new seed.
+- Drop an MP3 to use it as a soundtrack. Hit Play — idols, floaters, and places move with the mix
+- Click Stamp floaters / Stamp idol / Stamp chaos (new seeds + inks + a place)
+- Click Print frame to turn the live picture into a still
+- Click Rand all for a new look (pretty + weird). Rand wacky leans stranger.
 - Click New at the top to start over
 - Move the sliders. Click Export to save.
 - Click 2s / 4s / 8s mp4 for a short video clip. Wait until the status says saved.
   Clips are silent for now; the motion still follows the song.
+  Check "close loop" so the last beats fade into the first frame.

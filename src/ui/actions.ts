@@ -3,11 +3,13 @@ import { store } from "../core/store";
 import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
-import { ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
+import { chaosStamp, ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
 import { resumeAudio } from "../media/audio";
 import { buildPrompt, generateStill, samplePalette } from "../generate/imagine";
+import { fitEven } from "../core/random";
+import type { Renderer } from "../engine/renderer";
 
 export function selectedLayer(p: Project): Layer | undefined {
   const id = store.state.ui.selectedLayerId;
@@ -61,7 +63,7 @@ export function setSoundtrack(source: MediaSource) {
   const secs = source.duration ? `${Math.floor(source.duration / 60)}:${String(Math.floor(source.duration % 60)).padStart(2, "0")}` : "";
   store.patchUi({
     selectedSourceId: source.id,
-    status: `soundtrack ${source.name}${secs ? ` · ${secs}` : ""} — hit Play; idols follow the mix`,
+    status: `soundtrack ${source.name}${secs ? ` · ${secs}` : ""} — hit Play; the mix moves idols, floaters, and places`,
   });
 }
 
@@ -162,20 +164,20 @@ export function setParam(layerId: string, fxId: string, paramId: string, value: 
   );
 }
 
-export function randomize(mode: "all" | "selected" | "param") {
+export function randomize(mode: "all" | "selected" | "param", wacky = false) {
   const ui = store.state.ui;
   if (mode === "all" || mode === "selected") {
     store.setProject((p) => ({ ...p, seed: (p.seed + 1 + (Date.now() & 255)) >>> 0 }), false);
   }
   store.setProject((p) => {
-    const next = randomizeProject(p, mode, ui.selectedLayerId, ui.selectedEffectId, ui.selectedParam?.paramId ?? null);
+    const next = randomizeProject(p, mode, ui.selectedLayerId, ui.selectedEffectId, ui.selectedParam?.paramId ?? null, wacky);
     let out = next;
-    if (mode === "all" && ui.includeCritters) out = ensureCritters(out);
-    if (mode === "all" && ui.includeIdol) out = ensureIdol(out);
+    if (mode === "all" && (ui.includeCritters || wacky)) out = ensureCritters(out);
+    if (mode === "all" && (ui.includeIdol || wacky)) out = ensureIdol(out);
     return out;
   });
   const names = store.project.layers[0]?.effects.map((e) => e.typeId).join(" · ");
-  store.patchUi({ status: `look · ${names || mode} · seed ${store.project.seed}` });
+  store.patchUi({ status: `${wacky ? "wacky look" : "look"} · ${names || mode} · seed ${store.project.seed}` });
 }
 
 export function stampCritters() {
@@ -210,6 +212,24 @@ export function stampIdol() {
   const fx = selectedEffect(nextLayer);
   if (nextLayer && fx?.typeId === "dancer") setParam(nextLayer.id, fx.id, "seed", seed);
   store.patchUi({ status: "stamped idol" });
+}
+
+export function stampChaos() {
+  store.setProject((p) => chaosStamp({ ...p, seed: (p.seed + 1 + (Date.now() & 255)) >>> 0 }));
+  store.patchUi({ status: "chaos stamp — new seeds, inks, and a place" });
+}
+
+export async function reprintFrame(renderer: Renderer) {
+  const p = store.project;
+  const { width, height } = fitEven(p.exportSettings.width || 960, p.exportSettings.height || 540, 1280, 1280);
+  try {
+    const blob = await renderer.capture(p, p.playback.time, width, height, "image/png", 0.92);
+    const image = await loadImageFromBlob(blob, `print_${Date.now()}.png`);
+    addSource(image, true);
+    store.patchUi({ status: "printed the live frame as a new still" });
+  } catch (err) {
+    store.patchUi({ status: err instanceof Error ? err.message : "print failed" });
+  }
 }
 
 export function bumpSeed(n: number) {

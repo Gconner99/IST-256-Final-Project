@@ -12,6 +12,7 @@ import {
 import type { Project } from "../core/types";
 import { downloadBlob } from "../core/project";
 import { evenSize, fitEven } from "../core/random";
+import { clipLoopFade } from "../core/exportSize";
 import { mediaTime } from "../core/timeline";
 import type { Renderer } from "../engine/renderer";
 
@@ -122,10 +123,14 @@ async function exportMp4WebCodecs(
   try {
     const n = Math.max(1, Math.round(duration * fps));
     const frameDur = 1 / fps;
+    const close = project.exportSettings.loopClose !== false;
+    let first: HTMLCanvasElement | null = null;
     for (let i = 0; i < n; i++) {
       const t = mediaTime(i / fps, duration, project.playback.mode, 1, true);
       onProgress?.(i, n);
       renderer.paintFrame(project, t, width, height, frame);
+      if (i === 0 && close) first = keepFirstFrame(frame);
+      else applyLoopClose(frame, first, i, n, close);
       const sample = new VideoSample(frame, { timestamp: i * frameDur, duration: frameDur });
       await videoSource.add(sample, { keyFrame: i % fps === 0 });
       sample.close();
@@ -175,10 +180,14 @@ async function recordCanvasVideo(
   rec.start(200);
   const n = Math.max(1, Math.round(duration * fps));
   const frame = document.createElement("canvas");
+  const close = project.exportSettings.loopClose !== false;
+  let first: HTMLCanvasElement | null = null;
   for (let i = 0; i < n; i++) {
     const t = mediaTime(i / fps, duration, project.playback.mode, 1, true);
     onProgress?.(i, n);
     renderer.paintFrame(project, t, width, height, frame);
+    if (i === 0 && close) first = keepFirstFrame(frame);
+    else applyLoopClose(frame, first, i, n, close);
     ctx.drawImage(frame, 0, 0, width, height);
     track.requestFrame?.();
     await yieldFrame();
@@ -201,6 +210,26 @@ function pickMp4Mime(): string | null {
   if (typeof MediaRecorder === "undefined") return null;
   const opts = ["video/mp4;codecs=avc1.42E01E", "video/mp4;codecs=avc1", "video/mp4"];
   return opts.find((m) => MediaRecorder.isTypeSupported(m)) ?? null;
+}
+
+function applyLoopClose(frame: HTMLCanvasElement, first: HTMLCanvasElement | null, i: number, n: number, enabled: boolean) {
+  if (!enabled || !first || i === 0) return;
+  const fade = clipLoopFade(i, n);
+  if (fade <= 0) return;
+  const ctx = frame.getContext("2d");
+  if (!ctx) return;
+  ctx.save();
+  ctx.globalAlpha = fade;
+  ctx.drawImage(first, 0, 0, frame.width, frame.height);
+  ctx.restore();
+}
+
+function keepFirstFrame(frame: HTMLCanvasElement): HTMLCanvasElement {
+  const first = document.createElement("canvas");
+  first.width = frame.width;
+  first.height = frame.height;
+  first.getContext("2d")?.drawImage(frame, 0, 0);
+  return first;
 }
 
 function yieldFrame() {

@@ -23,15 +23,15 @@ uniform float u_weave;
   applyGlsl: `
 vec4 apply(vec2 uv) {
   vec2 p = uv;
-  p.x += sin(uv.y * 40.0 + uTime * 8.0) * u_weave * 0.01;
-  float band = step(0.97, hash21(vec2(floor(uTime * 9.0), 3.2)));
+  p.x += sin(uv.y * 40.0 + uTime * 8.0) * u_weave * (0.01 + u_bass * 0.008);
+  float band = step(0.97 - u_bass * 0.08, hash21(vec2(floor(uTime * 9.0), 3.2)));
   p.x += band * (hash21(vec2(uv.y * 80.0, uTime)) - 0.5) * u_tracking * 0.12;
   vec3 c = sampleSrc(p).rgb;
   float scan = sin(uv.y * uResolution.y * 3.14159);
   c *= 1.0 - u_mixScan * 0.35 * (0.5 + 0.5 * scan);
   float n = hash21(uv * uResolution + uTime * 12.0);
   c += (n - 0.5) * u_noise * 0.35;
-  c *= 1.0 + (hash21(vec2(uTime, 9.1)) - 0.5) * u_flicker * 0.4;
+  c *= 1.0 + (hash21(vec2(uTime, 9.1)) - 0.5) * u_flicker * (0.4 + u_audio * 0.35);
   return vec4(c, 1.0);
 }
 `,
@@ -111,7 +111,7 @@ vec4 apply(vec2 uv) {
   }
   vec3 glow = wsum > 0.0 ? acc / wsum : vec3(0.0);
   vec3 halo = vec3(glow.r, glow.g * 0.6, glow.b * 0.45) * u_halation;
-  vec3 outc = src + glow * u_amount + halo;
+  vec3 outc = src + glow * u_amount * (1.0 + u_audio * 0.35) + halo;
   return vec4(outc, 1.0);
 }
 `,

@@ -173,4 +173,35 @@ vec4 apply(vec2 uv) {
 `,
 };
 
-export const COLOR_EFFECTS = [grade, posterize, threshold, duotone, solarize, channels];
+export const lumakey: EffectType = {
+  id: "key",
+  name: "Luma key",
+  category: "color",
+  description: "Punch darks (or lights) through to the previous print — optical sandwich",
+  params: [
+    { id: "lo", label: "Dark", kind: "float", min: 0, max: 1, step: 0.01, default: 0.18 },
+    { id: "hi", label: "Bright", kind: "float", min: 0, max: 1, step: 0.01, default: 0.62 },
+    { id: "invert", label: "Punch lights", kind: "bool", default: false },
+    { id: "amount", label: "Amount", kind: "float", min: 0, max: 1, step: 0.01, default: 0.7 },
+    { id: "mix", label: "Mix", kind: "float", min: 0, max: 1, step: 0.01, default: 1, randomizable: false },
+  ],
+  extraUniforms: `
+uniform float u_lo;
+uniform float u_hi;
+uniform float u_invert;
+uniform float u_amount;
+`,
+  applyGlsl: `
+vec4 apply(vec2 uv) {
+  vec3 src = sampleSrc(uv).rgb;
+  vec3 under = texture(uFeedback, uv).rgb;
+  float l = luminance(src);
+  float k = smoothstep(u_lo, max(u_lo + 0.02, u_hi), l);
+  if (u_invert > 0.5) k = 1.0 - k;
+  vec3 outc = mix(under, src, k);
+  return vec4(mix(src, outc, u_amount), 1.0);
+}
+`,
+};
+
+export const COLOR_EFFECTS = [grade, posterize, threshold, duotone, solarize, channels, lumakey];

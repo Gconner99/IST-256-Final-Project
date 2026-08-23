@@ -40,3 +40,12 @@ export function sizeFromSource(width: number, height: number, longSide = 1280): 
   const s = longSide / long;
   return { width: evenSize(width * s), height: evenSize(height * s) };
 }
+
+/** Last 12% of a looping clip fades into frame 0 so the piece can repeat. */
+export function clipLoopFade(i: number, n: number): number {
+  if (n < 8) return 0;
+  const span = Math.max(2, Math.round(n * 0.12));
+  const start = n - span;
+  if (i < start) return 0;
+  return (i - start + 1) / span;
+}

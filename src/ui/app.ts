@@ -29,6 +29,8 @@ import {
   selectedLayer,
   setParam,
   startFromScratch,
+  reprintFrame,
+  stampChaos,
   stampCritters,
   stampIdol,
   toggleEffect,
@@ -62,6 +64,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="status">RND</label>
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
+      <button class="btn tiny hot" data-act="rand-wacky" title="Outsider looks, idols, floaters, a new place">Rand wacky</button>
       <label class="check" title="Drop drifting colored shapes onto every layer when you hit Rand all">
         <input type="checkbox" id="inc-critters" /> floaters
       </label>
@@ -94,15 +97,16 @@ export function mount(root: HTMLElement, renderer: Renderer) {
         <p>A digital darkroom / video synth. Drop media, stack effects, randomize, feed the output back into itself.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
-          <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look (lush / outsider mix)</li>
+          <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
           <li><kbd>K</kbd> keyframe selected parameter</li>
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
-          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt, xerox, and drifting shapes. Keep the <em>floaters</em> box on to send one-off colored objects across the frame.</li>
+          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt, xerox, and drifting shapes. Keep the <em>floaters</em> box on to send one-off colored objects across the frame. <strong>Rand wacky</strong> leans outsider, always plants an idol + floaters, and jumps to a new place.</li>
           <li><strong>Idol</strong> plants a small low-poly 3D creature — stamp it to grow a weirder one (petals, skirts, antennae, halos). Move can dance, drift, float, or orbit. Crowd can switch to a mini army. Keep the top-bar box on so Rand all includes it.</li>
-          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, and Cave — quieter, more still-photograph looks. Rand all will swap these too.</li>
-          <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass. Exported clips are silent for now — the motion still follows the mix.</li>
+          <li><strong>Stamp chaos</strong> rerolls floater + idol seeds and the generator inks/place — same deck, new card. <strong>Print frame</strong> turns the live picture into a new still you can key or difference-blend.</li>
+          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, Cave, Lot, Xerox, Tank, Chapel, and Lamp. Rand all will swap these too. Drop an MP3 and lamps/fog/bloom breathe with the mix.</li>
+          <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
@@ -148,6 +152,11 @@ function bind(root: HTMLElement) {
     if (act === "seed-") bumpSeed(-1);
     if (act === "seed+") bumpSeed(1);
     if (act === "rand-all") randomize("all");
+    if (act === "rand-wacky") randomize("all", true);
+    if (act === "stamp-chaos") stampChaos();
+    if (act === "reprint") {
+      if (rendererRef) void reprintFrame(rendererRef);
+    }
     if (act === "rand-sel") randomize("selected");
     if (act === "rand-param") {
       const paramId = t.dataset.paramId;
@@ -312,6 +321,7 @@ function bind(root: HTMLElement) {
     if (t.id === "rnd-amt") store.setProject((pr) => ({ ...pr, randomAmount: Number(t.value) }), false);
     if (t.id === "speed") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, speed: Number(t.value) } }), false);
     if (t.id === "loop") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, loop: t.checked } }), false);
+    if (t.id === "loop-close") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, loopClose: t.checked } }), false);
     if (t.id === "freeze") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, freeze: t.checked } }), false);
     if (t.id === "time") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, time: Number(t.value) } }), false);
     if (t.id === "opacity") {
@@ -384,6 +394,7 @@ function bind(root: HTMLElement) {
       store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: !p.playback.playing } }));
     }
     if (e.key === "r" || e.key === "R") randomize(e.shiftKey ? "all" : "selected");
+    if ((e.key === "w" || e.key === "W") && e.shiftKey) randomize("all", true);
     if (e.key === "k" || e.key === "K") addKeyframe();
     if (e.key === "n" || e.key === "N") {
       e.preventDefault();
@@ -445,6 +456,7 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="import">Import</button>
       <button class="btn tiny" data-act="replace">Replace</button>
       <button class="btn tiny" data-act="freeze">Still frame</button>
+      <button class="btn tiny" data-act="reprint">Print frame</button>
       <input id="media-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" multiple hidden />
       <input id="replace-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden />
     </div>
@@ -453,7 +465,8 @@ function paintRail(n: HTMLElement) {
     <textarea id="gen-prompt" class="prompt" placeholder="describe a new image… e.g. grainy night photo of a flooded parking lot, sodium lights">${esc(ui.prompt)}</textarea>
     <label class="check"><input type="checkbox" id="gen-src" ${ui.useSourceForGen ? "checked" : ""}/> use selected source as reference</label>
     <button class="btn tiny acid" data-act="imagine" ${ui.generating ? "disabled" : ""}>${ui.generating ? "working…" : "Generate"}</button>
-    <div class="status" style="margin-top:4px">Usually a few seconds. Does not overwrite the upload.</div>
+    <button class="btn tiny" data-act="imagine" ${ui.generating || !ui.prompt.trim() ? "disabled" : ""}>Again</button>
+    <div class="status" style="margin-top:4px">Usually a few seconds. Again rolls a new seed. Does not overwrite the upload.</div>
     <div class="row" style="margin-top:6px">
       <button class="btn tiny" data-act="gen" data-kind="plasma">Plasma</button>
       <button class="btn tiny" data-act="gen" data-kind="noise">Noise</button>
@@ -469,13 +482,24 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="cave">Cave</button>
     </div>
     <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="lot">Lot</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="xerox">Xerox</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="tank">Tank</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="chapel">Chapel</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="lamp">Lamp</button>
+    </div>
+    <div class="row">
       <button class="btn tiny acid" data-act="gen" data-kind="critters">Floaters</button>
       <button class="btn tiny acid" data-act="stamp-critters">Stamp floaters</button>
       <button class="btn tiny acid" data-act="stamp-idol">Stamp idol</button>
     </div>
+    <div class="row">
+      <button class="btn tiny hot" data-act="stamp-chaos">Stamp chaos</button>
+      <button class="btn tiny" data-act="reprint">Print frame</button>
+    </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Stars / Marsh / Oil / Paper / Cave are quiet moving backdrops. Floaters drift across — Kit on the Floaters effect picks lumpy shapes, toy-pop music icons, or both. An idol is one small low-poly dancer. Move can drift, float, or orbit. Crowd → Mini army fills the frame with tiny ones. Drop an MP3 to make them dance to the song.</div>
+    <div class="status" style="margin-top:4px">Lot / Xerox / Tank / Chapel / Lamp are more places in the same quiet still-photo voice. Stamp chaos rerolls seeds + inks. Print frame turns the live picture into a still. Drop an MP3 and lamps, fog, bloom, and idols move with the mix.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
@@ -584,6 +608,7 @@ function paintStack(n: HTMLElement) {
       <div class="row" style="margin-top:4px">
         <button class="btn tiny acid" data-act="stamp-critters">stamp floaters</button>
         <button class="btn tiny acid" data-act="stamp-idol">stamp idol</button>
+        <button class="btn tiny hot" data-act="stamp-chaos">stamp chaos</button>
       </div>
       ${fx ? `
         <hr class="div" />
@@ -696,6 +721,7 @@ function paintTransport(n: HTMLElement) {
         ${[2, 4, 6, 8].map((s) => `<button class="btn tiny ${Number(exp.duration) === s ? "acid" : ""}" data-act="clip" data-secs="${s}" ${busy ? "disabled" : ""}>${s}s</button>`).join("")}
         <span class="status">sec</span>
         <input id="exp-dur" type="number" min="1" max="8" step="1" style="width:48px" value="${exp.duration}" title="seconds" />
+        <label class="check"><input type="checkbox" id="loop-close" ${exp.loopClose !== false ? "checked" : ""}/> close loop</label>
         <span class="sp"></span>
         <button class="btn acid export" data-act="export" ${busy ? "disabled" : ""}>${busy ? "exporting…" : "Export"}</button>
       </div>

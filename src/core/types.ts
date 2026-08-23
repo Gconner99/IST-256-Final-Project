@@ -12,7 +12,12 @@ export type GeneratorType =
   | "marsh"
   | "oil"
   | "paper"
-  | "cave";
+  | "cave"
+  | "lot"
+  | "xerox"
+  | "tank"
+  | "chapel"
+  | "lamp";
 export type BlendMode =
   | "normal"
   | "add"
@@ -158,6 +163,8 @@ export interface ExportSettings {
   quality: number;
   bitrate: number;
   filename: string;
+  /** Crossfade the last beats of a clip into the first frame so it loops. */
+  loopClose: boolean;
 }
 
 export interface Preset {

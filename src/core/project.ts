@@ -21,6 +21,9 @@ export function parseProject(json: string): Project {
   data.layers = data.layers ?? [];
   data.keyframes = data.keyframes ?? [];
   data.presets = data.presets ?? [];
+  if (data.exportSettings && data.exportSettings.loopClose === undefined) {
+    data.exportSettings.loopClose = true;
+  }
   return data;
 }
 

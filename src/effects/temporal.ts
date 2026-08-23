@@ -79,4 +79,37 @@ vec4 apply(vec2 uv) {
 `,
 };
 
-export const TEMPORAL_EFFECTS = [echo, slitscan, stutter];
+export const dropout: EffectType = {
+  id: "dropout",
+  name: "Dropout",
+  category: "temporal",
+  description: "Tape tear / hold-frame hits — louder on bass",
+  params: [
+    { id: "amount", label: "Amount", kind: "float", min: 0, max: 1, step: 0.01, default: 0.45 },
+    { id: "rate", label: "Hits", kind: "float", min: 0, max: 1, step: 0.01, default: 0.28 },
+    { id: "tear", label: "Tear", kind: "float", min: 0, max: 1, step: 0.01, default: 0.35 },
+    { id: "mix", label: "Mix", kind: "float", min: 0, max: 1, step: 0.01, default: 1, randomizable: false },
+  ],
+  extraUniforms: `
+uniform float u_amount;
+uniform float u_rate;
+uniform float u_tear;
+`,
+  temporal: true,
+  applyGlsl: `
+vec4 apply(vec2 uv) {
+  vec3 src = sampleSrc(uv).rgb;
+  vec3 hist = texture(uHistory, uv).rgb;
+  float hit = step(1.0 - u_rate * 0.4, hash21(vec2(floor(uTime * (1.6 + u_bass * 7.0)), 4.4)));
+  hit = max(hit, step(0.78, u_bass) * u_rate);
+  vec2 p = uv;
+  p.x += hit * (hash21(vec2(uv.y * 40.0, uTime)) - 0.5) * u_tear * 0.1;
+  vec3 torn = sampleSrc(p).rgb;
+  vec3 drop = mix(src, hist, hit * 0.8);
+  drop = mix(drop, torn, hit);
+  return vec4(mix(src, drop, u_amount), 1.0);
+}
+`,
+};
+
+export const TEMPORAL_EFFECTS = [echo, slitscan, stutter, dropout];

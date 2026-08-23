@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { clamp, evenSize, fitEven, lerp, mulberry32 } from "../src/core/random";
-import { matchAspectId, sizeForAspect, sizeFromSource } from "../src/core/exportSize";
+import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../src/core/exportSize";
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, ensureIdol, randomizeProject } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
@@ -210,13 +210,25 @@ describe("effects registry", () => {
     expect(GEN_INDEX.oil).toBe(9);
     expect(GEN_INDEX.paper).toBe(10);
     expect(GEN_INDEX.cave).toBe(11);
+    expect(GEN_INDEX.lot).toBe(12);
+    expect(GEN_INDEX.xerox).toBe(13);
+    expect(GEN_INDEX.tank).toBe(14);
+    expect(GEN_INDEX.chapel).toBe(15);
+    expect(GEN_INDEX.lamp).toBe(16);
     expect(GENERATOR_GLSL).toContain("genStars");
     expect(GENERATOR_GLSL).toContain("genMarsh");
     expect(GENERATOR_GLSL).toContain("genOil");
     expect(GENERATOR_GLSL).toContain("genPaper");
     expect(GENERATOR_GLSL).toContain("genCave");
+    expect(GENERATOR_GLSL).toContain("genLot");
+    expect(GENERATOR_GLSL).toContain("genXerox");
+    expect(GENERATOR_GLSL).toContain("genTank");
+    expect(GENERATOR_GLSL).toContain("genChapel");
+    expect(GENERATOR_GLSL).toContain("genLamp");
     expect(GENERATOR_GLSL).toContain("uMode == 7");
-    expect(GENERATOR_GLSL).toContain("uMode == 10");
+    expect(GENERATOR_GLSL).toContain("uMode == 12");
+    expect(GENERATOR_GLSL).toContain("u_audio");
+    expect(GENERATOR_GLSL).toContain("u_bass");
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
@@ -273,6 +285,35 @@ describe("randomize + presets", () => {
     expect(idol.params.place).toBe("center");
     expect(idol.params.crowd ?? "normal").toBe("normal");
     expect(idol.params.form).toBeUndefined();
+  });
+
+  it("wacky rand keeps a short stack and plants overlays", () => {
+    for (const seed of [1, 7, 99, 256, 90210]) {
+      let p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null, true);
+      p = ensureCritters(ensureIdol(p));
+      const types = p.layers[0].effects.map((e) => e.typeId);
+      expect(types.length).toBeLessThanOrEqual(5);
+      expect(types.some((t) => t === "dancer")).toBe(true);
+      expect(types.some((t) => t === "critters")).toBe(true);
+    }
+  });
+
+  it("chaos stamp rerolls overlay seeds", () => {
+    const base = ensureIdol(ensureCritters(createDefaultProject()));
+    const stamped = chaosStamp({ ...base, seed: 11 });
+    const seedOf = (p: typeof base, typeId: string) =>
+      p.layers[0].effects.find((e) => e.typeId === typeId)?.params.seed;
+    expect(seedOf(stamped, "critters")).not.toEqual(seedOf(base, "critters"));
+    expect(seedOf(stamped, "dancer")).not.toEqual(seedOf(base, "dancer"));
+  });
+
+  it("ships luma key and dropout", () => {
+    expect(getEffect("key")?.name).toBe("Luma key");
+    expect(getEffect("dropout")?.name).toBe("Dropout");
+    expect(getEffect("dropout")?.temporal).toBe(true);
+    const analog = compileEffectSource(getEffect("analog")!);
+    expect(analog).toContain("u_audio");
+    expect(analog).toContain("u_bass");
   });
 });
 
@@ -342,5 +383,14 @@ describe("soundtrack", () => {
     expect(loud.energy).toBeGreaterThan(0.2);
     expect(loud.bass).toBeGreaterThan(0.1);
     expect(quiet.energy).toBeLessThan(0.05);
+  });
+});
+
+describe("clip loop", () => {
+  it("fades only the last beats into the first frame", () => {
+    expect(clipLoopFade(0, 24)).toBe(0);
+    expect(clipLoopFade(12, 24)).toBe(0);
+    expect(clipLoopFade(23, 24)).toBeGreaterThan(0.5);
+    expect(clipLoopFade(23, 24)).toBeLessThanOrEqual(1);
   });
 });
