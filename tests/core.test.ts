@@ -273,9 +273,8 @@ describe("effects registry", () => {
     expect(GENERATOR_GLSL).toContain("genOil");
     expect(GENERATOR_GLSL).toContain("genPaper");
     expect(GENERATOR_GLSL).toContain("genCave");
-    expect(GENERATOR_GLSL).toContain("halo");
-    expect(GENERATOR_GLSL).toContain("laid");
-    expect(GENERATOR_GLSL).toContain("spark");
+    expect(GENERATOR_GLSL).toContain("starLayer");
+    expect(GENERATOR_GLSL).toContain("reed");
     expect(GENERATOR_GLSL).not.toContain("genLot");
     expect(GENERATOR_GLSL).not.toContain("genChapel");
     expect(GENERATOR_GLSL).not.toContain("genLamp");
