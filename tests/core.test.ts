@@ -3,7 +3,8 @@ import { clamp, evenSize, fitEven, lerp, mulberry32 } from "../src/core/random";
 import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../src/core/exportSize";
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject } from "../src/core/defaults";
-import { LOOKS, parseSkin } from "../src/core/looks";
+import { LOOKS, SKIN_INDEX, parseSkin } from "../src/core/looks";
+import { SKIN_GLSL } from "../src/engine/look.glsl";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -130,13 +131,14 @@ describe("project files", () => {
   });
 });
 
-describe("instrument looks", () => {
-  it("ships toy pop plus four chrome alternates", () => {
+describe("picture skins", () => {
+  it("ships toy pop plus four video grades", () => {
     expect(LOOKS.map((l) => l.id)).toEqual(["toy", "aero", "chrome", "tape", "mall"]);
     expect(LOOKS.map((l) => l.label)).toEqual(["Toy pop", "Aero", "Chrome", "Tape", "Mall"]);
+    expect(SKIN_INDEX).toEqual({ toy: 0, aero: 1, chrome: 2, tape: 3, mall: 4 });
   });
 
-  it("keeps only known chrome ids", () => {
+  it("keeps only known picture-skin ids", () => {
     expect(parseSkin("aero")).toBe("aero");
     expect(parseSkin("chrome")).toBe("chrome");
     expect(parseSkin("tape")).toBe("tape");
@@ -146,6 +148,16 @@ describe("instrument looks", () => {
     expect(parseSkin("cloud")).toBe("toy");
     expect(parseSkin("toy pop")).toBe("toy");
     expect(parseSkin(undefined)).toBe("toy");
+  });
+
+  it("grades the picture in one final pass", () => {
+    expect(SKIN_GLSL).toContain("gradeAero");
+    expect(SKIN_GLSL).toContain("gradeChrome");
+    expect(SKIN_GLSL).toContain("gradeTape");
+    expect(SKIN_GLSL).toContain("gradeMall");
+    expect(SKIN_GLSL).toContain("uSkin");
+    expect(SKIN_GLSL).not.toContain("figureRender");
+    expect(SKIN_GLSL).not.toContain("critterField");
   });
 });
 

@@ -204,7 +204,7 @@ export interface Project {
   globalFeedback: FeedbackSettings;
   exportSettings: ExportSettings;
   presets: Preset[];
-  /** Instrument chrome. Toy pop is the original look. Does not change idols or floaters. */
+  /** Final picture grade. Toy pop is the ungraded original. */
   skin: SkinId;
 }
 

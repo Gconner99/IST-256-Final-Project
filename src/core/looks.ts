@@ -1,4 +1,4 @@
-/** Instrument clothes. This is chrome only — not the old sticker-pack skins. */
+/** Picture grades. One final pass on the video — not program chrome, not sticker packs. */
 
 export const LOOKS = [
   { id: "toy", label: "Toy pop" },
@@ -11,6 +11,14 @@ export const LOOKS = [
 export type SkinId = (typeof LOOKS)[number]["id"];
 
 export const DEFAULT_SKIN: SkinId = "toy";
+
+export const SKIN_INDEX: Record<SkinId, number> = {
+  toy: 0,
+  aero: 1,
+  chrome: 2,
+  tape: 3,
+  mall: 4,
+};
 
 const LOOK_KEY = "phosphene-look";
 const KNOWN = new Set<string>(LOOKS.map((l) => l.id));
@@ -37,12 +45,4 @@ export function rememberLook(id: SkinId): void {
   } catch {
     /* private mode / node */
   }
-}
-
-export function applyLook(id: SkinId): void {
-  const skin = parseSkin(id);
-  rememberLook(skin);
-  if (typeof document === "undefined") return;
-  const html = document.documentElement;
-  if (html.dataset.look !== skin) html.dataset.look = skin;
 }

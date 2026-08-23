@@ -1,7 +1,7 @@
 import { uid } from "../core/ids";
 import { store } from "../core/store";
 import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
-import { lookLabel, parseSkin, type SkinId } from "../core/looks";
+import { lookLabel, parseSkin, rememberLook, type SkinId } from "../core/looks";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
 import { chaosStamp, ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
@@ -323,8 +323,9 @@ export async function freezeSelected() {
 
 export function setLook(id: SkinId) {
   const skin = parseSkin(id);
+  rememberLook(skin);
   store.setProject((p) => ({ ...p, skin }));
-  store.patchUi({ status: `look · ${lookLabel(skin)}` });
+  store.patchUi({ status: `skin · ${lookLabel(skin)}` });
 }
 
 export function startFromScratch() {

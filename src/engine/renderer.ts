@@ -15,7 +15,9 @@ import {
   Program,
   texImage,
 } from "./gl";
+import { SKIN_INDEX, parseSkin } from "../core/looks";
 import { compileEffectProgram, hexToRgb } from "./compile";
+import { SKIN_GLSL } from "./look.glsl";
 import {
   BLIT_GLSL,
   COMPOSITE_GLSL,
@@ -58,6 +60,7 @@ export class Renderer {
   private feedbackProg: Program;
   private generatorProg: Program;
   private textureProg: Program;
+  private skinProg: Program;
   private black: WebGLTexture;
   lastError: string | null = null;
   width = 1;
@@ -78,6 +81,7 @@ export class Renderer {
     this.feedbackProg = new Program(gl, FEEDBACK_GLSL);
     this.generatorProg = new Program(gl, GENERATOR_GLSL);
     this.textureProg = new Program(gl, TEXTURE_GLSL);
+    this.skinProg = new Program(gl, SKIN_GLSL);
     this.black = createTexture(gl);
     gl.bindTexture(gl.TEXTURE_2D, this.black);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
@@ -370,6 +374,19 @@ export class Renderer {
 
     this.blitTo(this.ring[this.ringIndex], this.composite.tex);
     this.ringIndex = (this.ringIndex + 1) % RING;
+
+    const skin = SKIN_INDEX[parseSkin(project.skin)];
+    if (skin > 0) {
+      this.blitTo(this.post, this.composite.tex);
+      this.composite.bind();
+      this.skinProg.use();
+      bindTex(gl, 0, this.post.tex);
+      this.skinProg.i("uTex", 0);
+      this.skinProg.i("uSkin", skin);
+      this.skinProg.f("uTime", time);
+      this.skinProg.v2("uResolution", w, h);
+      drawTri(gl);
+    }
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
