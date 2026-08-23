@@ -108,8 +108,8 @@ export class Renderer {
       .map((e) => e.id)
       .sort(
         (a, b) =>
-          Number(a !== "dancer" && a !== "solids" && a !== "critters") -
-          Number(b !== "dancer" && b !== "solids" && b !== "critters"),
+          Number(a !== "dancer" && a !== "solids" && a !== "ribbons" && a !== "orbs" && a !== "critters") -
+          Number(b !== "dancer" && b !== "solids" && b !== "ribbons" && b !== "orbs" && b !== "critters"),
       );
     let i = 0;
     const step = () => {

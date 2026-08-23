@@ -1,6 +1,8 @@
 import type { EffectType } from "../core/types";
 import { CRITTER_GLSL } from "../engine/critters.glsl";
 import { dancer } from "./dancer";
+import { orbs } from "./orbs";
+import { ribbons } from "./ribbons";
 import { solids } from "./solids";
 
 export const critters: EffectType = {
@@ -48,4 +50,4 @@ vec4 apply(vec2 uv) {
 `,
 };
 
-export const WACKY_EFFECTS = [critters, dancer, solids];
+export const WACKY_EFFECTS = [critters, dancer, solids, ribbons, orbs];

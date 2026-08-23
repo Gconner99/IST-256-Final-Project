@@ -10,9 +10,9 @@ float geomTorus(vec3 p, float R, float r) {
 }
 float geomStar(vec3 p, float s) {
   float d = figOcta(p, s);
-  d = min(d, figOcta(p * vec3(0.32, 1.85, 0.32), s));
-  d = min(d, figOcta(p * vec3(1.85, 0.32, 0.32), s));
-  d = min(d, figOcta(p * vec3(0.32, 0.32, 1.85), s));
+  d = min(d, figOcta(p * vec3(0.26, 2.15, 0.26), s));
+  d = min(d, figOcta(p * vec3(2.15, 0.26, 0.26), s));
+  d = min(d, figOcta(p * vec3(0.26, 0.26, 2.15), s));
   return d;
 }
 struct Geom {
@@ -22,10 +22,10 @@ Geom geomRoll(float seed, float time) {
   Geom g;
   g.t = figDanceT(seed, time + (u_audio > 0.001 ? u_audio * 0.12 : 0.0));
   g.kind = floor(figH(seed + 0.21) * 6.0);
-  g.twist = mix(0.15, 1.35, figH(seed + 0.31));
+  g.twist = mix(0.35, 1.85, figH(seed + 0.31));
   g.fold = step(0.55, figH(seed + 0.37));
-  g.pulse = mix(0.55, 1.8, figH(seed + 0.41));
-  g.spin = g.t * mix(0.35, 1.55, figH(seed + 0.47));
+  g.pulse = mix(0.9, 2.6, figH(seed + 0.41));
+  g.spin = g.t * mix(1.2, 3.5, figH(seed + 0.47));
   g.bob = sin(g.t * mix(1.1, 2.6, figH(seed + 0.51))) * mix(0.04, 0.16, figH(seed + 0.53));
   g.sway = sin(g.t * 1.7) * mix(0.08, 0.28, figH(seed + 0.57));
   g.k = mix(0.06, 0.18, figH(seed + 0.61));
@@ -70,35 +70,35 @@ vec2 geomHit(vec3 p, Geom g, float seed, float form) {
   float mat0 = 1.0;
   float mat1 = 2.0;
   if (kind < 0.5) {
-    d0 = figBox(p, vec3(0.28, 0.28, 0.28));
-    d1 = figOcta(p, mix(0.34, 0.52, figH(seed + 1.4)));
+    d0 = figBox(p, vec3(0.18, 0.5, 0.18));
+    d1 = figOcta(p * vec3(1.0, 0.55, 1.0), mix(0.38, 0.56, figH(seed + 1.4)));
     mat1 = 4.0;
   } else if (kind < 1.5) {
-    d0 = geomTorus(p, 0.32, 0.11);
-    d1 = figCap(p, vec3(-0.36, -0.08, 0.0), vec3(0.36, 0.1, 0.0), 0.1);
+    d0 = geomTorus(p, 0.38, 0.155);
+    d1 = figCap(p, vec3(-0.46, -0.06, 0.0), vec3(0.46, 0.14, 0.0), 0.12);
     mat0 = 8.0;
     mat1 = 4.0;
   } else if (kind < 2.5) {
-    d0 = geomStar(p, mix(0.24, 0.42, 0.5 + 0.5 * sin(g.t * 2.1)));
-    d1 = figOcta(p, 0.22);
+    d0 = geomStar(p, mix(0.28, 0.5, 0.5 + 0.5 * sin(g.t * 3.2)));
+    d1 = figOcta(p, 0.16);
     mat0 = 4.0;
   } else if (kind < 3.5) {
     vec3 q = p;
     q.xz = abs(q.xz);
-    d0 = figBox(q, vec3(0.18, 0.4, 0.18));
-    d1 = figOcta(p, 0.38);
+    d0 = figBox(q, vec3(0.14, 0.56, 0.14));
+    d1 = figOcta(p * vec3(1.2, 0.42, 1.2), 0.42);
     mat1 = 8.0;
   } else if (kind < 4.5) {
-    vec3 a = p - vec3(0.2, 0.0, 0.0);
-    vec3 b = p + vec3(0.18, 0.05, 0.0);
-    d0 = figBox(a, vec3(0.16, 0.22, 0.16));
-    d1 = figBox(b, vec3(0.14, 0.28, 0.14));
+    vec3 a = p - vec3(0.16, 0.0, 0.0);
+    vec3 b = p + vec3(0.14, 0.08, 0.0);
+    d0 = figBox(a, vec3(0.11, 0.36, 0.11));
+    d1 = geomTorus(b, 0.22, 0.08);
     mat1 = 2.2;
   } else {
-    d0 = figCap(p, vec3(-0.36, 0.0, 0.0), vec3(0.36, 0.0, 0.0), 0.08);
-    d0 = min(d0, figCap(p, vec3(0.0, -0.36, 0.0), vec3(0.0, 0.36, 0.0), 0.08));
-    d0 = min(d0, figCap(p, vec3(0.0, 0.0, -0.36), vec3(0.0, 0.0, 0.36), 0.08));
-    d1 = geomTorus(p, 0.28, 0.09);
+    d0 = figCap(p, vec3(-0.46, 0.0, 0.0), vec3(0.46, 0.0, 0.0), 0.065);
+    d0 = min(d0, figCap(p, vec3(0.0, -0.46, 0.0), vec3(0.0, 0.46, 0.0), 0.065));
+    d0 = min(d0, figCap(p, vec3(0.0, 0.0, -0.46), vec3(0.0, 0.0, 0.46), 0.065));
+    d1 = geomTorus(p, 0.32, 0.075);
     mat0 = 4.0;
     mat1 = 8.0;
   }
@@ -141,7 +141,59 @@ vec4 geomShade(vec3 p, vec3 rd, Geom g, float seed, float matId, float form) {
   col = mix(col, vec3(0.03, 0.015, 0.05), ink * 0.9);
   return vec4(col, 1.0);
 }
-vec4 geomRender(vec2 uv, float seed, float time, float sizeMul, float count, float scatter, float echo, float move, float form) {
+vec3 geomTrace(vec3 ro, vec3 rd, vec3 off, Geom g, float sid, float form, int steps, float tEnter, float sc) {
+  float tRay = tEnter;
+  float minD = 1e5;
+  float minT = tEnter;
+  float minM = 0.0;
+  float s = max(sc, 0.08);
+  for (int i = 0; i < 8; i++) {
+    if (i >= steps) break;
+    vec2 hit = geomHit((ro - off + rd * tRay) / s, g, sid, form);
+    hit.x *= s;
+    if (hit.x < minD) {
+      minD = hit.x;
+      minT = tRay;
+      minM = hit.y;
+    }
+    if (hit.x < 0.003 || tRay > 8.0) break;
+    tRay += max(hit.x * 0.82, 0.012);
+  }
+  return vec3(minT, minD, minM);
+}
+vec4 geomStreakTint(vec4 sh, float g, float streak) {
+  vec3 hsv = rgb2hsv(sh.rgb);
+  hsv.x = fract(hsv.x + 0.07 * g);
+  hsv.z = min(1.0, hsv.z * mix(0.7, 0.94, streak));
+  float ga = streak * (0.52 / max(g, 1.0));
+  return vec4(hsv2rgb(hsv), clamp(ga, 0.0, 0.85));
+}
+vec4 geomGhosts(vec3 ro, vec3 rd, float seed, float time, float n, float scatter, float move, float form, float streak, int k) {
+  vec4 acc = vec4(0.0);
+  if (streak < 0.04) return acc;
+  int gn = uQuality > 1.5 ? 3 : (uQuality > 0.5 ? 2 : 1);
+  for (int g = 3; g >= 1; g--) {
+    if (g > gn) continue;
+    float delay = (0.05 + 0.11 * streak) * float(g);
+    float gt = time - delay;
+    for (int i = 0; i < 4; i++) {
+      if (i >= k) break;
+      float sid = seed + float(i) * 17.31 + 0.07;
+      vec3 off = figCarry(figPlace(i, n, seed, scatter), sid, gt, move);
+      float tEnter;
+      if (!figRaySphere(ro, rd, off, 1.72, tEnter)) continue;
+      Geom gg = geomSoften(geomRoll(sid, gt), move);
+      vec3 tr = geomTrace(ro, rd, off, gg, sid, form, 5, tEnter, 1.0);
+      if (tr.y > 0.055) continue;
+      vec3 p = ro - off + rd * tr.x;
+      vec4 tint = geomStreakTint(geomShade(p, rd, gg, sid, tr.z, form), float(g), streak);
+      acc.rgb += (1.0 - acc.a) * tint.rgb * tint.a;
+      acc.a += (1.0 - acc.a) * tint.a;
+    }
+  }
+  return acc;
+}
+vec4 geomRender(vec2 uv, float seed, float time, float sizeMul, float count, float scatter, float echo, float move, float form, float streak) {
   float aspect = uResolution.x / max(uResolution.y, 1.0);
   vec2 q = (uv - vec2(0.5, 0.42)) * vec2(aspect, 1.0);
   vec4 miss = vec4(0.0);
@@ -168,10 +220,10 @@ vec4 geomRender(vec2 uv, float seed, float time, float sizeMul, float count, flo
   float bestSeed = seed;
   vec3 bestOff = vec3(0.0);
   Geom bestG = geomRoll(seed, time);
-  float trailSid = seed;
-  vec3 trailOff = vec3(0.0);
-  float trailEnter = 0.0;
-  bool trail = false;
+  float echoSid = seed;
+  vec3 echoOff = vec3(0.0);
+  float echoEnter = 0.0;
+  bool echoHit = false;
   for (int i = 0; i < 4; i++) {
     if (i >= k) break;
     float sid = seed + float(i) * 17.31 + 0.07;
@@ -203,24 +255,29 @@ vec4 geomRender(vec2 uv, float seed, float time, float sizeMul, float count, flo
       bestSeed = sid;
       bestOff = off;
       bestG = g;
-    } else if (!trail) {
-      trail = true;
-      trailSid = sid;
-      trailOff = off;
-      trailEnter = tEnter;
+    } else if (!echoHit) {
+      echoHit = true;
+      echoSid = sid;
+      echoOff = off;
+      echoEnter = tEnter;
     }
   }
+  vec4 ghosts = geomGhosts(ro, rd, seed, time, n, spread, move, form, streak, k);
   if (bestH <= 0.05 && bestT <= 8.0) {
     vec3 p = ro - bestOff + rd * bestT;
-    return geomShade(p, rd, bestG, bestSeed, bestM, form);
+    vec4 live = geomShade(p, rd, bestG, bestSeed, bestM, form);
+    ghosts.rgb += (1.0 - ghosts.a) * live.rgb;
+    ghosts.a += (1.0 - ghosts.a);
+    return ghosts;
   }
-  if (echo < 0.03 || !trail) return miss;
-  Geom gf = geomRoll(trailSid, time - mix(0.1, 0.2, echo));
-  float tRay = trailEnter;
+  if (ghosts.a > 0.03) return ghosts;
+  if (echo < 0.03 || !echoHit) return miss;
+  Geom gf = geomRoll(echoSid, time - mix(0.1, 0.2, echo));
+  float tRay = echoEnter;
   float minD = 1e5;
   float minM = 0.0;
   for (int s = 0; s < 6; s++) {
-    vec2 hit = geomHit(ro - trailOff + rd * tRay, gf, trailSid, form);
+    vec2 hit = geomHit(ro - echoOff + rd * tRay, gf, echoSid, form);
     if (hit.x < minD) {
       minD = hit.x;
       minM = hit.y;
@@ -229,7 +286,7 @@ vec4 geomRender(vec2 uv, float seed, float time, float sizeMul, float count, flo
     tRay += max(hit.x * 0.85, 0.02);
   }
   if (minD > 0.06) return miss;
-  vec3 albedo = figPal(trailSid, minM);
+  vec3 albedo = figPal(echoSid, minM);
   vec3 hsv = rgb2hsv(albedo);
   hsv.x = fract(hsv.x + 0.16);
   hsv.z = min(1.0, hsv.z * 1.06);
@@ -266,7 +323,7 @@ vec3 geomMiniPlace(int i, float n, float seed, float aspect) {
   float z = mix(-0.18, 0.18, figH(seed + fi * 4.4 + 2.8));
   return vec3(u * 2.52, v * 1.48 + 0.04, z);
 }
-vec4 geomRenderMini(vec2 uv, float seed, float time, float sizeMul, float count, float echo, float move, float form) {
+vec4 geomRenderMini(vec2 uv, float seed, float time, float sizeMul, float count, float echo, float move, float form, float streak) {
   float aspect = uResolution.x / max(uResolution.y, 1.0);
   vec2 q = (uv - vec2(0.5, 0.42)) * vec2(aspect, 1.0);
   vec4 miss = vec4(0.0);
@@ -293,11 +350,13 @@ vec4 geomRenderMini(vec2 uv, float seed, float time, float sizeMul, float count,
   float bestSc = figScale;
   Geom lead = geomSoften(geomRoll(seed, time), move);
   Geom bestG = geomWildMini(seed, time, lead);
-  float trailSid = seed;
-  vec3 trailOff = vec3(0.0);
-  float trailEnter = 0.0;
-  float trailSc = figScale;
-  bool trail = false;
+  float echoSid = seed;
+  vec3 echoOff = vec3(0.0);
+  float echoEnter = 0.0;
+  float echoSc = figScale;
+  bool echoHit = false;
+  vec4 ghosts = vec4(0.0);
+  bool wantStreak = streak > 0.18 && uQuality > 0.45;
   for (int i = 0; i < 24; i++) {
     if (i >= k) break;
     float sid = seed + float(i) * 91.73 + 13.1 + figH(seed * 0.11 + float(i) + 2.3) * 47.0;
@@ -332,27 +391,46 @@ vec4 geomRenderMini(vec2 uv, float seed, float time, float sizeMul, float count,
       bestOff = off;
       bestG = g;
       bestSc = sc;
-    } else if (!trail) {
-      trail = true;
-      trailSid = sid;
-      trailOff = off;
-      trailEnter = tEnter;
-      trailSc = sc;
+    } else if (!echoHit) {
+      echoHit = true;
+      echoSid = sid;
+      echoOff = off;
+      echoEnter = tEnter;
+      echoSc = sc;
+    }
+    if (wantStreak && i < 10 && ghosts.a < 0.7) {
+      float gt = time - 0.12 * streak;
+      vec3 goff = figCarry(geomMiniPlace(i, n, seed, aspect), sid, gt, move);
+      float gEnter;
+      if (figRaySphere(ro, rd, goff, 2.2 * sc, gEnter)) {
+        Geom gg = geomWildMini(sid, gt, lead);
+        vec3 tr = geomTrace(ro, rd, goff, gg, sid, form, 4, gEnter, sc);
+        if (tr.y < 0.05) {
+          vec3 gp = (ro - goff + rd * tr.x) / sc;
+          vec4 tint = geomStreakTint(geomShade(gp, rd, gg, sid, tr.z, form), 1.0, streak);
+          ghosts.rgb += (1.0 - ghosts.a) * tint.rgb * tint.a * 0.85;
+          ghosts.a += (1.0 - ghosts.a) * tint.a * 0.85;
+        }
+      }
     }
   }
   if (bestH <= 0.045 && bestT <= 8.0) {
     vec3 p = (ro - bestOff + rd * bestT) / bestSc;
-    return geomShade(p, rd, bestG, bestSeed, bestM, form);
+    vec4 live = geomShade(p, rd, bestG, bestSeed, bestM, form);
+    ghosts.rgb += (1.0 - ghosts.a) * live.rgb;
+    ghosts.a += (1.0 - ghosts.a);
+    return ghosts;
   }
-  if (echo < 0.03 || !trail) return miss;
+  if (ghosts.a > 0.03) return ghosts;
+  if (echo < 0.03 || !echoHit) return miss;
   Geom leadGhost = geomRoll(seed, time - mix(0.1, 0.2, echo));
-  Geom gf = geomWildMini(trailSid, time - mix(0.1, 0.2, echo), leadGhost);
-  float tRay = trailEnter;
+  Geom gf = geomWildMini(echoSid, time - mix(0.1, 0.2, echo), leadGhost);
+  float tRay = echoEnter;
   float minD = 1e5;
   float minM = 0.0;
   for (int s = 0; s < 5; s++) {
-    vec2 hit = geomHit((ro - trailOff + rd * tRay) / trailSc, gf, trailSid, form);
-    hit.x *= trailSc;
+    vec2 hit = geomHit((ro - echoOff + rd * tRay) / echoSc, gf, echoSid, form);
+    hit.x *= echoSc;
     if (hit.x < minD) {
       minD = hit.x;
       minM = hit.y;
@@ -361,7 +439,7 @@ vec4 geomRenderMini(vec2 uv, float seed, float time, float sizeMul, float count,
     tRay += max(hit.x * 0.85, 0.015);
   }
   if (minD > 0.05) return miss;
-  vec3 albedo = figPal(trailSid, minM);
+  vec3 albedo = figPal(echoSid, minM);
   vec3 hsv = rgb2hsv(albedo);
   hsv.x = fract(hsv.x + 0.16);
   hsv.z = min(1.0, hsv.z * 1.06);

@@ -394,7 +394,7 @@ vec3 figTravel(float sid, float time, float move) {
     float ry = mix(0.32, 0.82, figH(sid + 0.54));
     return vec3(cos(a) * rx, sin(a) * ry, sin(a * 0.65) * 0.32);
   }
-  float t = time * mix(0.16, 0.38, figH(sid + 0.61));
+  float t = time * mix(0.48, 1.05, figH(sid + 0.61));
   float mul = figH(sid + 0.62) > 0.5 ? 2.0 : 3.0;
   float rx = mix(1.15, 2.35, figH(sid + 0.63));
   float ry = mix(0.48, 1.12, figH(sid + 0.64));
