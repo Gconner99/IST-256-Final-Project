@@ -1,8 +1,5 @@
-import type { SkinId } from "../core/skins";
-import { CLOUD_STICKER_GLSL, FOLK_STICKER_GLSL, TIDE_STICKER_GLSL } from "./stickers.glsl";
-
 /** Unreal objects grown from random points, plus a toy-pop kit of music icons. */
-const CRITTER_HEAD = `
+export const CRITTER_GLSL = `
 float crHash(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
   p3 += dot(p3, p3.yzx + 33.33);
@@ -244,15 +241,6 @@ float musicFam(vec2 p, float id, float fam) {
   if (k < 7.5) return speaker(p, id);
   return clef(p, id);
 }
-`;
-
-const TOY_STICKER_GLSL = `
-float stickerFam(vec2 p, float id, float fam) {
-  return musicFam(p, id, fam);
-}
-`;
-
-const CRITTER_TAIL = `
 float shapeFam(vec2 p, float id, float famSlot) {
   float fam = mod(famSlot, 9.0);
   if (fam < 0.5) return classicBody(p, id);
@@ -274,9 +262,9 @@ float weirdBody(vec2 p, float id, float famSlot, float kit) {
   }
   if (kit > 1.5) {
     if (famSlot < 8.5) return shapeFam(p, id, famSlot);
-    return stickerFam(p, id, famSlot - 9.0);
+    return musicFam(p, id, famSlot - 9.0);
   }
-  if (kit > 0.5) return stickerFam(p, id, famSlot);
+  if (kit > 0.5) return musicFam(p, id, famSlot);
   return shapeFam(p, id, famSlot);
 }
 vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, float kit) {
@@ -300,39 +288,17 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, flo
   float sz = mix(0.035, 0.17, crHash(vec2(id, 9.2))) * max(sizeMul, 0.2);
   sz *= 1.0 + 0.08 * sin(time * 1.7 + id);
   float hue = crHash(vec2(id, 0.41));
-  float vibe = crHash(vec2(id, 0.74));
-  float sat = vibe < 0.22 ? mix(0.2, 0.48, crHash(vec2(id, 0.52))) : mix(0.62, 1.0, crHash(vec2(id, 0.52)));
-  float val = mix(0.72, 1.0, crHash(vec2(id, 0.63)));
-  if (SKIN_KIND == 1) {
-    float w = crHash(vec2(id, 0.47));
-    if (w < 0.22) hue = mix(0.05, 0.1, crHash(vec2(id, 0.48)));
-    else if (w < 0.5) hue = mix(0.18, 0.36, crHash(vec2(id, 0.48)));
-    else if (w < 0.75) hue = mix(0.07, 0.14, crHash(vec2(id, 0.48)));
-    else hue = mix(0.78, 0.9, crHash(vec2(id, 0.48)));
-    sat = mix(0.32, 0.66, crHash(vec2(id, 0.52)));
-    val = mix(0.42, 0.78, crHash(vec2(id, 0.63)));
-  } else if (SKIN_KIND == 2) {
-    float w = crHash(vec2(id, 0.47));
-    if (w < 0.3) hue = mix(0.48, 0.58, crHash(vec2(id, 0.48)));
-    else if (w < 0.6) hue = mix(0.08, 0.16, crHash(vec2(id, 0.48)));
-    else hue = mix(0.54, 0.63, crHash(vec2(id, 0.48)));
-    sat = mix(0.28, 0.6, crHash(vec2(id, 0.52)));
-    val = mix(0.5, 0.88, crHash(vec2(id, 0.63)));
-  } else if (SKIN_KIND == 3) {
-    float w = crHash(vec2(id, 0.47));
-    if (w < 0.4) hue = mix(0.55, 0.62, crHash(vec2(id, 0.48)));
-    else if (w < 0.7) hue = mix(0.08, 0.16, crHash(vec2(id, 0.48)));
-    else hue = mix(0.7, 0.82, crHash(vec2(id, 0.48)));
-    sat = mix(0.12, 0.42, crHash(vec2(id, 0.52)));
-    val = mix(0.78, 1.0, crHash(vec2(id, 0.63)));
-  } else if (kit > 0.5) {
+  if (kit > 0.5) {
     float candy = crHash(vec2(id, 0.47));
     if (candy < 0.25) hue = mix(0.9, 0.02, crHash(vec2(id, 0.48)));
     else if (candy < 0.5) hue = mix(0.1, 0.18, crHash(vec2(id, 0.48)));
     else if (candy < 0.75) hue = mix(0.42, 0.55, crHash(vec2(id, 0.48)));
     else hue = mix(0.72, 0.88, crHash(vec2(id, 0.48)));
-    sat = mix(0.7, 1.0, crHash(vec2(id, 0.52)));
   }
+  float vibe = crHash(vec2(id, 0.74));
+  float sat = vibe < 0.22 ? mix(0.2, 0.48, crHash(vec2(id, 0.52))) : mix(0.62, 1.0, crHash(vec2(id, 0.52)));
+  if (kit > 0.5) sat = mix(0.7, 1.0, crHash(vec2(id, 0.52)));
+  float val = mix(0.72, 1.0, crHash(vec2(id, 0.63)));
   vec3 fillCol = crHsv(vec3(hue, sat, val));
   vec3 rimCol = crHsv(vec3(fract(hue + mix(0.08, 0.52, crHash(vec2(id, 0.81)))), mix(0.28, 0.9, crHash(vec2(id, 0.82))), 1.0));
   vec3 accCol = vec3(0.0);
@@ -351,9 +317,6 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, flo
     float hl = fill * (1.0 - smoothstep(0.45, 0.0, length(p - vec2(-0.2, -0.25))));
     vec3 col = mix(fillCol, rimCol, rim * 0.6);
     col = mix(col, vec3(1.0), hl * 0.28);
-    if (SKIN_KIND == 1) col *= 0.88 + 0.14 * (0.5 + 0.5 * sin(p.y * 16.0 + p.x * 2.0));
-    if (SKIN_KIND == 2) col = mix(col, col * vec3(0.75, 1.05, 1.12), 0.22);
-    if (SKIN_KIND == 3) col = mix(col, vec3(1.0), 0.12);
     float a = max(fill, glow * 0.5) * (1.0 - fk * 0.34);
     accCol = mix(accCol, col, a);
     accA = max(accA, a);
@@ -378,12 +341,3 @@ vec4 critterField(vec2 uv, float count, float seed, float time, float sizeMul, f
   return acc;
 }
 `;
-
-export function critterGlsl(skin: SkinId = "toy"): string {
-  const stickers =
-    skin === "folk" ? FOLK_STICKER_GLSL : skin === "tide" ? TIDE_STICKER_GLSL : skin === "cloud" ? CLOUD_STICKER_GLSL : TOY_STICKER_GLSL;
-  const kind = skin === "folk" ? 1 : skin === "tide" ? 2 : skin === "cloud" ? 3 : 0;
-  return `const int SKIN_KIND = ${kind};\n${CRITTER_HEAD}${stickers}${CRITTER_TAIL}`;
-}
-
-export const CRITTER_GLSL = critterGlsl("toy");

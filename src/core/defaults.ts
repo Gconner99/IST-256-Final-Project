@@ -148,7 +148,6 @@ export function createDefaultProject(): Project {
     globalFeedback: { ...defaultFeedback(), amount: 0.18, opacity: 0.55, scale: 1.01 },
     exportSettings: defaultExportSettings(),
     presets: [],
-    skin: "toy",
   };
   const scramble = randomizeProject({ ...project, seed: 90210, randomAmount: 1 }, "all", null, null, null);
   project.presets = [

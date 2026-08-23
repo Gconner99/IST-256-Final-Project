@@ -1,5 +1,3 @@
-import type { SkinId } from "./skins";
-
 export type QualityMode = "draft" | "preview" | "export";
 export type SourceKind = "image" | "video" | "generator" | "audio";
 export type GeneratorType =
@@ -197,8 +195,6 @@ export interface Project {
   globalFeedback: FeedbackSettings;
   exportSettings: ExportSettings;
   presets: Preset[];
-  /** Wardrobe for stickers + backdrop wash. Default toy keeps the original look. */
-  skin?: SkinId;
 }
 
 export interface AppUi {

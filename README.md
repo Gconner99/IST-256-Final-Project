@@ -46,7 +46,6 @@ Requires a browser (or Electron) with **WebGL2**.
 - Layers: opacity, blend modes, transform, enable, duplicate
 - Modular effects stack (bypass, reorder, per-effect mix + mask)
 - ~18 effects including **Floaters** and **Idol** (small low-poly dancers; stamp for a weirder seed)
-- **Skins** restyle stickers and wash the backdrop: Toy pop (original), Folk wood, Tide, Clouds
 - Procedural backgrounds: plasma, noise, bars, plus **Stars**, **Marsh**, **Oil**, **Paper**, and **Cave**
 - Global + per-layer **feedback bus** (amount, delay, opacity, scale, rotation, distortion)
 - Basic masks (rect, circle, gradient, noise)

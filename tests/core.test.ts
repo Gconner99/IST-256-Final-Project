@@ -8,8 +8,6 @@ import { ensureCritters, ensureIdol, randomizeProject } from "../src/core/random
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
-import { critterForCompile } from "../src/effects/critters";
-import { parseSkin, SKINS } from "../src/core/skins";
 import { compileEffectSource } from "../src/engine/compile";
 import { GENERATOR_GLSL } from "../src/engine/shaders";
 import { GEN_INDEX } from "../src/engine/gl";
@@ -114,7 +112,6 @@ describe("project files", () => {
     expect(loaded.sources[1].kind).toBe("audio");
     expect(loaded.sources[1].audio).toBeNull();
     expect(loaded.sources[1].pcm).toBeNull();
-    expect(loaded.skin).toBe("toy");
     expect(json).not.toContain("bitmap");
     expect(json).not.toContain('"audio":');
     expect(json).not.toContain('"pcm":');
@@ -122,10 +119,6 @@ describe("project files", () => {
 
   it("rejects unknown files", () => {
     expect(() => parseProject("{}")).toThrow(/Not a Phosphene/);
-    const loaded = parseProject(
-      JSON.stringify({ app: "phosphene", version: 1, layers: [], sources: [], keyframes: [], presets: [] }),
-    );
-    expect(loaded.skin).toBe("toy");
   });
 });
 
@@ -163,26 +156,9 @@ describe("effects registry", () => {
       "clef",
       "u_kit",
       "musicFam",
-      "stickerFam",
     ]) {
       expect(critterSrc.includes(family)).toBe(true);
     }
-    expect(critterSrc.includes("folkDeer")).toBe(false);
-    expect(critterSrc.includes("tideFish")).toBe(false);
-    const folkSrc = compileEffectSource(critterForCompile("folk"));
-    expect(folkSrc.includes("folkDeer")).toBe(true);
-    expect(folkSrc.includes("folkBranch")).toBe(true);
-    expect(folkSrc.includes("folkPine")).toBe(true);
-    expect(folkSrc.includes("stickerFam")).toBe(true);
-    const tideSrc = compileEffectSource(critterForCompile("tide"));
-    expect(tideSrc.includes("tideFish")).toBe(true);
-    expect(tideSrc.includes("tideKelp")).toBe(true);
-    const cloudSrc = compileEffectSource(critterForCompile("cloud"));
-    expect(cloudSrc.includes("cloudKite")).toBe(true);
-    expect(cloudSrc.includes("cloudBird")).toBe(true);
-    expect(parseSkin("folk")).toBe("folk");
-    expect(parseSkin("nope")).toBe("toy");
-    expect(SKINS.map((s) => s.id)).toEqual(["toy", "folk", "tide", "cloud"]);
     const idol = getEffect("dancer")!;
     expect(idol.params.find((p) => p.id === "count")?.default).toBe(1);
     expect(Number(idol.params.find((p) => p.id === "size")?.default)).toBeCloseTo(0.12);
@@ -241,8 +217,6 @@ describe("effects registry", () => {
     expect(GENERATOR_GLSL).toContain("genCave");
     expect(GENERATOR_GLSL).toContain("uMode == 7");
     expect(GENERATOR_GLSL).toContain("uMode == 10");
-    expect(GENERATOR_GLSL).toContain("skinAtmosphere");
-    expect(GENERATOR_GLSL).toContain("uSkin");
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {

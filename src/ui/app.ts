@@ -36,7 +36,6 @@ import {
 import { resumeAudio } from "../media/audio";
 import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
 import { defaultGeneratorSource } from "../core/defaults";
-import { parseSkin, SKINS } from "../core/skins";
 
 let liveScrub = false;
 let rendererRef: Renderer | null = null;
@@ -102,7 +101,6 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt, xerox, and drifting shapes. Keep the <em>floaters</em> box on to send one-off colored objects across the frame.</li>
           <li><strong>Idol</strong> plants a small low-poly 3D creature — stamp it to grow a weirder one (petals, skirts, antennae, halos). Move can dance, drift, float, or orbit. Crowd can switch to a mini army. Keep the top-bar box on so Rand all includes it.</li>
-          <li><strong>Skins</strong> restyle stickers and wash the backdrop without changing your effect stack. <em>Toy pop</em> is the original look. <em>Folk wood</em> brings branches, animals, and forest inks. <em>Tide</em> goes underwater. <em>Clouds</em> go skyward. Switch anytime on the left rail.</li>
           <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, and Cave — quieter, more still-photograph looks. Rand all will swap these too.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass. Exported clips are silent for now — the motion still follows the mix.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
@@ -181,12 +179,6 @@ function bind(root: HTMLElement) {
     }
     if (act === "stamp-critters") stampCritters();
     if (act === "stamp-idol") stampIdol();
-    if (act === "skin") {
-      const skin = parseSkin(t.dataset.kind);
-      store.setProject((p) => ({ ...p, skin }));
-      const label = SKINS.find((s) => s.id === skin)?.label ?? skin;
-      store.patchUi({ status: `skin · ${label}` });
-    }
     if (act === "add-layer") addLayer();
     if (act === "dup-layer" && id) duplicateLayer(id);
     if (act === "del-layer" && id) removeLayer(id);
@@ -476,22 +468,14 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="paper">Paper</button>
       <button class="btn tiny acid" data-act="gen" data-kind="cave">Cave</button>
     </div>
-    <div class="sec" style="margin-top:10px">Skin</div>
     <div class="row">
-      ${SKINS.map((s) => {
-        const on = parseSkin(p.skin) === s.id;
-        return `<button class="btn tiny ${on ? "on acid" : ""}" data-act="skin" data-kind="${s.id}" title="${s.hint}">${s.label}</button>`;
-      }).join("")}
-    </div>
-    <div class="status" style="margin-top:4px">Skins restyle stickers and wash the backdrop. Toy pop keeps the original look. Folk wood, Tide, and Clouds layer on top of whatever you already have.</div>
-    <div class="row" style="margin-top:8px">
       <button class="btn tiny acid" data-act="gen" data-kind="critters">Floaters</button>
       <button class="btn tiny acid" data-act="stamp-critters">Stamp floaters</button>
       <button class="btn tiny acid" data-act="stamp-idol">Stamp idol</button>
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Stars / Marsh / Oil / Paper / Cave are quiet moving backdrops. Floaters drift across — Kit on the Floaters effect picks lumpy shapes, themed stickers (follow Skin), or both. An idol is one small low-poly dancer. Move can drift, float, or orbit. Crowd → Mini army fills the frame with tiny ones. Drop an MP3 to make them dance to the song.</div>
+    <div class="status" style="margin-top:4px">Stars / Marsh / Oil / Paper / Cave are quiet moving backdrops. Floaters drift across — Kit on the Floaters effect picks lumpy shapes, toy-pop music icons, or both. An idol is one small low-poly dancer. Move can drift, float, or orbit. Crowd → Mini army fills the frame with tiny ones. Drop an MP3 to make them dance to the song.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
