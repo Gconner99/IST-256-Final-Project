@@ -19,8 +19,6 @@ function defaultUi(project: Project): AppUi {
     includeCritters: true,
     includeIdol: true,
     includeSolids: false,
-    includeRibbons: false,
-    includeOrbs: false,
     exporting: false,
   };
 }

@@ -56,8 +56,6 @@ const LOOKS: Look[] = [
   { name: "night idol", mood: "outsider", stack: ["posterize", "chroma", "bloom", "dancer"], blend: "overlay" },
   { name: "glass morph", mood: "mix", stack: ["grade", "bloom", "warp", "solids"], blend: "normal" },
   { name: "crystal fold", mood: "outsider", stack: ["posterize", "chroma", "bloom", "solids"], blend: "screen" },
-  { name: "tape garden", mood: "lush", stack: ["grade", "bloom", "grain", "ribbons"], blend: "normal" },
-  { name: "candy orbs", mood: "mix", stack: ["duotone", "bloom", "chroma", "orbs"], blend: "screen" },
 ];
 
 function randForParam(rng: () => number, def: ParamDef, current: number | string | boolean, amount: number) {
@@ -213,39 +211,8 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     else if (mood === "mix") p.move = mv > 0.35 ? "weave" : mv > 0.18 ? "drift" : "orbit";
     else p.move = mv > 0.5 ? "weave" : "drift";
     p.echo = 0.28 + rng() * 0.45;
-    p.trail = 0.4 + rng() * 0.5;
     p.amount = 1;
-    p.speed = 0.9 + rng() * 1.1;
-    p.seed = 1 + Math.floor(rng() * 9998);
-  }
-  if (fx.typeId === "ribbons") {
-    p.size = 0.48 + rng() * 0.32;
-    p.count = 1 + Math.floor(rng() * 3);
-    p.place = rng() > 0.3 ? "scatter" : "center";
-    const st = rng();
-    p.style = st > 0.66 ? "helix" : st > 0.33 ? "loop" : "tape";
-    const mv = rng();
-    p.move = mv > 0.45 ? "weave" : mv > 0.22 ? "orbit" : "float";
-    p.curl = 0.7 + rng() * 0.9;
-    p.echo = 0.22 + rng() * 0.4;
-    p.trail = 0.35 + rng() * 0.5;
-    p.amount = 1;
-    p.speed = 0.95 + rng() * 1.05;
-    p.seed = 1 + Math.floor(rng() * 9998);
-  }
-  if (fx.typeId === "orbs") {
-    p.size = 0.36 + rng() * 0.28;
-    p.count = 3 + Math.floor(rng() * 2);
-    p.place = rng() > 0.25 ? "scatter" : "center";
-    const st = rng();
-    p.style = st > 0.62 ? "spike" : st > 0.32 ? "crystal" : "candy";
-    const mv = rng();
-    p.move = mv > 0.4 ? "weave" : mv > 0.18 ? "orbit" : "drift";
-    p.bounce = 0.5 + rng() * 0.7;
-    p.echo = 0.18 + rng() * 0.38;
-    p.trail = 0.55 + rng() * 0.4;
-    p.amount = 1;
-    p.speed = 1.05 + rng() * 1.15;
+    p.speed = 0.35 + rng() * 0.7;
     p.seed = 1 + Math.floor(rng() * 9998);
   }
   if (fx.typeId === "kaleido") {
@@ -274,16 +241,6 @@ function makeSolidsInstance(seed: number, mood: Mood = "mix"): EffectInstance {
   return applyMood(makeFx("solids", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
 }
 
-function makeRibbonsInstance(seed: number, mood: Mood = "mix"): EffectInstance {
-  const rng = mulberry32(seed >>> 0);
-  return applyMood(makeFx("ribbons", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
-}
-
-function makeOrbsInstance(seed: number, mood: Mood = "mix"): EffectInstance {
-  const rng = mulberry32(seed >>> 0);
-  return applyMood(makeFx("orbs", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
-}
-
 /** Drop a dancing idol onto every layer that doesn't already have one. */
 export function ensureIdol(project: Project): Project {
   return {
@@ -302,28 +259,6 @@ export function ensureSolids(project: Project): Project {
     layers: project.layers.map((layer, i) => {
       if (layer.effects.some((e) => e.typeId === "solids")) return layer;
       return { ...layer, effects: [...layer.effects, makeSolidsInstance(project.seed + i * 5119, "mix")] };
-    }),
-  };
-}
-
-/** Drop twisting ribbons onto every layer that doesn't already have them. */
-export function ensureRibbons(project: Project): Project {
-  return {
-    ...project,
-    layers: project.layers.map((layer, i) => {
-      if (layer.effects.some((e) => e.typeId === "ribbons")) return layer;
-      return { ...layer, effects: [...layer.effects, makeRibbonsInstance(project.seed + i * 6287, "mix")] };
-    }),
-  };
-}
-
-/** Drop bouncing orbs onto every layer that doesn't already have them. */
-export function ensureOrbs(project: Project): Project {
-  return {
-    ...project,
-    layers: project.layers.map((layer, i) => {
-      if (layer.effects.some((e) => e.typeId === "orbs")) return layer;
-      return { ...layer, effects: [...layer.effects, makeOrbsInstance(project.seed + i * 7349, "mix")] };
     }),
   };
 }
@@ -358,9 +293,8 @@ function rebuildLayer(layer: Layer, seed: number, amount: number): Layer {
         fx.params.style = "morph";
         fx.params.move = "weave";
         fx.params.place = "scatter";
-        fx.params.speed = 1.05 + rng() * 0.7;
+        fx.params.speed = 0.4 + rng() * 0.5;
         fx.params.count = 3;
-        fx.params.trail = 0.5 + rng() * 0.35;
       }
     }
   }
@@ -369,33 +303,8 @@ function rebuildLayer(layer: Layer, seed: number, amount: number): Layer {
       if (fx.typeId === "solids") {
         fx.params.style = "crystal";
         fx.params.move = rng() > 0.4 ? "orbit" : "weave";
-        fx.params.speed = 0.95 + rng() * 0.75;
+        fx.params.speed = 0.4 + rng() * 0.55;
         fx.params.count = 2 + Math.floor(rng() * 2);
-        fx.params.trail = 0.45 + rng() * 0.4;
-      }
-    }
-  }
-  if (look.name === "tape garden") {
-    for (const fx of effects) {
-      if (fx.typeId === "ribbons") {
-        fx.params.style = rng() > 0.5 ? "helix" : "tape";
-        fx.params.move = "weave";
-        fx.params.place = "scatter";
-        fx.params.speed = 1.05 + rng() * 0.7;
-        fx.params.curl = 0.9 + rng() * 0.7;
-        fx.params.trail = 0.45 + rng() * 0.4;
-      }
-    }
-  }
-  if (look.name === "candy orbs") {
-    for (const fx of effects) {
-      if (fx.typeId === "orbs") {
-        fx.params.style = rng() > 0.55 ? "spike" : "candy";
-        fx.params.move = "weave";
-        fx.params.bounce = 0.65 + rng() * 0.55;
-        fx.params.speed = 1.2 + rng() * 0.8;
-        fx.params.count = 4;
-        fx.params.trail = 0.65 + rng() * 0.3;
       }
     }
   }

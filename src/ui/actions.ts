@@ -3,7 +3,7 @@ import { store } from "../core/store";
 import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
-import { ensureCritters, ensureIdol, ensureOrbs, ensureRibbons, ensureSolids, randomizeProject } from "../core/randomize";
+import { ensureCritters, ensureIdol, ensureSolids, randomizeProject } from "../core/randomize";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
 import { resumeAudio } from "../media/audio";
@@ -173,8 +173,6 @@ export function randomize(mode: "all" | "selected" | "param") {
     if (mode === "all" && ui.includeCritters) out = ensureCritters(out);
     if (mode === "all" && ui.includeIdol) out = ensureIdol(out);
     if (mode === "all" && ui.includeSolids) out = ensureSolids(out);
-    if (mode === "all" && ui.includeRibbons) out = ensureRibbons(out);
-    if (mode === "all" && ui.includeOrbs) out = ensureOrbs(out);
     return out;
   });
   const names = store.project.layers[0]?.effects.map((e) => e.typeId).join(" · ");
@@ -234,57 +232,11 @@ export function stampSolids() {
   store.patchUi({ includeSolids: true, status: "stamped solids" });
 }
 
-export function stampRibbons() {
-  const layer = selectedLayer(store.project);
-  if (!layer) return;
-  const existing = layer.effects.find((e) => e.typeId === "ribbons");
-  const seed = 1 + ((store.project.seed + Date.now() + 41) % 9998);
-  if (existing) {
-    setParam(layer.id, existing.id, "seed", seed);
-    if (!existing.enabled) toggleEffect(layer.id, existing.id);
-    store.patchUi({ selectedEffectId: existing.id, includeRibbons: true, status: "rerolled ribbons" });
-    return;
-  }
-  addEffect("ribbons");
-  const nextLayer = selectedLayer(store.project);
-  const fx = selectedEffect(nextLayer);
-  if (nextLayer && fx?.typeId === "ribbons") setParam(nextLayer.id, fx.id, "seed", seed);
-  store.patchUi({ includeRibbons: true, status: "stamped ribbons" });
-}
-
-export function stampOrbs() {
-  const layer = selectedLayer(store.project);
-  if (!layer) return;
-  const existing = layer.effects.find((e) => e.typeId === "orbs");
-  const seed = 1 + ((store.project.seed + Date.now() + 53) % 9998);
-  if (existing) {
-    setParam(layer.id, existing.id, "seed", seed);
-    if (!existing.enabled) toggleEffect(layer.id, existing.id);
-    store.patchUi({ selectedEffectId: existing.id, includeOrbs: true, status: "rerolled orbs" });
-    return;
-  }
-  addEffect("orbs");
-  const nextLayer = selectedLayer(store.project);
-  const fx = selectedEffect(nextLayer);
-  if (nextLayer && fx?.typeId === "orbs") setParam(nextLayer.id, fx.id, "seed", seed);
-  store.patchUi({ includeOrbs: true, status: "stamped orbs" });
-}
-
-const FEATURED = {
-  dancer: { ensure: ensureIdol, label: "idol" },
-  solids: { ensure: ensureSolids, label: "solids" },
-  ribbons: { ensure: ensureRibbons, label: "ribbons" },
-  orbs: { ensure: ensureOrbs, label: "orbs" },
-} as const;
-
-export type FeaturedId = keyof typeof FEATURED;
-
-/** Show or hide a featured overlay on every layer without deleting it. */
-export function setFeatured(typeId: FeaturedId, on: boolean) {
-  const feat = FEATURED[typeId];
+/** Show or hide a featured overlay (idol / solids) on every layer without deleting it. */
+export function setFeatured(typeId: "dancer" | "solids", on: boolean) {
   if (on) {
     store.setProject((p) => {
-      const next = feat.ensure(p);
+      const next = typeId === "dancer" ? ensureIdol(p) : ensureSolids(p);
       return {
         ...next,
         layers: next.layers.map((layer) => ({
@@ -296,7 +248,7 @@ export function setFeatured(typeId: FeaturedId, on: boolean) {
     const fx = store.project.layers[0]?.effects.find((e) => e.typeId === typeId);
     store.patchUi({
       selectedEffectId: fx?.id ?? store.state.ui.selectedEffectId,
-      status: `${feat.label} on`,
+      status: typeId === "dancer" ? "idol on" : "solids on",
     });
     return;
   }
@@ -307,7 +259,7 @@ export function setFeatured(typeId: FeaturedId, on: boolean) {
       effects: layer.effects.map((e) => (e.typeId === typeId ? { ...e, enabled: false } : e)),
     })),
   }));
-  store.patchUi({ status: `${feat.label} off` });
+  store.patchUi({ status: typeId === "dancer" ? "idol off" : "solids off" });
 }
 
 export function bumpSeed(n: number) {

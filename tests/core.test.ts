@@ -4,7 +4,7 @@ import { matchAspectId, sizeForAspect, sizeFromSource } from "../src/core/export
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, ensureIdol, ensureOrbs, ensureRibbons, ensureSolids, randomizeProject } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, ensureSolids, randomizeProject } from "../src/core/randomize";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
@@ -124,15 +124,13 @@ describe("project files", () => {
 describe("effects registry", () => {
   it("ships a usable MVP library", () => {
     expect(allEffects().length).toBeGreaterThanOrEqual(15);
-    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer", "solids", "ribbons", "orbs"]) {
+    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer", "solids"]) {
       expect(getEffect(id)).toBeTruthy();
     }
     expect(getEffect("critters")?.category).toBe("wacky");
     expect(getEffect("critters")?.name).toBe("Floaters");
     expect(getEffect("dancer")?.name).toBe("Idol");
     expect(getEffect("solids")?.name).toBe("Solids");
-    expect(getEffect("ribbons")?.name).toBe("Ribbons");
-    expect(getEffect("orbs")?.name).toBe("Orbs");
     const critterSrc = compileEffectSource(getEffect("critters")!);
     expect(getEffect("critters")?.params.find((p) => p.id === "kit")?.default).toBe("shapes");
     for (const family of [
@@ -176,8 +174,6 @@ describe("effects registry", () => {
     expect(idolSrc.includes("figureRenderMini")).toBe(false);
     expect(idolSrc.includes("geomRender")).toBe(false);
     expect(idolSrc.includes("geomRenderMini")).toBe(false);
-    expect(idolSrc.includes("ribbonRender")).toBe(false);
-    expect(idolSrc.includes("orbRender")).toBe(false);
     expect(idolSrc.includes("figTravel")).toBe(true);
     expect(idolSrc.includes("figCarry")).toBe(true);
     expect(idolSrc.includes("u_move")).toBe(true);
@@ -205,42 +201,17 @@ describe("effects registry", () => {
     expect(solids.params.find((p) => p.id === "move")?.default).toBe("weave");
     expect(Number(solids.params.find((p) => p.id === "count")?.default)).toBeGreaterThan(1);
     expect(solids.params.find((p) => p.id === "style")?.default).toBe("morph");
-    expect(Number(solids.params.find((p) => p.id === "speed")?.default)).toBeGreaterThan(1);
-    expect(Number(solids.params.find((p) => p.id === "trail")?.default)).toBeGreaterThan(0.4);
     const solidsSrc = compileEffectSource(solids);
     expect(solidsSrc.includes("geomRender")).toBe(true);
     expect(solidsSrc.includes("geomHit")).toBe(true);
     expect(solidsSrc.includes("geomSmin")).toBe(true);
     expect(solidsSrc.includes("geomStar")).toBe(true);
-    expect(solidsSrc.includes("geomGhosts")).toBe(true);
-    expect(solidsSrc.includes("u_trail")).toBe(true);
     expect(solidsSrc.includes("geomRenderMini")).toBe(false);
     expect(solidsSrc.includes("figureRenderMini")).toBe(false);
     const solidsMini = compileEffectSource(solidsForCompile(true));
     expect(solidsMini.includes("geomRenderMini")).toBe(true);
     expect(solidsMini.includes("geomWildMini")).toBe(true);
     expect(solidsMini.includes("figureRenderMini")).toBe(false);
-    const ribbons = getEffect("ribbons")!;
-    expect(ribbons.params.find((p) => p.id === "move")?.default).toBe("weave");
-    expect(ribbons.params.find((p) => p.id === "style")?.default).toBe("tape");
-    expect(Number(ribbons.params.find((p) => p.id === "trail")?.default)).toBeGreaterThan(0.3);
-    const ribbonsSrc = compileEffectSource(ribbons);
-    expect(ribbonsSrc.includes("ribbonRender")).toBe(true);
-    expect(ribbonsSrc.includes("ribHit")).toBe(true);
-    expect(ribbonsSrc.includes("u_curl")).toBe(true);
-    expect(ribbonsSrc.includes("u_trail")).toBe(true);
-    expect(ribbonsSrc.includes("figureRenderMini")).toBe(false);
-    expect(ribbonsSrc.includes("geomRenderMini")).toBe(false);
-    const orbs = getEffect("orbs")!;
-    expect(orbs.params.find((p) => p.id === "style")?.default).toBe("candy");
-    expect(Number(orbs.params.find((p) => p.id === "count")?.default)).toBeGreaterThan(2);
-    expect(Number(orbs.params.find((p) => p.id === "trail")?.default)).toBeGreaterThan(0.5);
-    const orbsSrc = compileEffectSource(orbs);
-    expect(orbsSrc.includes("orbRender")).toBe(true);
-    expect(orbsSrc.includes("orbHop")).toBe(true);
-    expect(orbsSrc.includes("u_bounce")).toBe(true);
-    expect(orbsSrc.includes("figureRenderMini")).toBe(false);
-    expect(orbsSrc.includes("geomRender")).toBe(false);
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
@@ -307,28 +278,6 @@ describe("randomize + presets", () => {
     const shape = withS.layers[0].effects.find((e) => e.typeId === "solids")!;
     expect(["weave", "drift", "orbit", "float", "dance"]).toContain(shape.params.move);
     expect(Number(shape.params.count)).toBeGreaterThan(1);
-    expect(Number(shape.params.speed)).toBeGreaterThan(0.8);
-  });
-
-  it("can stamp ribbons onto layers that lack them", () => {
-    const p = createDefaultProject();
-    expect(p.layers[0].effects.some((e) => e.typeId === "ribbons")).toBe(false);
-    const withR = ensureRibbons(p);
-    expect(withR.layers[0].effects.some((e) => e.typeId === "ribbons")).toBe(true);
-    expect(ensureRibbons(withR).layers[0].effects.filter((e) => e.typeId === "ribbons")).toHaveLength(1);
-    const tape = withR.layers[0].effects.find((e) => e.typeId === "ribbons")!;
-    expect(["tape", "loop", "helix"]).toContain(tape.params.style);
-  });
-
-  it("can stamp orbs onto layers that lack them", () => {
-    const p = createDefaultProject();
-    expect(p.layers[0].effects.some((e) => e.typeId === "orbs")).toBe(false);
-    const withO = ensureOrbs(p);
-    expect(withO.layers[0].effects.some((e) => e.typeId === "orbs")).toBe(true);
-    expect(ensureOrbs(withO).layers[0].effects.filter((e) => e.typeId === "orbs")).toHaveLength(1);
-    const ball = withO.layers[0].effects.find((e) => e.typeId === "orbs")!;
-    expect(["candy", "crystal", "spike"]).toContain(ball.params.style);
-    expect(Number(ball.params.bounce)).toBeGreaterThan(0.4);
   });
 });
 

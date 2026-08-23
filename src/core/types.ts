@@ -200,8 +200,6 @@ export interface AppUi {
   includeCritters: boolean;
   includeIdol: boolean;
   includeSolids: boolean;
-  includeRibbons: boolean;
-  includeOrbs: boolean;
   exporting: boolean;
 }
 
