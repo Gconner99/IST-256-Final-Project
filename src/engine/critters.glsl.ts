@@ -241,6 +241,91 @@ float musicFam(vec2 p, float id, float fam) {
   if (k < 7.5) return speaker(p, id);
   return clef(p, id);
 }
+float candle(vec2 p, float id) {
+  float d = crBox2(p - vec2(0.0, -0.18), vec2(mix(0.14, 0.2, crHash(vec2(id, 1.0))), 0.52));
+  vec2 fl = (p - vec2(0.0, 0.52)) * vec2(1.55, 1.0);
+  d = min(d, length(fl) - mix(0.16, 0.24, crHash(vec2(id, 2.0))));
+  return d;
+}
+float lantern(vec2 p, float id) {
+  float d = crBox2(p, vec2(mix(0.32, 0.44, crHash(vec2(id, 1.0))), mix(0.42, 0.58, crHash(vec2(id, 2.0)))));
+  d = min(d, crCap(p, vec2(0.0, 0.5), vec2(0.0, 0.88), 0.06));
+  d = min(d, length(p - vec2(0.0, 0.08)) - mix(0.16, 0.24, crHash(vec2(id, 3.0))));
+  return d;
+}
+float bell(vec2 p, float id) {
+  float d = length(p * vec2(1.0, 0.82) - vec2(0.0, 0.08)) - mix(0.42, 0.55, crHash(vec2(id, 1.0)));
+  d = min(d, crCap(p, vec2(0.0, 0.48), vec2(0.0, 0.92), 0.07));
+  d = min(d, length(p - vec2(0.0, -0.48)) - 0.1);
+  return d;
+}
+float moth(vec2 p, float id) {
+  float d = crCap(p, vec2(0.0, -0.18), vec2(0.0, 0.32), mix(0.1, 0.14, crHash(vec2(id, 1.0))));
+  d = min(d, length((p - vec2(-0.42, 0.06)) * vec2(1.0, 1.32)) - mix(0.4, 0.52, crHash(vec2(id, 2.0))));
+  d = min(d, length((p - vec2(0.42, 0.06)) * vec2(1.0, 1.32)) - mix(0.4, 0.52, crHash(vec2(id, 3.0))));
+  return d;
+}
+float beetle(vec2 p, float id) {
+  float d = length(p * vec2(1.15, 0.85)) - mix(0.42, 0.58, crHash(vec2(id, 1.0)));
+  d = min(d, crCap(p, vec2(-0.22, -0.12), vec2(-0.72, -0.55), 0.05));
+  d = min(d, crCap(p, vec2(0.22, -0.12), vec2(0.72, -0.55), 0.05));
+  d = min(d, length(p - vec2(0.0, 0.48)) - 0.16);
+  return d;
+}
+float charmKey(vec2 p, float id) {
+  float d = length(p - vec2(0.0, 0.42)) - mix(0.28, 0.36, crHash(vec2(id, 1.0)));
+  d = max(d, -(length(p - vec2(0.0, 0.42)) - 0.12));
+  d = min(d, crCap(p, vec2(0.0, 0.14), vec2(0.0, -0.72), 0.075));
+  d = min(d, crBox2(p - vec2(0.16, -0.52), vec2(0.18, 0.055)));
+  d = min(d, crBox2(p - vec2(0.14, -0.7), vec2(0.12, 0.05)));
+  return d;
+}
+float charmBow(vec2 p, float id) {
+  float d = length((p - vec2(-0.4, 0.08)) * vec2(1.0, 1.28)) - mix(0.32, 0.4, crHash(vec2(id, 1.0)));
+  d = min(d, length((p - vec2(0.4, 0.08)) * vec2(1.0, 1.28)) - mix(0.32, 0.4, crHash(vec2(id, 2.0))));
+  d = min(d, length(p) - 0.14);
+  d = min(d, crCap(p, vec2(-0.06, -0.1), vec2(-0.1, -0.62), 0.045));
+  d = min(d, crCap(p, vec2(0.06, -0.1), vec2(0.1, -0.62), 0.045));
+  return d;
+}
+float teardrop(vec2 p, float id) {
+  p.y += 0.08;
+  float d = length(p - vec2(0.0, -0.22)) - mix(0.38, 0.5, crHash(vec2(id, 1.0)));
+  d = min(d, crCap(p, vec2(0.0, -0.08), vec2(0.0, 0.82), mix(0.16, 0.24, crHash(vec2(id, 2.0)))));
+  return d;
+}
+float leaf(vec2 p, float id) {
+  float d = length((p * vec2(1.35, 0.72))) - mix(0.48, 0.62, crHash(vec2(id, 1.0)));
+  d = min(d, crCap(p, vec2(0.0, -0.55), vec2(0.0, 0.62), 0.045));
+  return d;
+}
+float votiveFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 6.0);
+  if (k < 0.5) return candle(p, id);
+  if (k < 1.5) return lantern(p, id);
+  if (k < 2.5) return bell(p, id);
+  if (k < 3.5) return crescent(p, id);
+  if (k < 4.5) return sparkle(p, id);
+  return heart(p, id);
+}
+float mothFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 6.0);
+  if (k < 0.5) return moth(p, id);
+  if (k < 1.5) return beetle(p, id);
+  if (k < 2.5) return cloud(p, id);
+  if (k < 3.5) return crescent(p, id);
+  if (k < 4.5) return twins(p, id);
+  return leaf(p, id);
+}
+float charmFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 6.0);
+  if (k < 0.5) return charmKey(p, id);
+  if (k < 1.5) return charmBow(p, id);
+  if (k < 2.5) return teardrop(p, id);
+  if (k < 3.5) return ring(p, id);
+  if (k < 4.5) return heart(p, id);
+  return sparkle(p, id);
+}
 float shapeFam(vec2 p, float id, float famSlot) {
   float fam = mod(famSlot, 9.0);
   if (fam < 0.5) return classicBody(p, id);
@@ -254,18 +339,21 @@ float shapeFam(vec2 p, float id, float famSlot) {
   return ring(p, id);
 }
 float weirdBody(vec2 p, float id, float famSlot, float kit) {
-  // Music icons stay readable; lumpy families keep the wilder squash.
-  if (kit > 0.5 && (kit < 1.5 || famSlot > 8.5)) {
+  bool icon = (kit > 0.5 && kit < 1.5) || kit > 2.5 || (kit > 1.5 && kit < 2.5 && famSlot > 8.5);
+  if (icon) {
     p *= vec2(mix(0.78, 1.22, crHash(vec2(id, 1.3))), mix(0.82, 1.24, crHash(vec2(id, 2.4))));
   } else {
     p *= vec2(mix(0.42, 1.65, crHash(vec2(id, 1.3))), mix(0.48, 1.7, crHash(vec2(id, 2.4))));
   }
-  if (kit > 1.5) {
+  if (kit < 0.5) return shapeFam(p, id, famSlot);
+  if (kit < 1.5) return musicFam(p, id, famSlot);
+  if (kit < 2.5) {
     if (famSlot < 8.5) return shapeFam(p, id, famSlot);
     return musicFam(p, id, famSlot - 9.0);
   }
-  if (kit > 0.5) return musicFam(p, id, famSlot);
-  return shapeFam(p, id, famSlot);
+  if (kit < 3.5) return votiveFam(p, id, famSlot);
+  if (kit < 4.5) return mothFam(p, id, famSlot);
+  return charmFam(p, id, famSlot);
 }
 vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, float kit) {
   float hx = crHash(vec2(id, 0.13));
@@ -288,16 +376,25 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, flo
   float sz = mix(0.035, 0.17, crHash(vec2(id, 9.2))) * max(sizeMul, 0.2);
   sz *= 1.0 + 0.08 * sin(time * 1.7 + id);
   float hue = crHash(vec2(id, 0.41));
-  if (kit > 0.5) {
+  if (kit > 0.5 && kit < 1.5) {
     float candy = crHash(vec2(id, 0.47));
     if (candy < 0.25) hue = mix(0.9, 0.02, crHash(vec2(id, 0.48)));
     else if (candy < 0.5) hue = mix(0.1, 0.18, crHash(vec2(id, 0.48)));
     else if (candy < 0.75) hue = mix(0.42, 0.55, crHash(vec2(id, 0.48)));
     else hue = mix(0.72, 0.88, crHash(vec2(id, 0.48)));
+  } else if (kit > 2.5 && kit < 3.5) {
+    hue = mix(0.05, 0.13, crHash(vec2(id, 0.48)));
+  } else if (kit > 3.5 && kit < 4.5) {
+    hue = mix(0.07, 0.16, crHash(vec2(id, 0.48)));
+  } else if (kit > 4.5) {
+    hue = mix(0.88, 0.08, crHash(vec2(id, 0.48)));
   }
   float vibe = crHash(vec2(id, 0.74));
-  float sat = vibe < 0.22 ? mix(0.2, 0.48, crHash(vec2(id, 0.52))) : mix(0.62, 1.0, crHash(vec2(id, 0.52)));
-  if (kit > 0.5) sat = mix(0.7, 1.0, crHash(vec2(id, 0.52)));
+  float sat = vibe < 0.22 ? mix(0.2, 0.48, crHash(vec2(id, 0.52))) : mix(0.55, 0.92, crHash(vec2(id, 0.52)));
+  if (kit > 0.5 && kit < 1.5) sat = mix(0.62, 0.92, crHash(vec2(id, 0.52)));
+  if (kit > 2.5 && kit < 3.5) sat = mix(0.32, 0.62, crHash(vec2(id, 0.52)));
+  if (kit > 3.5 && kit < 4.5) sat = mix(0.18, 0.48, crHash(vec2(id, 0.52)));
+  if (kit > 4.5) sat = mix(0.45, 0.78, crHash(vec2(id, 0.52)));
   float val = mix(0.72, 1.0, crHash(vec2(id, 0.63)));
   vec3 fillCol = crHsv(vec3(hue, sat, val));
   vec3 rimCol = crHsv(vec3(fract(hue + mix(0.08, 0.52, crHash(vec2(id, 0.81)))), mix(0.28, 0.9, crHash(vec2(id, 0.82))), 1.0));
@@ -325,9 +422,11 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, flo
 }
 vec4 critterField(vec2 uv, float count, float seed, float time, float sizeMul, float kit) {
   vec4 acc = vec4(0.0);
-  time += u_audio * 0.28;
-  sizeMul *= mix(1.0, 1.22, u_bass);
-  float nFam = kit > 1.5 ? 18.0 : 9.0;
+  time += u_audio * 0.14;
+  sizeMul *= mix(1.0, 1.12, u_bass);
+  float nFam = 9.0;
+  if (kit > 1.5 && kit < 2.5) nFam = 18.0;
+  else if (kit > 2.5) nFam = 6.0;
   float famSpin = floor(crHash(vec2(seed * 0.071, 4.4)) * nFam);
   for (int i = 0; i < 8; i++) {
     if (float(i) >= count) break;

@@ -45,6 +45,8 @@ Requires a browser (or Electron) with **WebGL2**.
 - Real-time WebGL2 preview (draft / preview / full quality)
 - Layers: opacity, blend modes, transform, enable, duplicate
 - Modular effects stack (bypass, reorder, per-effect mix + mask)
+- Floaters kits: lumpy shapes, toy-pop icons, votives, moths, charms
+- Idol Grow (petals / halo / antenna / skirt / quiet) and Coat (cream / moss / sodium / night / candy)
 - Procedural backgrounds: plasma, noise, bars, plus **Stars**, **Marsh**, **Oil**, **Paper**, **Cave**, **Lot**, **Xerox**, **Tank**, **Chapel**, and **Lamp**
 - ~20 effects including **Floaters**, **Idol**, **Luma key**, and **Dropout**
 - Seeded randomization (all / selected / param) plus **Rand wacky** (outsider looks, short stacks)

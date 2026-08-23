@@ -35,9 +35,10 @@ HOW TO USE IT
   OR click Plasma / Noise / Bars / Stars / Marsh / Oil / Paper / Cave / Lot / Xerox / Tank / Chapel / Lamp / Floaters on the left
 - Type a prompt on the left and click Generate to make a NEW image. Again rolls a new seed.
 - Drop an MP3 to use it as a soundtrack. Hit Play — idols, floaters, and places move with the mix
-- Click Stamp floaters / Stamp idol / Stamp chaos (new seeds + inks + a place)
+- Click Stamp floaters / Stamp idol / Stamp chaos (new seeds and wardrobe, same place)
+- Idol Grow / Coat pick petals, halo, cream paint, etc. Floaters Kit picks votives, moths, charms
 - Click Print frame to turn the live picture into a still
-- Click Rand all for a new look (pretty + weird). Rand wacky leans stranger.
+- Click Rand all for a new look. Rand wacky stays pretty (cream / chapel / toy-pop).
 - Click New at the top to start over
 - Move the sliders. Click Export to save.
 - Click 2s / 4s / 8s mp4 for a short video clip. Wait until the status says saved.

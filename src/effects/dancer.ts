@@ -27,6 +27,8 @@ uniform float u_size;
 uniform float u_crowd;
 uniform float u_place;
 uniform float u_move;
+uniform float u_grow;
+uniform float u_coat;
 uniform float u_echo;
 uniform float u_seed;
 uniform float u_speed;
@@ -37,7 +39,7 @@ export const dancer: EffectType = {
   id: "dancer",
   name: "Idol",
   category: "wacky",
-  description: "One seed-grown low-poly creature with a face like an animal that does not exist. Some grow petals, skirts, antennae, or a halo. Drop an MP3 and they dance to it. Move can keep them in place or send them drifting, floating, or orbiting. Mini army fills the frame with tiny ones in sync",
+  description: "One seed-grown low-poly creature with a face like an animal that does not exist. Grow picks petals, a halo, antennae, a skirt, or a quieter body. Coat tints the paint. Drop an MP3 and they dance to it. Mini army fills the frame with tiny ones in sync",
   params: [
     { id: "count", label: "Count", kind: "int", min: 1, max: 4, step: 1, default: 1 },
     { id: "size", label: "Size", kind: "float", min: 0.12, max: 2.5, step: 0.01, default: 0.12 },
@@ -72,6 +74,34 @@ export const dancer: EffectType = {
         { value: "drift", label: "Drift" },
         { value: "float", label: "Float" },
         { value: "orbit", label: "Orbit" },
+      ],
+    },
+    {
+      id: "grow",
+      label: "Grow",
+      kind: "enum",
+      default: "wild",
+      options: [
+        { value: "wild", label: "Wild" },
+        { value: "petals", label: "Petals" },
+        { value: "halo", label: "Halo" },
+        { value: "antenna", label: "Antenna" },
+        { value: "skirt", label: "Skirt" },
+        { value: "quiet", label: "Quiet" },
+      ],
+    },
+    {
+      id: "coat",
+      label: "Coat",
+      kind: "enum",
+      default: "wild",
+      options: [
+        { value: "wild", label: "Wild" },
+        { value: "cream", label: "Cream" },
+        { value: "moss", label: "Moss" },
+        { value: "sodium", label: "Sodium" },
+        { value: "night", label: "Night" },
+        { value: "candy", label: "Candy" },
       ],
     },
     { id: "echo", label: "Echo", kind: "float", min: 0, max: 1, step: 0.01, default: 0.5 },

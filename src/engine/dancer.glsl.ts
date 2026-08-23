@@ -52,6 +52,7 @@ struct Fig {
   float kickHz, kickAmt, extraLeg, arms, pack, tail, orb;
   float nEyes, eyeY, eyeZ, eyeSpread, eyeR, eyeSq, mouth, ears, tusks;
   float petals, skirt, antenna, halo, blush;
+  float wings, collar, bow;
   vec3 ts;
 };
 Fig figRoll(float seed, float time) {
@@ -111,14 +112,14 @@ Fig figRoll(float seed, float time) {
   if (f.style > 2.5 && f.style < 3.5) { f.kickHz = mix(0.9, 2.0, figH(seed + 3.1)); f.kickAmt = mix(0.55, 0.95, figH(seed + 3.2)); }
   if (f.style > 5.5 && f.style < 6.5) { f.kickHz = mix(9.0, 14.0, figH(seed + 3.1)); f.kickAmt = mix(0.15, 0.4, figH(seed + 3.2)); }
   if (f.style > 4.5 && f.style < 5.5) f.kickAmt *= 0.35;
-  f.extraLeg = step(0.76, figH(seed + 3.7));
-  f.arms = figH(seed + 4.0) > 0.62 ? 4.0 : 2.0;
+  f.extraLeg = step(0.86, figH(seed + 3.7));
+  f.arms = figH(seed + 4.0) > 0.78 ? 4.0 : 2.0;
   if (f.style > 1.5 && f.style < 2.5) f.arms = 4.0;
   if (uQuality < 0.5) { f.arms = 2.0; f.extraLeg = 0.0; }
-  f.pack = step(0.78, figH(seed + 5.1));
-  f.tail = step(0.52, figH(seed + 5.4));
-  f.orb = step(0.7, figH(seed + 5.8));
-  f.nEyes = 1.0 + floor(pow(figH(seed + 6.1), 0.62) * 3.0);
+  f.pack = step(0.84, figH(seed + 5.1));
+  f.tail = step(0.58, figH(seed + 5.4));
+  f.orb = step(0.82, figH(seed + 5.8));
+  f.nEyes = 1.0 + floor(pow(figH(seed + 6.1), 0.88) * 2.15);
   f.eyeY = f.hs * mix(-0.04, 0.26, figH(seed + 6.2));
   f.eyeZ = -f.hs * mix(0.88, 1.28, figH(seed + 6.3));
   f.eyeSpread = f.hs * mix(0.18, 0.82, figH(seed + 6.4));
@@ -126,13 +127,25 @@ Fig figRoll(float seed, float time) {
   f.eyeSq = mix(0.4, 1.7, figH(seed + 6.55));
   f.mouth = figH(seed + 7.0);
   f.ears = step(0.06, figH(seed + 8.3));
-  f.tusks = step(0.28, figH(seed + 9.1));
-  f.petals = step(0.62, figH(seed + 0.52));
-  f.skirt = step(0.58, figH(seed + 0.58));
-  f.antenna = step(0.66, figH(seed + 0.64));
-  f.halo = step(0.72, figH(seed + 0.70));
-  f.blush = step(0.42, figH(seed + 0.74));
+  f.tusks = step(0.42, figH(seed + 9.1));
+  f.petals = step(0.7, figH(seed + 0.52));
+  f.skirt = step(0.68, figH(seed + 0.58));
+  f.antenna = step(0.74, figH(seed + 0.64));
+  f.halo = step(0.78, figH(seed + 0.70));
+  f.blush = step(0.38, figH(seed + 0.74));
+  f.wings = step(0.76, figH(seed + 0.81));
+  f.collar = step(0.72, figH(seed + 0.84));
+  f.bow = step(0.8, figH(seed + 0.88));
   if (f.petals > 0.5) f.halo = 0.0;
+  if (u_grow > 0.5 && u_grow < 1.5) { f.petals = 1.0; f.halo = 0.0; f.antenna = 0.0; }
+  else if (u_grow > 1.5 && u_grow < 2.5) { f.halo = 1.0; f.petals = 0.0; }
+  else if (u_grow > 2.5 && u_grow < 3.5) { f.antenna = 1.0; f.halo = 0.0; }
+  else if (u_grow > 3.5 && u_grow < 4.5) { f.skirt = 1.0; }
+  else if (u_grow > 4.5) {
+    f.petals = 0.0; f.skirt = 0.0; f.antenna = 0.0; f.halo = 0.0;
+    f.tusks = 0.0; f.wings = 0.0; f.bow = 0.0; f.pack = 0.0; f.orb = 0.0;
+    f.extraLeg = 0.0; f.arms = 2.0; f.nEyes = min(f.nEyes, 2.0);
+  }
   if (u_audio > 0.001) {
     f.kickAmt *= mix(1.0, 1.65, u_bass);
     f.bob += u_bass * 0.055;
@@ -176,6 +189,10 @@ vec2 figureFaceF(vec3 hp, Fig f) {
   if (f.blush > 0.5) {
     d = figMin(d, vec2(length(hp - vec3(-hs * 0.42, -hs * 0.06, f.eyeZ * 0.62)) - hs * 0.12, 6.9));
     d = figMin(d, vec2(length(hp - vec3(hs * 0.42, -hs * 0.06, f.eyeZ * 0.62)) - hs * 0.12, 6.9));
+  }
+  if (f.bow > 0.5) {
+    d = figMin(d, vec2(figCap(hp, vec3(-hs * 0.08, hs * 0.82, 0.04), vec3(-hs * 0.52, hs * 1.08, 0.08), hs * 0.065), 6.9));
+    d = figMin(d, vec2(figCap(hp, vec3(hs * 0.08, hs * 0.82, 0.04), vec3(hs * 0.52, hs * 1.08, 0.08), hs * 0.065), 6.9));
   }
   if (f.petals > 0.5 && uQuality >= 0.5) {
     for (int k = 0; k < 5; k++) {
@@ -275,6 +292,15 @@ vec2 figureHit(vec3 p, Fig f, float seed) {
     float ring = abs(length(sp.xz) - f.ts.x * 1.28) - 0.07;
     d = figMin(d, vec2(max(ring, abs(sp.y) - 0.055), 6.9));
   }
+  if (f.collar > 0.5) {
+    vec3 cp = p - vec3(0.0, f.ts.y * 0.72, 0.0);
+    float ring = abs(length(cp.xz) - f.ts.x * 0.92) - 0.032;
+    d = figMin(d, vec2(max(ring, abs(cp.y) - 0.028), 8.0));
+  }
+  if (f.wings > 0.5 && uQuality >= 0.5) {
+    d = figMin(d, vec2(figCap(p, vec3(-f.ts.x * 0.2, f.ts.y * 0.18, f.ts.z * 0.4), vec3(-f.ts.x * 1.28, f.ts.y * 0.52, -0.04), 0.042), 6.9));
+    d = figMin(d, vec2(figCap(p, vec3(f.ts.x * 0.2, f.ts.y * 0.18, f.ts.z * 0.4), vec3(f.ts.x * 1.28, f.ts.y * 0.52, -0.04), 0.042), 6.9));
+  }
   float sMin = min(f.sx, f.sz);
   d.x *= sMin;
   return d;
@@ -293,16 +319,36 @@ vec3 figNormal(vec3 p, Fig f, float seed) {
 }
 vec3 figPal(float seed, float matId) {
   float hue = fract(figH(seed + matId * 1.71) * 0.92 + figH(seed) * 0.22);
-  float sat = mix(0.72, 1.0, figH(seed + matId + 8.2));
-  float val = mix(0.84, 1.0, figH(seed + matId + 9.1));
-  if (figH(seed + 0.03) > 0.55) hue = fract(hue + 0.18);
-  if (figH(seed + 0.04) > 0.62) {
-    sat = 1.0;
-    val = mix(0.9, 1.0, figH(seed + 0.05));
+  float sat = mix(0.42, 0.82, figH(seed + matId + 8.2));
+  float val = mix(0.78, 0.98, figH(seed + matId + 9.1));
+  if (figH(seed + 0.03) > 0.55) hue = fract(hue + 0.12);
+  if (figH(seed + 0.04) > 0.78) {
+    sat = mix(0.7, 0.92, figH(seed + 0.05));
+    val = mix(0.86, 1.0, figH(seed + 0.05));
   }
-  if (figH(seed + 0.07) > 0.97) {
+  if (figH(seed + 0.07) > 0.9) {
     sat = mix(0.08, 0.28, figH(seed + matId));
     val = mix(0.7, 0.98, figH(seed + matId + 1.0));
+  }
+  if (u_coat > 0.5 && u_coat < 1.5) {
+    hue = mix(0.06, 0.13, figH(seed + matId));
+    sat = mix(0.18, 0.42, figH(seed + matId + 2.0));
+    val = mix(0.82, 0.98, figH(seed + matId + 3.0));
+  } else if (u_coat > 1.5 && u_coat < 2.5) {
+    hue = mix(0.22, 0.38, figH(seed + matId));
+    sat = mix(0.28, 0.55, figH(seed + matId + 2.0));
+    val = mix(0.55, 0.82, figH(seed + matId + 3.0));
+  } else if (u_coat > 2.5 && u_coat < 3.5) {
+    hue = mix(0.06, 0.11, figH(seed + matId));
+    sat = mix(0.45, 0.72, figH(seed + matId + 2.0));
+    val = mix(0.72, 0.95, figH(seed + matId + 3.0));
+  } else if (u_coat > 3.5 && u_coat < 4.5) {
+    hue = mix(0.55, 0.72, figH(seed + matId));
+    sat = mix(0.22, 0.48, figH(seed + matId + 2.0));
+    val = mix(0.35, 0.7, figH(seed + matId + 3.0));
+  } else if (u_coat > 4.5) {
+    sat = mix(0.72, 1.0, figH(seed + matId + 8.2));
+    val = mix(0.86, 1.0, figH(seed + matId + 9.1));
   }
   if (matId > 1.5 && matId < 2.5) hue = fract(hue + 0.28);
   if (matId > 4.9 && matId < 5.4) {

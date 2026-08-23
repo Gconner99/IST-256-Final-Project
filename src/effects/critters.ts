@@ -6,7 +6,7 @@ export const critters: EffectType = {
   id: "critters",
   name: "Floaters",
   category: "wacky",
-  description: "Drifting stickers. Kit picks lumpy families, toy-pop music icons (notes, vinyl, hearts, mics), or both",
+  description: "Drifting stickers. Kit picks lumpy families, toy-pop music icons, chapel votives, moths, or small charms",
   params: [
     {
       id: "kit",
@@ -17,6 +17,9 @@ export const critters: EffectType = {
         { value: "shapes", label: "Shapes" },
         { value: "toy pop", label: "Toy pop" },
         { value: "mix", label: "Shapes + toy pop" },
+        { value: "votives", label: "Votives" },
+        { value: "moths", label: "Moths" },
+        { value: "charms", label: "Charms" },
       ],
     },
     { id: "count", label: "Shapes", kind: "int", min: 1, max: 8, step: 1, default: 5 },

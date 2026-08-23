@@ -133,6 +133,14 @@ describe("effects registry", () => {
     expect(getEffect("dancer")?.name).toBe("Idol");
     const critterSrc = compileEffectSource(getEffect("critters")!);
     expect(getEffect("critters")?.params.find((p) => p.id === "kit")?.default).toBe("shapes");
+    expect(getEffect("critters")?.params.find((p) => p.id === "kit")?.options?.map((o) => o.value)).toEqual([
+      "shapes",
+      "toy pop",
+      "mix",
+      "votives",
+      "moths",
+      "charms",
+    ]);
     for (const family of [
       "classicBody",
       "constellation",
@@ -156,6 +164,12 @@ describe("effects registry", () => {
       "clef",
       "u_kit",
       "musicFam",
+      "votiveFam",
+      "mothFam",
+      "charmFam",
+      "candle",
+      "moth",
+      "charmBow",
     ]) {
       expect(critterSrc.includes(family)).toBe(true);
     }
@@ -166,6 +180,8 @@ describe("effects registry", () => {
     expect(idol.params.find((p) => p.id === "place")?.default).toBe("center");
     expect(idol.params.find((p) => p.id === "crowd")?.default).toBe("normal");
     expect(idol.params.find((p) => p.id === "move")?.default).toBe("dance");
+    expect(idol.params.find((p) => p.id === "grow")?.default).toBe("wild");
+    expect(idol.params.find((p) => p.id === "coat")?.default).toBe("wild");
     expect(idol.params.find((p) => p.id === "form")).toBeUndefined();
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
@@ -190,6 +206,9 @@ describe("effects registry", () => {
     expect(idolSrc.includes("figureHit")).toBe(true);
     expect(idolSrc.includes("u_echo")).toBe(true);
     expect(idolSrc.includes("f.petals")).toBe(true);
+    expect(idolSrc.includes("f.wings")).toBe(true);
+    expect(idolSrc.includes("u_grow")).toBe(true);
+    expect(idolSrc.includes("u_coat")).toBe(true);
     expect(idolSrc.includes("f.skirt")).toBe(true);
     expect(idolSrc.includes("f.antenna")).toBe(true);
     expect(idolSrc.includes("f.halo")).toBe(true);

@@ -216,7 +216,7 @@ export function stampIdol() {
 
 export function stampChaos() {
   store.setProject((p) => chaosStamp({ ...p, seed: (p.seed + 1 + (Date.now() & 255)) >>> 0 }));
-  store.patchUi({ status: "chaos stamp — new seeds, inks, and a place" });
+  store.patchUi({ status: "new floater and idol seeds" });
 }
 
 export async function reprintFrame(renderer: Renderer) {
