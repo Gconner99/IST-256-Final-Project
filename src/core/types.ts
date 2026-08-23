@@ -199,6 +199,7 @@ export interface AppUi {
   generating: boolean;
   includeCritters: boolean;
   includeIdol: boolean;
+  includeSolids: boolean;
   exporting: boolean;
 }
 

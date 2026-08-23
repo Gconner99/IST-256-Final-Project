@@ -54,8 +54,8 @@ const LOOKS: Look[] = [
   { name: "esoteric retina", mood: "mix", stack: ["grade", "bloom", "analog", "dancer"], blend: "normal" },
   { name: "plaza idol", mood: "mix", stack: ["duotone", "grain", "warp", "dancer"], blend: "normal" },
   { name: "night idol", mood: "outsider", stack: ["posterize", "chroma", "bloom", "dancer"], blend: "overlay" },
-  { name: "glass morph", mood: "mix", stack: ["grade", "bloom", "warp", "dancer"], blend: "normal" },
-  { name: "crystal fold", mood: "outsider", stack: ["posterize", "chroma", "bloom", "dancer"], blend: "screen" },
+  { name: "glass morph", mood: "mix", stack: ["grade", "bloom", "warp", "solids"], blend: "normal" },
+  { name: "crystal fold", mood: "outsider", stack: ["posterize", "chroma", "bloom", "solids"], blend: "screen" },
 ];
 
 function randForParam(rng: () => number, def: ParamDef, current: number | string | boolean, amount: number) {
@@ -199,7 +199,21 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.amount = 1;
     p.speed = p.move === "dance" ? 0.55 + rng() * 1.5 : 0.32 + rng() * 0.7;
     p.seed = 1 + Math.floor(rng() * 9998);
-    p.form = "idol";
+  }
+  if (fx.typeId === "solids") {
+    p.size = 0.42 + rng() * 0.28;
+    p.count = 2 + Math.floor(rng() * 3);
+    p.crowd = "normal";
+    p.place = rng() > 0.28 ? "scatter" : "center";
+    p.style = rng() > 0.62 ? "crystal" : "morph";
+    const mv = rng();
+    if (mood === "lush") p.move = mv > 0.4 ? "weave" : mv > 0.18 ? "float" : "orbit";
+    else if (mood === "mix") p.move = mv > 0.35 ? "weave" : mv > 0.18 ? "drift" : "orbit";
+    else p.move = mv > 0.5 ? "weave" : "drift";
+    p.echo = 0.28 + rng() * 0.45;
+    p.amount = 1;
+    p.speed = 0.35 + rng() * 0.7;
+    p.seed = 1 + Math.floor(rng() * 9998);
   }
   if (fx.typeId === "kaleido") {
     p.segments = mood === "lush" ? 4 + Math.floor(rng() * 4) : 5 + Math.floor(rng() * 8);
@@ -222,6 +236,11 @@ function makeIdolInstance(seed: number, mood: Mood = "mix"): EffectInstance {
   return applyMood(makeFx("dancer", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
 }
 
+function makeSolidsInstance(seed: number, mood: Mood = "mix"): EffectInstance {
+  const rng = mulberry32(seed >>> 0);
+  return applyMood(makeFx("solids", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
+}
+
 /** Drop a dancing idol onto every layer that doesn't already have one. */
 export function ensureIdol(project: Project): Project {
   return {
@@ -229,6 +248,17 @@ export function ensureIdol(project: Project): Project {
     layers: project.layers.map((layer, i) => {
       if (layer.effects.some((e) => e.typeId === "dancer")) return layer;
       return { ...layer, effects: [...layer.effects, makeIdolInstance(project.seed + i * 4243, "mix")] };
+    }),
+  };
+}
+
+/** Drop abstract solids onto every layer that doesn't already have them. */
+export function ensureSolids(project: Project): Project {
+  return {
+    ...project,
+    layers: project.layers.map((layer, i) => {
+      if (layer.effects.some((e) => e.typeId === "solids")) return layer;
+      return { ...layer, effects: [...layer.effects, makeSolidsInstance(project.seed + i * 5119, "mix")] };
     }),
   };
 }
@@ -254,25 +284,27 @@ function rebuildLayer(layer: Layer, seed: number, amount: number): Layer {
       if (fx.typeId === "dancer") {
         fx.params.move = "float";
         fx.params.speed = 0.35 + rng() * 0.45;
-        fx.params.form = "idol";
       }
     }
   }
   if (look.name === "glass morph") {
     for (const fx of effects) {
-      if (fx.typeId === "dancer") {
-        fx.params.form = "morph";
-        fx.params.move = rng() > 0.5 ? "float" : "orbit";
-        fx.params.speed = 0.4 + rng() * 0.7;
+      if (fx.typeId === "solids") {
+        fx.params.style = "morph";
+        fx.params.move = "weave";
+        fx.params.place = "scatter";
+        fx.params.speed = 0.4 + rng() * 0.5;
+        fx.params.count = 3;
       }
     }
   }
   if (look.name === "crystal fold") {
     for (const fx of effects) {
-      if (fx.typeId === "dancer") {
-        fx.params.form = "crystal";
-        fx.params.move = rng() > 0.45 ? "orbit" : "dance";
-        fx.params.speed = 0.45 + rng() * 0.8;
+      if (fx.typeId === "solids") {
+        fx.params.style = "crystal";
+        fx.params.move = rng() > 0.4 ? "orbit" : "weave";
+        fx.params.speed = 0.4 + rng() * 0.55;
+        fx.params.count = 2 + Math.floor(rng() * 2);
       }
     }
   }

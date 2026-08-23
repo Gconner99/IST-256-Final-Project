@@ -3,7 +3,7 @@ import { store } from "../core/store";
 import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
-import { ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
+import { ensureCritters, ensureIdol, ensureSolids, randomizeProject } from "../core/randomize";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
 import { resumeAudio } from "../media/audio";
@@ -172,6 +172,7 @@ export function randomize(mode: "all" | "selected" | "param") {
     let out = next;
     if (mode === "all" && ui.includeCritters) out = ensureCritters(out);
     if (mode === "all" && ui.includeIdol) out = ensureIdol(out);
+    if (mode === "all" && ui.includeSolids) out = ensureSolids(out);
     return out;
   });
   const names = store.project.layers[0]?.effects.map((e) => e.typeId).join(" · ");
@@ -202,14 +203,63 @@ export function stampIdol() {
   const seed = 1 + ((store.project.seed + Date.now() + 17) % 9998);
   if (existing) {
     setParam(layer.id, existing.id, "seed", seed);
-    store.patchUi({ selectedEffectId: existing.id, status: "rerolled idol" });
+    if (!existing.enabled) toggleEffect(layer.id, existing.id);
+    store.patchUi({ selectedEffectId: existing.id, includeIdol: true, status: "rerolled idol" });
     return;
   }
   addEffect("dancer");
   const nextLayer = selectedLayer(store.project);
   const fx = selectedEffect(nextLayer);
   if (nextLayer && fx?.typeId === "dancer") setParam(nextLayer.id, fx.id, "seed", seed);
-  store.patchUi({ status: "stamped idol" });
+  store.patchUi({ includeIdol: true, status: "stamped idol" });
+}
+
+export function stampSolids() {
+  const layer = selectedLayer(store.project);
+  if (!layer) return;
+  const existing = layer.effects.find((e) => e.typeId === "solids");
+  const seed = 1 + ((store.project.seed + Date.now() + 29) % 9998);
+  if (existing) {
+    setParam(layer.id, existing.id, "seed", seed);
+    if (!existing.enabled) toggleEffect(layer.id, existing.id);
+    store.patchUi({ selectedEffectId: existing.id, includeSolids: true, status: "rerolled solids" });
+    return;
+  }
+  addEffect("solids");
+  const nextLayer = selectedLayer(store.project);
+  const fx = selectedEffect(nextLayer);
+  if (nextLayer && fx?.typeId === "solids") setParam(nextLayer.id, fx.id, "seed", seed);
+  store.patchUi({ includeSolids: true, status: "stamped solids" });
+}
+
+/** Show or hide a featured overlay (idol / solids) on every layer without deleting it. */
+export function setFeatured(typeId: "dancer" | "solids", on: boolean) {
+  if (on) {
+    store.setProject((p) => {
+      const next = typeId === "dancer" ? ensureIdol(p) : ensureSolids(p);
+      return {
+        ...next,
+        layers: next.layers.map((layer) => ({
+          ...layer,
+          effects: layer.effects.map((e) => (e.typeId === typeId ? { ...e, enabled: true } : e)),
+        })),
+      };
+    });
+    const fx = store.project.layers[0]?.effects.find((e) => e.typeId === typeId);
+    store.patchUi({
+      selectedEffectId: fx?.id ?? store.state.ui.selectedEffectId,
+      status: typeId === "dancer" ? "idol on" : "solids on",
+    });
+    return;
+  }
+  store.setProject((p) => ({
+    ...p,
+    layers: p.layers.map((layer) => ({
+      ...layer,
+      effects: layer.effects.map((e) => (e.typeId === typeId ? { ...e, enabled: false } : e)),
+    })),
+  }));
+  store.patchUi({ status: typeId === "dancer" ? "idol off" : "solids off" });
 }
 
 export function bumpSeed(n: number) {
