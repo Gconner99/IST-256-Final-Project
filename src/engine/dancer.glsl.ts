@@ -387,22 +387,11 @@ vec3 figTravel(float sid, float time, float move) {
     o.z = sin(t * 0.44 + sid) * 0.38;
     return o;
   }
-  if (move < 3.5) {
-    float w = mix(0.12, 0.28, figH(sid + 0.51));
-    float a = time * w + figH(sid + 0.52) * 6.2831853;
-    float rx = mix(1.05, 2.28, figH(sid + 0.53));
-    float ry = mix(0.32, 0.82, figH(sid + 0.54));
-    return vec3(cos(a) * rx, sin(a) * ry, sin(a * 0.65) * 0.32);
-  }
-  float t = time * mix(0.16, 0.38, figH(sid + 0.61));
-  float mul = figH(sid + 0.62) > 0.5 ? 2.0 : 3.0;
-  float rx = mix(1.15, 2.35, figH(sid + 0.63));
-  float ry = mix(0.48, 1.12, figH(sid + 0.64));
-  float phase = figH(sid + 0.65) * 1.5708;
-  o.x = sin(t) * rx + sin(t * 0.5 + sid) * 0.22;
-  o.y = sin(t * mul + phase) * ry;
-  o.z = cos(t * 0.7 + sid) * 0.34;
-  return o;
+  float w = mix(0.12, 0.28, figH(sid + 0.51));
+  float a = time * w + figH(sid + 0.52) * 6.2831853;
+  float rx = mix(1.05, 2.28, figH(sid + 0.53));
+  float ry = mix(0.32, 0.82, figH(sid + 0.54));
+  return vec3(cos(a) * rx, sin(a) * ry, sin(a * 0.65) * 0.32);
 }
 vec3 figCarry(vec3 home, float sid, float time, float move) {
   vec3 travel = figTravel(sid, time, move);

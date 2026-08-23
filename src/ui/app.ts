@@ -31,8 +31,6 @@ import {
   startFromScratch,
   stampCritters,
   stampIdol,
-  stampSolids,
-  setFeatured,
   toggleEffect,
 } from "./actions";
 import { resumeAudio } from "../media/audio";
@@ -67,11 +65,8 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="check" title="Drop drifting colored shapes onto every layer when you hit Rand all">
         <input type="checkbox" id="inc-critters" /> floaters
       </label>
-      <label class="check" title="Show the dancing 3D creature. Uncheck to hide it. Also used by Rand all.">
+      <label class="check" title="Drop a dancing 3D figure in the middle when you hit Rand all">
         <input type="checkbox" id="inc-idol" /> idol
-      </label>
-      <label class="check" title="Show abstract 3D shapes weaving around the frame. Uncheck to hide them.">
-        <input type="checkbox" id="inc-solids" /> solids
       </label>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
@@ -105,8 +100,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt, xerox, and drifting shapes. Keep the <em>floaters</em> box on to send one-off colored objects across the frame.</li>
-          <li><strong>Idol</strong> plants a small low-poly 3D creature — stamp it to grow a weirder one. The top-bar <em>idol</em> box turns it on or off. Move can dance, drift, float, or orbit. Crowd can switch to a mini army.</li>
-          <li><strong>Solids</strong> are abstract 3D shapes in that same world — boxes, stars, rings, crystals — that weave around the frame. Stamp solids, or tick the top-bar <em>solids</em> box. You can run idols, solids, both, or neither.</li>
+          <li><strong>Idol</strong> plants a small low-poly 3D creature — stamp it to grow a weirder one (petals, skirts, antennae, halos). <em>Form</em> on the Idol effect keeps that dancer, or switches to morphing solids / folded crystals. Move can dance, drift, float, or orbit. Crowd can switch to a mini army. Keep the top-bar box on so Rand all includes it.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass. Exported clips are silent for now — the motion still follows the mix.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
@@ -184,7 +178,6 @@ function bind(root: HTMLElement) {
     }
     if (act === "stamp-critters") stampCritters();
     if (act === "stamp-idol") stampIdol();
-    if (act === "stamp-solids") stampSolids();
     if (act === "add-layer") addLayer();
     if (act === "dup-layer" && id) duplicateLayer(id);
     if (act === "del-layer" && id) removeLayer(id);
@@ -299,14 +292,7 @@ function bind(root: HTMLElement) {
       store.patchUi({ includeCritters: (t as HTMLInputElement).checked });
     }
     if (t.id === "inc-idol" || t.id === "inc-idol-rail") {
-      const on = (t as HTMLInputElement).checked;
-      store.patchUi({ includeIdol: on });
-      setFeatured("dancer", on);
-    }
-    if (t.id === "inc-solids" || t.id === "inc-solids-rail") {
-      const on = (t as HTMLInputElement).checked;
-      store.patchUi({ includeSolids: on });
-      setFeatured("solids", on);
+      store.patchUi({ includeIdol: (t as HTMLInputElement).checked });
     }
   });
 
@@ -319,14 +305,7 @@ function bind(root: HTMLElement) {
       store.patchUi({ includeCritters: (t as HTMLInputElement).checked });
     }
     if (t.id === "inc-idol" || t.id === "inc-idol-rail") {
-      const on = (t as HTMLInputElement).checked;
-      store.patchUi({ includeIdol: on });
-      setFeatured("dancer", on);
-    }
-    if (t.id === "inc-solids" || t.id === "inc-solids-rail") {
-      const on = (t as HTMLInputElement).checked;
-      store.patchUi({ includeSolids: on });
-      setFeatured("solids", on);
+      store.patchUi({ includeIdol: (t as HTMLInputElement).checked });
     }
     if (t.id === "seed") store.setProject((pr) => ({ ...pr, seed: Number(t.value) || 0 }), false);
     if (t.id === "rnd-amt") store.setProject((pr) => ({ ...pr, randomAmount: Number(t.value) }), false);
@@ -447,8 +426,6 @@ function paint(root: HTMLElement) {
   if (crit) crit.checked = ui.includeCritters;
   const idol = root.querySelector<HTMLInputElement>("#inc-idol");
   if (idol) idol.checked = ui.includeIdol;
-  const solidsBox = root.querySelector<HTMLInputElement>("#inc-solids");
-  if (solidsBox) solidsBox.checked = ui.includeSolids;
   root.querySelector("#help")?.classList.toggle("on", ui.helpOpen);
   root.querySelector("#veil")?.classList.toggle("on", ui.dropActive);
   root.querySelector("#led")?.classList.toggle("hot", p.playback.playing);
@@ -485,12 +462,10 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="critters">Floaters</button>
       <button class="btn tiny acid" data-act="stamp-critters">Stamp floaters</button>
       <button class="btn tiny acid" data-act="stamp-idol">Stamp idol</button>
-      <button class="btn tiny acid" data-act="stamp-solids">Stamp solids</button>
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
-    <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> idol on</label>
-    <label class="check"><input type="checkbox" id="inc-solids-rail" ${ui.includeSolids ? "checked" : ""}/> solids on</label>
-    <div class="status" style="margin-top:4px">Tick <em>idol</em> or <em>solids</em> to choose what is featured. Idols are the dancing creatures. Solids are abstract 3D shapes that weave around the frame. You can run both, one, or neither. Stamp rerolls a new one. Drop an MP3 to drive the motion.</div>
+    <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
+    <div class="status" style="margin-top:4px">Floaters drift across — Kit on the Floaters effect picks lumpy shapes, toy-pop music icons, or both. An idol is one small low-poly dancer. Form on the Idol effect can switch to morphing solids or folded crystals. Move can drift, float, or orbit. Crowd → Mini army fills the frame with tiny ones. Drop an MP3 to make them dance to the song.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
@@ -599,7 +574,6 @@ function paintStack(n: HTMLElement) {
       <div class="row" style="margin-top:4px">
         <button class="btn tiny acid" data-act="stamp-critters">stamp floaters</button>
         <button class="btn tiny acid" data-act="stamp-idol">stamp idol</button>
-        <button class="btn tiny acid" data-act="stamp-solids">stamp solids</button>
       </div>
       ${fx ? `
         <hr class="div" />

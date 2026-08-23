@@ -4,11 +4,10 @@ import { matchAspectId, sizeForAspect, sizeFromSource } from "../src/core/export
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, ensureIdol, ensureSolids, randomizeProject } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, randomizeProject } from "../src/core/randomize";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
-import { solidsForCompile } from "../src/effects/solids";
 import { compileEffectSource } from "../src/engine/compile";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, samplePaletteFromImageData } from "../src/generate/imagine";
@@ -124,13 +123,12 @@ describe("project files", () => {
 describe("effects registry", () => {
   it("ships a usable MVP library", () => {
     expect(allEffects().length).toBeGreaterThanOrEqual(15);
-    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer", "solids"]) {
+    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer"]) {
       expect(getEffect(id)).toBeTruthy();
     }
     expect(getEffect("critters")?.category).toBe("wacky");
     expect(getEffect("critters")?.name).toBe("Floaters");
     expect(getEffect("dancer")?.name).toBe("Idol");
-    expect(getEffect("solids")?.name).toBe("Solids");
     const critterSrc = compileEffectSource(getEffect("critters")!);
     expect(getEffect("critters")?.params.find((p) => p.id === "kit")?.default).toBe("shapes");
     for (const family of [
@@ -165,7 +163,7 @@ describe("effects registry", () => {
     expect(idol.params.find((p) => p.id === "place")?.default).toBe("center");
     expect(idol.params.find((p) => p.id === "crowd")?.default).toBe("normal");
     expect(idol.params.find((p) => p.id === "move")?.default).toBe("dance");
-    expect(idol.params.find((p) => p.id === "form")).toBeUndefined();
+    expect(idol.params.find((p) => p.id === "form")?.default).toBe("idol");
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
     expect(idolSrc.includes("figureMap")).toBe(true);
@@ -197,21 +195,17 @@ describe("effects registry", () => {
     expect(miniSrc.includes("figWildMini")).toBe(true);
     expect(miniSrc.includes("figMiniPlace")).toBe(true);
     expect(miniSrc.includes("geomRender")).toBe(false);
-    const solids = getEffect("solids")!;
-    expect(solids.params.find((p) => p.id === "move")?.default).toBe("weave");
-    expect(Number(solids.params.find((p) => p.id === "count")?.default)).toBeGreaterThan(1);
-    expect(solids.params.find((p) => p.id === "style")?.default).toBe("morph");
-    const solidsSrc = compileEffectSource(solids);
-    expect(solidsSrc.includes("geomRender")).toBe(true);
-    expect(solidsSrc.includes("geomHit")).toBe(true);
-    expect(solidsSrc.includes("geomSmin")).toBe(true);
-    expect(solidsSrc.includes("geomStar")).toBe(true);
-    expect(solidsSrc.includes("geomRenderMini")).toBe(false);
-    expect(solidsSrc.includes("figureRenderMini")).toBe(false);
-    const solidsMini = compileEffectSource(solidsForCompile(true));
-    expect(solidsMini.includes("geomRenderMini")).toBe(true);
-    expect(solidsMini.includes("geomWildMini")).toBe(true);
-    expect(solidsMini.includes("figureRenderMini")).toBe(false);
+    const morphSrc = compileEffectSource(dancerForCompile(false, "morph"));
+    expect(morphSrc.includes("geomRender")).toBe(true);
+    expect(morphSrc.includes("geomHit")).toBe(true);
+    expect(morphSrc.includes("geomSmin")).toBe(true);
+    expect(morphSrc.includes("geomStar")).toBe(true);
+    expect(morphSrc.includes("geomRenderMini")).toBe(false);
+    expect(morphSrc.includes("figureRenderMini")).toBe(false);
+    const crystalMini = compileEffectSource(dancerForCompile(true, "crystal"));
+    expect(crystalMini.includes("geomRenderMini")).toBe(true);
+    expect(crystalMini.includes("geomWildMini")).toBe(true);
+    expect(crystalMini.includes("figureRenderMini")).toBe(false);
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
@@ -267,17 +261,7 @@ describe("randomize + presets", () => {
     expect(Number(idol.params.count)).toBe(1);
     expect(idol.params.place).toBe("center");
     expect(idol.params.crowd ?? "normal").toBe("normal");
-  });
-
-  it("can stamp solids onto layers that lack them", () => {
-    const p = createDefaultProject();
-    expect(p.layers[0].effects.some((e) => e.typeId === "solids")).toBe(false);
-    const withS = ensureSolids(p);
-    expect(withS.layers[0].effects.some((e) => e.typeId === "solids")).toBe(true);
-    expect(ensureSolids(withS).layers[0].effects.filter((e) => e.typeId === "solids")).toHaveLength(1);
-    const shape = withS.layers[0].effects.find((e) => e.typeId === "solids")!;
-    expect(["weave", "drift", "orbit", "float", "dance"]).toContain(shape.params.move);
-    expect(Number(shape.params.count)).toBeGreaterThan(1);
+    expect(idol.params.form ?? "idol").toBe("idol");
   });
 });
 
