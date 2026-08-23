@@ -1,6 +1,6 @@
 import type { EffectInstance, Layer, MediaSource, Project, QualityMode } from "../core/types";
 import { resolvedLayerParams } from "../core/timeline";
-import { dancerForCompile, isGeomForm } from "../effects/dancer";
+import { dancerForCompile, isGeomForm, isImpForm } from "../effects/dancer";
 import { allEffects, getEffect } from "../effects/registry";
 import { getSoundtrack, sampleAudio } from "../media/audio";
 import {
@@ -85,7 +85,21 @@ export class Renderer {
 
   private compileType(typeId: string, mini = false, form = "idol"): Program | null {
     const geom = typeId === "dancer" && isGeomForm(form);
-    const key = typeId !== "dancer" ? typeId : geom ? (mini ? "dancer:geom:mini" : "dancer:geom") : mini ? "dancer:mini" : "dancer";
+    const imp = typeId === "dancer" && isImpForm(form);
+    const key =
+      typeId !== "dancer"
+        ? typeId
+        : geom
+          ? mini
+            ? "dancer:geom:mini"
+            : "dancer:geom"
+          : imp
+            ? mini
+              ? "dancer:imp:mini"
+              : "dancer:imp"
+            : mini
+              ? "dancer:mini"
+              : "dancer";
     const cached = this.effectProg.get(key);
     if (cached) return cached;
     const def = typeId === "dancer" ? dancerForCompile(mini, form) : getEffect(typeId);
@@ -115,6 +129,12 @@ export class Renderer {
       }
       if (i === ids.length) {
         this.compileType("dancer", false, "morph");
+        i++;
+        requestAnimationFrame(step);
+        return;
+      }
+      if (i === ids.length + 1) {
+        this.compileType("dancer", false, "imp");
         i++;
         requestAnimationFrame(step);
       }

@@ -1,6 +1,7 @@
 import type { EffectType } from "../core/types";
 import { DANCER_GLSL, DANCER_MINI_GLSL } from "../engine/dancer.glsl";
 import { GEOM_GLSL, GEOM_MINI_GLSL } from "../engine/geom.glsl";
+import { IMP_GLSL, IMP_MINI_GLSL } from "../engine/imp.glsl";
 
 const APPLY_NORMAL = `
 vec4 apply(vec2 uv) {
@@ -42,6 +43,26 @@ vec4 apply(vec2 uv) {
 }
 `;
 
+const APPLY_IMP = `
+vec4 apply(vec2 uv) {
+  vec3 src = sampleSrc(uv).rgb;
+  vec4 f = impRender(uv, u_seed, uTime * u_speed, u_size, u_count, u_place, u_echo, u_move);
+  float cover = f.a >= 0.95 ? 1.0 : f.a;
+  vec3 placed = mix(src, f.rgb, clamp(cover * u_amount, 0.0, 1.0));
+  return vec4(placed, 1.0);
+}
+`;
+
+const APPLY_IMP_MINI = `
+vec4 apply(vec2 uv) {
+  vec3 src = sampleSrc(uv).rgb;
+  vec4 f = impRenderMini(uv, u_seed, uTime * u_speed, u_size, u_count, u_echo, u_move);
+  float cover = f.a >= 0.95 ? 1.0 : f.a;
+  vec3 placed = mix(src, f.rgb, clamp(cover * u_amount, 0.0, 1.0));
+  return vec4(placed, 1.0);
+}
+`;
+
 const UNIFORMS = `
 uniform float u_count;
 uniform float u_size;
@@ -59,14 +80,18 @@ export function isGeomForm(form: unknown): boolean {
   return form === "morph" || form === "crystal";
 }
 
+export function isImpForm(form: unknown): boolean {
+  return form === "imp";
+}
+
 export const dancer: EffectType = {
   id: "dancer",
   name: "Idol",
   category: "wacky",
-  description: "Seed-grown 3D figure. Form keeps the current idols, or switches to morphing solids and folded crystals. Move, echo, mini army, and MP3 sync still apply",
+  description: "Seed-grown 3D figure. Form keeps the current idols, switches to a squat horned Imp, or goes to morphing solids and folded crystals. Move, echo, mini army, and MP3 sync still apply",
   params: [
     { id: "count", label: "Count", kind: "int", min: 1, max: 4, step: 1, default: 1 },
-    { id: "size", label: "Size", kind: "float", min: 0.25, max: 2.5, step: 0.01, default: 0.65 },
+    { id: "size", label: "Size", kind: "float", min: 0.25, max: 2.5, step: 0.01, default: 0.5 },
     {
       id: "form",
       label: "Form",
@@ -77,6 +102,7 @@ export const dancer: EffectType = {
         { value: "idol", label: "Idol" },
         { value: "morph", label: "Morph" },
         { value: "crystal", label: "Crystal" },
+        { value: "imp", label: "Imp" },
       ],
     },
     {
@@ -124,12 +150,27 @@ export const dancer: EffectType = {
 
 export function dancerForCompile(mini: boolean, form: string = "idol"): EffectType {
   const geom = isGeomForm(form);
-  if (!geom && !mini) return dancer;
-  if (!geom && mini) {
+  const imp = isImpForm(form);
+  if (!geom && !imp && !mini) return dancer;
+  if (!geom && !imp && mini) {
     return {
       ...dancer,
       extraUniforms: `${UNIFORMS}${DANCER_GLSL}${DANCER_MINI_GLSL}`,
       applyGlsl: APPLY_MINI,
+    };
+  }
+  if (imp && !mini) {
+    return {
+      ...dancer,
+      extraUniforms: `${UNIFORMS}${DANCER_GLSL}${IMP_GLSL}`,
+      applyGlsl: APPLY_IMP,
+    };
+  }
+  if (imp && mini) {
+    return {
+      ...dancer,
+      extraUniforms: `${UNIFORMS}${DANCER_GLSL}${IMP_GLSL}${DANCER_MINI_GLSL}${IMP_MINI_GLSL}`,
+      applyGlsl: APPLY_IMP_MINI,
     };
   }
   if (geom && !mini) {

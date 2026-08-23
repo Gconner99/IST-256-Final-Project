@@ -36,8 +36,8 @@ HOW TO USE IT
 - Type a prompt on the left and click Generate to make a NEW image
 - Drop an MP3 to use it as a soundtrack. Hit Play — idols dance to the mix
 - Click Stamp floaters to send weird one-off objects flying across your picture
-- Click Stamp idol for a dancing creature. On the Idol effect, Form can stay Idol
-  or switch to Morph (shapes that melt into each other) or Crystal (folded glass)
+- Click Stamp idol for a dancing creature. On the Idol effect, Form can stay Idol,
+  switch to Imp (a squat horned cousin), Morph (shapes that melt), or Crystal (folded glass)
 - Click Rand all for a new look (pretty + weird)
 - Click New at the top to start over
 - Move the sliders. Click Export to save.

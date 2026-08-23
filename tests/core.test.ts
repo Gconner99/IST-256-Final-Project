@@ -159,11 +159,12 @@ describe("effects registry", () => {
     }
     const idol = getEffect("dancer")!;
     expect(idol.params.find((p) => p.id === "count")?.default).toBe(1);
-    expect(Number(idol.params.find((p) => p.id === "size")?.default)).toBeLessThan(0.8);
+    expect(Number(idol.params.find((p) => p.id === "size")?.default)).toBeLessThan(0.55);
     expect(idol.params.find((p) => p.id === "place")?.default).toBe("center");
     expect(idol.params.find((p) => p.id === "crowd")?.default).toBe("normal");
     expect(idol.params.find((p) => p.id === "move")?.default).toBe("dance");
     expect(idol.params.find((p) => p.id === "form")?.default).toBe("idol");
+    expect(idol.params.find((p) => p.id === "form")?.options?.some((o) => o.value === "imp")).toBe(true);
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
     expect(idolSrc.includes("figureMap")).toBe(true);
@@ -172,6 +173,8 @@ describe("effects registry", () => {
     expect(idolSrc.includes("figureRenderMini")).toBe(false);
     expect(idolSrc.includes("geomRender")).toBe(false);
     expect(idolSrc.includes("geomRenderMini")).toBe(false);
+    expect(idolSrc.includes("impRender")).toBe(false);
+    expect(idolSrc.includes("impHit")).toBe(false);
     expect(idolSrc.includes("figTravel")).toBe(true);
     expect(idolSrc.includes("figCarry")).toBe(true);
     expect(idolSrc.includes("u_move")).toBe(true);
@@ -206,6 +209,17 @@ describe("effects registry", () => {
     expect(crystalMini.includes("geomRenderMini")).toBe(true);
     expect(crystalMini.includes("geomWildMini")).toBe(true);
     expect(crystalMini.includes("figureRenderMini")).toBe(false);
+    const impSrc = compileEffectSource(dancerForCompile(false, "imp"));
+    expect(impSrc.includes("impRender")).toBe(true);
+    expect(impSrc.includes("impHit")).toBe(true);
+    expect(impSrc.includes("impFace")).toBe(true);
+    expect(impSrc.includes("geomRender")).toBe(false);
+    expect(impSrc.includes("figureRenderMini")).toBe(false);
+    const impMini = compileEffectSource(dancerForCompile(true, "imp"));
+    expect(impMini.includes("impRenderMini")).toBe(true);
+    expect(impMini.includes("impWildMini")).toBe(true);
+    expect(impMini.includes("figMiniPlace")).toBe(true);
+    expect(impMini.includes("geomRender")).toBe(false);
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
@@ -257,7 +271,7 @@ describe("randomize + presets", () => {
     expect(withI.layers[0].effects.some((e) => e.typeId === "dancer")).toBe(true);
     expect(ensureIdol(withI).layers[0].effects.filter((e) => e.typeId === "dancer")).toHaveLength(1);
     const idol = withI.layers[0].effects.find((e) => e.typeId === "dancer")!;
-    expect(Number(idol.params.size)).toBeLessThan(1.0);
+    expect(Number(idol.params.size)).toBeLessThan(0.7);
     expect(Number(idol.params.count)).toBe(1);
     expect(idol.params.place).toBe("center");
     expect(idol.params.crowd ?? "normal").toBe("normal");

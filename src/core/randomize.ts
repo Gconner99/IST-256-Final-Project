@@ -54,6 +54,7 @@ const LOOKS: Look[] = [
   { name: "esoteric retina", mood: "mix", stack: ["grade", "bloom", "analog", "dancer"], blend: "normal" },
   { name: "plaza idol", mood: "mix", stack: ["duotone", "grain", "warp", "dancer"], blend: "normal" },
   { name: "night idol", mood: "outsider", stack: ["posterize", "chroma", "bloom", "dancer"], blend: "overlay" },
+  { name: "imp grove", mood: "mix", stack: ["grade", "bloom", "grain", "dancer"], blend: "normal" },
   { name: "glass morph", mood: "mix", stack: ["grade", "bloom", "warp", "dancer"], blend: "normal" },
   { name: "crystal fold", mood: "outsider", stack: ["posterize", "chroma", "bloom", "dancer"], blend: "screen" },
 ];
@@ -187,7 +188,7 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     else p.kit = roll > 0.55 ? "toy pop" : roll > 0.22 ? "mix" : "shapes";
   }
   if (fx.typeId === "dancer") {
-    p.size = 0.48 + rng() * 0.38;
+    p.size = 0.36 + rng() * 0.28;
     p.count = 1;
     p.crowd = "normal";
     p.place = "center";
@@ -199,7 +200,7 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.amount = 1;
     p.speed = p.move === "dance" ? 0.55 + rng() * 1.5 : 0.32 + rng() * 0.7;
     p.seed = 1 + Math.floor(rng() * 9998);
-    p.form = "idol";
+    p.form = rng() > 0.74 ? "imp" : "idol";
   }
   if (fx.typeId === "kaleido") {
     p.segments = mood === "lush" ? 4 + Math.floor(rng() * 4) : 5 + Math.floor(rng() * 8);
@@ -219,7 +220,8 @@ function makeCrittersInstance(seed: number, mood: Mood = "mix"): EffectInstance 
 
 function makeIdolInstance(seed: number, mood: Mood = "mix"): EffectInstance {
   const rng = mulberry32(seed >>> 0);
-  return applyMood(makeFx("dancer", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
+  const inst = applyMood(makeFx("dancer", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
+  return { ...inst, params: { ...inst.params, form: "idol" } };
 }
 
 /** Drop a dancing idol onto every layer that doesn't already have one. */
@@ -255,6 +257,15 @@ function rebuildLayer(layer: Layer, seed: number, amount: number): Layer {
         fx.params.move = "float";
         fx.params.speed = 0.35 + rng() * 0.45;
         fx.params.form = "idol";
+      }
+    }
+  }
+  if (look.name === "imp grove") {
+    for (const fx of effects) {
+      if (fx.typeId === "dancer") {
+        fx.params.form = "imp";
+        fx.params.move = rng() > 0.45 ? "dance" : "float";
+        fx.params.speed = 0.7 + rng() * 0.9;
       }
     }
   }
