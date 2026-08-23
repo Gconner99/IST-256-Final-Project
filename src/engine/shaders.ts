@@ -1,4 +1,4 @@
-import { CRITTER_GLSL } from "./critters.glsl";
+import { critterGlsl } from "./critters.glsl";
 
 export const VERT_SRC = `#version 300 es
 precision highp float;
@@ -211,7 +211,8 @@ void main() {
 }
 `;
 
-export const GENERATOR_GLSL = `#version 300 es
+export function makeGeneratorGlsl(critterSrc = critterGlsl("toy")): string {
+  return `#version 300 es
 precision highp float;
 in vec2 vUv;
 out vec4 fragColor;
@@ -223,7 +224,8 @@ uniform float uScale;
 uniform float uSeed;
 uniform float u_audio;
 uniform float u_bass;
-${CRITTER_GLSL}
+uniform float uSkin;
+${critterSrc}
 float hash21(vec2 p) {
   p = fract(p * vec2(123.34, 345.45));
   p += dot(p, p + 34.345);
@@ -334,6 +336,28 @@ vec3 genCave(vec2 uv) {
   float vig = smoothstep(0.92, 0.22, length((uv - 0.5) * vec2(1.22, 1.0)));
   return col * vig;
 }
+vec3 skinAtmosphere(vec2 uv, vec3 col) {
+  if (uSkin < 0.5) return col;
+  float n = fbm(uv * 2.8 + uTime * 0.018);
+  if (uSkin < 1.5) {
+    float grain = fbm(uv * vec2(20.0, 5.0) + vec2(uv.y * 1.4, 0.0));
+    vec3 wood = mix(vec3(0.2, 0.11, 0.05), vec3(0.4, 0.26, 0.12), grain);
+    col = mix(col, wood, 0.14 + 0.1 * grain);
+    float canopy = smoothstep(0.55, 1.0, uv.y) * (0.12 + 0.2 * n);
+    col = mix(col, vec3(0.12, 0.2, 0.1), canopy * 0.45);
+    return col;
+  }
+  if (uSkin < 2.5) {
+    float cau = 0.5 + 0.5 * sin(uv.x * 14.0 + n * 3.5 + uTime * 0.28);
+    cau *= 0.5 + 0.5 * sin(uv.y * 9.0 - uTime * 0.18);
+    col = mix(col, mix(col, vec3(0.12, 0.38, 0.48), 0.4), cau * 0.18);
+    col *= 0.92 + 0.08 * (1.0 - uv.y);
+    return col;
+  }
+  float wisp = smoothstep(0.42, 0.78, fbm(uv * vec2(1.5, 2.6) + vec2(uTime * 0.012, 0.0)));
+  col = mix(col, mix(col, vec3(0.93, 0.95, 0.98), 0.65), wisp * 0.24);
+  return col;
+}
 
 void main() {
   vec2 uv = vUv;
@@ -379,9 +403,13 @@ void main() {
   } else {
     col = genCave(uv);
   }
+  col = skinAtmosphere(uv, col);
   fragColor = vec4(col, 1.0);
 }
 `;
+}
+
+export const GENERATOR_GLSL = makeGeneratorGlsl();
 
 export const COPY_GLSL = `#version 300 es
 precision highp float;

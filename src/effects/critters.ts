@@ -1,12 +1,13 @@
 import type { EffectType } from "../core/types";
-import { CRITTER_GLSL } from "../engine/critters.glsl";
+import { critterGlsl, CRITTER_GLSL } from "../engine/critters.glsl";
+import type { SkinId } from "../core/skins";
 import { dancer } from "./dancer";
 
 export const critters: EffectType = {
   id: "critters",
   name: "Floaters",
   category: "wacky",
-  description: "Drifting stickers. Kit picks lumpy families, toy-pop music icons (notes, vinyl, hearts, mics), or both",
+  description: "Drifting stickers. Kit picks lumpy families, themed icons (toy-pop, folk, tide, clouds — follow Skin), or both",
   params: [
     {
       id: "kit",
@@ -16,7 +17,7 @@ export const critters: EffectType = {
       options: [
         { value: "shapes", label: "Shapes" },
         { value: "toy pop", label: "Toy pop" },
-        { value: "mix", label: "Shapes + toy pop" },
+        { value: "mix", label: "Shapes + stickers" },
       ],
     },
     { id: "count", label: "Shapes", kind: "int", min: 1, max: 8, step: 1, default: 5 },
@@ -46,5 +47,21 @@ vec4 apply(vec2 uv) {
 }
 `,
 };
+
+export function critterForCompile(skin: SkinId = "toy"): EffectType {
+  if (skin === "toy") return critters;
+  return {
+    ...critters,
+    extraUniforms: `
+uniform float u_kit;
+uniform float u_count;
+uniform float u_size;
+uniform float u_seed;
+uniform float u_speed;
+uniform float u_amount;
+${critterGlsl(skin)}
+`,
+  };
+}
 
 export const WACKY_EFFECTS = [critters, dancer];

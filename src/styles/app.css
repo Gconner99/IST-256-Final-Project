@@ -163,6 +163,7 @@ h2, .sec {
 .btn:hover { border-color: var(--acid); color: var(--acid); }
 .btn.hot { border-color: var(--hot); color: var(--hot); }
 .btn.acid { background: #1c220c; border-color: var(--acid); color: var(--acid); }
+.btn.on { border-color: var(--acid); color: var(--acid); }
 .btn.tiny { padding: 3px 6px; font-size: 9px; }
 .btn[disabled] { opacity: 0.4; cursor: default; }
 

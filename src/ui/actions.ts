@@ -4,6 +4,7 @@ import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
 import { ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
+import { parseSkin } from "../core/skins";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
 import { resumeAudio } from "../media/audio";
@@ -191,7 +192,10 @@ export function stampCritters() {
   addEffect("critters");
   const nextLayer = selectedLayer(store.project);
   const fx = selectedEffect(nextLayer);
-  if (nextLayer && fx?.typeId === "critters") setParam(nextLayer.id, fx.id, "seed", seed);
+  if (nextLayer && fx?.typeId === "critters") {
+    setParam(nextLayer.id, fx.id, "seed", seed);
+    if (parseSkin(store.project.skin) !== "toy") setParam(nextLayer.id, fx.id, "kit", "toy pop");
+  }
   store.patchUi({ status: "stamped floaters" });
 }
 

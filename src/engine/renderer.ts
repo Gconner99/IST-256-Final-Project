@@ -1,6 +1,8 @@
 import type { EffectInstance, Layer, MediaSource, Project, QualityMode } from "../core/types";
+import { parseSkin, SKIN_INDEX, type SkinId } from "../core/skins";
 import { resolvedLayerParams } from "../core/timeline";
 import { dancerForCompile } from "../effects/dancer";
+import { critterForCompile } from "../effects/critters";
 import { allEffects, getEffect } from "../effects/registry";
 import { getSoundtrack, sampleAudio } from "../media/audio";
 import {
@@ -21,9 +23,10 @@ import {
   COMPOSITE_GLSL,
   COPY_GLSL,
   FEEDBACK_GLSL,
-  GENERATOR_GLSL,
+  makeGeneratorGlsl,
   TEXTURE_GLSL,
 } from "./shaders";
+import { critterGlsl } from "./critters.glsl";
 
 const RING = 8;
 
@@ -56,9 +59,10 @@ export class Renderer {
   private blit: Program;
   private compositeProg: Program;
   private feedbackProg: Program;
-  private generatorProg: Program;
+  private genProg = new Map<string, Program>();
   private textureProg: Program;
   private black: WebGLTexture;
+  private skin: SkinId = "toy";
   lastError: string | null = null;
   width = 1;
   height = 1;
@@ -76,18 +80,23 @@ export class Renderer {
     this.blit = new Program(gl, BLIT_GLSL);
     this.compositeProg = new Program(gl, COMPOSITE_GLSL);
     this.feedbackProg = new Program(gl, FEEDBACK_GLSL);
-    this.generatorProg = new Program(gl, GENERATOR_GLSL);
+    this.genProg.set("toy", new Program(gl, makeGeneratorGlsl(critterGlsl("toy"))));
     this.textureProg = new Program(gl, TEXTURE_GLSL);
     this.black = createTexture(gl);
     gl.bindTexture(gl.TEXTURE_2D, this.black);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
   }
 
-  private compileType(typeId: string, mini = false): Program | null {
-    const key = typeId !== "dancer" ? typeId : mini ? "dancer:mini" : "dancer";
+  private compileType(typeId: string, variant?: string): Program | null {
+    const key = variant ? `${typeId}:${variant}` : typeId;
     const cached = this.effectProg.get(key);
     if (cached) return cached;
-    const def = typeId === "dancer" ? dancerForCompile(mini) : getEffect(typeId);
+    const def =
+      typeId === "dancer"
+        ? dancerForCompile(variant === "mini")
+        : typeId === "critters"
+          ? critterForCompile((variant as SkinId) ?? "toy")
+          : getEffect(typeId);
     if (!def) return null;
     try {
       const p = compileEffectProgram(this.gl, def);
@@ -113,7 +122,25 @@ export class Renderer {
         return;
       }
       if (i === ids.length) {
-        this.compileType("dancer", true);
+        this.compileType("dancer", "mini");
+        i++;
+        requestAnimationFrame(step);
+        return;
+      }
+      if (i === ids.length + 1) {
+        this.compileType("critters", "folk");
+        i++;
+        requestAnimationFrame(step);
+        return;
+      }
+      if (i === ids.length + 2) {
+        this.compileType("critters", "tide");
+        i++;
+        requestAnimationFrame(step);
+        return;
+      }
+      if (i === ids.length + 3) {
+        this.compileType("critters", "cloud");
         i++;
       }
     };
@@ -121,8 +148,9 @@ export class Renderer {
   }
 
   private progFor(fx: EffectInstance): Program | null {
-    if (fx.typeId !== "dancer") return this.compileType(fx.typeId);
-    return this.compileType("dancer", fx.params.crowd === "mini");
+    if (fx.typeId === "dancer") return this.compileType("dancer", fx.params.crowd === "mini" ? "mini" : undefined);
+    if (fx.typeId === "critters" && this.skin !== "toy") return this.compileType("critters", this.skin);
+    return this.compileType(fx.typeId);
   }
 
   resetTemporal() {
@@ -174,20 +202,30 @@ export class Renderer {
     drawTri(gl);
   }
 
+  private generatorFor(skin: SkinId): Program {
+    const cached = this.genProg.get(skin);
+    if (cached) return cached;
+    const p = new Program(this.gl, makeGeneratorGlsl(critterGlsl(skin)));
+    this.genProg.set(skin, p);
+    return p;
+  }
+
   private drawGenerator(target: FBO, src: MediaSource, time: number, seed = 77) {
     const gl = this.gl;
     target.bind();
-    this.generatorProg.use();
-    this.generatorProg.i("uMode", GEN_INDEX[src.generator ?? "plasma"] ?? 0);
-    this.generatorProg.f("uTime", time);
+    const prog = this.generatorFor(this.skin);
+    prog.use();
+    prog.i("uMode", GEN_INDEX[src.generator ?? "plasma"] ?? 0);
+    prog.f("uTime", time);
     const a = src.colorA ? hexToRgb(src.colorA) : ([0.07, 0.04, 0.1] as const);
     const b = src.colorB ? hexToRgb(src.colorB) : ([0.92, 0.78, 0.55] as const);
-    this.generatorProg.v3("uColorA", a[0], a[1], a[2]);
-    this.generatorProg.v3("uColorB", b[0], b[1], b[2]);
-    this.generatorProg.f("uScale", 6);
-    this.generatorProg.f("uSeed", seed);
-    this.generatorProg.f("u_audio", this.audioEnergy);
-    this.generatorProg.f("u_bass", this.audioBass);
+    prog.v3("uColorA", a[0], a[1], a[2]);
+    prog.v3("uColorB", b[0], b[1], b[2]);
+    prog.f("uScale", 6);
+    prog.f("uSeed", seed);
+    prog.f("u_audio", this.audioEnergy);
+    prog.f("u_bass", this.audioBass);
+    prog.f("uSkin", SKIN_INDEX[this.skin] ?? 0);
     drawTri(gl);
   }
 
@@ -275,6 +313,7 @@ export class Renderer {
 
   render(project: Project, time: number, opts?: { width?: number; height?: number; quality?: QualityMode; vignette?: number }) {
     const gl = this.gl;
+    this.skin = parseSkin(project.skin);
     const quality = opts?.quality ?? project.quality;
     const scale = quality === "draft" ? 0.5 : 1;
     const w = Math.max(16, Math.floor((opts?.width ?? this.canvas.width) * scale));
