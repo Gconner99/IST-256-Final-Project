@@ -253,125 +253,100 @@ float starLayer(vec2 uv, float dens, float size, float t) {
   vec2 gv = fract(uv) - 0.5;
   vec2 id = floor(uv);
   float n = hash21(id + uSeed);
-  float tw = 0.45 + 0.55 * sin(t * (1.5 + n * 8.0) + n * 20.0 + u_audio * 4.0);
+  float tw = 0.88 + 0.12 * sin(t * (0.35 + n * 0.9) + n * 18.0);
   vec2 jitter = vec2(hash21(id + 2.1), hash21(id + 7.7)) - 0.5;
-  float d = length(gv + jitter * 0.35);
-  float m = smoothstep(size * tw, 0.0, d) * step(1.0 - dens, n);
-  float spike = 0.0;
-  if (n > 0.97) {
-    spike = (1.0 - smoothstep(0.0, 0.18, abs(gv.x))) * (1.0 - smoothstep(0.0, 0.035, abs(gv.y)));
-    spike += (1.0 - smoothstep(0.0, 0.18, abs(gv.y))) * (1.0 - smoothstep(0.0, 0.035, abs(gv.x)));
-    spike *= tw * 0.55;
-  }
-  return m + spike * step(1.0 - dens * 0.4, n);
+  float d = length(gv + jitter * 0.28);
+  return smoothstep(size * tw, 0.0, d) * step(1.0 - dens, n) * tw;
 }
 vec3 genStars(vec2 uv) {
-  vec2 p = (uv - 0.5) * vec2(1.7, 1.0);
-  float neb = fbm(p * 2.2 + uTime * 0.03 + uSeed * 0.01);
-  vec3 col = mix(uColorA * 0.35, uColorB * 0.22, neb);
-  col += vec3(0.08, 0.04, 0.14) * pow(neb, 3.0);
-  float band = exp(-pow((uv.y - 0.42 + 0.08 * sin(uv.x * 3.0)) * 4.5, 2.0));
-  col += mix(uColorA, uColorB, 0.6) * band * 0.18 * neb;
+  float sky = smoothstep(0.0, 1.0, uv.y);
+  vec3 col = mix(uColorA, mix(uColorA, uColorB, 0.12), sky * 0.65);
+  float neb = fbm((uv - 0.5) * vec2(1.5, 1.0) * 1.3 + uTime * 0.006 + uSeed * 0.01);
+  col = mix(col, mix(uColorA, uColorB, 0.28) * 0.4, smoothstep(0.48, 0.82, neb) * 0.28);
   float sc = max(uScale, 1.0);
-  col += vec3(0.75, 0.82, 1.0) * starLayer(uv * 28.0 * sc + uSeed, 0.22, 0.018, uTime);
-  col += vec3(1.0, 0.95, 0.85) * starLayer(uv * 12.0 * sc - uSeed * 0.3, 0.08, 0.035, uTime * 0.7);
-  col += vec3(0.6, 0.7, 1.0) * starLayer(uv * 52.0 * sc + 9.1, 0.35, 0.01, uTime * 1.3) * 0.65;
-  return col;
+  col += vec3(0.80, 0.84, 0.92) * starLayer(uv * 20.0 * sc + uSeed, 0.1, 0.011, uTime);
+  col += vec3(0.93, 0.91, 0.86) * starLayer(uv * 8.5 * sc - uSeed * 0.2, 0.035, 0.02, uTime * 0.6) * 0.55;
+  float vig = smoothstep(1.15, 0.2, length((uv - 0.5) * vec2(1.15, 1.0)));
+  return col * (0.9 + 0.1 * vig);
 }
 vec3 genMarsh(vec2 uv) {
-  float dusk = smoothstep(0.15, 0.85, uv.y);
-  vec3 sky = mix(uColorB * 0.55, uColorA, dusk);
-  sky = mix(sky, vec3(0.55, 0.18, 0.08), 0.22 * (1.0 - dusk));
-  float fog1 = fbm(vec2(uv.x * 1.8 + uTime * 0.04, uv.y * 3.2));
-  float fog2 = fbm(vec2(uv.x * 3.1 - uTime * 0.07, uv.y * 5.0 + 4.0));
-  float mist = mix(fog1, fog2, 0.45) * (1.0 - uv.y);
-  vec3 col = mix(sky, vec3(0.72, 0.42, 0.12) * (0.55 + 0.45 * u_bass), mist * 0.65);
-  for (int i = 0; i < 4; i++) {
+  float dusk = pow(clamp(uv.y, 0.0, 1.0), 0.85);
+  vec3 sky = mix(mix(uColorB, vec3(0.58, 0.36, 0.16), 0.4), uColorA, dusk);
+  float fog = fbm(vec2(uv.x * 1.15 + uTime * 0.012, uv.y * 2.2));
+  float mist = smoothstep(0.2, 0.72, fog) * (1.0 - uv.y) * 0.5;
+  vec3 col = mix(sky, mix(uColorB, vec3(0.5, 0.3, 0.12), 0.35), mist);
+  float hz = exp(-pow((uv.y - 0.2) * 6.5, 2.0));
+  col += mix(uColorB, vec3(0.85, 0.52, 0.2), 0.35) * hz * 0.18;
+  for (int i = 0; i < 3; i++) {
     float fi = float(i);
-    float lx = hash21(vec2(uSeed, fi + 1.3));
-    float ly = 0.18 + hash21(vec2(fi, uSeed + 4.0)) * 0.22;
-    float d = length((uv - vec2(lx, ly)) * vec2(1.4, 2.4));
-    float glow = exp(-d * mix(6.0, 4.0, u_audio)) * (0.55 + 0.45 * sin(uTime * 1.7 + fi));
-    col += vec3(1.0, 0.62, 0.18) * glow * 0.7;
+    vec2 lp = vec2(hash21(vec2(uSeed, fi + 1.3)), 0.16 + hash21(vec2(fi, uSeed + 4.0)) * 0.12);
+    float d = length((uv - lp) * vec2(1.5, 2.6));
+    col += vec3(0.9, 0.58, 0.2) * exp(-d * 8.0) * 0.28;
   }
-  float reedX = uv.x * 42.0;
+  float reedX = uv.x * 38.0;
   float reedId = floor(reedX);
   float reedF = fract(reedX) - 0.5;
-  float h = 0.12 + 0.28 * hash21(vec2(reedId, uSeed));
-  float sway = 0.02 * sin(uTime * 1.3 + reedId);
-  float reed = 1.0 - smoothstep(0.012, 0.03, abs(reedF - sway * uv.y));
-  reed *= 1.0 - smoothstep(h, h + 0.04, uv.y);
-  col = mix(col, uColorA * 0.25, reed * step(uv.y, 0.48));
-  float ground = 1.0 - smoothstep(0.0, 0.22, uv.y);
-  col = mix(col, col.bgr * 0.35 + vec3(0.08, 0.06, 0.03), ground * 0.7);
+  float h = 0.1 + 0.22 * hash21(vec2(reedId, uSeed));
+  float sway = 0.012 * sin(uTime * 0.7 + reedId);
+  float reed = 1.0 - smoothstep(0.01, 0.028, abs(reedF - sway * uv.y));
+  reed *= 1.0 - smoothstep(h, h + 0.05, uv.y);
+  col = mix(col, uColorA * 0.22, reed * step(uv.y, 0.4) * 0.85);
+  float ground = 1.0 - smoothstep(0.0, 0.16, uv.y);
+  vec3 water = mix(uColorA * 0.22, col * 0.32, 0.45);
+  col = mix(col, water, ground * 0.88);
   return col;
 }
 vec3 genOil(vec2 uv) {
-  vec2 p = uv * max(uScale, 1.5);
-  p += vec2(fbm(p + uTime * 0.05), fbm(p + vec2(4.2, 1.1) - uTime * 0.04));
-  float n = fbm(p * 1.6);
-  float n2 = fbm(p * 2.8 + n * 2.0);
-  float ang = atan(n2 - 0.5, n - 0.5);
-  vec3 irid = 0.5 + 0.5 * cos(ang * 5.0 + vec3(0.0, 2.1, 4.2) + uTime * 0.2);
-  vec3 col = mix(uColorA, uColorB, n);
-  col = mix(col, irid, 0.45 + 0.2 * n2);
-  col += irid * pow(n2, 4.0) * 0.35;
-  float swirl = sin((uv.x + n) * 12.0 + uTime * 0.6);
-  col = mix(col, col.gbr, 0.12 + 0.12 * swirl);
-  return col;
+  vec2 p = uv * max(uScale * 0.5, 1.15);
+  p += 0.32 * vec2(fbm(p + uTime * 0.01), fbm(p + vec2(3.1, 1.4) - uTime * 0.008));
+  float n = fbm(p * 1.1);
+  float vein = smoothstep(0.44, 0.56, n) - smoothstep(0.56, 0.7, n);
+  vec3 col = mix(uColorA, uColorB, smoothstep(0.28, 0.72, n));
+  col = mix(col, mix(uColorA, uColorB, 0.45) * 0.78, vein * 0.28);
+  return col * (0.94 + 0.06 * fbm(uv * 2.8));
 }
 vec3 genPaper(vec2 uv) {
-  vec3 paper = mix(vec3(0.89, 0.84, 0.74), uColorA, 0.18);
-  float fiber = fbm(uv * 48.0 * max(uScale, 1.0));
-  paper *= 0.86 + 0.18 * fiber;
-  float stain = smoothstep(0.62, 0.92, fbm(uv * 2.4 + uSeed * 0.2));
-  paper = mix(paper, mix(uColorB, vec3(0.42, 0.28, 0.16), 0.5), stain * 0.28);
-  float speck = step(0.984, hash21(floor(uv * 280.0) + uSeed));
-  paper = mix(paper, vec3(0.08, 0.06, 0.05), speck);
-  float fold = abs(sin(uv.x * 3.14159 * 2.0 + 0.4 * fbm(uv * 6.0)));
-  paper *= 1.0 - 0.08 * pow(1.0 - fold, 8.0);
-  float xerox = 0.04 * (hash21(vec2(floor(uv.y * 220.0), uSeed + floor(uTime * 2.0))) - 0.5);
-  paper += xerox;
-  float edge = pow(length(uv - 0.5) * 1.15, 2.4) * 0.18;
-  paper -= edge;
-  return clamp(paper, 0.0, 1.0);
+  vec3 paper = mix(vec3(0.91, 0.87, 0.79), uColorA, 0.1);
+  float fiber = fbm(uv * 34.0 * max(uScale, 1.0));
+  paper *= 0.95 + 0.07 * fiber;
+  float stain = smoothstep(0.74, 0.96, fbm(uv * 1.9 + uSeed * 0.18));
+  paper = mix(paper, mix(uColorB, vec3(0.46, 0.33, 0.22), 0.55), stain * 0.14);
+  paper -= pow(abs(sin(uv.x * 3.14159 + 0.15)), 14.0) * 0.035;
+  float edge = pow(length(uv - 0.5) * 1.04, 2.3) * 0.09;
+  return clamp(paper - edge, 0.0, 1.0);
 }
 vec3 genCave(vec2 uv) {
-  vec2 p = uv * vec2(2.2, 1.6) * max(uScale * 0.35, 0.8);
-  float rock = fbm(p + uSeed * 0.05);
-  float rock2 = fbm(p * 2.4 + rock);
-  vec3 col = mix(uColorA * 0.4, vec3(0.07, 0.06, 0.08), rock);
-  col = mix(col, uColorB * 0.15, rock2 * 0.35);
-  float rim = pow(max(uv.x, 1.0 - uv.x), 2.6);
-  col += uColorB * rim * 0.45 * (0.5 + 0.5 * rock2);
-  float sx = uv.x * 18.0;
+  vec2 p = uv * vec2(1.7, 1.35) * max(uScale * 0.28, 0.8);
+  float rock = fbm(p + uSeed * 0.04);
+  float fill = fbm(p * 2.6 + rock);
+  vec3 col = mix(uColorA * 0.5, vec3(0.055, 0.05, 0.06), rock);
+  col = mix(col, uColorB * 0.07, fill * 0.18);
+  float rim = pow(max(uv.x, 1.0 - uv.x), 3.4) * (0.3 + 0.2 * rock);
+  col += uColorB * rim * 0.2;
+  float sx = uv.x * 16.0;
   float sid = floor(sx);
   float sf = fract(sx) - 0.5;
   float fromTop = 1.0 - uv.y;
-  float sh = 0.08 + 0.42 * pow(hash21(vec2(sid, uSeed + 3.0)), 1.4);
-  float stal = 1.0 - smoothstep(0.02, 0.09, abs(sf) + fromTop * 0.12);
-  stal *= 1.0 - smoothstep(sh, sh + 0.05, fromTop);
-  col = mix(col, uColorA * 0.15, stal);
-  float wet = pow(max(0.0, rock2 - 0.62), 2.0);
-  col += vec3(0.35, 0.4, 0.5) * wet * 0.5;
-  float vig = smoothstep(0.95, 0.25, length((uv - 0.5) * vec2(1.3, 1.0)));
-  col *= vig;
-  col += uColorB * 0.08 * u_bass * (1.0 - uv.y);
-  return col;
+  float sh = 0.1 + 0.36 * pow(hash21(vec2(sid, uSeed + 3.0)), 1.35);
+  float stal = 1.0 - smoothstep(0.018, 0.08, abs(sf) + fromTop * 0.12);
+  stal *= 1.0 - smoothstep(sh, sh + 0.06, fromTop);
+  col = mix(col, uColorA * 0.18, stal * 0.9);
+  float vig = smoothstep(0.92, 0.22, length((uv - 0.5) * vec2(1.22, 1.0)));
+  return col * vig;
 }
 
 void main() {
   vec2 uv = vUv;
   vec3 col = vec3(0.0);
   if (uMode == 0) {
-    float n = sin(uv.x * uScale + uTime) + sin(uv.y * uScale * 0.7 - uTime * 1.3);
-    n += sin((uv.x + uv.y) * uScale * 0.5 + uTime * 0.4);
+    float n = sin(uv.x * uScale * 0.55 + uTime * 0.14) + sin(uv.y * uScale * 0.4 - uTime * 0.1);
+    n += sin((uv.x * 0.7 + uv.y) * uScale * 0.25 + uTime * 0.06);
     n = n / 3.0 * 0.5 + 0.5;
-    col = mix(uColorA, uColorB, n);
-    col += 0.12 * vec3(sin(n * 9.0), cos(n * 6.0), sin(n * 4.0 + 1.0));
+    col = mix(uColorA, uColorB, smoothstep(0.22, 0.78, n));
+    col *= 0.9 + 0.1 * smoothstep(1.05, 0.22, length(uv - 0.5));
   } else if (uMode == 1) {
-    float n = hash21(floor(uv * uScale * 40.0) + floor(uTime * 12.0));
-    col = mix(uColorA, uColorB, n);
+    float n = hash21(floor(uv * uScale * 36.0) + floor(uTime * 1.5));
+    col = mix(uColorA, uColorB, mix(0.35, 0.65, n));
   } else if (uMode == 2) {
     float x = uv.x;
     if (x < 1.0/7.0) col = vec3(1.0);

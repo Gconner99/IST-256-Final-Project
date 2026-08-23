@@ -40,7 +40,7 @@ export const dancer: EffectType = {
   description: "One seed-grown low-poly creature with a face like an animal that does not exist. Some grow petals, skirts, antennae, or a halo. Drop an MP3 and they dance to it. Move can keep them in place or send them drifting, floating, or orbiting. Mini army fills the frame with tiny ones in sync",
   params: [
     { id: "count", label: "Count", kind: "int", min: 1, max: 4, step: 1, default: 1 },
-    { id: "size", label: "Size", kind: "float", min: 0.25, max: 2.5, step: 0.01, default: 0.4 },
+    { id: "size", label: "Size", kind: "float", min: 0.12, max: 2.5, step: 0.01, default: 0.12 },
     {
       id: "crowd",
       label: "Crowd",

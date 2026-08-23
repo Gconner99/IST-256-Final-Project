@@ -435,8 +435,9 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, f
   vec4 miss = vec4(0.0);
   float n = clamp(count, 1.0, 4.0);
   float spread = max(step(1.5, n), scatter);
-  if (move < 0.5 && dot(q, q) > mix(0.7, 2.2, spread) && uv.y > 0.1) return miss;
-  float camZ = mix(4.55, 1.72, clamp((sizeMul - 0.25) / 2.25, 0.0, 1.0));
+  float figSc = min(max(sizeMul, 0.08) / 0.25, 1.0);
+  if (move < 0.5 && dot(q, q) > mix(0.7, 2.2, spread) * mix(0.42, 1.0, figSc) && uv.y > 0.1) return miss;
+  float camZ = mix(4.55, 1.72, clamp((max(sizeMul, 0.25) - 0.25) / 2.25, 0.0, 1.0));
   float camA = figH(seed + 0.5) * 0.22 - 0.11;
   vec3 ro = figRotY(vec3(0.0, 0.42, camZ), camA);
   vec3 ta = vec3(0.0, 0.32, 0.0);
@@ -465,7 +466,7 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, f
     float sid = seed + float(i) * 17.31 + 0.07;
     vec3 off = figCarry(figPlace(i, n, seed, scatter), sid, time, move);
     float tEnter;
-    if (!figRaySphere(ro, rd, off, 1.88, tEnter)) continue;
+    if (!figRaySphere(ro, rd, off, 1.88 * figSc, tEnter)) continue;
     Fig f = figSoften(figRoll(sid, time), move);
     float tRay = tEnter;
     vec2 hit = vec2(1e5, 0.0);
@@ -474,8 +475,9 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, f
     float minM = 0.0;
     for (int s = 0; s < 16; s++) {
       if (s >= steps) break;
-      vec3 p = ro - off + rd * tRay;
+      vec3 p = (ro - off + rd * tRay) / figSc;
       hit = figureHit(p, f, sid);
+      hit.x *= figSc;
       if (hit.x < minD) {
         minD = hit.x;
         minT = tRay;
@@ -499,7 +501,7 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, f
     }
   }
   if (bestH <= 0.05 && bestT <= 8.0) {
-    vec3 p = ro - bestOff + rd * bestT;
+    vec3 p = (ro - bestOff + rd * bestT) / figSc;
     return figureShade(p, rd, bestF, bestSeed, bestM);
   }
   if (echo < 0.03 || !trail) return miss;
@@ -508,7 +510,8 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, f
   float minD = 1e5;
   float minM = 0.0;
   for (int s = 0; s < 6; s++) {
-    vec2 hit = figureHit(ro - trailOff + rd * tRay, gf, trailSid);
+    vec2 hit = figureHit((ro - trailOff + rd * tRay) / figSc, gf, trailSid);
+    hit.x *= figSc;
     if (hit.x < minD) {
       minD = hit.x;
       minM = hit.y;
@@ -565,7 +568,7 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   vec4 miss = vec4(0.0);
   float n = mix(14.0, 24.0, clamp((count - 1.0) / 3.0, 0.0, 1.0));
   n = floor(n + 0.5);
-  float figScale = mix(0.2, 0.34, clamp((sizeMul - 0.25) / 2.25, 0.0, 1.0));
+  float figScale = mix(0.1, 0.34, clamp((sizeMul - 0.12) / 2.38, 0.0, 1.0));
   float camZ = 4.05;
   float camA = figH(seed + 0.5) * 0.08 - 0.04;
   vec3 ro = figRotY(vec3(0.0, 0.42, camZ), camA);

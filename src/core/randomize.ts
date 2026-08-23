@@ -185,7 +185,7 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     else p.kit = roll > 0.55 ? "toy pop" : roll > 0.22 ? "mix" : "shapes";
   }
   if (fx.typeId === "dancer") {
-    p.size = 0.3 + rng() * 0.22;
+    p.size = 0.12 + rng() * 0.05;
     p.count = 1;
     p.crowd = "normal";
     p.place = "center";

@@ -161,7 +161,8 @@ describe("effects registry", () => {
     }
     const idol = getEffect("dancer")!;
     expect(idol.params.find((p) => p.id === "count")?.default).toBe(1);
-    expect(Number(idol.params.find((p) => p.id === "size")?.default)).toBeLessThan(0.45);
+    expect(Number(idol.params.find((p) => p.id === "size")?.default)).toBeCloseTo(0.12);
+    expect(Number(idol.params.find((p) => p.id === "size")?.min)).toBeCloseTo(0.12);
     expect(idol.params.find((p) => p.id === "place")?.default).toBe("center");
     expect(idol.params.find((p) => p.id === "crowd")?.default).toBe("normal");
     expect(idol.params.find((p) => p.id === "move")?.default).toBe("dance");
@@ -176,6 +177,7 @@ describe("effects registry", () => {
     expect(idolSrc.includes("geomRenderMini")).toBe(false);
     expect(idolSrc.includes("impRender")).toBe(false);
     expect(idolSrc.includes("impHit")).toBe(false);
+    expect(idolSrc.includes("figSc")).toBe(true);
     expect(idolSrc.includes("figTravel")).toBe(true);
     expect(idolSrc.includes("figCarry")).toBe(true);
     expect(idolSrc.includes("u_move")).toBe(true);
@@ -266,7 +268,7 @@ describe("randomize + presets", () => {
     expect(withI.layers[0].effects.some((e) => e.typeId === "dancer")).toBe(true);
     expect(ensureIdol(withI).layers[0].effects.filter((e) => e.typeId === "dancer")).toHaveLength(1);
     const idol = withI.layers[0].effects.find((e) => e.typeId === "dancer")!;
-    expect(Number(idol.params.size)).toBeLessThan(0.55);
+    expect(Number(idol.params.size)).toBeLessThan(0.2);
     expect(Number(idol.params.count)).toBe(1);
     expect(idol.params.place).toBe("center");
     expect(idol.params.crowd ?? "normal").toBe("normal");
