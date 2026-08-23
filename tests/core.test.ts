@@ -3,6 +3,7 @@ import { clamp, evenSize, fitEven, lerp, mulberry32 } from "../src/core/random";
 import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../src/core/exportSize";
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject } from "../src/core/defaults";
+import { LOOKS, parseSkin } from "../src/core/looks";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -119,6 +120,32 @@ describe("project files", () => {
 
   it("rejects unknown files", () => {
     expect(() => parseProject("{}")).toThrow(/Not a Phosphene/);
+  });
+
+  it("defaults missing look to toy pop", () => {
+    expect(createDefaultProject().skin).toBe("toy");
+    const raw = JSON.parse(serializeProject(createDefaultProject())) as { skin?: string };
+    delete raw.skin;
+    expect(parseProject(JSON.stringify(raw)).skin).toBe("toy");
+  });
+});
+
+describe("instrument looks", () => {
+  it("ships toy pop plus four chrome alternates", () => {
+    expect(LOOKS.map((l) => l.id)).toEqual(["toy", "aero", "chrome", "tape", "mall"]);
+    expect(LOOKS.map((l) => l.label)).toEqual(["Toy pop", "Aero", "Chrome", "Tape", "Mall"]);
+  });
+
+  it("keeps only known chrome ids", () => {
+    expect(parseSkin("aero")).toBe("aero");
+    expect(parseSkin("chrome")).toBe("chrome");
+    expect(parseSkin("tape")).toBe("tape");
+    expect(parseSkin("mall")).toBe("mall");
+    expect(parseSkin("folk")).toBe("toy");
+    expect(parseSkin("tide")).toBe("toy");
+    expect(parseSkin("cloud")).toBe("toy");
+    expect(parseSkin("toy pop")).toBe("toy");
+    expect(parseSkin(undefined)).toBe("toy");
   });
 });
 

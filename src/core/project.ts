@@ -1,3 +1,4 @@
+import { parseSkin } from "./looks";
 import type { MediaSource, Project } from "./types";
 
 const RUNTIME_KEYS = new Set(["bitmap", "video", "audio", "pcm", "objectUrl", "frozenFrame"]);
@@ -24,6 +25,8 @@ export function parseProject(json: string): Project {
   if (data.exportSettings && data.exportSettings.loopClose === undefined) {
     data.exportSettings.loopClose = true;
   }
+  const raw = data as Project & { look?: unknown };
+  data.skin = parseSkin(raw.skin ?? raw.look);
   return data;
 }
 

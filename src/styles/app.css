@@ -1,4 +1,5 @@
-:root {
+:root,
+html[data-look="toy"] {
   --bg: #070709;
   --panel: #101116;
   --panel-2: #16171e;
@@ -12,11 +13,36 @@
   --shadow: rgba(0, 0, 0, 0.55);
   --mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
   --display: ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+  --ui-font: var(--mono);
+  --wash-a: rgba(214, 255, 61, 0.05);
+  --wash-b: rgba(255, 47, 134, 0.07);
+  --viewport-bg: #050506;
+  --viewport-line: #333226;
+  --viewport-inset: rgba(0, 0, 0, 0.55);
+  --scan-line: rgba(255, 255, 255, 0.015);
+  --scan-gap: 3px;
+  --scan-mix: overlay;
+  --drop: rgba(214, 255, 61, 0.12);
+  --radius: 1px;
+  --btn-radius: 1px;
+  --gloss: none;
+  --acid-fill: #1c220c;
+  --track: #2a2a22;
+  --thumb-glow: rgba(214, 255, 61, 0.5);
+  --input-bg: #0c0c10;
+  --help-bg: #0e0f14;
+  --timeline-bg: #0c0c10;
+  --swatch: #222;
+  --panel-blur: 0px;
+  --brand-track: 0.18em;
+  --btn-track: 0.08em;
+  --help-veil: rgba(0, 0, 0, 0.72);
+  color-scheme: dark;
   font-synthesis: none;
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--mono); }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--ui-font); }
 body { overflow: hidden; }
 button, input, select { font-family: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -26,14 +52,15 @@ button { cursor: pointer; }
   display: grid;
   grid-template-rows: 46px 1fr 148px;
   background:
-    radial-gradient(1200px 500px at 70% -10%, rgba(214, 255, 61, 0.05), transparent 50%),
-    radial-gradient(900px 400px at -10% 110%, rgba(255, 47, 134, 0.07), transparent 45%),
+    radial-gradient(1200px 500px at 70% -10%, var(--wash-a), transparent 50%),
+    radial-gradient(900px 400px at -10% 110%, var(--wash-b), transparent 45%),
     var(--bg);
 }
 
 .topbar, .rail, .stack, .transport {
   background: var(--panel);
   border: 1px solid var(--line);
+  backdrop-filter: blur(var(--panel-blur));
 }
 
 .topbar {
@@ -48,7 +75,7 @@ button { cursor: pointer; }
 .brand {
   font-family: var(--display);
   font-weight: 800;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--brand-track);
   font-size: 15px;
   color: var(--acid);
 }
@@ -93,10 +120,11 @@ button { cursor: pointer; }
 .viewport {
   position: relative;
   min-height: 0;
-  background: #050506;
-  border: 1px solid #333226;
-  box-shadow: inset 0 0 80px rgba(0,0,0,0.55);
+  background: var(--viewport-bg);
+  border: 1px solid var(--viewport-line);
+  box-shadow: inset 0 0 80px var(--viewport-inset);
   overflow: hidden;
+  border-radius: var(--radius);
 }
 .viewport canvas {
   width: 100%;
@@ -110,10 +138,10 @@ button { cursor: pointer; }
   position: absolute; inset: 0;
   background: repeating-linear-gradient(
     to bottom,
-    rgba(255,255,255,0.015) 0 1px,
-    transparent 1px 3px
+    var(--scan-line) 0 1px,
+    transparent 1px var(--scan-gap)
   );
-  mix-blend-mode: overlay;
+  mix-blend-mode: var(--scan-mix);
 }
 .hud {
   position: absolute;
@@ -127,7 +155,7 @@ button { cursor: pointer; }
 .dropveil {
   display: none;
   position: absolute; inset: 0;
-  background: rgba(214, 255, 61, 0.12);
+  background: var(--drop);
   border: 2px dashed var(--acid);
   align-items: center; justify-content: center;
   color: var(--acid);
@@ -153,16 +181,17 @@ h2, .sec {
   color: var(--ink);
   font-size: 11px;
   padding: 5px 8px;
-  border-radius: 1px;
+  border-radius: var(--btn-radius);
+  box-shadow: var(--gloss);
 }
 .btn {
-  letter-spacing: 0.08em;
+  letter-spacing: var(--btn-track);
   text-transform: uppercase;
   font-size: 10px;
 }
 .btn:hover { border-color: var(--acid); color: var(--acid); }
 .btn.hot { border-color: var(--hot); color: var(--hot); }
-.btn.acid { background: #1c220c; border-color: var(--acid); color: var(--acid); }
+.btn.acid { background: var(--acid-fill); border-color: var(--acid); color: var(--acid); }
 .btn.tiny { padding: 3px 6px; font-size: 9px; }
 .btn[disabled] { opacity: 0.4; cursor: default; }
 
@@ -178,7 +207,7 @@ h2, .sec {
   cursor: pointer;
 }
 .thumb.on { border-color: var(--acid); }
-.thumb .sw { width: 44px; height: 28px; background: #222; overflow: hidden; }
+.thumb .sw { width: 44px; height: 28px; background: var(--swatch); overflow: hidden; }
 .thumb .sw canvas, .thumb .sw video, .thumb .sw img { width: 100%; height: 100%; object-fit: cover; }
 .thumb .meta { font-size: 10px; }
 .thumb .meta b { display: block; color: var(--ink); font-weight: 500; }
@@ -211,7 +240,7 @@ h2, .sec {
   -webkit-appearance: none;
   appearance: none;
   height: 3px;
-  background: #2a2a22;
+  background: var(--track);
   outline: none;
   width: 100%;
 }
@@ -220,7 +249,7 @@ h2, .sec {
   width: 9px; height: 13px;
   background: var(--acid);
   border: 0;
-  box-shadow: 0 0 8px rgba(214,255,61,0.5);
+  box-shadow: 0 0 8px var(--thumb-glow);
 }
 .param input[type="number"] { padding: 3px 4px; width: 52px; }
 .param input[type="color"] { padding: 0; width: 100%; height: 18px; }
@@ -242,7 +271,7 @@ h2, .sec {
 .timeline {
   position: relative;
   height: 44px;
-  background: #0c0c10;
+  background: var(--timeline-bg);
   border: 1px solid var(--line);
   margin-top: 4px;
   overflow: hidden;
@@ -269,15 +298,16 @@ h2, .sec {
 .help {
   display: none;
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.72);
+  background: var(--help-veil);
   z-index: 20;
   align-items: center; justify-content: center;
 }
 .help.on { display: flex; }
 .help .card {
   width: min(560px, 92vw);
-  background: #0e0f14;
+  background: var(--help-bg);
   border: 1px solid var(--acid);
+  border-radius: var(--radius);
   padding: 22px;
   box-shadow: 0 20px 80px var(--shadow);
 }
@@ -296,14 +326,14 @@ textarea.prompt {
   width: 100%;
   min-height: 72px;
   margin: 4px 0 6px;
-  background: #0c0c10;
+  background: var(--input-bg);
   border: 1px solid var(--line);
   color: var(--ink);
   font-size: 11px;
   line-height: 1.4;
   padding: 6px;
   resize: vertical;
-  border-radius: 1px;
+  border-radius: var(--radius);
 }
 textarea.prompt:focus { outline: 1px solid var(--acid); }
 
@@ -316,6 +346,245 @@ hr.div {
   border: 0; border-top: 1px solid var(--line); margin: 10px 0;
 }
 
+#look { width: 92px; padding: 3px 6px; font-size: 10px; }
+
 @media (max-width: 1100px) {
   .workspace, .transport { grid-template-columns: 210px 1fr 270px; }
+}
+
+/* Aero — Frutiger / Vista glass. Light sky, gel pills, no CRT dirt. */
+html[data-look="aero"] {
+  --bg: #8fd0ea;
+  --panel: rgba(255, 255, 255, 0.52);
+  --panel-2: rgba(255, 255, 255, 0.74);
+  --ink: #16324a;
+  --dim: #4a7a90;
+  --line: rgba(255, 255, 255, 0.82);
+  --acid: #1aa4d8;
+  --hot: #ff5ea8;
+  --cyan: #14c8b4;
+  --warn: #e89a12;
+  --shadow: rgba(40, 90, 130, 0.28);
+  --ui-font: var(--display);
+  --wash-a: rgba(255, 255, 255, 0.55);
+  --wash-b: rgba(90, 210, 170, 0.28);
+  --viewport-bg: #e7f6fc;
+  --viewport-line: rgba(255, 255, 255, 0.95);
+  --viewport-inset: rgba(70, 170, 210, 0.16);
+  --scan-line: transparent;
+  --scan-mix: soft-light;
+  --drop: rgba(26, 164, 216, 0.14);
+  --radius: 14px;
+  --btn-radius: 16px;
+  --gloss: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 3px 8px rgba(40, 100, 140, 0.16);
+  --acid-fill: linear-gradient(#ffffff, #c8eefc);
+  --track: #b7d7e6;
+  --thumb-glow: rgba(26, 164, 216, 0.45);
+  --input-bg: rgba(255, 255, 255, 0.8);
+  --help-bg: rgba(255, 255, 255, 0.88);
+  --timeline-bg: rgba(255, 255, 255, 0.45);
+  --swatch: #c5e4f2;
+  --panel-blur: 18px;
+  --brand-track: 0.08em;
+  --btn-track: 0.02em;
+  --help-veil: rgba(90, 160, 200, 0.35);
+  color-scheme: light;
+}
+html[data-look="aero"] .shell {
+  background:
+    radial-gradient(900px 420px at 80% -10%, rgba(255, 255, 255, 0.75), transparent 52%),
+    radial-gradient(700px 380px at 8% 110%, rgba(90, 210, 170, 0.38), transparent 46%),
+    linear-gradient(180deg, #7ec8e8 0%, #d6f3fb 42%, #b8ead8 100%);
+}
+html[data-look="aero"] .btn {
+  text-transform: none;
+  font-weight: 600;
+}
+html[data-look="aero"] .viewport::after {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.5) 0 16%, transparent 40%),
+    radial-gradient(ellipse at 72% 118%, rgba(80, 200, 255, 0.28), transparent 52%);
+  mix-blend-mode: soft-light;
+}
+html[data-look="aero"] .param input[type="range"]::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(#fff, #7ad4ff);
+  box-shadow: 0 1px 4px rgba(20, 80, 120, 0.35), inset 0 1px 0 #fff;
+}
+html[data-look="aero"] .layer,
+html[data-look="aero"] .fx,
+html[data-look="aero"] .thumb {
+  border-radius: 10px;
+}
+
+/* Chrome — Y2K chromecore. Silver, cyan/magenta, orb buttons. */
+html[data-look="chrome"] {
+  --bg: #0b0c10;
+  --panel: #14161d;
+  --panel-2: #1b1e28;
+  --ink: #e8eef6;
+  --dim: #7a8498;
+  --line: #4a5368;
+  --acid: #5ef0ff;
+  --hot: #ff2bd6;
+  --cyan: #8eb0ff;
+  --warn: #ffe27a;
+  --shadow: rgba(0, 0, 0, 0.65);
+  --ui-font: var(--display);
+  --wash-a: rgba(94, 240, 255, 0.1);
+  --wash-b: rgba(255, 43, 214, 0.1);
+  --viewport-bg: #07080c;
+  --viewport-line: #6a7388;
+  --viewport-inset: rgba(0, 0, 0, 0.62);
+  --scan-line: rgba(180, 220, 255, 0.03);
+  --scan-gap: 4px;
+  --drop: rgba(94, 240, 255, 0.12);
+  --radius: 18px;
+  --btn-radius: 999px;
+  --gloss: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --acid-fill: linear-gradient(#2a4a54, #101820);
+  --track: #2a3140;
+  --thumb-glow: rgba(94, 240, 255, 0.55);
+  --input-bg: #101218;
+  --help-bg: #12141c;
+  --timeline-bg: #0c0e14;
+  --swatch: #2a3140;
+  --panel-blur: 0px;
+  --brand-track: 0.3em;
+  --btn-track: 0.14em;
+  --help-veil: rgba(0, 0, 0, 0.78);
+  color-scheme: dark;
+}
+html[data-look="chrome"] .shell {
+  background:
+    radial-gradient(800px 400px at 72% -16%, rgba(94, 240, 255, 0.14), transparent 50%),
+    radial-gradient(620px 320px at 0% 112%, rgba(255, 43, 214, 0.12), transparent 46%),
+    linear-gradient(180deg, #161820, #08090d);
+}
+html[data-look="chrome"] .btn,
+html[data-look="chrome"] select,
+html[data-look="chrome"] input[type="text"],
+html[data-look="chrome"] input[type="number"] {
+  background: linear-gradient(#3a3e4c, #181a22);
+  border-color: #8a93a8;
+}
+html[data-look="chrome"] .param input[type="range"]::-webkit-slider-thumb {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #5ef0ff 42%, #1a3a44);
+}
+
+/* Tape — cassette futurism. Beige deck, amber CRT, chunky keys. */
+html[data-look="tape"] {
+  --bg: #2a2418;
+  --panel: #3a3224;
+  --panel-2: #4a3e2c;
+  --ink: #f0d8a0;
+  --dim: #a88850;
+  --line: #6a5840;
+  --acid: #ffb000;
+  --hot: #e85a20;
+  --cyan: #c4d46a;
+  --warn: #ff8030;
+  --shadow: rgba(20, 12, 0, 0.55);
+  --ui-font: var(--mono);
+  --wash-a: rgba(255, 176, 0, 0.07);
+  --wash-b: rgba(232, 90, 32, 0.08);
+  --viewport-bg: #1a160e;
+  --viewport-line: #5a4a28;
+  --viewport-inset: rgba(20, 12, 0, 0.55);
+  --scan-line: rgba(255, 200, 80, 0.07);
+  --scan-gap: 2px;
+  --drop: rgba(255, 176, 0, 0.14);
+  --radius: 0px;
+  --btn-radius: 0px;
+  --gloss: inset 0 -2px 0 rgba(0, 0, 0, 0.28);
+  --acid-fill: #3a2e10;
+  --track: #2a2214;
+  --thumb-glow: rgba(255, 176, 0, 0.5);
+  --input-bg: #221c12;
+  --help-bg: #2e261a;
+  --timeline-bg: #1c1810;
+  --swatch: #2a2214;
+  --panel-blur: 0px;
+  --brand-track: 0.2em;
+  --btn-track: 0.1em;
+  --help-veil: rgba(20, 12, 0, 0.75);
+  color-scheme: dark;
+}
+html[data-look="tape"] .shell {
+  background:
+    radial-gradient(900px 360px at 70% -20%, rgba(255, 176, 0, 0.08), transparent 50%),
+    linear-gradient(180deg, #3a3220, #241c12);
+}
+html[data-look="tape"] .btn {
+  padding: 6px 10px;
+}
+html[data-look="tape"] .btn.tiny {
+  padding: 4px 8px;
+}
+html[data-look="tape"] .param input[type="range"]::-webkit-slider-thumb {
+  width: 8px;
+  height: 16px;
+  border-radius: 0;
+  background: var(--acid);
+}
+
+/* Mall — vaporwave / mallsoft. Purple dusk, sunset, marble pink. */
+html[data-look="mall"] {
+  --bg: #16081e;
+  --panel: #241030;
+  --panel-2: #2e163c;
+  --ink: #f4d6ee;
+  --dim: #b088b8;
+  --line: #5a3068;
+  --acid: #ff8ad4;
+  --hot: #ffc36b;
+  --cyan: #40e0d0;
+  --warn: #ff9e6b;
+  --shadow: rgba(20, 0, 30, 0.6);
+  --ui-font: "Trebuchet MS", "Verdana", var(--display);
+  --wash-a: rgba(255, 138, 212, 0.12);
+  --wash-b: rgba(64, 224, 208, 0.1);
+  --viewport-bg: #100616;
+  --viewport-line: #6a3878;
+  --viewport-inset: rgba(40, 0, 50, 0.5);
+  --scan-line: rgba(255, 180, 255, 0.045);
+  --scan-gap: 3px;
+  --drop: rgba(255, 138, 212, 0.16);
+  --radius: 8px;
+  --btn-radius: 8px;
+  --gloss: inset 0 1px 0 rgba(255, 200, 240, 0.15);
+  --acid-fill: #3a1838;
+  --track: #2a1434;
+  --thumb-glow: rgba(255, 138, 212, 0.5);
+  --input-bg: #1a0c24;
+  --help-bg: #200e2c;
+  --timeline-bg: #14081c;
+  --swatch: #2a1434;
+  --panel-blur: 8px;
+  --brand-track: 0.22em;
+  --btn-track: 0.1em;
+  --help-veil: rgba(20, 0, 30, 0.72);
+  color-scheme: dark;
+}
+html[data-look="mall"] .shell {
+  background:
+    radial-gradient(900px 420px at 85% -8%, rgba(255, 138, 212, 0.2), transparent 50%),
+    radial-gradient(700px 360px at 0% 110%, rgba(255, 195, 107, 0.16), transparent 46%),
+    linear-gradient(180deg, #2a1040, #16081e 42%, #3a1028);
+}
+html[data-look="mall"] .layer,
+html[data-look="mall"] .fx,
+html[data-look="mall"] .thumb {
+  border-radius: 8px;
+}
+html[data-look="mall"] .param input[type="range"]::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(#ffd6f0, #ff8ad4);
 }

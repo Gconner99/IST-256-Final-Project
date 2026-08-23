@@ -49,6 +49,7 @@ Requires a browser (or Electron) with **WebGL2**.
 - Idol Grow (petals / halo / antenna / skirt / quiet) and Coat (cream / moss / sodium / night / candy)
 - Procedural backgrounds: plasma, noise, bars, plus **Stars**, **Marsh**, **Oil**, **Paper**, **Cave**, **Lot**, **Xerox**, **Tank**, **Chapel**, and **Lamp**
 - ~20 effects including **Floaters**, **Idol**, **Luma key**, and **Dropout**
+- **Look** switcher: Toy pop (original), Aero, Chrome, Tape, Mall — instrument chrome only; idols and floaters stay the same
 - Seeded randomization (all / selected / param) plus **Rand wacky** (outsider looks, short stacks)
 - **Stamp chaos** rerolls overlay seeds and generator inks; **Print frame** captures the live picture as a still
 - Global + per-layer **feedback bus** (amount, delay, opacity, scale, rotation, distortion)

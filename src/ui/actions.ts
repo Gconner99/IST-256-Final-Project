@@ -1,6 +1,7 @@
 import { uid } from "../core/ids";
 import { store } from "../core/store";
 import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
+import { lookLabel, parseSkin, type SkinId } from "../core/looks";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
 import { chaosStamp, ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
@@ -320,11 +321,18 @@ export async function freezeSelected() {
   if (still) addSource(still, true);
 }
 
+export function setLook(id: SkinId) {
+  const skin = parseSkin(id);
+  store.setProject((p) => ({ ...p, skin }));
+  store.patchUi({ status: `look · ${lookLabel(skin)}` });
+}
+
 export function startFromScratch() {
   const ok = confirm("Start from scratch? This clears the canvas, sources, effects, and keyframes.");
   if (!ok) return;
+  const skin = parseSkin(store.project.skin);
   for (const src of store.project.sources) disposeSource(src);
-  store.replace(createDefaultProject());
+  store.replace({ ...createDefaultProject(), skin });
   store.patchUi({ status: "new piece", prompt: "", generating: false });
 }
 

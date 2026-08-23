@@ -1,3 +1,5 @@
+import type { SkinId } from "./looks";
+
 export type QualityMode = "draft" | "preview" | "export";
 export type SourceKind = "image" | "video" | "generator" | "audio";
 export type GeneratorType =
@@ -202,6 +204,8 @@ export interface Project {
   globalFeedback: FeedbackSettings;
   exportSettings: ExportSettings;
   presets: Preset[];
+  /** Instrument chrome. Toy pop is the original look. Does not change idols or floaters. */
+  skin: SkinId;
 }
 
 export interface AppUi {
