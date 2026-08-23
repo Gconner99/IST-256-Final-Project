@@ -75,11 +75,6 @@ const GEN_INK: Record<string, { a: string; b: string }> = {
   oil: { a: "#12081c", b: "#3dffd0" },
   paper: { a: "#e8dcc8", b: "#2a1810" },
   cave: { a: "#08060c", b: "#7aa2ff" },
-  lot: { a: "#0c0806", b: "#ffb24a" },
-  xerox: { a: "#d8ead0", b: "#2a3820" },
-  tank: { a: "#061820", b: "#7dffc4" },
-  chapel: { a: "#10080c", b: "#ffe2a8" },
-  lamp: { a: "#08060a", b: "#ffcc66" },
 };
 
 export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"): MediaSource {
@@ -154,7 +149,6 @@ export function createDefaultProject(): Project {
     globalFeedback: { ...defaultFeedback(), amount: 0.18, opacity: 0.55, scale: 1.01 },
     exportSettings: defaultExportSettings(),
     presets: [],
-    skin: "toy",
   };
   const scramble = randomizeProject({ ...project, seed: 90210, randomAmount: 1 }, "all", null, null, null);
   project.presets = [

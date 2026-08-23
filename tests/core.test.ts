@@ -3,8 +3,6 @@ import { clamp, evenSize, fitEven, lerp, mulberry32 } from "../src/core/random";
 import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../src/core/exportSize";
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject } from "../src/core/defaults";
-import { LOOKS, SKIN_INDEX, parseSkin } from "../src/core/looks";
-import { SKIN_GLSL } from "../src/engine/look.glsl";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -123,41 +121,11 @@ describe("project files", () => {
     expect(() => parseProject("{}")).toThrow(/Not a Phosphene/);
   });
 
-  it("defaults missing look to toy pop", () => {
-    expect(createDefaultProject().skin).toBe("toy");
-    const raw = JSON.parse(serializeProject(createDefaultProject())) as { skin?: string };
-    delete raw.skin;
-    expect(parseProject(JSON.stringify(raw)).skin).toBe("toy");
-  });
-});
-
-describe("picture skins", () => {
-  it("ships toy pop plus four video grades", () => {
-    expect(LOOKS.map((l) => l.id)).toEqual(["toy", "aero", "chrome", "tape", "mall"]);
-    expect(LOOKS.map((l) => l.label)).toEqual(["Toy pop", "Aero", "Chrome", "Tape", "Mall"]);
-    expect(SKIN_INDEX).toEqual({ toy: 0, aero: 1, chrome: 2, tape: 3, mall: 4 });
-  });
-
-  it("keeps only known picture-skin ids", () => {
-    expect(parseSkin("aero")).toBe("aero");
-    expect(parseSkin("chrome")).toBe("chrome");
-    expect(parseSkin("tape")).toBe("tape");
-    expect(parseSkin("mall")).toBe("mall");
-    expect(parseSkin("folk")).toBe("toy");
-    expect(parseSkin("tide")).toBe("toy");
-    expect(parseSkin("cloud")).toBe("toy");
-    expect(parseSkin("toy pop")).toBe("toy");
-    expect(parseSkin(undefined)).toBe("toy");
-  });
-
-  it("grades the picture in one final pass", () => {
-    expect(SKIN_GLSL).toContain("gradeAero");
-    expect(SKIN_GLSL).toContain("gradeChrome");
-    expect(SKIN_GLSL).toContain("gradeTape");
-    expect(SKIN_GLSL).toContain("gradeMall");
-    expect(SKIN_GLSL).toContain("uSkin");
-    expect(SKIN_GLSL).not.toContain("figureRender");
-    expect(SKIN_GLSL).not.toContain("critterField");
+  it("maps retired places onto the simpler set", () => {
+    const p = createDefaultProject();
+    p.sources[0].generator = "chapel" as never;
+    const loaded = parseProject(serializeProject(p));
+    expect(loaded.sources[0].generator).toBe("cave");
   });
 });
 
@@ -262,29 +230,23 @@ describe("effects registry", () => {
     expect(miniSrc.includes("impRender")).toBe(false);
   });
 
-  it("ships extra background generators", () => {
+  it("ships a short set of background places", () => {
     expect(GEN_INDEX.stars).toBe(7);
     expect(GEN_INDEX.marsh).toBe(8);
     expect(GEN_INDEX.oil).toBe(9);
     expect(GEN_INDEX.paper).toBe(10);
     expect(GEN_INDEX.cave).toBe(11);
-    expect(GEN_INDEX.lot).toBe(12);
-    expect(GEN_INDEX.xerox).toBe(13);
-    expect(GEN_INDEX.tank).toBe(14);
-    expect(GEN_INDEX.chapel).toBe(15);
-    expect(GEN_INDEX.lamp).toBe(16);
+    expect(GEN_INDEX.lot).toBeUndefined();
+    expect(GEN_INDEX.chapel).toBeUndefined();
     expect(GENERATOR_GLSL).toContain("genStars");
     expect(GENERATOR_GLSL).toContain("genMarsh");
     expect(GENERATOR_GLSL).toContain("genOil");
     expect(GENERATOR_GLSL).toContain("genPaper");
     expect(GENERATOR_GLSL).toContain("genCave");
-    expect(GENERATOR_GLSL).toContain("genLot");
-    expect(GENERATOR_GLSL).toContain("genXerox");
-    expect(GENERATOR_GLSL).toContain("genTank");
-    expect(GENERATOR_GLSL).toContain("genChapel");
-    expect(GENERATOR_GLSL).toContain("genLamp");
+    expect(GENERATOR_GLSL).not.toContain("genLot");
+    expect(GENERATOR_GLSL).not.toContain("genChapel");
+    expect(GENERATOR_GLSL).not.toContain("genLamp");
     expect(GENERATOR_GLSL).toContain("uMode == 7");
-    expect(GENERATOR_GLSL).toContain("uMode == 12");
     expect(GENERATOR_GLSL).toContain("u_audio");
     expect(GENERATOR_GLSL).toContain("u_bass");
   });

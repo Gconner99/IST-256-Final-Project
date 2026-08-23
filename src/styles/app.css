@@ -345,8 +345,6 @@ hr.div {
   border: 0; border-top: 1px solid var(--line); margin: 10px 0;
 }
 
-#look { width: 92px; padding: 3px 6px; font-size: 10px; }
-
 @media (max-width: 1100px) {
   .workspace, .transport { grid-template-columns: 210px 1fr 270px; }
 }

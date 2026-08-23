@@ -334,90 +334,6 @@ vec3 genCave(vec2 uv) {
   float vig = smoothstep(0.92, 0.22, length((uv - 0.5) * vec2(1.22, 1.0)));
   return col * vig;
 }
-vec3 genLot(vec2 uv) {
-  float y = uv.y;
-  vec3 sky = mix(mix(uColorB, vec3(0.85, 0.48, 0.12), 0.45), uColorA * 0.35, smoothstep(0.28, 0.95, y));
-  vec3 ground = mix(uColorA * 0.22, vec3(0.07, 0.06, 0.05), fbm(uv * vec2(6.0, 1.8)));
-  float curb = smoothstep(0.32, 0.28, y);
-  vec3 col = mix(ground, sky, curb);
-  float wet = 0.12 * (1.0 - curb) * fbm(vec2(uv.x * 8.0, y * 14.0));
-  col += mix(uColorB, vec3(1.0, 0.7, 0.25), 0.4) * wet * 0.35;
-  for (int i = 0; i < 4; i++) {
-    float fi = float(i);
-    float lx = 0.12 + fi * 0.25 + 0.04 * hash21(vec2(uSeed, fi));
-    float d = abs(uv.x - lx);
-    float pole = 1.0 - smoothstep(0.004, 0.012, d);
-    pole *= smoothstep(0.22, 0.28, y) * (1.0 - smoothstep(0.78, 0.88, y));
-    col = mix(col, uColorA * 0.15, pole * 0.7);
-    vec2 lp = vec2(lx, 0.78);
-    float glow = exp(-length((uv - lp) * vec2(3.2, 1.6)) * 6.0);
-    col += vec3(1.0, 0.62, 0.18) * glow * (0.22 + u_bass * 0.2);
-  }
-  col *= 0.92 + 0.08 * (1.0 - length((uv - 0.5) * vec2(1.1, 1.0)));
-  return col;
-}
-vec3 genXerox(vec2 uv) {
-  vec3 glass = mix(vec3(0.78, 0.86, 0.74), uColorA, 0.18);
-  float lid = smoothstep(0.86, 0.92, uv.y) + smoothstep(0.08, 0.02, uv.y);
-  glass = mix(glass, uColorA * 0.25, lid * 0.55);
-  float stain = fbm(uv * 4.2 + uSeed * 0.1);
-  glass = mix(glass, mix(uColorB, vec3(0.55, 0.62, 0.42), 0.4), smoothstep(0.62, 0.9, stain) * 0.12);
-  float scan = 0.5 + 0.42 * sin(uTime * (0.15 + u_audio * 0.4) + uSeed);
-  float bar = exp(-pow((uv.y - scan) * 28.0, 2.0));
-  glass += vec3(0.55, 0.95, 0.45) * bar * 0.18;
-  float edge = pow(max(abs(uv.x - 0.5) * 2.05, abs(uv.y - 0.5) * 2.02), 8.0);
-  return mix(glass, uColorA * 0.2, edge * 0.35);
-}
-vec3 genTank(vec2 uv) {
-  vec3 water = mix(uColorA * 0.55, mix(uColorB, vec3(0.15, 0.45, 0.42), 0.5), uv.y);
-  vec2 cau = uv * vec2(3.2, 2.0) + vec2(uTime * (0.04 + u_audio * 0.05), 0.0);
-  float c = abs(sin(cau.x + fbm(cau) * 2.0) * sin(cau.y * 1.3 - uTime * 0.03));
-  water += vec3(0.55, 0.9, 0.85) * pow(c, 6.0) * 0.16;
-  float bub = 0.0;
-  for (int i = 0; i < 6; i++) {
-    float fi = float(i);
-    float bx = hash21(vec2(uSeed, fi + 1.0));
-    float by = fract(hash21(vec2(fi, uSeed)) + uTime * (0.03 + fi * 0.01));
-    bub += exp(-length((uv - vec2(bx, by)) * vec2(1.6, 1.1)) * 70.0);
-  }
-  water += vec3(0.75, 0.95, 0.95) * bub * 0.35;
-  float glass = pow(abs(uv.x - 0.5) * 2.0, 10.0) + pow(abs(uv.y - 0.5) * 2.0, 12.0);
-  water = mix(water, vec3(0.7, 0.85, 0.82), glass * 0.25);
-  return water * (0.9 + 0.1 * u_bass);
-}
-vec3 genChapel(vec2 uv) {
-  vec3 dark = mix(uColorA * 0.4, vec3(0.04, 0.03, 0.04), fbm(uv * 1.4));
-  vec2 beamO = vec2(0.62, 1.05);
-  vec2 bdir = normalize(vec2(-0.28, -1.0));
-  vec2 d = uv - beamO;
-  float along = dot(d, bdir);
-  float across = length(d - bdir * along);
-  float beam = exp(-across * 18.0) * smoothstep(-0.05, 0.4, along) * (0.35 + 0.15 * fbm(uv * 8.0 + uTime * 0.02));
-  vec3 col = dark + mix(uColorB, vec3(1.0, 0.86, 0.62), 0.5) * beam * (0.45 + u_audio * 0.2);
-  float pew = 1.0 - smoothstep(0.0, 0.22, uv.y);
-  col = mix(col, uColorA * 0.12, pew * 0.75);
-  float dust = pow(hash21(floor(uv * 90.0) + floor(uTime * 2.0)), 16.0) * beam * 1.4;
-  col += dust * 0.5;
-  return col;
-}
-vec3 genLamp(vec2 uv) {
-  vec3 night = mix(uColorA * 0.25, vec3(0.02, 0.02, 0.03), uv.y);
-  vec2 lp = vec2(0.5, 0.58);
-  float r = length((uv - lp) * vec2(1.15, 1.0));
-  float glow = exp(-r * 4.2) * (0.55 + u_bass * 0.25);
-  vec3 col = night + mix(uColorB, vec3(1.0, 0.78, 0.4), 0.4) * glow;
-  float moth = 0.0;
-  for (int i = 0; i < 7; i++) {
-    float fi = float(i);
-    float ang = uTime * (0.4 + fi * 0.07) + fi * 1.7 + uSeed;
-    float rad = 0.08 + 0.05 * hash21(vec2(fi, uSeed));
-    vec2 mp = lp + vec2(cos(ang), sin(ang * 1.13)) * rad;
-    moth += exp(-length(uv - mp) * 90.0);
-  }
-  col += vec3(0.95, 0.9, 0.75) * moth * (0.55 + u_audio * 0.3);
-  col *= 0.9 + 0.1 * (1.0 - length(uv - 0.5));
-  return col;
-}
 
 void main() {
   vec2 uv = vUv;
@@ -460,18 +376,8 @@ void main() {
     col = genOil(uv);
   } else if (uMode == 10) {
     col = genPaper(uv);
-  } else if (uMode == 11) {
-    col = genCave(uv);
-  } else if (uMode == 12) {
-    col = genLot(uv);
-  } else if (uMode == 13) {
-    col = genXerox(uv);
-  } else if (uMode == 14) {
-    col = genTank(uv);
-  } else if (uMode == 15) {
-    col = genChapel(uv);
   } else {
-    col = genLamp(uv);
+    col = genCave(uv);
   }
   fragColor = vec4(col, 1.0);
 }

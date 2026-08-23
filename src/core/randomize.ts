@@ -343,8 +343,8 @@ export function randomizeProject(
   });
 
   const places = wacky
-    ? (["chapel", "lamp", "tank", "marsh", "oil", "paper", "stars", "lot"] as const)
-    : (["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave", "lot", "xerox", "tank", "chapel", "lamp"] as const);
+    ? (["marsh", "oil", "paper", "stars", "cave"] as const)
+    : (["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave"] as const);
   const sources = project.sources.map((src, i) => {
     if (mode !== "all" || src.kind !== "generator") return src;
     const prng = mulberry32(seed + i * 131);

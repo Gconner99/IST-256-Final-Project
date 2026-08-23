@@ -1,5 +1,12 @@
-import { parseSkin } from "./looks";
-import type { MediaSource, Project } from "./types";
+import type { GeneratorType, MediaSource, Project } from "./types";
+
+const PLACE_FALLBACK: Record<string, GeneratorType> = {
+  lot: "marsh",
+  xerox: "paper",
+  tank: "oil",
+  chapel: "cave",
+  lamp: "stars",
+};
 
 const RUNTIME_KEYS = new Set(["bitmap", "video", "audio", "pcm", "objectUrl", "frozenFrame"]);
 
@@ -25,8 +32,10 @@ export function parseProject(json: string): Project {
   if (data.exportSettings && data.exportSettings.loopClose === undefined) {
     data.exportSettings.loopClose = true;
   }
-  const raw = data as Project & { look?: unknown };
-  data.skin = parseSkin(raw.skin ?? raw.look);
+  data.sources = data.sources.map((s) => {
+    const next = PLACE_FALLBACK[s.generator ?? ""];
+    return next ? { ...s, generator: next } : s;
+  });
   return data;
 }
 

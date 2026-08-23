@@ -1,5 +1,3 @@
-import type { SkinId } from "./looks";
-
 export type QualityMode = "draft" | "preview" | "export";
 export type SourceKind = "image" | "video" | "generator" | "audio";
 export type GeneratorType =
@@ -14,12 +12,7 @@ export type GeneratorType =
   | "marsh"
   | "oil"
   | "paper"
-  | "cave"
-  | "lot"
-  | "xerox"
-  | "tank"
-  | "chapel"
-  | "lamp";
+  | "cave";
 export type BlendMode =
   | "normal"
   | "add"
@@ -204,8 +197,6 @@ export interface Project {
   globalFeedback: FeedbackSettings;
   exportSettings: ExportSettings;
   presets: Preset[];
-  /** Final picture grade. Toy pop is the ungraded original. */
-  skin: SkinId;
 }
 
 export interface AppUi {

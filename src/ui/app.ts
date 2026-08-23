@@ -33,23 +33,17 @@ import {
   stampChaos,
   stampCritters,
   stampIdol,
-  setLook,
   toggleEffect,
 } from "./actions";
 import { resumeAudio } from "../media/audio";
 import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
 import { defaultGeneratorSource } from "../core/defaults";
-import { LOOKS, lastLook, parseSkin } from "../core/looks";
 
 let liveScrub = false;
 let rendererRef: Renderer | null = null;
 
 export function mount(root: HTMLElement, renderer: Renderer) {
   rendererRef = renderer;
-  const remembered = lastLook();
-  if (remembered !== store.project.skin) {
-    store.setProject((p) => ({ ...p, skin: remembered }), false);
-  }
   root.innerHTML = "";
   root.className = "shell";
   root.innerHTML = `
@@ -84,8 +78,6 @@ export function mount(root: HTMLElement, renderer: Renderer) {
         <option value="preview">Preview</option>
         <option value="export">Full</option>
       </select>
-      <label class="status" title="Grades the picture. Toy pop is the original. Aero, Chrome, Tape, and Mall restyle the video.">SKIN</label>
-      <select id="look" title="Grades the picture. Toy pop is the original. Aero, Chrome, Tape, and Mall restyle the video."></select>
       <button class="btn tiny" data-act="help">?</button>
     </header>
     <div class="workspace">
@@ -110,12 +102,11 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
-          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/chapel/toy-pop looks, an idol + floaters, a calm place.</li>
+          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place.</li>
           <li><strong>Idol</strong> is a small low-poly creature. Grow picks petals, halo, antenna, skirt, or quiet. Coat tints the paint (cream, moss, sodium, night). Stamp it for a new seed. Crowd → Mini army.</li>
           <li><strong>Stamp chaos</strong> rerolls floater + idol seeds and their kit/grow/coat — keeps the backdrop. <strong>Print frame</strong> turns the live picture into a still.</li>
-          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, Cave, Lot, Xerox, Tank, Chapel, and Lamp. Rand all will swap these too. Drop an MP3 and lamps/fog/bloom breathe with the mix.</li>
+          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, and Cave. Rand all will swap these too. Drop an MP3 and fog/bloom breathe with the mix.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
-          <li><strong>Skin</strong> in the top bar grades the picture: Toy pop (the original), Aero (glass water), Chrome (Y2K metal), Tape (amber CRT), Mall (dusk). The program chrome stays the same.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
@@ -126,10 +117,6 @@ export function mount(root: HTMLElement, renderer: Renderer) {
   const view = root.querySelector("#view")!;
   view.append(renderer.canvas);
   renderer.canvas.id = "gl";
-  const lookSel = root.querySelector<HTMLSelectElement>("#look");
-  if (lookSel) {
-    lookSel.innerHTML = LOOKS.map((l) => `<option value="${l.id}">${l.label}</option>`).join("");
-  }
   bind(root);
   store.subscribe(() => {
     if (!liveScrub) paint(root);
@@ -296,7 +283,6 @@ function bind(root: HTMLElement) {
       t.value = "";
     }
     if (t.id === "quality") store.setProject((p) => ({ ...p, quality: t.value as ProjectQuality }));
-    if (t.id === "look") setLook(parseSkin(t.value));
     if (t.id === "add-fx") {
       if (t.value) addEffect(t.value);
       t.value = "";
@@ -446,8 +432,6 @@ function paint(root: HTMLElement) {
   if (seed && document.activeElement !== seed) seed.value = String(p.seed);
   if (rnd) rnd.value = String(p.randomAmount);
   if (quality) quality.value = p.quality;
-  const look = root.querySelector<HTMLSelectElement>("#look");
-  if (look) look.value = parseSkin(p.skin);
   const topExp = root.querySelector<HTMLButtonElement>("#top-export");
   if (topExp) topExp.disabled = ui.exporting;
   const crit = root.querySelector<HTMLInputElement>("#inc-critters");
@@ -496,13 +480,6 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="oil">Oil</button>
       <button class="btn tiny acid" data-act="gen" data-kind="paper">Paper</button>
       <button class="btn tiny acid" data-act="gen" data-kind="cave">Cave</button>
-    </div>
-    <div class="row">
-      <button class="btn tiny acid" data-act="gen" data-kind="lot">Lot</button>
-      <button class="btn tiny acid" data-act="gen" data-kind="xerox">Xerox</button>
-      <button class="btn tiny acid" data-act="gen" data-kind="tank">Tank</button>
-      <button class="btn tiny acid" data-act="gen" data-kind="chapel">Chapel</button>
-      <button class="btn tiny acid" data-act="gen" data-kind="lamp">Lamp</button>
     </div>
     <div class="row">
       <button class="btn tiny acid" data-act="gen" data-kind="critters">Floaters</button>
