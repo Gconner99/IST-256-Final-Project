@@ -1,5 +1,5 @@
 import type { EffectType } from "../core/types";
-import { DANCER_GLSL, DANCER_MINI_GLSL } from "../engine/dancer.glsl";
+import { DANCER_GLSL, DANCER_MINI_GLSL, dancerGlslForKind } from "../engine/dancer.glsl";
 
 const APPLY_NORMAL = `
 vec4 apply(vec2 uv) {
@@ -148,11 +148,19 @@ export const IDOL_KINDS = [
   "block",
 ] as const;
 
-export function dancerForCompile(mini: boolean): EffectType {
-  if (!mini) return dancer;
+export function dancerForCompile(mini: boolean, kind = "wild"): EffectType {
+  const k = (IDOL_KINDS as readonly string[]).includes(kind) ? kind : "wild";
+  const glsl = dancerGlslForKind(k);
+  const defs =
+    k === "wild"
+      ? ""
+      : `#define FIG_KIND 1
+#define FIG_KIND_${k.toUpperCase()} 1
+`;
+  if (!mini && k === "wild") return dancer;
   return {
     ...dancer,
-    extraUniforms: `${UNIFORMS}${DANCER_GLSL}${DANCER_MINI_GLSL}`,
-    applyGlsl: APPLY_MINI,
+    extraUniforms: `${defs}${UNIFORMS}${glsl}${mini ? DANCER_MINI_GLSL : ""}`,
+    applyGlsl: mini ? APPLY_MINI : APPLY_NORMAL,
   };
 }

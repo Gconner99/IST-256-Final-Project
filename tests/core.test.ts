@@ -261,7 +261,8 @@ describe("effects registry", () => {
     expect(idolSrc.includes("u_grow")).toBe(true);
     expect(idolSrc.includes("u_coat")).toBe(true);
     expect(idolSrc.includes("u_kind")).toBe(true);
-    expect(idolSrc.includes("figKindHit")).toBe(true);
+    expect(idolSrc.includes("figKindHit")).toBe(false);
+    expect(idolSrc.includes("FIG_KIND_MOTH")).toBe(false);
     expect(idolSrc.includes("f.skirt")).toBe(true);
     expect(idolSrc.includes("f.antenna")).toBe(true);
     expect(idolSrc.includes("f.halo")).toBe(true);
@@ -272,8 +273,15 @@ describe("effects registry", () => {
     expect(miniSrc.includes("figureRenderMini")).toBe(true);
     expect(miniSrc.includes("figWildMini")).toBe(true);
     expect(miniSrc.includes("figMiniPlace")).toBe(true);
+    expect(miniSrc.includes("figKindHit")).toBe(false);
     expect(miniSrc.includes("geomRender")).toBe(false);
     expect(miniSrc.includes("impRender")).toBe(false);
+    const mothSrc = compileEffectSource(dancerForCompile(false, "moth"));
+    expect(mothSrc.includes("figKindHit")).toBe(true);
+    expect(mothSrc.includes("FIG_KIND_MOTH")).toBe(true);
+    expect(mothSrc.includes("figureRenderMini")).toBe(false);
+    expect(mothSrc.includes("geomRender")).toBe(false);
+    expect(mothSrc.includes("impRender")).toBe(false);
   });
 
   it("ships a short set of background places", () => {

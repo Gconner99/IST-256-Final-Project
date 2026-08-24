@@ -1,5 +1,5 @@
 /** Sato-like low-poly idol: seed-grown figure, cheap to march, solid to look at. */
-export const DANCER_GLSL = `
+const DANCER_HEAD_GLSL = `
 float figH(float n) {
   vec3 p3 = fract(vec3(n, n * 1.13, n * 0.71) * vec3(0.1031, 0.1030, 0.0973));
   p3 += dot(p3, p3.yzx + 33.33);
@@ -224,6 +224,10 @@ vec2 figureFace(vec3 hp, float seed, float hs) {
   f.hs = hs;
   return figureFaceF(hp, f);
 }
+`;
+
+/** Extra idol bodies. Only concatenated when Kind is not Wild, so Wild stays the cheap shader. */
+export const DANCER_KIND_GLSL = `
 vec2 figKindExtras(vec3 p, Fig f) {
   vec2 d = vec2(1e5, 0.0);
   if (f.skirt > 0.5) {
@@ -236,16 +240,18 @@ vec2 figKindExtras(vec3 p, Fig f) {
     float ring = abs(length(cp.xz) - f.ts.x * 0.92) - 0.032;
     d = figMin(d, vec2(max(ring, abs(cp.y) - 0.028), 8.0));
   }
-  if (f.wings > 0.5 && uQuality >= 0.5 && !(u_kind > 0.5 && u_kind < 1.5) && !(u_kind > 2.5 && u_kind < 3.5) && !(u_kind > 7.5 && u_kind < 8.5)) {
+#if !defined(FIG_KIND_MOTH) && !defined(FIG_KIND_BIRD) && !defined(FIG_KIND_DRAGON)
+  if (f.wings > 0.5 && uQuality >= 0.5) {
     d = figMin(d, vec2(figCap(p, vec3(-f.ts.x * 0.2, f.ts.y * 0.18, f.ts.z * 0.4), vec3(-f.ts.x * 1.28, f.ts.y * 0.52, -0.04), 0.042), 6.9));
     d = figMin(d, vec2(figCap(p, vec3(f.ts.x * 0.2, f.ts.y * 0.18, f.ts.z * 0.4), vec3(f.ts.x * 1.28, f.ts.y * 0.52, -0.04), 0.042), 6.9));
   }
+#endif
   return d;
 }
 vec2 figKindHit(vec3 p, Fig f, float seed) {
   vec2 d = vec2(1e5, 1.0);
   vec3 hp = p - vec3(0.0, 0.28, 0.0);
-  if (u_kind < 1.5) {
+#if defined(FIG_KIND_MOTH)
     d = vec2(figOcta(p * vec3(1.15, 0.82, 1.05), 0.2), 1.0);
     d = figMin(d, vec2(figBox(figRotZ(p - vec3(-0.46, 0.1, 0.06), 0.35), vec3(0.42, 0.045, 0.22)), 6.9));
     d = figMin(d, vec2(figBox(figRotZ(p - vec3(0.46, 0.1, 0.06), -0.35), vec3(0.42, 0.045, 0.22)), 6.9));
@@ -263,14 +269,14 @@ vec2 figKindHit(vec3 p, Fig f, float seed) {
       vec3 lp = figRotX(p - vec3(side * 0.08, -0.12, 0.0), 0.4 + kick);
       d = figMin(d, vec2(figCap(lp, vec3(0.0), vec3(0.0, -0.22, 0.02), 0.028), 3.0));
     }
-  } else if (u_kind < 2.5) {
+#elif defined(FIG_KIND_FISH)
     d = vec2(figCap(p, vec3(0.0, 0.02, 0.3), vec3(0.0, 0.0, -0.28), 0.15), 1.0);
     d = figMin(d, vec2(figOcta((p - vec3(0.0, 0.0, 0.44)) * vec3(0.35, 1.15, 0.22), 0.2), 1.5));
     d = figMin(d, vec2(figBox(p - vec3(-0.18, 0.0, 0.0), vec3(0.14, 0.02, 0.08)), 4.0));
     d = figMin(d, vec2(figBox(p - vec3(0.18, 0.0, 0.0), vec3(0.14, 0.02, 0.08)), 4.0));
     hp = p - vec3(0.0, 0.04, -0.34);
     d = figMin(d, vec2(figOcta(hp, f.hs * 0.7), 2.0));
-  } else if (u_kind < 3.5) {
+#elif defined(FIG_KIND_BIRD)
     d = vec2(figOcta(p * vec3(0.95, 0.9, 1.05), 0.24), 1.0);
     d = figMin(d, vec2(figBox(figRotZ(p - vec3(-0.32, 0.12, 0.08), 0.45), vec3(0.3, 0.03, 0.14)), 6.9));
     d = figMin(d, vec2(figBox(figRotZ(p - vec3(0.32, 0.12, 0.08), -0.45), vec3(0.3, 0.03, 0.14)), 6.9));
@@ -284,7 +290,7 @@ vec2 figKindHit(vec3 p, Fig f, float seed) {
       d = figMin(d, vec2(figCap(lp, vec3(0.0), vec3(0.0, -0.38, 0.02), 0.032), 3.0));
       d = figMin(d, vec2(figBox(lp - vec3(0.0, -0.38, 0.04), vec3(0.05, 0.025, 0.08)), 3.0));
     }
-  } else if (u_kind < 4.5) {
+#elif defined(FIG_KIND_BEETLE)
     d = vec2(figBox(p, vec3(0.22, 0.12, 0.28)), 1.0);
     d = figMin(d, vec2(figOcta(p * vec3(1.0, 0.7, 1.15), 0.28), 1.0));
     hp = p - vec3(0.0, 0.2, -0.22);
@@ -296,26 +302,26 @@ vec2 figKindHit(vec3 p, Fig f, float seed) {
       vec3 lp = figRotX(p - vec3(side * 0.16, -0.1, row), 0.35 + kick);
       d = figMin(d, vec2(figCap(lp, vec3(0.0), vec3(0.0, -0.2, 0.04), 0.03), 3.0));
     }
-  } else if (u_kind < 5.5) {
+#elif defined(FIG_KIND_KETTLE)
     d = vec2(figOcta(p * vec3(1.05, 0.85, 1.05), 0.32), 1.0);
     d = figMin(d, vec2(figCap(p, vec3(0.18, 0.08, 0.0), vec3(0.38, 0.22, 0.0), 0.04), 4.0));
     d = figMin(d, vec2(figCap(p, vec3(-0.02, 0.04, -0.18), vec3(-0.02, 0.1, -0.48), 0.045), 1.5));
     hp = p - vec3(0.0, 0.34, 0.0);
     d = figMin(d, vec2(figBox(hp, vec3(0.16, 0.05, 0.16)), 2.0));
     d = figMin(d, vec2(figOcta(hp - vec3(0.0, 0.1, 0.0), f.hs * 0.55), 2.0));
-  } else if (u_kind < 6.5) {
+#elif defined(FIG_KIND_LAMP)
     d = vec2(figBox(p - vec3(0.0, -0.22, 0.0), vec3(0.18, 0.05, 0.18)), 1.0);
     d = figMin(d, vec2(figCap(p, vec3(0.0, -0.18, 0.0), vec3(0.0, 0.18, 0.0), 0.055), 1.0));
     hp = p - vec3(0.0, 0.32, 0.0);
     d = figMin(d, vec2(figBox(hp, vec3(0.22, 0.16, 0.22)), 2.0));
     d = figMin(d, vec2(figBall(hp - vec3(0.0, -0.02, -0.02), 0.08), 4.0));
-  } else if (u_kind < 7.5) {
+#elif defined(FIG_KIND_TAPE)
     d = vec2(figBox(p, vec3(0.32, 0.18, 0.08)), 1.0);
     d = figMin(d, vec2(figCap(p - vec3(-0.12, 0.02, -0.06), vec3(0.0, 0.0, 0.02), vec3(0.0, 0.0, -0.02), 0.1), 5.0));
     d = figMin(d, vec2(figCap(p - vec3(0.12, 0.02, -0.06), vec3(0.0, 0.0, 0.02), vec3(0.0, 0.0, -0.02), 0.1), 5.0));
     d = figMin(d, vec2(figBox(p - vec3(0.0, -0.02, -0.12), vec3(0.06, 0.04, 0.12)), 7.0));
     hp = p - vec3(0.0, 0.04, -0.08);
-  } else if (u_kind < 8.5) {
+#elif defined(FIG_KIND_DRAGON)
     d = vec2(figCap(p, vec3(0.0, 0.08, 0.06), vec3(0.0, -0.12, 0.08), 0.14), 1.0);
     d = figMin(d, vec2(figCap(p, vec3(0.0, 0.12, 0.04), vec3(0.0, 0.42, -0.04), 0.05), 1.0));
     d = figMin(d, vec2(figBox(figRotZ(p - vec3(-0.28, 0.14, 0.1), 0.4), vec3(0.28, 0.03, 0.16)), 6.9));
@@ -333,10 +339,10 @@ vec2 figKindHit(vec3 p, Fig f, float seed) {
       vec3 lp = figRotX(p - vec3(side * 0.12, -0.14, row), 0.25 + kick);
       d = figMin(d, vec2(figCap(lp, vec3(0.0), vec3(0.0, -0.22, 0.03), 0.035), 3.0));
     }
-  } else if (u_kind < 9.5) {
+#elif defined(FIG_KIND_MOON)
     d = vec2(max(figBall(p, 0.42), -figBall(p - vec3(0.22, 0.1, 0.0), 0.36)), 1.0);
     hp = p - vec3(-0.08, 0.04, -0.18);
-  } else {
+#else
     d = vec2(figBox(p, vec3(0.28, 0.28, 0.22)), 1.0);
     d = figMin(d, vec2(figOcta(p - vec3(0.0, 0.18, 0.0), 0.22), 1.0));
     hp = p - vec3(0.0, 0.08, -0.22);
@@ -346,7 +352,7 @@ vec2 figKindHit(vec3 p, Fig f, float seed) {
       vec3 lp = figRotX(p - vec3(side * 0.14, -0.28, 0.0), 0.1 + kick);
       d = figMin(d, vec2(figCap(lp, vec3(0.0), vec3(0.0, -0.16, 0.02), 0.04), 3.0));
     }
-  }
+#endif
   hp = figRotZ(hp, sin(f.t * 4.1) * 0.08);
   hp = figRotX(hp, cos(f.t * 3.2) * 0.05 - f.peck);
   d = figMin(d, figureFaceF(hp, f));
@@ -355,6 +361,9 @@ vec2 figKindHit(vec3 p, Fig f, float seed) {
   d.x *= sMin;
   return d;
 }
+`;
+
+const FIGURE_HIT_KIND_GLSL = `
 vec2 figureHit(vec3 p, Fig f, float seed) {
   if (f.style > 6.5) p = figRotX(p, sin(f.t * 6.1) * 0.22);
   p.x += f.slide;
@@ -363,7 +372,19 @@ vec2 figureHit(vec3 p, Fig f, float seed) {
   p.y -= f.bob;
   p.x *= f.sx;
   p.z *= f.sz;
-  if (u_kind > 0.5) return figKindHit(p, f, seed);
+  return figKindHit(p, f, seed);
+}
+`;
+
+const FIGURE_HIT_WILD_GLSL = `
+vec2 figureHit(vec3 p, Fig f, float seed) {
+  if (f.style > 6.5) p = figRotX(p, sin(f.t * 6.1) * 0.22);
+  p.x += f.slide;
+  p = figRotY(p, f.facing + f.spin + f.sway);
+  p = figRotZ(p, f.lean);
+  p.y -= f.bob;
+  p.x *= f.sx;
+  p.z *= f.sz;
   vec2 d;
   if (f.torsoKind < 0.34) d = vec2(figBox(p, f.ts), 1.0);
   else if (f.torsoKind < 0.68) d = vec2(figOcta(p * vec3(1.0, 0.75, 1.1), mix(0.28, 0.48, figH(seed + 1.5))), 1.0);
@@ -440,6 +461,9 @@ vec2 figureHit(vec3 p, Fig f, float seed) {
   d.x *= sMin;
   return d;
 }
+`;
+
+const DANCER_TAIL_GLSL = `
 vec2 figureMap(vec3 p, float seed, float t) {
   return figureHit(p, figRoll(seed, t), seed);
 }
@@ -708,6 +732,13 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, f
   return vec4(hsv2rgb(hsv) * 0.9, clamp(echo * 0.78, 0.22, 0.82));
 }
 `;
+
+export const DANCER_GLSL = `${DANCER_HEAD_GLSL}${FIGURE_HIT_WILD_GLSL}${DANCER_TAIL_GLSL}`;
+
+export function dancerGlslForKind(kind: string): string {
+  if (!kind || kind === "wild") return DANCER_GLSL;
+  return `${DANCER_HEAD_GLSL}${DANCER_KIND_GLSL}${FIGURE_HIT_KIND_GLSL}${DANCER_TAIL_GLSL}`;
+}
 
 export const DANCER_MINI_GLSL = `
 Fig figWildMini(float seed, float time, Fig lead) {
