@@ -4,6 +4,7 @@ import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
 import { chaosStamp, ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
+import { IDOL_KINDS } from "../effects/dancer";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
 import { resumeAudio } from "../media/audio";
@@ -202,15 +203,20 @@ export function stampIdol() {
   if (!layer) return;
   const existing = layer.effects.find((e) => e.typeId === "dancer");
   const seed = 1 + ((store.project.seed + Date.now() + 17) % 9998);
+  const kind = IDOL_KINDS[seed % IDOL_KINDS.length];
   if (existing) {
-    setParam(layer.id, existing.id, "seed", seed);
+    setParam(layer.id, existing.id, "seed", seed, false);
+    setParam(layer.id, existing.id, "kind", kind);
     store.patchUi({ selectedEffectId: existing.id, status: "rerolled idol" });
     return;
   }
   addEffect("dancer");
   const nextLayer = selectedLayer(store.project);
   const fx = selectedEffect(nextLayer);
-  if (nextLayer && fx?.typeId === "dancer") setParam(nextLayer.id, fx.id, "seed", seed);
+  if (nextLayer && fx?.typeId === "dancer") {
+    setParam(nextLayer.id, fx.id, "seed", seed, false);
+    setParam(nextLayer.id, fx.id, "kind", kind);
+  }
   store.patchUi({ status: "stamped idol" });
 }
 

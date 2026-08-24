@@ -219,6 +219,20 @@ describe("effects registry", () => {
     expect(idol.params.find((p) => p.id === "move")?.default).toBe("dance");
     expect(idol.params.find((p) => p.id === "grow")?.default).toBe("wild");
     expect(idol.params.find((p) => p.id === "coat")?.default).toBe("wild");
+    expect(idol.params.find((p) => p.id === "kind")?.default).toBe("wild");
+    expect(idol.params.find((p) => p.id === "kind")?.options?.map((o) => o.value)).toEqual([
+      "wild",
+      "moth",
+      "fish",
+      "bird",
+      "beetle",
+      "kettle",
+      "lamp",
+      "tape",
+      "dragon",
+      "moon",
+      "block",
+    ]);
     expect(idol.params.find((p) => p.id === "form")).toBeUndefined();
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
@@ -246,6 +260,8 @@ describe("effects registry", () => {
     expect(idolSrc.includes("f.wings")).toBe(true);
     expect(idolSrc.includes("u_grow")).toBe(true);
     expect(idolSrc.includes("u_coat")).toBe(true);
+    expect(idolSrc.includes("u_kind")).toBe(true);
+    expect(idolSrc.includes("figKindHit")).toBe(true);
     expect(idolSrc.includes("f.skirt")).toBe(true);
     expect(idolSrc.includes("f.antenna")).toBe(true);
     expect(idolSrc.includes("f.halo")).toBe(true);
@@ -337,6 +353,19 @@ describe("randomize + presets", () => {
     expect(idol.params.place).toBe("center");
     expect(idol.params.crowd ?? "normal").toBe("normal");
     expect(idol.params.form).toBeUndefined();
+    expect([
+      "wild",
+      "moth",
+      "fish",
+      "bird",
+      "beetle",
+      "kettle",
+      "lamp",
+      "tape",
+      "dragon",
+      "moon",
+      "block",
+    ]).toContain(idol.params.kind ?? "wild");
   });
 
   it("wacky rand keeps a short stack and plants overlays", () => {

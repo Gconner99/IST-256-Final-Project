@@ -37,7 +37,7 @@ HOW TO USE IT
 - Type a prompt on the left and click Generate to make a NEW image. Again rolls a new seed.
 - Drop an MP3 to use it as a soundtrack. Hit Play — idols, floaters, and places move with the mix
 - Click Stamp floaters / Stamp idol / Stamp chaos (new seeds and wardrobe, same place)
-- Idol Grow / Coat pick petals, halo, cream paint, etc. Floaters Kit picks votives, moths, charms
+- Idol Kind picks moth, fish, kettle, dragon, moon, and more. Grow / Coat still dress them. Floaters Kit picks votives, moths, charms
 - Click Print frame to turn the live picture into a still
 - Click Rand all for a new look. Rand wacky stays pretty (cream / toy-pop).
 - Click New at the top to start over
