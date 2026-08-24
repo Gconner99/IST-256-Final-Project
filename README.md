@@ -45,11 +45,12 @@ Requires a browser (or Electron) with **WebGL2**.
 - Real-time WebGL2 preview (draft / preview / full quality)
 - Layers: opacity, blend modes, transform, enable, duplicate
 - Modular effects stack (bypass, reorder, per-effect mix + mask)
-- Floaters kits: lumpy shapes, toy-pop icons, votives, moths, charms
-- Idol Grow (petals / halo / antenna / skirt / quiet) and Coat (cream / moss / sodium / night / candy)
+- Floaters kits: lumpy shapes, toy-pop icons, votives, moths, charms, plus dice, fruit, keys, teeth, tape, moons, saints
+- Idol Grow (wardrobe on this body) and Coat (cream / moss / sodium / night / candy / bruise / gold / xerox)
+- Move → Hold freezes the pose; Fold → Prism fans only the creature
 - Procedural backgrounds: plasma, noise, bars, plus **Stars**, **Marsh**, **Oil**, **Paper**, and **Cave**
 - ~20 effects including **Floaters**, **Idol**, **Luma key**, and **Dropout**
-- Seeded randomization (all / selected / param) plus **Rand wacky** (outsider looks, short stacks)
+- Seeded randomization (all / selected / param) plus **Rand wacky** and **Rand scene** (named place + kit + grow/coat cards)
 - **Stamp chaos** rerolls overlay seeds and generator inks; **Print frame** captures the live picture as a still
 - Global + per-layer **feedback bus** (amount, delay, opacity, scale, rotation, distortion)
 - Basic masks (rect, circle, gradient, noise)

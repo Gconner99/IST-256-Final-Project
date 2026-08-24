@@ -1,7 +1,8 @@
 import { getEffect } from "../effects/registry";
+import { FLOATER_KITS } from "../effects/critters";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
-import type { BlendMode, EffectInstance, Layer, ParamDef, Project } from "./types";
+import type { BlendMode, EffectInstance, GeneratorType, Layer, ParamDef, Project } from "./types";
 
 type Mood = "lush" | "outsider" | "mix";
 
@@ -66,6 +67,30 @@ const LOOKS: Look[] = [
   { name: "chapel idol", mood: "lush", wacky: true, stack: ["grade", "bloom", "grain", "dancer"], blend: "normal" },
   { name: "cream garden", mood: "lush", wacky: true, stack: ["grade", "bloom", "grain", "critters"], blend: "normal" },
   { name: "charm lamp", mood: "mix", wacky: true, stack: ["duotone", "bloom", "grain", "critters"], blend: "screen" },
+];
+
+interface Scene {
+  name: string;
+  place: GeneratorType;
+  look: string;
+  kit: string;
+  grow: string;
+  coat: string;
+  move?: string;
+  fold?: string;
+}
+
+const SCENES: Scene[] = [
+  { name: "sodium moth", place: "cave", look: "moth lamp", kit: "moths", grow: "antenna", coat: "sodium" },
+  { name: "cream votive", place: "paper", look: "cream garden", kit: "votives", grow: "halo", coat: "cream", move: "float" },
+  { name: "gold saint", place: "stars", look: "chapel idol", kit: "saints", grow: "crown", coat: "gold", fold: "prism" },
+  { name: "xerox teeth", place: "paper", look: "xerox folk", kit: "teeth", grow: "eyes", coat: "xerox", fold: "prism" },
+  { name: "bruise dice", place: "oil", look: "bruise print", kit: "dice", grow: "pack", coat: "bruise" },
+  { name: "candy fruit", place: "marsh", look: "toy pop", kit: "fruit", grow: "bow", coat: "candy" },
+  { name: "night keys", place: "cave", look: "night idol", kit: "keys", grow: "twin", coat: "night" },
+  { name: "tape hold", place: "oil", look: "tv dropout", kit: "tape", grow: "votive", coat: "night", move: "hold" },
+  { name: "moon float", place: "stars", look: "aquarium idol", kit: "moons", grow: "neck", coat: "cream", move: "float" },
+  { name: "charm marsh", place: "marsh", look: "charm lamp", kit: "charms", grow: "halo", coat: "moss" },
 ];
 
 function randForParam(rng: () => number, def: ParamDef, current: number | string | boolean, amount: number) {
@@ -193,9 +218,9 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.speed = 0.7 + rng() * 1.3;
     p.seed = 1 + Math.floor(rng() * 9998);
     const roll = rng();
-    if (mood === "lush") p.kit = roll > 0.72 ? "votives" : roll > 0.48 ? "charms" : roll > 0.22 ? "shapes" : "toy pop";
-    else if (mood === "mix") p.kit = roll > 0.62 ? "moths" : roll > 0.4 ? "toy pop" : roll > 0.2 ? "mix" : "shapes";
-    else p.kit = roll > 0.55 ? "toy pop" : roll > 0.28 ? "mix" : "shapes";
+    if (mood === "lush") p.kit = roll > 0.78 ? "saints" : roll > 0.62 ? "votives" : roll > 0.44 ? "charms" : roll > 0.28 ? "fruit" : roll > 0.14 ? "moons" : "shapes";
+    else if (mood === "mix") p.kit = roll > 0.82 ? "dice" : roll > 0.68 ? "moths" : roll > 0.54 ? "tape" : roll > 0.4 ? "toy pop" : roll > 0.24 ? "keys" : roll > 0.12 ? "mix" : "shapes";
+    else p.kit = roll > 0.72 ? "teeth" : roll > 0.5 ? "toy pop" : roll > 0.28 ? "mix" : "shapes";
   }
   if (fx.typeId === "dancer") {
     p.size = 0.12 + rng() * 0.05;
@@ -203,21 +228,22 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.crowd = "normal";
     p.place = "center";
     const mv = rng();
-    if (mood === "lush") p.move = mv > 0.38 ? "float" : mv > 0.18 ? "drift" : "dance";
-    else if (mood === "mix") p.move = mv > 0.52 ? "float" : mv > 0.3 ? "drift" : mv > 0.16 ? "orbit" : "dance";
-    else p.move = mv > 0.78 ? "drift" : "dance";
+    if (mood === "lush") p.move = mv > 0.42 ? "float" : mv > 0.22 ? "drift" : mv > 0.08 ? "hold" : "dance";
+    else if (mood === "mix") p.move = mv > 0.58 ? "float" : mv > 0.36 ? "drift" : mv > 0.2 ? "orbit" : mv > 0.08 ? "hold" : "dance";
+    else p.move = mv > 0.82 ? "hold" : mv > 0.68 ? "drift" : "dance";
     p.echo = 0.35 + rng() * 0.5;
     p.amount = 1;
-    p.speed = p.move === "dance" ? 0.55 + rng() * 1.5 : 0.32 + rng() * 0.7;
+    p.speed = p.move === "dance" ? 0.55 + rng() * 1.5 : p.move === "hold" ? 0 : 0.32 + rng() * 0.7;
     p.seed = 1 + Math.floor(rng() * 9998);
+    p.fold = rng() > 0.88 ? "prism" : "none";
     const g = rng();
-    if (mood === "lush") p.grow = g > 0.55 ? "petals" : g > 0.32 ? "halo" : g > 0.14 ? "quiet" : "wild";
-    else if (mood === "mix") p.grow = g > 0.62 ? "skirt" : g > 0.38 ? "antenna" : g > 0.18 ? "petals" : "wild";
-    else p.grow = g > 0.7 ? "quiet" : "wild";
+    if (mood === "lush") p.grow = g > 0.78 ? "crown" : g > 0.62 ? "petals" : g > 0.44 ? "halo" : g > 0.28 ? "bow" : g > 0.14 ? "quiet" : "wild";
+    else if (mood === "mix") p.grow = g > 0.82 ? "twin" : g > 0.68 ? "eyes" : g > 0.54 ? "skirt" : g > 0.4 ? "antenna" : g > 0.26 ? "votive" : g > 0.14 ? "petals" : "wild";
+    else p.grow = g > 0.78 ? "pack" : g > 0.62 ? "neck" : g > 0.48 ? "quiet" : "wild";
     const c = rng();
-    if (mood === "lush") p.coat = c > 0.48 ? "cream" : c > 0.24 ? "moss" : "wild";
-    else if (mood === "mix") p.coat = c > 0.5 ? "sodium" : c > 0.26 ? "cream" : "wild";
-    else p.coat = c > 0.55 ? "night" : "wild";
+    if (mood === "lush") p.coat = c > 0.72 ? "gold" : c > 0.5 ? "cream" : c > 0.28 ? "moss" : "wild";
+    else if (mood === "mix") p.coat = c > 0.72 ? "xerox" : c > 0.52 ? "sodium" : c > 0.3 ? "cream" : "wild";
+    else p.coat = c > 0.7 ? "bruise" : c > 0.48 ? "night" : "wild";
   }
   if (fx.typeId === "kaleido") {
     p.segments = mood === "lush" ? 4 + Math.floor(rng() * 4) : 5 + Math.floor(rng() * 8);
@@ -271,10 +297,10 @@ export function ensureCritters(project: Project): Project {
   };
 }
 
-function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false): Layer {
+function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false, forcedLook?: Look): Layer {
   const rng = mulberry32(seed >>> 0);
   const pool = wacky ? LOOKS.filter((l) => l.wacky) : LOOKS;
-  const look = pool[Math.floor(rng() * pool.length)] ?? LOOKS[0];
+  const look = forcedLook ?? pool[Math.floor(rng() * pool.length)] ?? LOOKS[0];
   const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
   const stack = look.stack.filter((id) => getEffect(id)).slice(0, 5);
   const effects = stack.map((id, i) => applyMood(makeFx(id, seed + i * 997, amount), look.mood, palette, rng));
@@ -377,9 +403,9 @@ export function randomizeProject(
 export function chaosStamp(project: Project): Project {
   const seed = (project.seed + 7919) >>> 0;
   const rng = mulberry32(seed ^ 0x85ebca6b);
-  const kits = ["shapes", "toy pop", "votives", "moths", "charms"] as const;
-  const grows = ["wild", "petals", "halo", "quiet"] as const;
-  const coats = ["wild", "cream", "moss", "sodium"] as const;
+  const kits = FLOATER_KITS.filter((k) => k !== "mix");
+  const grows = ["wild", "petals", "halo", "quiet", "crown", "bow", "eyes", "votive"] as const;
+  const coats = ["wild", "cream", "moss", "sodium", "gold", "bruise", "xerox"] as const;
   let next: Project = {
     ...project,
     seed,
@@ -414,4 +440,75 @@ export function chaosStamp(project: Project): Project {
   next = ensureCritters(next);
   next = ensureIdol(next);
   return next;
+}
+
+function dressScene(project: Project, scene: Scene, seed: number): Project {
+  return {
+    ...project,
+    layers: project.layers.map((layer) => ({
+      ...layer,
+      effects: layer.effects.map((fx) => {
+        if (fx.typeId === "critters") {
+          return { ...fx, params: { ...fx.params, kit: scene.kit, seed: 1 + (seed % 9998) } };
+        }
+        if (fx.typeId === "dancer") {
+          return {
+            ...fx,
+            params: {
+              ...fx.params,
+              grow: scene.grow,
+              coat: scene.coat,
+              move: scene.move ?? fx.params.move,
+              fold: scene.fold ?? "none",
+              echo: Math.max(Number(fx.params.echo) || 0, 0.42),
+              speed: scene.move === "hold" ? 0 : fx.params.speed,
+              crowd: "normal",
+              count: 1,
+              place: "center",
+              size: 0.12 + ((seed % 50) / 1000),
+            },
+          };
+        }
+        if (fx.typeId === "dropout") {
+          return {
+            ...fx,
+            params: {
+              ...fx.params,
+              amount: Math.max(Number(fx.params.amount) || 0, 0.4),
+              rate: Math.max(Number(fx.params.rate) || 0, 0.28),
+            },
+          };
+        }
+        return fx;
+      }),
+    })),
+    sources: project.sources.map((src) =>
+      src.kind === "generator" ? { ...src, generator: scene.place } : src,
+    ),
+  };
+}
+
+/** One named card: place + look + kit + grow/coat. */
+export function randomizeScene(project: Project): { project: Project; name: string } {
+  const seed = project.seed >>> 0;
+  const rng = mulberry32(seed ^ 0xc2b2ae35);
+  const scene = SCENES[Math.floor(rng() * SCENES.length)] ?? SCENES[0];
+  const look = LOOKS.find((l) => l.name === scene.look) ?? LOOKS[0];
+  const amount = Math.max(project.randomAmount, 0.75);
+  let next: Project = {
+    ...project,
+    layers: project.layers.map((layer, li) => rebuildLayer(layer, seed + li * 7919, amount, Boolean(look.wacky), look)),
+    globalFeedback: {
+      ...project.globalFeedback,
+      amount: 0.05 + rng() * 0.18,
+      opacity: 0.4 + rng() * 0.3,
+      scale: 1.004 + rng() * 0.02,
+      rotation: (rng() - 0.5) * 0.03,
+      distortion: rng() * 0.1,
+    },
+  };
+  next = ensureCritters(next);
+  next = ensureIdol(next);
+  next = dressScene(next, scene, seed);
+  return { project: next, name: scene.name };
 }

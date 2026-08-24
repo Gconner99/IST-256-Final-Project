@@ -3,7 +3,7 @@ import { store } from "../core/store";
 import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
-import { chaosStamp, ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
+import { chaosStamp, ensureCritters, ensureIdol, randomizeProject, randomizeScene } from "../core/randomize";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
 import { resumeAudio } from "../media/audio";
@@ -212,6 +212,17 @@ export function stampIdol() {
   const fx = selectedEffect(nextLayer);
   if (nextLayer && fx?.typeId === "dancer") setParam(nextLayer.id, fx.id, "seed", seed);
   store.patchUi({ status: "stamped idol" });
+}
+
+export function rollScene() {
+  store.setProject((p) => ({ ...p, seed: (p.seed + 1 + (Date.now() & 255)) >>> 0 }), false);
+  let name = "scene";
+  store.setProject((p) => {
+    const rolled = randomizeScene(p);
+    name = rolled.name;
+    return rolled.project;
+  });
+  store.patchUi({ status: `scene · ${name}` });
 }
 
 export function stampChaos() {

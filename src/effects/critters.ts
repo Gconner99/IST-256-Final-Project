@@ -6,7 +6,7 @@ export const critters: EffectType = {
   id: "critters",
   name: "Floaters",
   category: "wacky",
-  description: "Drifting stickers. Kit picks lumpy families, toy-pop music icons, chapel votives, moths, or small charms",
+  description: "Drifting stickers. Kit picks lumpy families, toy-pop icons, votives, moths, charms, dice, fruit, keys, teeth, tape, moons, or paper saints",
   params: [
     {
       id: "kit",
@@ -20,6 +20,13 @@ export const critters: EffectType = {
         { value: "votives", label: "Votives" },
         { value: "moths", label: "Moths" },
         { value: "charms", label: "Charms" },
+        { value: "dice", label: "Dice" },
+        { value: "fruit", label: "Fruit" },
+        { value: "keys", label: "Keys" },
+        { value: "teeth", label: "Teeth" },
+        { value: "tape", label: "Tape" },
+        { value: "moons", label: "Moons" },
+        { value: "saints", label: "Saints" },
       ],
     },
     { id: "count", label: "Shapes", kind: "int", min: 1, max: 8, step: 1, default: 5 },
@@ -49,5 +56,21 @@ vec4 apply(vec2 uv) {
 }
 `,
 };
+
+export const FLOATER_KITS = [
+  "shapes",
+  "toy pop",
+  "mix",
+  "votives",
+  "moths",
+  "charms",
+  "dice",
+  "fruit",
+  "keys",
+  "teeth",
+  "tape",
+  "moons",
+  "saints",
+] as const;
 
 export const WACKY_EFFECTS = [critters, dancer];

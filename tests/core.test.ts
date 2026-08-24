@@ -4,7 +4,7 @@ import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../s
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, randomizeScene } from "../src/core/randomize";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -177,6 +177,13 @@ describe("effects registry", () => {
       "votives",
       "moths",
       "charms",
+      "dice",
+      "fruit",
+      "keys",
+      "teeth",
+      "tape",
+      "moons",
+      "saints",
     ]);
     for (const family of [
       "classicBody",
@@ -207,6 +214,13 @@ describe("effects registry", () => {
       "candle",
       "moth",
       "charmBow",
+      "diceFam",
+      "fruitFam",
+      "keyFam",
+      "teethFam",
+      "tapeFam",
+      "moonFam",
+      "saintFam",
     ]) {
       expect(critterSrc.includes(family)).toBe(true);
     }
@@ -217,8 +231,29 @@ describe("effects registry", () => {
     expect(idol.params.find((p) => p.id === "place")?.default).toBe("center");
     expect(idol.params.find((p) => p.id === "crowd")?.default).toBe("normal");
     expect(idol.params.find((p) => p.id === "move")?.default).toBe("dance");
+    expect(idol.params.find((p) => p.id === "move")?.options?.map((o) => o.value)).toEqual([
+      "dance",
+      "drift",
+      "float",
+      "orbit",
+      "hold",
+    ]);
     expect(idol.params.find((p) => p.id === "grow")?.default).toBe("wild");
+    expect(idol.params.find((p) => p.id === "grow")?.options?.map((o) => o.value)).toContain("crown");
+    expect(idol.params.find((p) => p.id === "grow")?.options?.map((o) => o.value)).toContain("twin");
     expect(idol.params.find((p) => p.id === "coat")?.default).toBe("wild");
+    expect(idol.params.find((p) => p.id === "coat")?.options?.map((o) => o.value)).toEqual([
+      "wild",
+      "cream",
+      "moss",
+      "sodium",
+      "night",
+      "candy",
+      "bruise",
+      "gold",
+      "xerox",
+    ]);
+    expect(idol.params.find((p) => p.id === "fold")?.default).toBe("none");
     expect(idol.params.find((p) => p.id === "form")).toBeUndefined();
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
@@ -246,6 +281,11 @@ describe("effects registry", () => {
     expect(idolSrc.includes("f.wings")).toBe(true);
     expect(idolSrc.includes("u_grow")).toBe(true);
     expect(idolSrc.includes("u_coat")).toBe(true);
+    expect(idolSrc.includes("u_fold")).toBe(true);
+    expect(idolSrc.includes("figFoldUv")).toBe(true);
+    expect(idolSrc.includes("f.crown")).toBe(true);
+    expect(idolSrc.includes("f.twin")).toBe(true);
+    expect(idolSrc.includes("f.votive")).toBe(true);
     expect(idolSrc.includes("f.skirt")).toBe(true);
     expect(idolSrc.includes("f.antenna")).toBe(true);
     expect(idolSrc.includes("f.halo")).toBe(true);
@@ -359,6 +399,24 @@ describe("randomize + presets", () => {
     expect(seedOf(stamped, "dancer")).not.toEqual(seedOf(base, "dancer"));
   });
 
+  it("named scene plants a place, kit, and idol wardrobe", () => {
+    for (const seed of [3, 11, 77, 256]) {
+      const { project, name } = randomizeScene({ ...createDefaultProject(), seed, randomAmount: 1 });
+      expect(name.length).toBeGreaterThan(2);
+      const types = project.layers[0].effects.map((e) => e.typeId);
+      expect(types.length).toBeLessThanOrEqual(5);
+      expect(types).toContain("dancer");
+      expect(types).toContain("critters");
+      const idol = project.layers[0].effects.find((e) => e.typeId === "dancer")!;
+      const critters = project.layers[0].effects.find((e) => e.typeId === "critters")!;
+      expect(idol.params.form).toBeUndefined();
+      expect(Number(idol.params.size)).toBeLessThan(0.2);
+      expect(idol.params.crowd).toBe("normal");
+      expect(typeof critters.params.kit).toBe("string");
+      expect(project.sources.some((s) => s.kind === "generator" && s.generator)).toBe(true);
+    }
+  });
+
   it("ships luma key and dropout", () => {
     expect(getEffect("key")?.name).toBe("Luma key");
     expect(getEffect("dropout")?.name).toBe("Dropout");
@@ -366,6 +424,10 @@ describe("randomize + presets", () => {
     const analog = compileEffectSource(getEffect("analog")!);
     expect(analog).toContain("u_audio");
     expect(analog).toContain("u_bass");
+    const drop = compileEffectSource(getEffect("dropout")!);
+    expect(drop).toContain("u_bass");
+    expect(drop).toContain("u_audio");
+    expect(drop).toContain("beat");
   });
 });
 

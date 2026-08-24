@@ -31,6 +31,7 @@ import {
   setParam,
   startFromScratch,
   reprintFrame,
+  rollScene,
   stampChaos,
   stampCritters,
   stampIdol,
@@ -65,7 +66,8 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="status">RND</label>
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
-      <button class="btn tiny hot" data-act="rand-wacky" title="Outsider looks, idols, floaters, a new place">Rand wacky</button>
+      <button class="btn tiny hot" data-act="rand-wacky" title="Pretty wacky look, idol + floaters, a calm place">Rand wacky</button>
+      <button class="btn tiny acid" data-act="rand-scene" title="One named card: place + look + kit + grow/coat">Rand scene</button>
       <label class="check" title="Drop drifting colored shapes onto every layer when you hit Rand all">
         <input type="checkbox" id="inc-critters" /> floaters
       </label>
@@ -98,13 +100,13 @@ export function mount(root: HTMLElement, renderer: Renderer) {
         <p>A digital darkroom / video synth. Drop media, stack effects, randomize, feed the output back into itself.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
-          <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
+          <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look &nbsp; <kbd>Shift+S</kbd> named scene</li>
           <li><kbd>K</kbd> keyframe selected parameter</li>
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
-          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place.</li>
-          <li><strong>Idol</strong> is a small low-poly creature. Grow picks petals, halo, antenna, skirt, or quiet. Coat tints the paint (cream, moss, sodium, night). Stamp it for a new seed. Crowd → Mini army.</li>
+          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place. <strong>Rand scene</strong> draws one named card (place + kit + grow/coat together), like sodium moth in Cave.</li>
+          <li><strong>Idol</strong> is a small low-poly creature. Grow dresses this body (petals, crown, extra eyes, votive, bow, twin face, long neck, pack). Coat tints the paint. Fold → Prism fans only the creature. Move → Hold freezes the pose while the place still moves. Stamp it for a new seed. Crowd → Mini army.</li>
           <li><strong>Stamp chaos</strong> rerolls floater + idol seeds and their kit/grow/coat — keeps the backdrop. <strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, and Cave. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom breathe with the mix.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
@@ -154,6 +156,7 @@ function bind(root: HTMLElement) {
     if (act === "seed+") bumpSeed(1);
     if (act === "rand-all") randomize("all");
     if (act === "rand-wacky") randomize("all", true);
+    if (act === "rand-scene") rollScene();
     if (act === "stamp-chaos") stampChaos();
     if (act === "reprint") {
       if (rendererRef) void reprintFrame(rendererRef);
@@ -392,6 +395,10 @@ function bind(root: HTMLElement) {
     }
     if (e.key === "r" || e.key === "R") randomize(e.shiftKey ? "all" : "selected");
     if ((e.key === "w" || e.key === "W") && e.shiftKey) randomize("all", true);
+    if ((e.key === "s" || e.key === "S") && e.shiftKey && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      rollScene();
+    }
     if (e.key === "k" || e.key === "K") addKeyframe();
     if (e.key === "n" || e.key === "N") {
       e.preventDefault();
@@ -489,7 +496,7 @@ function paintRail(n: HTMLElement) {
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop, Votives, Moths, Charms. Idol Grow / Coat pick a wardrobe without changing the creature language. Stamp chaos rerolls those, not the backdrop.</div>
+    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop, Votives, Moths, Charms, Dice, Fruit, Keys, Teeth, Tape, Moons, Saints. Idol Grow / Coat dress this creature. Fold → Prism. Move → Hold. Rand scene draws a named card. Stamp chaos rerolls wardrobe, not the backdrop.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
