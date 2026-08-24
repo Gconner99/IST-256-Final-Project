@@ -1,5 +1,4 @@
 import { getEffect } from "../effects/registry";
-import { IDOL_KINDS } from "../effects/dancer";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
 import type { BlendMode, EffectInstance, Layer, ParamDef, Project } from "./types";
@@ -219,7 +218,6 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     if (mood === "lush") p.coat = c > 0.48 ? "cream" : c > 0.24 ? "moss" : "wild";
     else if (mood === "mix") p.coat = c > 0.5 ? "sodium" : c > 0.26 ? "cream" : "wild";
     else p.coat = c > 0.55 ? "night" : "wild";
-    p.kind = rng() < 0.28 ? "wild" : IDOL_KINDS[1 + Math.floor(rng() * (IDOL_KINDS.length - 1))];
   }
   if (fx.typeId === "kaleido") {
     p.segments = mood === "lush" ? 4 + Math.floor(rng() * 4) : 5 + Math.floor(rng() * 8);
@@ -382,7 +380,6 @@ export function chaosStamp(project: Project): Project {
   const kits = ["shapes", "toy pop", "votives", "moths", "charms"] as const;
   const grows = ["wild", "petals", "halo", "quiet"] as const;
   const coats = ["wild", "cream", "moss", "sodium"] as const;
-  const kinds = IDOL_KINDS;
   let next: Project = {
     ...project,
     seed,
@@ -407,7 +404,6 @@ export function chaosStamp(project: Project): Project {
               seed: 1 + Math.floor(rng() * 9998),
               grow: grows[Math.floor(rng() * grows.length)],
               coat: coats[Math.floor(rng() * coats.length)],
-              kind: kinds[Math.floor(rng() * kinds.length)],
             },
           };
         }

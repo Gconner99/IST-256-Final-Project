@@ -83,21 +83,11 @@ export class Renderer {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
   }
 
-  private compileType(typeId: string, mini = false, kind = "wild"): Program | null {
-    const k = kind || "wild";
-    const key =
-      typeId !== "dancer"
-        ? typeId
-        : mini
-          ? k === "wild"
-            ? "dancer:mini"
-            : `dancer:mini:${k}`
-          : k === "wild"
-            ? "dancer"
-            : `dancer:${k}`;
+  private compileType(typeId: string, mini = false): Program | null {
+    const key = typeId !== "dancer" ? typeId : mini ? "dancer:mini" : "dancer";
     const cached = this.effectProg.get(key);
     if (cached) return cached;
-    const def = typeId === "dancer" ? dancerForCompile(mini, k) : getEffect(typeId);
+    const def = typeId === "dancer" ? dancerForCompile(mini) : getEffect(typeId);
     if (!def) return null;
     try {
       const p = compileEffectProgram(this.gl, def);
@@ -132,8 +122,7 @@ export class Renderer {
 
   private progFor(fx: EffectInstance): Program | null {
     if (fx.typeId !== "dancer") return this.compileType(fx.typeId);
-    const kind = typeof fx.params.kind === "string" ? fx.params.kind : "wild";
-    return this.compileType("dancer", fx.params.crowd === "mini", kind);
+    return this.compileType("dancer", fx.params.crowd === "mini");
   }
 
   resetTemporal() {

@@ -1,5 +1,5 @@
 import type { EffectType } from "../core/types";
-import { DANCER_GLSL, DANCER_MINI_GLSL, dancerGlslForKind } from "../engine/dancer.glsl";
+import { DANCER_GLSL, DANCER_MINI_GLSL } from "../engine/dancer.glsl";
 
 const APPLY_NORMAL = `
 vec4 apply(vec2 uv) {
@@ -26,7 +26,6 @@ uniform float u_count;
 uniform float u_size;
 uniform float u_crowd;
 uniform float u_place;
-uniform float u_kind;
 uniform float u_move;
 uniform float u_grow;
 uniform float u_coat;
@@ -40,7 +39,7 @@ export const dancer: EffectType = {
   id: "dancer",
   name: "Idol",
   category: "wacky",
-  description: "One seed-grown low-poly character. Kind picks the current creature, or a moth, fish, bird, beetle, kettle, lamp, tape, dragon, moon, or walking block. Grow and Coat still dress whoever it is. Mini army fills the frame with tiny ones in sync",
+  description: "One seed-grown low-poly creature with a face like an animal that does not exist. Grow picks petals, a halo, antennae, a skirt, or a quieter body. Coat tints the paint. Drop an MP3 and they dance to it. Mini army fills the frame with tiny ones in sync",
   params: [
     { id: "count", label: "Count", kind: "int", min: 1, max: 4, step: 1, default: 1 },
     { id: "size", label: "Size", kind: "float", min: 0.12, max: 2.5, step: 0.01, default: 0.12 },
@@ -63,25 +62,6 @@ export const dancer: EffectType = {
       options: [
         { value: "center", label: "Center" },
         { value: "scatter", label: "Scatter + depth" },
-      ],
-    },
-    {
-      id: "kind",
-      label: "Kind",
-      kind: "enum",
-      default: "wild",
-      options: [
-        { value: "wild", label: "Wild" },
-        { value: "moth", label: "Moth" },
-        { value: "fish", label: "Fish" },
-        { value: "bird", label: "Bird" },
-        { value: "beetle", label: "Beetle" },
-        { value: "kettle", label: "Kettle" },
-        { value: "lamp", label: "Lamp" },
-        { value: "tape", label: "Tape" },
-        { value: "dragon", label: "Dragon" },
-        { value: "moon", label: "Moon" },
-        { value: "block", label: "Block" },
       ],
     },
     {
@@ -134,33 +114,11 @@ export const dancer: EffectType = {
   applyGlsl: APPLY_NORMAL,
 };
 
-export const IDOL_KINDS = [
-  "wild",
-  "moth",
-  "fish",
-  "bird",
-  "beetle",
-  "kettle",
-  "lamp",
-  "tape",
-  "dragon",
-  "moon",
-  "block",
-] as const;
-
-export function dancerForCompile(mini: boolean, kind = "wild"): EffectType {
-  const k = (IDOL_KINDS as readonly string[]).includes(kind) ? kind : "wild";
-  const glsl = dancerGlslForKind(k);
-  const defs =
-    k === "wild"
-      ? ""
-      : `#define FIG_KIND 1
-#define FIG_KIND_${k.toUpperCase()} 1
-`;
-  if (!mini && k === "wild") return dancer;
+export function dancerForCompile(mini: boolean): EffectType {
+  if (!mini) return dancer;
   return {
     ...dancer,
-    extraUniforms: `${defs}${UNIFORMS}${glsl}${mini ? DANCER_MINI_GLSL : ""}`,
-    applyGlsl: mini ? APPLY_MINI : APPLY_NORMAL,
+    extraUniforms: `${UNIFORMS}${DANCER_GLSL}${DANCER_MINI_GLSL}`,
+    applyGlsl: APPLY_MINI,
   };
 }

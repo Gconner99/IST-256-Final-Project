@@ -104,7 +104,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place.</li>
-          <li><strong>Idol</strong> is a small low-poly character. Kind picks the current creature or a moth, fish, bird, beetle, kettle, lamp, tape, dragon, moon, or walking block. Grow and Coat still dress them. Stamp it for a new seed and a new kind. Crowd → Mini army.</li>
+          <li><strong>Idol</strong> is a small low-poly creature. Grow picks petals, halo, antenna, skirt, or quiet. Coat tints the paint (cream, moss, sodium, night). Stamp it for a new seed. Crowd → Mini army.</li>
           <li><strong>Stamp chaos</strong> rerolls floater + idol seeds and their kit/grow/coat — keeps the backdrop. <strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, and Cave. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom breathe with the mix.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
@@ -489,7 +489,7 @@ function paintRail(n: HTMLElement) {
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop, Votives, Moths, Charms. Idol Kind picks moth, kettle, dragon, moon, and more — Wild is the original creature. Grow / Coat still dress whoever it is. Stamp chaos rerolls those, not the backdrop.</div>
+    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop, Votives, Moths, Charms. Idol Grow / Coat pick a wardrobe without changing the creature language. Stamp chaos rerolls those, not the backdrop.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
