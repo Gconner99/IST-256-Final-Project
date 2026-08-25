@@ -718,7 +718,7 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   float aspect = uResolution.x / max(uResolution.y, 1.0);
   vec2 q = (uv - vec2(0.5, 0.42)) * vec2(aspect, 1.0);
   vec4 miss = vec4(0.0);
-  float n = mix(14.0, 24.0, clamp((count - 1.0) / 3.0, 0.0, 1.0));
+  float n = mix(6.0, 8.0, clamp((count - 1.0) / 3.0, 0.0, 1.0));
   n = floor(n + 0.5);
   float figScale = mix(0.1, 0.34, clamp((sizeMul - 0.12) / 2.38, 0.0, 1.0));
   float camZ = 4.05;
@@ -746,7 +746,7 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   float trailEnter = 0.0;
   float trailSc = figScale;
   bool trail = false;
-  for (int i = 0; i < 24; i++) {
+  for (int i = 0; i < 8; i++) {
     if (i >= k) break;
     float sid = seed + float(i) * 91.73 + 13.1 + figH(seed * 0.11 + float(i) + 2.3) * 47.0;
     float sc = figScale * mix(0.92, 1.1, figH(sid + 0.61));

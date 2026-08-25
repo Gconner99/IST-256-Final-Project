@@ -104,7 +104,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>K</kbd> keyframe selected parameter</li>
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
-          <li>Quality starts on <em>Draft</em> so plasma moves right away. Looks compile one at a time after that. Switch to Preview if the machine can take it.</li>
+          <li>Quality starts on <em>Draft</em>. Open is just plasma — looks compile after you add them (Rand, Stamp idol, Stars…).</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it.</li>
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place. <strong>Rand scene</strong> draws one named card (place + kit + grow/coat together), like sodium moth in Cave.</li>
           <li><strong>Idol</strong> is a small low-poly creature. Grow dresses this body (petals, crown, horns, wings, tail, collar, tusks, extra arms…). Coat tints the paint (rust, ice, blood, acid, ink). Fold → Prism, Gate, or Mirror. Stamp it for a new seed. Crowd → Mini army.</li>
@@ -769,7 +769,7 @@ function fmtTime(t: number) {
   return `${String(m).padStart(2, "0")}:${s.toFixed(2).padStart(5, "0")}`;
 }
 
-const LIVE_MAX = 960;
+const LIVE_MAX = 640;
 
 export function resizeCanvas(canvas: HTMLCanvasElement, host: HTMLElement) {
   if (store.state.ui.exporting) return;

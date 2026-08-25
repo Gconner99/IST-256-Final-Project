@@ -11,8 +11,6 @@ import type {
   Transform,
 } from "./types";
 import { getEffect } from "../effects/registry";
-import { extractPreset } from "./presets";
-import { randomizeProject } from "./randomize";
 
 export function defaultTransform(): Transform {
   return { x: 0, y: 0, scale: 1, rotation: 0 };
@@ -117,23 +115,8 @@ export function defaultLayer(name: string, sourceId: string | null, effects: str
 
 export function createDefaultProject(): Project {
   const plasma = defaultGeneratorSource("plasma");
-  const layer = defaultLayer("SIGNAL", plasma.id, ["grade", "bloom", "grain"]);
-  layer.effects.forEach((fx) => {
-    if (fx.typeId === "grade") {
-      fx.params.saturation = 0.22;
-      fx.params.contrast = 0.12;
-      fx.params.gamma = 0.92;
-    }
-    if (fx.typeId === "bloom") {
-      fx.params.amount = 0.42;
-      fx.params.halation = 0.28;
-    }
-    if (fx.typeId === "grain") {
-      fx.params.grain = 0.16;
-      fx.params.leak = 0.2;
-    }
-  });
-  const project: Project = {
+  const layer = defaultLayer("SIGNAL", plasma.id, []);
+  return {
     version: 1,
     app: "phosphene",
     name: "untitled",
@@ -146,14 +129,8 @@ export function createDefaultProject(): Project {
     layers: [layer],
     keyframes: [],
     playback: defaultPlayback(),
-    globalFeedback: { ...defaultFeedback(), amount: 0.18, opacity: 0.55, scale: 1.01 },
+    globalFeedback: defaultFeedback(),
     exportSettings: defaultExportSettings(),
     presets: [],
   };
-  const scramble = randomizeProject({ ...project, seed: 90210, randomAmount: 1 }, "all", null, null, null);
-  project.presets = [
-    extractPreset(project, "factory · signal"),
-    extractPreset(scramble, "factory · scramble"),
-  ];
-  return project;
 }

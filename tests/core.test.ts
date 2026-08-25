@@ -95,6 +95,8 @@ describe("timeline", () => {
 describe("project files", () => {
   it("starts in draft so the first picture stays light", () => {
     expect(createDefaultProject().quality).toBe("draft");
+    expect(createDefaultProject().layers[0].effects).toEqual([]);
+    expect(createDefaultProject().globalFeedback.amount).toBe(0);
   });
 
   it("round-trips JSON without runtime media", () => {
