@@ -405,19 +405,19 @@ vec3 genStage(vec2 uv) {
   float polka = smoothstep(0.22, 0.11, length(df));
   vec3 dc = mix(vec3(1.0, 0.45, 0.7), vec3(1.0, 0.92, 0.4), step(0.5, hash21(di + uSeed)));
   col = mix(col, dc, polka * 0.28);
-  vec2 sunP = (uv - vec2(0.86, 0.88)) * 4.2;
+  vec2 sunP = (uv - vec2(0.88, 0.90)) * 5.4;
   col = stageSticker(col, vinyl(sunP, 11.0), vinyl(sunP + vec2(0.08, -0.1), 11.0), mix(vec3(0.2, 0.12, 0.28), vec3(1.0, 0.55, 0.8), 0.35));
-  vec2 gP = (uv - vec2(0.16, 0.78)) * 4.6;
+  vec2 gP = (uv - vec2(0.13, 0.88)) * 6.2;
   col = stageSticker(col, musicGuitar(gP, 2.0), musicGuitar(gP + vec2(0.1, -0.12), 2.0), vec3(0.95, 0.38, 0.55));
-  vec2 bP = (uv - vec2(0.5, 0.84)) * vec2(5.2, 5.6);
+  vec2 bP = (uv - vec2(0.5, 0.91)) * vec2(6.4, 6.8);
   col = stageSticker(col, musicBoombox(bP, 5.0), musicBoombox(bP + vec2(0.1, -0.12), 5.0), mix(vec3(0.35, 0.78, 0.98), vec3(1.0, 0.75, 0.3), u_bass));
-  vec2 tP = (uv - vec2(0.34, 0.7)) * 5.8;
+  vec2 tP = (uv - vec2(0.32, 0.88)) * 7.2;
   col = stageSticker(col, musicTrumpet(tP, 4.0), musicTrumpet(tP + vec2(0.1, -0.12), 4.0), vec3(1.0, 0.78, 0.28));
-  vec2 dP = (uv - vec2(0.88, 0.56)) * 6.0;
+  vec2 dP = (uv - vec2(0.9, 0.3)) * 7.4;
   col = stageSticker(col, musicDrum(dP, 6.0), musicDrum(dP + vec2(0.1, -0.12), 6.0), vec3(0.55, 0.42, 0.95));
-  vec2 sP = (uv - vec2(0.12, 0.54)) * 6.2;
+  vec2 sP = (uv - vec2(0.1, 0.3)) * 7.6;
   col = stageSticker(col, musicSax(sP, 7.0), musicSax(sP + vec2(0.1, -0.12), 7.0), vec3(0.98, 0.55, 0.32));
-  float s0 = 0.40;
+  float s0 = 0.48;
   for (int i = 0; i < 5; i++) {
     float y = s0 + float(i) * 0.026;
     col = mix(col, vec3(0.18, 0.08, 0.24), 1.0 - smoothstep(0.0, 0.0028, abs(uv.y - y)));
@@ -449,7 +449,7 @@ vec3 genStage(vec2 uv) {
     col = mix(kc, col, smoothstep(0.21, 0.24, uv.y));
     col = mix(col, vec3(0.22, 0.1, 0.18), (1.0 - smoothstep(0.0, 0.01, kf)) * step(uv.y, 0.23));
   }
-  vec2 pP = (uv - vec2(0.78, 0.32)) * 5.0;
+  vec2 pP = (uv - vec2(0.78, 0.31)) * 6.4;
   col = stageSticker(col, musicPiano(pP, 9.0), musicPiano(pP + vec2(0.1, -0.12), 9.0), vec3(0.22, 0.12, 0.28));
   return col;
 }
