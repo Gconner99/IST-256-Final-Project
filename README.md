@@ -8,9 +8,7 @@ Not a Premiere or Photoshop clone. Phosphene is a GPU effect pipeline with a tac
 
 Do **not** open the files inside Cursor.
 
-On Windows, open the folder in **File Explorer** and double-click **`Start Phosphene.bat`**. Leave the black command window open. Chrome or Edge then opens — that browser window is the program.
-
-Unzip the **whole** folder (`PHOSPHENE.html` plus `boot.js` and the other `.js` files). Plasma paints in 2D first so a sick graphics driver cannot kill the tab on startup. If Chrome still crashes, delete any old unzipped folder (names like `...(25)`) and download a fresh ZIP.
+On Windows, open the folder in **File Explorer** and double-click **`Start Phosphene.bat`**. A command window flashes, then Chrome or Edge opens — that browser window is the program.
 
 Read `START HERE.txt` if you get stuck.
 
@@ -47,12 +45,11 @@ Requires a browser (or Electron) with **WebGL2**.
 - Real-time WebGL2 preview (draft / preview / full quality)
 - Layers: opacity, blend modes, transform, enable, duplicate
 - Modular effects stack (bypass, reorder, per-effect mix + mask)
-- Floaters kits: lumpy shapes, toy-pop icons, votives, moths, charms, plus dice, fruit, keys, teeth, tape, moons, saints, shells, bells, coins, stamps, eyes, bones
-- Idol Grow (wardrobe on this body, including horns / wings / tail / tusks / extra arms) and Coat (cream / moss / sodium / night / candy / bruise / gold / xerox / rust / ice / blood / acid / ink)
-- Fold → Prism, Gate, or Mirror fans only the creature
+- Floaters kits: lumpy shapes, toy-pop icons, votives, moths, charms
+- Idol Grow (petals / halo / antenna / skirt / quiet) and Coat (cream / moss / sodium / night / candy)
 - Procedural backgrounds: plasma, noise, bars, plus **Stars**, **Marsh**, **Oil**, **Paper**, and **Cave**
 - ~20 effects including **Floaters**, **Idol**, **Luma key**, and **Dropout**
-- Seeded randomization (all / selected / param) plus **Rand wacky** and **Rand scene** (named place + kit + grow/coat cards)
+- Seeded randomization (all / selected / param) plus **Rand wacky** (outsider looks, short stacks)
 - **Stamp chaos** rerolls overlay seeds and generator inks; **Print frame** captures the live picture as a still
 - Global + per-layer **feedback bus** (amount, delay, opacity, scale, rotation, distortion)
 - Basic masks (rect, circle, gradient, noise)

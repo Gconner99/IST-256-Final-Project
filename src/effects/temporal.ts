@@ -101,8 +101,7 @@ vec4 apply(vec2 uv) {
   vec3 src = sampleSrc(uv).rgb;
   vec3 hist = texture(uHistory, uv).rgb;
   float hit = step(1.0 - u_rate * 0.4, hash21(vec2(floor(uTime * (1.6 + u_bass * 7.0)), 4.4)));
-  float beat = max(u_bass, u_audio * 0.72);
-  hit = max(hit, step(0.58, beat) * mix(0.4, 1.0, u_rate));
+  hit = max(hit, step(0.78, u_bass) * u_rate);
   vec2 p = uv;
   p.x += hit * (hash21(vec2(uv.y * 40.0, uTime)) - 0.5) * u_tear * 0.1;
   vec3 torn = sampleSrc(p).rgb;

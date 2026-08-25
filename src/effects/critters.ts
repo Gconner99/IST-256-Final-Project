@@ -1,14 +1,12 @@
 import type { EffectType } from "../core/types";
-import { CRITTER_EFFECT_GLSL } from "../engine/critters.glsl";
-import { FLOATER_KITS } from "./kits";
-
-export { FLOATER_KITS };
+import { CRITTER_GLSL } from "../engine/critters.glsl";
+import { dancer } from "./dancer";
 
 export const critters: EffectType = {
   id: "critters",
   name: "Floaters",
   category: "wacky",
-  description: "Drifting stickers. Kit picks lumpy families, toy-pop icons, votives, moths, charms, dice, fruit, keys, teeth, tape, moons, paper saints, shells, bells, coins, stamps, eyes, or bones",
+  description: "Drifting stickers. Kit picks lumpy families, toy-pop music icons, chapel votives, moths, or small charms",
   params: [
     {
       id: "kit",
@@ -22,19 +20,6 @@ export const critters: EffectType = {
         { value: "votives", label: "Votives" },
         { value: "moths", label: "Moths" },
         { value: "charms", label: "Charms" },
-        { value: "dice", label: "Dice" },
-        { value: "fruit", label: "Fruit" },
-        { value: "keys", label: "Keys" },
-        { value: "teeth", label: "Teeth" },
-        { value: "tape", label: "Tape" },
-        { value: "moons", label: "Moons" },
-        { value: "saints", label: "Saints" },
-        { value: "shells", label: "Shells" },
-        { value: "bells", label: "Bells" },
-        { value: "coins", label: "Coins" },
-        { value: "stamps", label: "Stamps" },
-        { value: "eyes", label: "Eyes" },
-        { value: "bones", label: "Bones" },
       ],
     },
     { id: "count", label: "Shapes", kind: "int", min: 1, max: 8, step: 1, default: 5 },
@@ -51,7 +36,7 @@ uniform float u_size;
 uniform float u_seed;
 uniform float u_speed;
 uniform float u_amount;
-${CRITTER_EFFECT_GLSL}
+${CRITTER_GLSL}
 `,
   applyGlsl: `
 vec4 apply(vec2 uv) {
@@ -64,3 +49,5 @@ vec4 apply(vec2 uv) {
 }
 `,
 };
+
+export const WACKY_EFFECTS = [critters, dancer];

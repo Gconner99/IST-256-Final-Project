@@ -1,3 +1,5 @@
+import { CRITTER_GLSL } from "./critters.glsl";
+
 export const VERT_SRC = `#version 300 es
 precision highp float;
 const vec2 POS[3] = vec2[3](vec2(-1.0, -1.0), vec2(3.0, -1.0), vec2(-1.0, 3.0));
@@ -209,8 +211,7 @@ void main() {
 }
 `;
 
-/** Tiny first-paint shader. Plasma / noise / bars only. Stars and Marsh compile later, one at a time. */
-export const BOOT_GENERATOR_GLSL = `#version 300 es
+export const GENERATOR_GLSL = `#version 300 es
 precision highp float;
 in vec2 vUv;
 out vec4 fragColor;
@@ -222,65 +223,7 @@ uniform float uScale;
 uniform float uSeed;
 uniform float u_audio;
 uniform float u_bass;
-float hash21(vec2 p) {
-  p = fract(p * vec2(123.34, 345.45));
-  p += dot(p, p + 34.345);
-  return fract(p.x * p.y);
-}
-void main() {
-  vec2 uv = vUv;
-  vec3 col = vec3(0.0);
-  int mode = uMode;
-  if (mode > 5) mode = 0;
-  if (mode == 0) {
-    float n = sin(uv.x * uScale * 0.55 + uTime * 0.14) + sin(uv.y * uScale * 0.4 - uTime * 0.1);
-    n += sin((uv.x * 0.7 + uv.y) * uScale * 0.25 + uTime * 0.06);
-    n = n / 3.0 * 0.5 + 0.5;
-    col = mix(uColorA, uColorB, smoothstep(0.22, 0.78, n));
-    col *= 0.9 + 0.1 * smoothstep(1.05, 0.22, length(uv - 0.5));
-  } else if (mode == 1) {
-    float n = hash21(floor(uv * uScale * 36.0) + floor(uTime * 1.5));
-    col = mix(uColorA, uColorB, mix(0.35, 0.65, n));
-  } else if (mode == 2) {
-    float x = uv.x;
-    if (x < 1.0/7.0) col = vec3(1.0);
-    else if (x < 2.0/7.0) col = vec3(1.0, 1.0, 0.0);
-    else if (x < 3.0/7.0) col = vec3(0.0, 1.0, 1.0);
-    else if (x < 4.0/7.0) col = vec3(0.0, 1.0, 0.0);
-    else if (x < 5.0/7.0) col = vec3(1.0, 0.0, 1.0);
-    else if (x < 6.0/7.0) col = vec3(1.0, 0.0, 0.0);
-    else col = vec3(0.0, 0.0, 1.0);
-  } else if (mode == 3) {
-    col = mix(uColorA, uColorB, uv.x);
-  } else if (mode == 4) {
-    col = uColorA;
-  } else {
-    vec2 c = floor(uv * uScale);
-    col = mix(uColorA, uColorB, mod(c.x + c.y, 2.0));
-  }
-  fragColor = vec4(col, 1.0);
-}
-`;
-
-const CRITTER_FIELD_STUB = `
-vec4 critterField(vec2 uv, float count, float seed, float time, float sizeMul, float kit) {
-  return vec4(0.0);
-}
-`;
-
-const generatorSource = (critterSrc: string) => `#version 300 es
-precision highp float;
-in vec2 vUv;
-out vec4 fragColor;
-uniform int uMode;
-uniform float uTime;
-uniform vec3 uColorA;
-uniform vec3 uColorB;
-uniform float uScale;
-uniform float uSeed;
-uniform float u_audio;
-uniform float u_bass;
-${critterSrc}
+${CRITTER_GLSL}
 float hash21(vec2 p) {
   p = fract(p * vec2(123.34, 345.45));
   p += dot(p, p + 34.345);
@@ -439,13 +382,6 @@ void main() {
   fragColor = vec4(col, 1.0);
 }
 `;
-
-/** Places after you click Stars / Marsh / Oil / Paper / Cave. Not compiled at boot. */
-export const GENERATOR_GLSL = generatorSource(CRITTER_FIELD_STUB);
-
-export function placesWithField(fieldSrc: string) {
-  return generatorSource(fieldSrc);
-}
 
 export const COPY_GLSL = `#version 300 es
 precision highp float;

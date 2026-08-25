@@ -129,14 +129,13 @@ vec4 apply(vec2 uv) {
   vec2 dir = vec2(cos(u_angle), sin(u_angle));
   vec3 acc = vec3(0.0);
   float wsum = 0.0;
-  float steps = uQuality < 0.5 ? 3.0 : 5.0;
-  for (int i = 0; i < 5; i++) {
-    if (float(i) >= steps) break;
-    float fi = float(i);
-    vec2 p = uv + dir * (fi / max(steps, 1.0)) * u_amount * 0.35;
+  float steps = mix(4.0, 10.0, uQuality);
+  for (float i = 0.0; i < 10.0; i++) {
+    if (i >= steps) break;
+    vec2 p = uv + dir * (i / steps) * u_amount * 0.35;
     vec3 s = sampleSrc(p).rgb;
     float l = luminance(s);
-    float w = step(u_threshold, l) * (1.0 - fi / max(steps, 1.0));
+    float w = step(u_threshold, l) * (1.0 - i / steps);
     acc += s * w;
     wsum += w;
   }

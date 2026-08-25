@@ -4,25 +4,18 @@ import { DISTORT_EFFECTS } from "./distort";
 import { ANALOG_EFFECTS } from "./analog";
 import { GEOMETRIC_EFFECTS } from "./geometric";
 import { TEMPORAL_EFFECTS } from "./temporal";
+import { WACKY_EFFECTS } from "./critters";
 
-const CORE: EffectType[] = [
+const ALL: EffectType[] = [
   ...COLOR_EFFECTS,
   ...DISTORT_EFFECTS,
   ...ANALOG_EFFECTS,
   ...GEOMETRIC_EFFECTS,
   ...TEMPORAL_EFFECTS,
+  ...WACKY_EFFECTS,
 ];
 
-let ALL: EffectType[] = [...CORE];
-const BY_ID = new Map(CORE.map((e) => [e.id, e]));
-
-export function registerWacky(list: EffectType[]) {
-  for (const e of list) {
-    if (BY_ID.has(e.id)) continue;
-    ALL.push(e);
-    BY_ID.set(e.id, e);
-  }
-}
+const BY_ID = new Map(ALL.map((e) => [e.id, e]));
 
 export function allEffects(): EffectType[] {
   return ALL;

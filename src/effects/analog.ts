@@ -95,15 +95,21 @@ uniform float u_halation;
   applyGlsl: `
 vec4 apply(vec2 uv) {
   vec3 src = sampleSrc(uv).rgb;
-  float s = u_size;
-  vec3 acc = src;
-  acc += sampleSrc(uv + vec2(uTexel.x * s, 0.0)).rgb;
-  acc += sampleSrc(uv - vec2(uTexel.x * s, 0.0)).rgb;
-  acc += sampleSrc(uv + vec2(0.0, uTexel.y * s)).rgb;
-  acc += sampleSrc(uv - vec2(0.0, uTexel.y * s)).rgb;
-  vec3 glow = acc / 5.0;
-  float l = luminance(glow);
-  glow *= step(u_threshold, l);
+  vec3 acc = vec3(0.0);
+  float wsum = 0.0;
+  float taps = mix(3.0, 6.0, uQuality);
+  for (float y = -3.0; y <= 3.0; y++) {
+    for (float x = -3.0; x <= 3.0; x++) {
+      if (abs(x) + abs(y) > taps) continue;
+      vec2 o = vec2(x, y) * uTexel * u_size;
+      vec3 s = sampleSrc(uv + o).rgb;
+      float l = luminance(s);
+      float w = step(u_threshold, l) / (1.0 + length(vec2(x, y)));
+      acc += s * w;
+      wsum += w;
+    }
+  }
+  vec3 glow = wsum > 0.0 ? acc / wsum : vec3(0.0);
   vec3 halo = vec3(glow.r, glow.g * 0.6, glow.b * 0.45) * u_halation;
   vec3 outc = src + glow * u_amount * (1.0 + u_audio * 0.35) + halo;
   return vec4(outc, 1.0);

@@ -1,20 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { clamp, evenSize, fitEven, lerp, mulberry32 } from "../src/core/random";
 import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../src/core/exportSize";
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, randomizeScene } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
-import { BOOT_GENERATOR_GLSL, GENERATOR_GLSL } from "../src/engine/shaders";
-import { GENERATOR_CRITTERS_GLSL } from "../src/engine/shaders-critters";
+import { GENERATOR_GLSL } from "../src/engine/shaders";
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
@@ -96,12 +93,6 @@ describe("timeline", () => {
 });
 
 describe("project files", () => {
-  it("starts in draft so the first picture stays light", () => {
-    expect(createDefaultProject().quality).toBe("draft");
-    expect(createDefaultProject().layers[0].effects).toEqual([]);
-    expect(createDefaultProject().globalFeedback.amount).toBe(0);
-  });
-
   it("round-trips JSON without runtime media", () => {
     const p = createDefaultProject();
     p.sources[0].bitmap = {} as ImageBitmap;
@@ -186,19 +177,6 @@ describe("effects registry", () => {
       "votives",
       "moths",
       "charms",
-      "dice",
-      "fruit",
-      "keys",
-      "teeth",
-      "tape",
-      "moons",
-      "saints",
-      "shells",
-      "bells",
-      "coins",
-      "stamps",
-      "eyes",
-      "bones",
     ]);
     for (const family of [
       "classicBody",
@@ -229,19 +207,6 @@ describe("effects registry", () => {
       "candle",
       "moth",
       "charmBow",
-      "diceFam",
-      "fruitFam",
-      "keyFam",
-      "teethFam",
-      "tapeFam",
-      "moonFam",
-      "saintFam",
-      "shellFam",
-      "chimeFam",
-      "coinFam",
-      "stampFam",
-      "eyesFam",
-      "bonesFam",
     ]) {
       expect(critterSrc.includes(family)).toBe(true);
     }
@@ -252,36 +217,8 @@ describe("effects registry", () => {
     expect(idol.params.find((p) => p.id === "place")?.default).toBe("center");
     expect(idol.params.find((p) => p.id === "crowd")?.default).toBe("normal");
     expect(idol.params.find((p) => p.id === "move")?.default).toBe("dance");
-    expect(idol.params.find((p) => p.id === "move")?.options?.map((o) => o.value)).toEqual([
-      "dance",
-      "drift",
-      "float",
-      "orbit",
-    ]);
     expect(idol.params.find((p) => p.id === "grow")?.default).toBe("wild");
-    expect(idol.params.find((p) => p.id === "grow")?.options?.map((o) => o.value)).toContain("crown");
-    expect(idol.params.find((p) => p.id === "grow")?.options?.map((o) => o.value)).toContain("twin");
-    expect(idol.params.find((p) => p.id === "grow")?.options?.map((o) => o.value)).toContain("tusks");
-    expect(idol.params.find((p) => p.id === "grow")?.options?.map((o) => o.value)).toContain("arms");
     expect(idol.params.find((p) => p.id === "coat")?.default).toBe("wild");
-    expect(idol.params.find((p) => p.id === "coat")?.options?.map((o) => o.value)).toEqual([
-      "wild",
-      "cream",
-      "moss",
-      "sodium",
-      "night",
-      "candy",
-      "bruise",
-      "gold",
-      "xerox",
-      "rust",
-      "ice",
-      "blood",
-      "acid",
-      "ink",
-    ]);
-    expect(idol.params.find((p) => p.id === "fold")?.default).toBe("none");
-    expect(idol.params.find((p) => p.id === "fold")?.options?.map((o) => o.value)).toEqual(["none", "prism", "gate", "mirror"]);
     expect(idol.params.find((p) => p.id === "form")).toBeUndefined();
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
@@ -309,11 +246,6 @@ describe("effects registry", () => {
     expect(idolSrc.includes("f.wings")).toBe(true);
     expect(idolSrc.includes("u_grow")).toBe(true);
     expect(idolSrc.includes("u_coat")).toBe(true);
-    expect(idolSrc.includes("u_fold")).toBe(true);
-    expect(idolSrc.includes("figFoldUv")).toBe(true);
-    expect(idolSrc.includes("f.crown")).toBe(true);
-    expect(idolSrc.includes("f.twin")).toBe(true);
-    expect(idolSrc.includes("f.votive")).toBe(true);
     expect(idolSrc.includes("f.skirt")).toBe(true);
     expect(idolSrc.includes("f.antenna")).toBe(true);
     expect(idolSrc.includes("f.halo")).toBe(true);
@@ -349,34 +281,6 @@ describe("effects registry", () => {
     expect(GENERATOR_GLSL).toContain("uMode == 7");
     expect(GENERATOR_GLSL).toContain("u_audio");
     expect(GENERATOR_GLSL).toContain("u_bass");
-    expect(GENERATOR_GLSL).toContain("critterField");
-    expect(GENERATOR_GLSL).not.toContain("charmFam");
-    expect(GENERATOR_GLSL).not.toContain("extraKitBody");
-    expect(GENERATOR_GLSL).not.toContain("diceFam");
-    expect(GENERATOR_GLSL).not.toContain("fruitFam");
-    expect(GENERATOR_GLSL).not.toContain("saintFam");
-    expect(GENERATOR_GLSL).not.toContain("shellFam");
-    expect(GENERATOR_GLSL).not.toContain("eyesFam");
-    expect(GENERATOR_GLSL).not.toContain("bonesFam");
-    expect(GENERATOR_GLSL).not.toContain("classicBody");
-    expect(BOOT_GENERATOR_GLSL).not.toContain("genStars");
-    expect(BOOT_GENERATOR_GLSL).not.toContain("critterField");
-    expect(BOOT_GENERATOR_GLSL).toContain("uMode");
-    expect(GENERATOR_CRITTERS_GLSL).toContain("charmFam");
-    expect(GENERATOR_CRITTERS_GLSL).not.toContain("diceFam");
-  });
-
-  it("boot paints software plasma before WebGL exists", () => {
-    const boot = readFileSync(resolve("src/boot.ts"), "utf8");
-    const plasma = readFileSync(resolve("src/bootPlasma.ts"), "utf8");
-    const shaders = readFileSync(resolve("src/engine/shaders.ts"), "utf8");
-    expect(boot).toContain("startSoftPlasma");
-    expect(boot).toContain('import("./main")');
-    expect(boot).not.toContain("webgl");
-    expect(boot).not.toContain("engine/renderer");
-    expect(plasma).toContain('getContext("2d"');
-    expect(plasma).not.toContain("webgl");
-    expect(shaders).not.toContain("critters.glsl");
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {
@@ -455,25 +359,6 @@ describe("randomize + presets", () => {
     expect(seedOf(stamped, "dancer")).not.toEqual(seedOf(base, "dancer"));
   });
 
-  it("named scene plants a place, kit, and idol wardrobe", () => {
-    for (const seed of [3, 11, 77, 256]) {
-      const { project, name } = randomizeScene({ ...createDefaultProject(), seed, randomAmount: 1 });
-      expect(name.length).toBeGreaterThan(2);
-      const types = project.layers[0].effects.map((e) => e.typeId);
-      expect(types.length).toBeLessThanOrEqual(5);
-      expect(types).toContain("dancer");
-      expect(types).toContain("critters");
-      const idol = project.layers[0].effects.find((e) => e.typeId === "dancer")!;
-      const critters = project.layers[0].effects.find((e) => e.typeId === "critters")!;
-      expect(idol.params.form).toBeUndefined();
-      expect(Number(idol.params.size)).toBeLessThan(0.2);
-      expect(idol.params.crowd).toBe("normal");
-      expect(idol.params.move).not.toBe("hold");
-      expect(typeof critters.params.kit).toBe("string");
-      expect(project.sources.some((s) => s.kind === "generator" && s.generator)).toBe(true);
-    }
-  });
-
   it("ships luma key and dropout", () => {
     expect(getEffect("key")?.name).toBe("Luma key");
     expect(getEffect("dropout")?.name).toBe("Dropout");
@@ -481,10 +366,6 @@ describe("randomize + presets", () => {
     const analog = compileEffectSource(getEffect("analog")!);
     expect(analog).toContain("u_audio");
     expect(analog).toContain("u_bass");
-    const drop = compileEffectSource(getEffect("dropout")!);
-    expect(drop).toContain("u_bass");
-    expect(drop).toContain("u_audio");
-    expect(drop).toContain("beat");
   });
 });
 

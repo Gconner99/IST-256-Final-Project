@@ -7,30 +7,17 @@ Cursor will show the code instead of running the program.
 HOW TO OPEN IT (Windows)
 ------------------------
 
-1. Delete any OLD unzipped folder first (Downloads names like
-   "... (25)" or "... (26)" are stale and will keep crashing).
-2. Download a NEW ZIP and unzip the WHOLE folder. You must see
-   PHOSPHENE.html AND boot.js sitting next to each other.
-3. Open File Explorer (folder icon on the taskbar, or Windows key + E).
-4. Go into that new Phosphene folder.
-5. Double-click:
+1. Open File Explorer (folder icon on the taskbar, or Windows key + E).
+2. Go to the Phosphene folder on your Desktop / Downloads.
+3. Double-click:
 
       Start Phosphene.bat
 
-   A black command window stays open. Chrome or Edge then opens.
-   THAT browser window is the program. Leave the black window open
-   until you are done.
-
-   Plasma should move as soon as the page loads — even before the
-   full instrument appears. The picture is drawn in 2D first so a
-   sick graphics driver cannot kill the tab on startup.
+   A black command window should flash, then Chrome or Edge opens.
+   THAT browser window is the program.
 
 If you click PHOSPHENE.html inside Cursor, it will open as a text file.
 That is the wrong way. Use File Explorer and the .bat file.
-
-Direct ZIP (always the newest on this branch):
-
-https://github.com/Gconner99/IST-256-Final-Project/archive/refs/heads/cursor/phosphene-local-launcher-dc22.zip
 
 
 HOW TO OPEN IT (Mac)
@@ -39,7 +26,6 @@ HOW TO OPEN IT (Mac)
 1. Open Finder (not Cursor).
 2. Go to the Phosphene folder.
 3. Right-click  Start Phosphene.command  → Open.
-4. Leave the Terminal window open while you use it.
 
 
 HOW TO USE IT
@@ -49,10 +35,9 @@ HOW TO USE IT
   OR click Plasma / Noise / Bars / Stars / Marsh / Oil / Paper / Cave / Floaters on the left
   (that click puts the place on the picture)
 - Type a prompt on the left and click Generate to make a NEW image. Again rolls a new seed.
-- Click the lime Pick an MP3 box at the top of the left rail (or drop a song on the picture). Hit Play — idols, floaters, and places move with the mix
+- Drop an MP3 to use it as a soundtrack. Hit Play — idols, floaters, and places move with the mix
 - Click Stamp floaters / Stamp idol / Stamp chaos (new seeds and wardrobe, same place)
-- Idol Grow / Coat dress the same creature (crown, horns, wings, tail, tusks, rust, ice, blood, acid, ink…). Floaters Kit picks votives, moths, dice, shells, bells, coins, stamps, eyes, bones
-- Fold can Prism, Gate, or Mirror the creature. Rand scene draws one named card: a place + look + kit + grow/coat together
+- Idol Grow / Coat pick petals, halo, cream paint, etc. Floaters Kit picks votives, moths, charms
 - Click Print frame to turn the live picture into a still
 - Click Rand all for a new look. Rand wacky stays pretty (cream / toy-pop).
 - Click New at the top to start over

@@ -5,21 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
     <title>PHOSPHENE</title>
-    <script>
-      window.__phospheneMark = false;
-      setTimeout(function () {
-        if (window.__phospheneMark) return;
-        var n = document.getElementById("app");
-        if (!n) return;
-        n.textContent =
-          "PHOSPHENE did not start.\n\nOn Windows: close this tab. In File Explorer, double-click Start Phosphene.bat and leave the black window open.\n\nUnzip the WHOLE folder (html + boot.js + other .js files together). Delete old Downloads folders named like (25).";
-        n.style.cssText =
-          "font:16px ui-monospace,monospace;color:#d6ff3d;padding:24px;white-space:pre-wrap;max-width:40em";
-      }, 8000);
-    </script>
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/src/boot.ts"></script>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

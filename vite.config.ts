@@ -1,23 +1,17 @@
 import { defineConfig } from "vitest/config";
+import { viteSingleFile } from "vite-plugin-singlefile";
 
 export default defineConfig({
   base: "./",
   publicDir: "public",
+  plugins: [viteSingleFile({ removeViteModuleLoader: true }) as never],
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    sourcemap: false,
+    sourcemap: true,
     cssCodeSplit: false,
-    assetsDir: ".",
-    modulePreload: false,
+    assetsInlineLimit: 100000000,
     target: "es2022",
-    rollupOptions: {
-      output: {
-        entryFileNames: "boot.js",
-        chunkFileNames: "[name].js",
-        assetFileNames: "phosphene[extname]",
-      },
-    },
   },
   server: {
     port: 5173,
@@ -26,6 +20,5 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
-    setupFiles: ["tests/setup.ts"],
   },
 });

@@ -31,13 +31,12 @@ import {
   setParam,
   startFromScratch,
   reprintFrame,
-  rollScene,
   stampChaos,
   stampCritters,
   stampIdol,
   toggleEffect,
 } from "./actions";
-import { resumeAudio, getSoundtrack } from "../media/audio";
+import { resumeAudio } from "../media/audio";
 import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
 import { defaultGeneratorSource } from "../core/defaults";
 
@@ -66,8 +65,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="status">RND</label>
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
-      <button class="btn tiny hot" data-act="rand-wacky" title="Pretty wacky look, idol + floaters, a calm place">Rand wacky</button>
-      <button class="btn tiny acid" data-act="rand-scene" title="One named card: place + look + kit + grow/coat">Rand scene</button>
+      <button class="btn tiny hot" data-act="rand-wacky" title="Outsider looks, idols, floaters, a new place">Rand wacky</button>
       <label class="check" title="Drop drifting colored shapes onto every layer when you hit Rand all">
         <input type="checkbox" id="inc-critters" /> floaters
       </label>
@@ -88,7 +86,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <section class="stage">
         <div class="viewport" id="view">
           <div class="hud" id="hud"></div>
-          <div class="dropveil" id="veil">DROP A PHOTO — or drop an MP3 for the mix</div>
+          <div class="dropveil" id="veil">DROP IMAGE / VIDEO / AUDIO</div>
         </div>
       </section>
       <aside class="stack" id="stack"></aside>
@@ -100,17 +98,16 @@ export function mount(root: HTMLElement, renderer: Renderer) {
         <p>A digital darkroom / video synth. Drop media, stack effects, randomize, feed the output back into itself.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
-          <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look &nbsp; <kbd>Shift+S</kbd> named scene</li>
+          <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
           <li><kbd>K</kbd> keyframe selected parameter</li>
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
-          <li>Quality starts on <em>Draft</em>. Open is just plasma — looks compile after you add them (Rand, Stamp idol, Stars…).</li>
-          <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it.</li>
-          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place. <strong>Rand scene</strong> draws one named card (place + kit + grow/coat together), like sodium moth in Cave.</li>
-          <li><strong>Idol</strong> is a small low-poly creature. Grow dresses this body (petals, crown, horns, wings, tail, collar, tusks, extra arms…). Coat tints the paint (rust, ice, blood, acid, ink). Fold → Prism, Gate, or Mirror. Stamp it for a new seed. Crowd → Mini army.</li>
+          <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
+          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place.</li>
+          <li><strong>Idol</strong> is a small low-poly creature. Grow picks petals, halo, antenna, skirt, or quiet. Coat tints the paint (cream, moss, sodium, night). Stamp it for a new seed. Crowd → Mini army.</li>
           <li><strong>Stamp chaos</strong> rerolls floater + idol seeds and their kit/grow/coat — keeps the backdrop. <strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, and Cave. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom breathe with the mix.</li>
-          <li><strong>Soundtrack</strong> — the lime <em>Pick an MP3</em> box is at the top of the left rail. Click it (or drop a song on the picture). It does not replace your picture. Hit Play; idols kick on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
+          <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
@@ -157,7 +154,6 @@ function bind(root: HTMLElement) {
     if (act === "seed+") bumpSeed(1);
     if (act === "rand-all") randomize("all");
     if (act === "rand-wacky") randomize("all", true);
-    if (act === "rand-scene") rollScene();
     if (act === "stamp-chaos") stampChaos();
     if (act === "reprint") {
       if (rendererRef) void reprintFrame(rendererRef);
@@ -177,7 +173,6 @@ function bind(root: HTMLElement) {
     }
     if (act === "help") store.patchUi({ helpOpen: !store.state.ui.helpOpen });
     if (act === "import") root.querySelector<HTMLInputElement>("#media-file")?.click();
-    if (act === "import-audio") root.querySelector<HTMLInputElement>("#audio-file")?.click();
     if (act === "replace") root.querySelector<HTMLInputElement>("#replace-file")?.click();
     if (act === "freeze") void freezeSelected();
     if (act === "gen") {
@@ -282,10 +277,6 @@ function bind(root: HTMLElement) {
     }
     if (t.id === "replace-file" && t instanceof HTMLInputElement && t.files) {
       void importFiles(t.files, true);
-      t.value = "";
-    }
-    if (t.id === "audio-file" && t instanceof HTMLInputElement && t.files) {
-      void importFiles(t.files, false);
       t.value = "";
     }
     if (t.id === "quality") store.setProject((p) => ({ ...p, quality: t.value as ProjectQuality }));
@@ -401,10 +392,6 @@ function bind(root: HTMLElement) {
     }
     if (e.key === "r" || e.key === "R") randomize(e.shiftKey ? "all" : "selected");
     if ((e.key === "w" || e.key === "W") && e.shiftKey) randomize("all", true);
-    if ((e.key === "s" || e.key === "S") && e.shiftKey && !e.metaKey && !e.ctrlKey) {
-      e.preventDefault();
-      rollScene();
-    }
     if (e.key === "k" || e.key === "K") addKeyframe();
     if (e.key === "n" || e.key === "N") {
       e.preventDefault();
@@ -460,21 +447,10 @@ function paint(root: HTMLElement) {
 function paintRail(n: HTMLElement) {
   const p = store.project;
   const ui = store.state.ui;
-  const mix = getSoundtrack(p);
   n.innerHTML = `
-    <div class="mixbox" data-act="import-audio" title="Load an MP3. This is the song, not the picture.">
-      <div class="sec">Song for the mix</div>
-      <button class="btn acid mixbtn" data-act="import-audio">${mix ? "Swap MP3" : "Pick an MP3"}</button>
-      <input id="audio-file" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden />
-      <div class="status" style="margin-top:6px">${
-        mix
-          ? `playing the mix · ${esc(mix.name)} · ${fmtTime(mix.duration || 0)} — hit Play at the bottom`
-          : "Click this lime box to load an MP3. It does not replace the picture. You can also drop a song on the dark stage, then hit Play."
-      }</div>
-    </div>
     <div class="sec">Sources</div>
     <div class="row">
-      <button class="btn tiny acid" data-act="import">Import photo / video</button>
+      <button class="btn tiny acid" data-act="import">Import</button>
       <button class="btn tiny" data-act="replace">Replace</button>
       <button class="btn tiny" data-act="freeze">Still frame</button>
       <button class="btn tiny" data-act="reprint">Print frame</button>
@@ -513,7 +489,7 @@ function paintRail(n: HTMLElement) {
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop, Votives, Moths, Charms, Dice, Fruit, Keys, Teeth, Tape, Moons, Saints, Shells, Bells, Coins, Stamps, Eyes, Bones. Idol Grow / Coat dress this creature (horns, wings, tail, tusks, rust, ice, blood, acid, ink). Fold → Prism, Gate, or Mirror. Rand scene draws a named card. Stamp chaos rerolls wardrobe, not the backdrop.</div>
+    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop, Votives, Moths, Charms. Idol Grow / Coat pick a wardrobe without changing the creature language. Stamp chaos rerolls those, not the backdrop.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
@@ -682,7 +658,6 @@ function paintTransport(n: HTMLElement) {
   const busy = store.state.ui.exporting;
   const dur = Math.max(p.duration, 0.1);
   const pct = (pb.time / dur) * 100;
-  const mix = getSoundtrack(p);
   n.innerHTML = `
     <div class="t-left">
       <div class="sec">Playback</div>
@@ -692,9 +667,6 @@ function paintTransport(n: HTMLElement) {
           ${["forward","reverse","pingpong","random"].map((m) => `<option ${pb.mode===m?"selected":""} value="${m}">${m}</option>`).join("")}
         </select>
       </div>
-      <div class="status" style="margin:6px 0 4px">${
-        mix ? `song · ${esc(mix.name)} — hit Play` : `no song yet — click Pick an MP3 (lime box, top left)`
-      }</div>
       ${num("speed", "Speed", pb.speed, 0.05, 4, 0.01)}
       <div class="check"><input type="checkbox" id="loop" ${pb.loop ? "checked" : ""}/> loop
         &nbsp; <input type="checkbox" id="freeze" ${pb.freeze ? "checked" : ""}/> freeze</div>
@@ -769,20 +741,12 @@ function fmtTime(t: number) {
   return `${String(m).padStart(2, "0")}:${s.toFixed(2).padStart(5, "0")}`;
 }
 
-const LIVE_MAX = 640;
-
 export function resizeCanvas(canvas: HTMLCanvasElement, host: HTMLElement) {
   if (store.state.ui.exporting) return;
   const dpr = 1;
   const r = host.getBoundingClientRect();
-  let w = Math.max(16, Math.floor(r.width * dpr));
-  let h = Math.max(16, Math.floor(r.height * dpr));
-  const edge = Math.max(w, h);
-  if (edge > LIVE_MAX) {
-    const s = LIVE_MAX / edge;
-    w = Math.max(16, Math.floor(w * s));
-    h = Math.max(16, Math.floor(h * s));
-  }
+  const w = Math.max(16, Math.floor(r.width * dpr));
+  const h = Math.max(16, Math.floor(r.height * dpr));
   if (canvas.width !== w || canvas.height !== h) {
     canvas.width = w;
     canvas.height = h;
