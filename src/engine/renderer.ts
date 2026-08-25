@@ -1,6 +1,5 @@
 import type { EffectInstance, Layer, MediaSource, Project, QualityMode } from "../core/types";
 import { resolvedLayerParams } from "../core/timeline";
-import { dancerForCompile } from "../effects/dancer";
 import { getEffect } from "../effects/registry";
 import { getSoundtrack, sampleAudio } from "../media/audio";
 import {
@@ -15,6 +14,7 @@ import {
   Program,
   texImage,
 } from "./gl";
+import { dancerForCompile } from "../effects/dancer";
 import { compileEffectProgram, hexToRgb } from "./compile";
 import {
   BLIT_GLSL,
@@ -22,10 +22,10 @@ import {
   COMPOSITE_GLSL,
   COPY_GLSL,
   FEEDBACK_GLSL,
-  GENERATOR_CRITTERS_GLSL,
   GENERATOR_GLSL,
   TEXTURE_GLSL,
 } from "./shaders";
+import { GENERATOR_CRITTERS_GLSL } from "./shaders-critters";
 
 const RING = 2;
 
@@ -102,7 +102,7 @@ export class Renderer {
   }
 
   private buildEffect(typeId: string, mini: boolean, key: string): Program | null {
-    const def = typeId === "dancer" ? dancerForCompile(mini) : getEffect(typeId);
+    const def = typeId === "dancer" && mini ? dancerForCompile(true) : getEffect(typeId);
     if (!def) return null;
     try {
       const p = compileEffectProgram(this.gl, def);
@@ -131,14 +131,14 @@ export class Renderer {
     const now = sync || this.eagerCompile;
     if (mode === 6) {
       if (this.generatorCritters) return this.generatorCritters;
+      const make = () => {
+        this.generatorCritters ??= new Program(this.gl, GENERATOR_CRITTERS_GLSL);
+      };
       if (now) {
-        this.generatorCritters = new Program(this.gl, GENERATOR_CRITTERS_GLSL);
-        return this.generatorCritters;
+        make();
+        return this.generatorCritters!;
       }
-      this.scheduleCompile("gen:critters", () => {
-        if (this.generatorCritters) return;
-        this.generatorCritters = new Program(this.gl, GENERATOR_CRITTERS_GLSL);
-      });
+      this.scheduleCompile("gen:critters", make);
       return this.generatorProg;
     }
     if (mode >= 7) {

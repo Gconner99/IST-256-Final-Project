@@ -1,6 +1,8 @@
 import type { EffectType } from "../core/types";
 import { CRITTER_EFFECT_GLSL } from "../engine/critters.glsl";
-import { dancer } from "./dancer";
+import { FLOATER_KITS } from "./kits";
+
+export { FLOATER_KITS };
 
 export const critters: EffectType = {
   id: "critters",
@@ -62,27 +64,3 @@ vec4 apply(vec2 uv) {
 }
 `,
 };
-
-export const FLOATER_KITS = [
-  "shapes",
-  "toy pop",
-  "mix",
-  "votives",
-  "moths",
-  "charms",
-  "dice",
-  "fruit",
-  "keys",
-  "teeth",
-  "tape",
-  "moons",
-  "saints",
-  "shells",
-  "bells",
-  "coins",
-  "stamps",
-  "eyes",
-  "bones",
-] as const;
-
-export const WACKY_EFFECTS = [critters, dancer];

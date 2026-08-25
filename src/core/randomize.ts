@@ -1,5 +1,5 @@
 import { getEffect } from "../effects/registry";
-import { FLOATER_KITS } from "../effects/critters";
+import { FLOATER_KITS } from "../effects/kits";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
 import type { BlendMode, EffectInstance, GeneratorType, Layer, ParamDef, Project } from "./types";

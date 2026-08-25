@@ -8,9 +8,9 @@ Not a Premiere or Photoshop clone. Phosphene is a GPU effect pipeline with a tac
 
 Do **not** open the files inside Cursor.
 
-On Windows, open the folder in **File Explorer** and double-click **`Start Phosphene.bat`**. A command window flashes, then Chrome or Edge opens — that browser window is the program.
+On Windows, open the folder in **File Explorer** and double-click **`Start Phosphene.bat`**. Leave the black command window open. Chrome or Edge then opens — that browser window is the program.
 
-Plasma should move as soon as Chrome opens. If Chrome crashes, delete any old unzipped folder (names like `...(25)`) and download a fresh ZIP.
+Unzip the **whole** folder (`PHOSPHENE.html` plus `boot.js` and the other `.js` files). Plasma paints in 2D first so a sick graphics driver cannot kill the tab on startup. If Chrome still crashes, delete any old unzipped folder (names like `...(25)`) and download a fresh ZIP.
 
 Read `START HERE.txt` if you get stuck.
 

@@ -1,5 +1,3 @@
-import { CRITTER_GLSL } from "./critters.glsl";
-
 export const VERT_SRC = `#version 300 es
 precision highp float;
 const vec2 POS[3] = vec2[3](vec2(-1.0, -1.0), vec2(3.0, -1.0), vec2(-1.0, 3.0));
@@ -445,8 +443,9 @@ void main() {
 /** Places after you click Stars / Marsh / Oil / Paper / Cave. Not compiled at boot. */
 export const GENERATOR_GLSL = generatorSource(CRITTER_FIELD_STUB);
 
-/** Floaters-as-place only. Compiled the first time that button is used. */
-export const GENERATOR_CRITTERS_GLSL = generatorSource(CRITTER_GLSL);
+export function placesWithField(fieldSrc: string) {
+  return generatorSource(fieldSrc);
+}
 
 export const COPY_GLSL = `#version 300 es
 precision highp float;

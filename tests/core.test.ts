@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { clamp, evenSize, fitEven, lerp, mulberry32 } from "../src/core/random";
 import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../src/core/exportSize";
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
@@ -11,7 +13,8 @@ import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
-import { BOOT_GENERATOR_GLSL, GENERATOR_CRITTERS_GLSL, GENERATOR_GLSL } from "../src/engine/shaders";
+import { BOOT_GENERATOR_GLSL, GENERATOR_GLSL } from "../src/engine/shaders";
+import { GENERATOR_CRITTERS_GLSL } from "../src/engine/shaders-critters";
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
@@ -361,6 +364,19 @@ describe("effects registry", () => {
     expect(BOOT_GENERATOR_GLSL).toContain("uMode");
     expect(GENERATOR_CRITTERS_GLSL).toContain("charmFam");
     expect(GENERATOR_CRITTERS_GLSL).not.toContain("diceFam");
+  });
+
+  it("boot paints software plasma before WebGL exists", () => {
+    const boot = readFileSync(resolve("src/boot.ts"), "utf8");
+    const plasma = readFileSync(resolve("src/bootPlasma.ts"), "utf8");
+    const shaders = readFileSync(resolve("src/engine/shaders.ts"), "utf8");
+    expect(boot).toContain("startSoftPlasma");
+    expect(boot).toContain('import("./main")');
+    expect(boot).not.toContain("webgl");
+    expect(boot).not.toContain("engine/renderer");
+    expect(plasma).toContain('getContext("2d"');
+    expect(plasma).not.toContain("webgl");
+    expect(shaders).not.toContain("critters.glsl");
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {

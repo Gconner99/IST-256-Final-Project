@@ -7,7 +7,8 @@ export function createGL(canvas: HTMLCanvasElement): WebGL2RenderingContext {
     alpha: false,
     antialias: false,
     preserveDrawingBuffer: false,
-    powerPreference: "default",
+    powerPreference: "low-power",
+    failIfMajorPerformanceCaveat: false,
     premultipliedAlpha: false,
   });
   if (!gl) throw new GLError("WebGL2 is required for Phosphene.");

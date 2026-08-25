@@ -5,15 +5,17 @@
       "name": "Phosphene",
       "type": "chrome",
       "request": "launch",
-      "file": "${workspaceFolder}/PHOSPHENE.html",
-      "webRoot": "${workspaceFolder}"
+      "url": "http://127.0.0.1:5173",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "phosphene: serve"
     },
     {
       "name": "Phosphene (Edge)",
       "type": "msedge",
       "request": "launch",
-      "file": "${workspaceFolder}/PHOSPHENE.html",
-      "webRoot": "${workspaceFolder}"
+      "url": "http://127.0.0.1:5173",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "phosphene: serve"
     }
   ]
 }

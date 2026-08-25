@@ -7,25 +7,30 @@ Cursor will show the code instead of running the program.
 HOW TO OPEN IT (Windows)
 ------------------------
 
-1. Open File Explorer (folder icon on the taskbar, or Windows key + E).
-2. Go to the Phosphene folder on your Desktop / Downloads.
-3. Double-click:
+1. Delete any OLD unzipped folder first (Downloads names like
+   "... (25)" or "... (26)" are stale and will keep crashing).
+2. Download a NEW ZIP and unzip the WHOLE folder. You must see
+   PHOSPHENE.html AND boot.js sitting next to each other.
+3. Open File Explorer (folder icon on the taskbar, or Windows key + E).
+4. Go into that new Phosphene folder.
+5. Double-click:
 
       Start Phosphene.bat
 
-   A black command window should flash, then Chrome or Edge opens.
-   THAT browser window is the program.
+   A black command window stays open. Chrome or Edge then opens.
+   THAT browser window is the program. Leave the black window open
+   until you are done.
 
-   Plasma should move as soon as Chrome opens. This build draws plasma
-   with one tiny shader — looks compile later, only after you add them.
-
-   If Chrome opens but the picture never moves, or Chrome itself crashes,
-   you are in an OLD unzipped folder (Downloads names like "... (25)"
-   are stale). Delete that folder, download a new ZIP, unzip, then
-   double-click Start Phosphene.bat again.
+   Plasma should move as soon as the page loads — even before the
+   full instrument appears. The picture is drawn in 2D first so a
+   sick graphics driver cannot kill the tab on startup.
 
 If you click PHOSPHENE.html inside Cursor, it will open as a text file.
 That is the wrong way. Use File Explorer and the .bat file.
+
+Direct ZIP (always the newest on this branch):
+
+https://github.com/Gconner99/IST-256-Final-Project/archive/refs/heads/cursor/phosphene-local-launcher-dc22.zip
 
 
 HOW TO OPEN IT (Mac)
@@ -34,6 +39,7 @@ HOW TO OPEN IT (Mac)
 1. Open Finder (not Cursor).
 2. Go to the Phosphene folder.
 3. Right-click  Start Phosphene.command  → Open.
+4. Leave the Terminal window open while you use it.
 
 
 HOW TO USE IT
