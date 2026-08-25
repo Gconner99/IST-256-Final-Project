@@ -305,6 +305,7 @@ describe("effects registry", () => {
     expect(buddySrc.includes("bdLump")).toBe(true);
     expect(buddySrc.includes("bdPal")).toBe(true);
     expect(buddySrc.includes("hsv2rgb")).toBe(true);
+    expect(/\bfloat patch\b/.test(buddySrc)).toBe(false);
     expect(buddySrc.includes("u_kind")).toBe(true);
     expect(buddySrc.includes("figureRender")).toBe(false);
     expect(BOOT_GENERATOR_GLSL.includes("buddyRender")).toBe(false);

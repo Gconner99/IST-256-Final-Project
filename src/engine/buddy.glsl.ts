@@ -122,40 +122,40 @@ float bdBody(vec2 p, float kind, float id) {
   if (k < 4.5) return bdVinyl(p, id);
   return bdHeart(p, id);
 }
-vec3 bdPal(float id, float patch) {
+vec3 bdPal(float id, float tone) {
   float vibe = bdH(id + 0.11);
-  float hue = fract(bdH(id + patch * 1.71) * 0.92 + bdH(id) * 0.28);
-  float sat = mix(0.42, 0.92, bdH(id + patch + 8.2));
-  float val = mix(0.62, 0.98, bdH(id + patch + 9.1));
+  float hue = fract(bdH(id + tone * 1.71) * 0.92 + bdH(id) * 0.28);
+  float sat = mix(0.42, 0.92, bdH(id + tone + 8.2));
+  float val = mix(0.62, 0.98, bdH(id + tone + 9.1));
   if (vibe > 0.84) {
-    hue = mix(0.86, 0.98, bdH(id + patch));
-    sat = mix(0.48, 0.9, bdH(id + patch + 1.0));
-    val = mix(0.48, 0.88, bdH(id + patch + 2.0));
+    hue = mix(0.86, 0.98, bdH(id + tone));
+    sat = mix(0.48, 0.9, bdH(id + tone + 1.0));
+    val = mix(0.48, 0.88, bdH(id + tone + 2.0));
   } else if (vibe > 0.68) {
-    hue = mix(0.07, 0.16, bdH(id + patch));
-    sat = mix(0.55, 0.95, bdH(id + patch + 1.0));
-    val = mix(0.72, 0.98, bdH(id + patch + 2.0));
+    hue = mix(0.07, 0.16, bdH(id + tone));
+    sat = mix(0.55, 0.95, bdH(id + tone + 1.0));
+    val = mix(0.72, 0.98, bdH(id + tone + 2.0));
   } else if (vibe > 0.52) {
-    hue = mix(0.22, 0.42, bdH(id + patch));
-    sat = mix(0.35, 0.78, bdH(id + patch + 1.0));
-    val = mix(0.42, 0.82, bdH(id + patch + 2.0));
+    hue = mix(0.22, 0.42, bdH(id + tone));
+    sat = mix(0.35, 0.78, bdH(id + tone + 1.0));
+    val = mix(0.42, 0.82, bdH(id + tone + 2.0));
   } else if (vibe > 0.36) {
-    hue = mix(0.52, 0.74, bdH(id + patch));
-    sat = mix(0.28, 0.7, bdH(id + patch + 1.0));
-    val = mix(0.32, 0.72, bdH(id + patch + 2.0));
+    hue = mix(0.52, 0.74, bdH(id + tone));
+    sat = mix(0.28, 0.7, bdH(id + tone + 1.0));
+    val = mix(0.32, 0.72, bdH(id + tone + 2.0));
   } else if (vibe > 0.2) {
-    hue = mix(0.62, 0.82, bdH(id + patch));
-    sat = mix(0.55, 0.98, bdH(id + patch + 1.0));
-    val = mix(0.55, 0.95, bdH(id + patch + 2.0));
+    hue = mix(0.62, 0.82, bdH(id + tone));
+    sat = mix(0.55, 0.98, bdH(id + tone + 1.0));
+    val = mix(0.55, 0.95, bdH(id + tone + 2.0));
   }
   if (bdH(id + 0.07) > 0.88) {
-    sat = mix(0.06, 0.28, bdH(id + patch));
-    val = mix(0.72, 0.98, bdH(id + patch + 1.0));
+    sat = mix(0.06, 0.28, bdH(id + tone));
+    val = mix(0.72, 0.98, bdH(id + tone + 1.0));
   }
-  if (patch > 0.5) {
+  if (tone > 0.5) {
     float split = mix(0.18, 0.52, bdH(id + 0.33));
     hue = fract(hue + split);
-    if (bdH(id + 0.37) > 0.55) val = mix(val * 0.55, val, bdH(id + patch));
+    if (bdH(id + 0.37) > 0.55) val = mix(val * 0.55, val, bdH(id + tone));
   }
   return hsv2rgb(vec3(hue, sat, val));
 }
