@@ -76,13 +76,14 @@ const GEN_INK: Record<string, { a: string; b: string }> = {
   paper: { a: "#e8dcc8", b: "#2a1810" },
   cave: { a: "#08060c", b: "#7aa2ff" },
   stage: { a: "#ff8ab8", b: "#7ad8ff" },
+  sketch: { a: "#efe4c8", b: "#c45c66" },
 };
 
 export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"): MediaSource {
   const ink = GEN_INK[kind ?? "plasma"] ?? { a: "#140c10", b: "#f0d2b0" };
   return {
     id: uid("src"),
-    name: kind === "critters" ? "FLOATERS" : kind === "stage" ? "STAGE" : kind ? kind.toUpperCase() : "SIGNAL",
+    name: kind === "critters" ? "FLOATERS" : kind === "stage" ? "STAGE" : kind === "sketch" ? "SKETCH" : kind ? kind.toUpperCase() : "SIGNAL",
     kind: "generator",
     generator: kind ?? "plasma",
     colorA: ink.a,

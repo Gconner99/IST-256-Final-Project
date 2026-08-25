@@ -13,7 +13,8 @@ export type GeneratorType =
   | "oil"
   | "paper"
   | "cave"
-  | "stage";
+  | "stage"
+  | "sketch";
 export type BlendMode =
   | "normal"
   | "add"
@@ -214,6 +215,7 @@ export interface AppUi {
   generating: boolean;
   includeCritters: boolean;
   includeIdol: boolean;
+  includeBuddy: boolean;
   exporting: boolean;
 }
 

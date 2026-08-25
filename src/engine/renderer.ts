@@ -23,6 +23,7 @@ import {
   COPY_GLSL,
   FEEDBACK_GLSL,
   GENERATOR_GLSL,
+  SKETCH_GENERATOR_GLSL,
   STAGE_GENERATOR_GLSL,
   TEXTURE_GLSL,
 } from "./shaders";
@@ -61,6 +62,7 @@ export class Renderer {
   private generatorProg: Program;
   private generatorFull: Program | null = null;
   private stageProg: Program | null = null;
+  private sketchProg: Program | null = null;
   private textureProg: Program | null = null;
   private black: WebGLTexture | null = null;
   lastError: string | null = null;
@@ -127,6 +129,10 @@ export class Renderer {
     if (mode === 12) {
       this.stageProg ??= new Program(this.gl, STAGE_GENERATOR_GLSL);
       return this.stageProg;
+    }
+    if (mode === 13) {
+      this.sketchProg ??= new Program(this.gl, SKETCH_GENERATOR_GLSL);
+      return this.sketchProg;
     }
     this.generatorFull ??= new Program(this.gl, GENERATOR_GLSL);
     return this.generatorFull;

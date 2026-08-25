@@ -539,6 +539,96 @@ void main() {
 }
 `;
 
+/** Sketchbook / sticker album. Own program so other places stay light. */
+export const SKETCH_GENERATOR_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash21(i);
+  float b = hash21(i + vec2(1.0, 0.0));
+  float c = hash21(i + vec2(0.0, 1.0));
+  float d = hash21(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+float sdBox(vec2 p, vec2 b) {
+  vec2 q = abs(p) - b;
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+}
+void main() {
+  vec2 uv = vUv;
+  float t = uTime;
+  vec3 paper = mix(vec3(0.94, 0.89, 0.78), uColorA, 0.1);
+  float fiber = vnoise(uv * 42.0);
+  paper *= 0.96 + 0.07 * fiber;
+  float rule = 1.0 - smoothstep(0.0, 0.003, abs(fract(uv.y * 14.0) - 0.5));
+  paper = mix(paper, vec3(0.72, 0.82, 0.92), rule * 0.18 * step(0.08, uv.x));
+  float margin = 1.0 - smoothstep(0.0, 0.004, abs(uv.x - 0.08));
+  paper = mix(paper, vec3(0.86, 0.32, 0.38), margin * 0.55);
+  float stain = smoothstep(0.78, 0.96, vnoise(uv * 2.2 + uSeed * 0.1));
+  paper = mix(paper, mix(uColorB, vec3(0.55, 0.38, 0.22), 0.4), stain * 0.1);
+  vec2 ring = uv - vec2(0.82, 0.22);
+  float coffee = abs(length(ring) - 0.08) - 0.008;
+  paper = mix(paper, vec3(0.62, 0.42, 0.28), (1.0 - smoothstep(0.0, 0.012, coffee)) * 0.28);
+
+  vec3 col = paper;
+  if (uv.y > 0.9) {
+    float stripe = step(0.5, fract(uv.x * 18.0 + uv.y * 4.0));
+    vec3 tape = mix(vec3(1.0, 0.72, 0.82), vec3(0.55, 0.85, 0.95), stripe);
+    col = mix(tape, col, 0.12);
+    col = mix(col, vec3(0.85, 0.78, 0.7), 1.0 - smoothstep(0.0, 0.008, abs(uv.y - 0.9)));
+  }
+  float cTL = sdBox(uv - vec2(0.07, 0.93), vec2(0.09, 0.035));
+  float cBR = sdBox(uv - vec2(0.93, 0.07), vec2(0.1, 0.032));
+  col = mix(col, vec3(0.96, 0.9, 0.7), (1.0 - smoothstep(0.0, 0.01, cTL)) * 0.85);
+  col = mix(col, vec3(0.98, 0.78, 0.55), (1.0 - smoothstep(0.0, 0.01, cBR)) * 0.8);
+
+  float s0 = 0.46;
+  col = mix(col, vec3(0.22, 0.16, 0.18), 1.0 - smoothstep(0.0, 0.0035, abs(uv.y - s0)));
+  col = mix(col, vec3(0.22, 0.16, 0.18), 1.0 - smoothstep(0.0, 0.0035, abs(uv.y - (s0 + 0.03))));
+  col = mix(col, vec3(0.22, 0.16, 0.18), 1.0 - smoothstep(0.0, 0.0035, abs(uv.y - (s0 + 0.06))));
+  col = mix(col, vec3(0.22, 0.16, 0.18), 1.0 - smoothstep(0.0, 0.0035, abs(uv.y - (s0 + 0.09))));
+  col = mix(col, vec3(0.22, 0.16, 0.18), 1.0 - smoothstep(0.0, 0.0035, abs(uv.y - (s0 + 0.12))));
+
+  for (int n = 0; n < 4; n++) {
+    float fi = float(n);
+    vec2 np = vec2(0.22 + fi * 0.16, s0 + 0.03 + 0.05 * sin(t * 1.1 + fi) * (0.4 + u_bass));
+    vec2 lp = uv - np;
+    float head = length(lp * vec2(1.3, 1.0) - vec2(-0.006, -0.004)) - 0.014;
+    float stem = sdBox(lp - vec2(0.011, 0.028), vec2(0.0035, 0.032));
+    float note = min(head, stem);
+    vec3 ink = mix(vec3(0.18, 0.12, 0.16), vec3(0.75, 0.28, 0.42), 0.35 + 0.25 * sin(fi + uSeed));
+    col = mix(col, ink, 1.0 - smoothstep(0.0, 0.006, note));
+  }
+
+  vec2 star = uv - vec2(0.16, 0.78);
+  float dood = min(abs(star.x) + abs(star.y) - 0.03, length(star) - 0.012);
+  col = mix(col, vec3(0.9, 0.35, 0.55), (1.0 - smoothstep(0.0, 0.008, dood)) * 0.7);
+  vec2 hrt = uv - vec2(0.84, 0.74);
+  float hd = min(length(hrt - vec2(-0.018, 0.01)) - 0.018, length(hrt - vec2(0.018, 0.01)) - 0.018);
+  col = mix(col, vec3(0.92, 0.4, 0.55), (1.0 - smoothstep(0.0, 0.008, hd)) * 0.65);
+
+  float edge = pow(length(uv - 0.5) * 1.05, 2.4) * 0.08;
+  fragColor = vec4(clamp(col - edge, 0.0, 1.0), 1.0);
+}
+`;
+
 export const COPY_GLSL = `#version 300 es
 precision highp float;
 in vec2 vUv;

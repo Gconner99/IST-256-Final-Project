@@ -34,6 +34,7 @@ import {
   stampChaos,
   stampCritters,
   stampIdol,
+  stampBuddy,
   toggleEffect,
 } from "./actions";
 import { resumeAudio } from "../media/audio";
@@ -72,6 +73,9 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="check" title="Drop a dancing 3D figure in the middle when you hit Rand all">
         <input type="checkbox" id="inc-idol" /> idol
       </label>
+      <label class="check" title="Drop a googly music toy in the middle when you hit Rand all">
+        <input type="checkbox" id="inc-buddy" /> buddy
+      </label>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
       <select id="quality">
@@ -105,8 +109,9 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place.</li>
           <li><strong>Idol</strong> is a small low-poly creature. Grow picks petals, halo, antenna, skirt, or quiet. Coat tints the paint (cream, moss, sodium, night). Stamp it for a new seed. Crowd → Mini army.</li>
-          <li><strong>Stamp chaos</strong> rerolls floater + idol seeds and their kit/grow/coat — keeps the backdrop. <strong>Print frame</strong> turns the live picture into a still.</li>
-          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, Cave, and Stage. Stage is a candy toy-pop room — piano keys, staff, bouncing notes, stickers of guitars and boomboxes. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom/keys breathe with the mix.</li>
+          <li><strong>Buddy</strong> is a toy-pop centerpiece like Idol: a music note, guitar, piano, boombox, vinyl, or heart with googly eyes. Kind Mix rolls a new mascot. Stamp buddy for a new seed. They bounce to the soundtrack.</li>
+          <li><strong>Stamp chaos</strong> rerolls floater + idol + buddy seeds and their kit/grow/coat/kind — keeps the backdrop. <strong>Print frame</strong> turns the live picture into a still.</li>
+          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, Cave, Stage, and Sketch. Stage is a candy toy-pop room. Sketch is a composition-notebook sticker album — cream paper, ruled lines, washi tape, doodled notes. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom/keys breathe with the mix.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
@@ -185,6 +190,7 @@ function bind(root: HTMLElement) {
     }
     if (act === "stamp-critters") stampCritters();
     if (act === "stamp-idol") stampIdol();
+    if (act === "stamp-buddy") stampBuddy();
     if (act === "add-layer") addLayer();
     if (act === "dup-layer" && id) duplicateLayer(id);
     if (act === "del-layer" && id) removeLayer(id);
@@ -301,6 +307,9 @@ function bind(root: HTMLElement) {
     if (t.id === "inc-idol" || t.id === "inc-idol-rail") {
       store.patchUi({ includeIdol: (t as HTMLInputElement).checked });
     }
+    if (t.id === "inc-buddy" || t.id === "inc-buddy-rail") {
+      store.patchUi({ includeBuddy: (t as HTMLInputElement).checked });
+    }
   });
 
   root.addEventListener("input", (e) => {
@@ -313,6 +322,9 @@ function bind(root: HTMLElement) {
     }
     if (t.id === "inc-idol" || t.id === "inc-idol-rail") {
       store.patchUi({ includeIdol: (t as HTMLInputElement).checked });
+    }
+    if (t.id === "inc-buddy" || t.id === "inc-buddy-rail") {
+      store.patchUi({ includeBuddy: (t as HTMLInputElement).checked });
     }
     if (t.id === "seed") store.setProject((pr) => ({ ...pr, seed: Number(t.value) || 0 }), false);
     if (t.id === "rnd-amt") store.setProject((pr) => ({ ...pr, randomAmount: Number(t.value) }), false);
@@ -435,6 +447,8 @@ function paint(root: HTMLElement) {
   if (crit) crit.checked = ui.includeCritters;
   const idol = root.querySelector<HTMLInputElement>("#inc-idol");
   if (idol) idol.checked = ui.includeIdol;
+  const buddy = root.querySelector<HTMLInputElement>("#inc-buddy");
+  if (buddy) buddy.checked = ui.includeBuddy;
   root.querySelector("#help")?.classList.toggle("on", ui.helpOpen);
   root.querySelector("#veil")?.classList.toggle("on", ui.dropActive);
   root.querySelector("#led")?.classList.toggle("hot", p.playback.playing);
@@ -478,11 +492,13 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="paper">Paper</button>
       <button class="btn tiny acid" data-act="gen" data-kind="cave">Cave</button>
       <button class="btn tiny acid" data-act="gen" data-kind="stage">Stage</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="sketch">Sketch</button>
     </div>
     <div class="row">
       <button class="btn tiny acid" data-act="gen" data-kind="critters">Floaters</button>
       <button class="btn tiny acid" data-act="stamp-critters">Stamp floaters</button>
       <button class="btn tiny acid" data-act="stamp-idol">Stamp idol</button>
+      <button class="btn tiny acid" data-act="stamp-buddy">Stamp buddy</button>
     </div>
     <div class="row">
       <button class="btn tiny hot" data-act="stamp-chaos">Stamp chaos</button>
@@ -490,7 +506,8 @@ function paintRail(n: HTMLElement) {
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop (notes, piano, guitar, boombox…), Votives, Moths, Charms. Idol Grow / Coat pick a wardrobe without changing the creature language. Stamp chaos rerolls those, not the backdrop.</div>
+    <label class="check"><input type="checkbox" id="inc-buddy-rail" ${ui.includeBuddy ? "checked" : ""}/> include buddy in Rand all</label>
+    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop (notes, piano, guitar, boombox…). Buddy Kind: note, guitar, piano, boombox, vinyl, heart. Sketch is a sticker-notebook place. Stamp chaos rerolls those, not the backdrop.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
@@ -599,6 +616,7 @@ function paintStack(n: HTMLElement) {
       <div class="row" style="margin-top:4px">
         <button class="btn tiny acid" data-act="stamp-critters">stamp floaters</button>
         <button class="btn tiny acid" data-act="stamp-idol">stamp idol</button>
+        <button class="btn tiny acid" data-act="stamp-buddy">stamp buddy</button>
         <button class="btn tiny hot" data-act="stamp-chaos">stamp chaos</button>
       </div>
       ${fx ? `

@@ -4,14 +4,14 @@ import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../s
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
+import { ensureBuddy, ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
-import { BOOT_GENERATOR_GLSL, GENERATOR_GLSL, STAGE_GENERATOR_GLSL } from "../src/engine/shaders";
+import { BOOT_GENERATOR_GLSL, GENERATOR_GLSL, SKETCH_GENERATOR_GLSL, STAGE_GENERATOR_GLSL } from "../src/engine/shaders";
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
@@ -160,18 +160,30 @@ describe("place buttons", () => {
     expect(store.project.layers[0].sourceId).toBe(stage.id);
     expect(stage.name).toBe("STAGE");
     expect(stage.generator).toBe("stage");
+    const sketch = defaultGeneratorSource("sketch");
+    addSource(sketch, true);
+    expect(store.project.layers[0].sourceId).toBe(sketch.id);
+    expect(sketch.name).toBe("SKETCH");
+    expect(sketch.generator).toBe("sketch");
+  });
+
+  it("can drop a buddy onto a layer that does not have one", () => {
+    const p = ensureBuddy(createDefaultProject());
+    expect(p.layers[0].effects.some((e) => e.typeId === "buddy")).toBe(true);
+    expect(ensureBuddy(p).layers[0].effects.filter((e) => e.typeId === "buddy")).toHaveLength(1);
   });
 });
 
 describe("effects registry", () => {
   it("ships a usable MVP library", () => {
     expect(allEffects().length).toBeGreaterThanOrEqual(15);
-    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer"]) {
+    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer", "buddy"]) {
       expect(getEffect(id)).toBeTruthy();
     }
     expect(getEffect("critters")?.category).toBe("wacky");
     expect(getEffect("critters")?.name).toBe("Floaters");
     expect(getEffect("dancer")?.name).toBe("Idol");
+    expect(getEffect("buddy")?.name).toBe("Buddy");
     expect(getEffect("window")).toBeUndefined();
     expect(allEffects().some((fx) => fx.id === "window")).toBe(false);
     const critterSrc = compileEffectSource(getEffect("critters")!);
@@ -272,6 +284,27 @@ describe("effects registry", () => {
     expect(miniSrc.includes("figMiniPlace")).toBe(true);
     expect(miniSrc.includes("geomRender")).toBe(false);
     expect(miniSrc.includes("impRender")).toBe(false);
+    const buddy = getEffect("buddy")!;
+    expect(buddy.params.find((p) => p.id === "kind")?.default).toBe("mix");
+    expect(buddy.params.find((p) => p.id === "kind")?.options?.map((o) => o.value)).toEqual([
+      "note",
+      "guitar",
+      "piano",
+      "boombox",
+      "vinyl",
+      "heart",
+      "mix",
+    ]);
+    expect(buddy.params.find((p) => p.id === "place")?.default).toBe("center");
+    expect(buddy.params.find((p) => p.id === "move")?.default).toBe("dance");
+    const buddySrc = compileEffectSource(buddy);
+    expect(buddySrc.includes("buddyRender")).toBe(true);
+    expect(buddySrc.includes("bdGoogly")).toBe(true);
+    expect(buddySrc.includes("bdNote")).toBe(true);
+    expect(buddySrc.includes("bdGuitar")).toBe(true);
+    expect(buddySrc.includes("u_kind")).toBe(true);
+    expect(buddySrc.includes("figureRender")).toBe(false);
+    expect(BOOT_GENERATOR_GLSL.includes("buddyRender")).toBe(false);
   });
 
   it("ships a short set of background places", () => {
@@ -281,6 +314,7 @@ describe("effects registry", () => {
     expect(GEN_INDEX.paper).toBe(10);
     expect(GEN_INDEX.cave).toBe(11);
     expect(GEN_INDEX.stage).toBe(12);
+    expect(GEN_INDEX.sketch).toBe(13);
     expect(GEN_INDEX.lot).toBeUndefined();
     expect(GEN_INDEX.chapel).toBeUndefined();
     expect(GENERATOR_GLSL).toContain("genStars");
@@ -292,6 +326,10 @@ describe("effects registry", () => {
     expect(STAGE_GENERATOR_GLSL).toContain("stamp");
     expect(STAGE_GENERATOR_GLSL).toContain("guitar");
     expect(STAGE_GENERATOR_GLSL).not.toContain("musicNote");
+    expect(SKETCH_GENERATOR_GLSL).toContain("fiber");
+    expect(SKETCH_GENERATOR_GLSL).toContain("tape");
+    expect(GENERATOR_GLSL).not.toContain("genSketch");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("fiber");
     expect(GENERATOR_GLSL).toContain("musicPiano");
     expect(GENERATOR_GLSL).toContain("starLayer");
     expect(GENERATOR_GLSL).toContain("reed");
