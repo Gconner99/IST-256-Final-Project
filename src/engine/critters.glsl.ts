@@ -1,5 +1,7 @@
-/** Unreal objects grown from random points, plus a toy-pop kit of music icons. */
-export const CRITTER_GLSL = `
+/** Shared 2D lumpy-point field.
+ *  Generate inlines the slim compile (kits 0–4). Extra kits live only on Floaters. */
+
+const CRITTER_CORE_HEAD = `
 float crHash(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
   p3 += dot(p3, p3.yzx + 33.33);
@@ -326,6 +328,9 @@ float charmFam(vec2 p, float id, float fam) {
   if (k < 4.5) return heart(p, id);
   return sparkle(p, id);
 }
+`;
+
+const CRITTER_EXTRA_FAMS = `
 float dicePip(vec2 p, float id) {
   float d = crBox2(p, vec2(mix(0.62, 0.78, crHash(vec2(id, 1.0)))));
   d = min(d, length(p) - mix(0.1, 0.16, crHash(vec2(id, 2.0))));
@@ -416,6 +421,24 @@ float saintFam(vec2 p, float id, float fam) {
   if (k < 4.5) return teardrop(p, id);
   return heart(p, id);
 }
+float extraKitBody(vec2 p, float id, float famSlot, float kit) {
+  if (kit < 6.5) return diceFam(p, id, famSlot);
+  if (kit < 7.5) return fruitFam(p, id, famSlot);
+  if (kit < 8.5) return keyFam(p, id, famSlot);
+  if (kit < 9.5) return teethFam(p, id, famSlot);
+  if (kit < 10.5) return tapeFam(p, id, famSlot);
+  if (kit < 11.5) return moonFam(p, id, famSlot);
+  return saintFam(p, id, famSlot);
+}
+`;
+
+const CRITTER_EXTRA_STUB = `
+float extraKitBody(vec2 p, float id, float famSlot, float kit) {
+  return charmFam(p, id, famSlot);
+}
+`;
+
+const CRITTER_CORE_TAIL = `
 float shapeFam(vec2 p, float id, float famSlot) {
   float fam = mod(famSlot, 9.0);
   if (fam < 0.5) return classicBody(p, id);
@@ -444,13 +467,7 @@ float weirdBody(vec2 p, float id, float famSlot, float kit) {
   if (kit < 3.5) return votiveFam(p, id, famSlot);
   if (kit < 4.5) return mothFam(p, id, famSlot);
   if (kit < 5.5) return charmFam(p, id, famSlot);
-  if (kit < 6.5) return diceFam(p, id, famSlot);
-  if (kit < 7.5) return fruitFam(p, id, famSlot);
-  if (kit < 8.5) return keyFam(p, id, famSlot);
-  if (kit < 9.5) return teethFam(p, id, famSlot);
-  if (kit < 10.5) return tapeFam(p, id, famSlot);
-  if (kit < 11.5) return moonFam(p, id, famSlot);
-  return saintFam(p, id, famSlot);
+  return extraKitBody(p, id, famSlot, kit);
 }
 vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, float kit) {
   float hx = crHash(vec2(id, 0.13));
@@ -558,3 +575,9 @@ vec4 critterField(vec2 uv, float count, float seed, float time, float sizeMul, f
   return acc;
 }
 `;
+
+/** Slim field used by Generate. Kits past charms fall back to charms. */
+export const CRITTER_GLSL = CRITTER_CORE_HEAD + CRITTER_EXTRA_STUB + CRITTER_CORE_TAIL;
+
+/** Full field used by the Floaters effect, including extra kits. */
+export const CRITTER_EFFECT_GLSL = CRITTER_CORE_HEAD + CRITTER_EXTRA_FAMS + CRITTER_CORE_TAIL;

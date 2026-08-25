@@ -321,6 +321,11 @@ describe("effects registry", () => {
     expect(GENERATOR_GLSL).toContain("uMode == 7");
     expect(GENERATOR_GLSL).toContain("u_audio");
     expect(GENERATOR_GLSL).toContain("u_bass");
+    expect(GENERATOR_GLSL).toContain("charmFam");
+    expect(GENERATOR_GLSL).toContain("extraKitBody");
+    expect(GENERATOR_GLSL).not.toContain("diceFam");
+    expect(GENERATOR_GLSL).not.toContain("fruitFam");
+    expect(GENERATOR_GLSL).not.toContain("saintFam");
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {

@@ -1,5 +1,5 @@
 import type { EffectType } from "../core/types";
-import { CRITTER_GLSL } from "../engine/critters.glsl";
+import { CRITTER_EFFECT_GLSL } from "../engine/critters.glsl";
 import { dancer } from "./dancer";
 
 export const critters: EffectType = {
@@ -43,7 +43,7 @@ uniform float u_size;
 uniform float u_seed;
 uniform float u_speed;
 uniform float u_amount;
-${CRITTER_GLSL}
+${CRITTER_EFFECT_GLSL}
 `,
   applyGlsl: `
 vec4 apply(vec2 uv) {

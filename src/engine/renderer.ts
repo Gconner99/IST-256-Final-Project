@@ -100,11 +100,12 @@ export class Renderer {
     }
   }
 
-  /** Compile effect shaders a few at a time so the first Rand all does not hitch. */
+  /** Compile light looks first so the picture can paint; Idol / Floaters last. */
   prewarmEffects() {
+    const heavy = new Set(["dancer", "critters"]);
     const ids = allEffects()
       .map((e) => e.id)
-      .sort((a, b) => Number(a !== "dancer" && a !== "critters") - Number(b !== "dancer" && b !== "critters"));
+      .sort((a, b) => Number(heavy.has(a)) - Number(heavy.has(b)));
     let i = 0;
     const step = () => {
       if (i < ids.length) {

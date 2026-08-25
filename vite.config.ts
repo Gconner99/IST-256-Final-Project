@@ -8,7 +8,7 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    sourcemap: true,
+    sourcemap: false,
     cssCodeSplit: false,
     assetsInlineLimit: 100000000,
     target: "es2022",
