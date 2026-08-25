@@ -4,20 +4,33 @@ PHOSPHENE
 Do NOT open the files inside Cursor.
 Cursor will show the code instead of running the program.
 
+WHY CHROME WAS CRASHING
+------------------------
+
+Phosphene needs WebGL. Your everyday Chrome window uses the graphics
+card. On this PC that driver kills the tab.
+
+Start Phosphene.bat now opens a PRIVATE Chrome/Edge window that does
+not use that graphics card. Do not open PHOSPHENE.html by itself.
+
+
 HOW TO OPEN IT (Windows)
 ------------------------
 
-1. Open File Explorer (folder icon on the taskbar, or Windows key + E).
-2. Go to the Phosphene folder on your Desktop / Downloads.
-3. Double-click:
+1. Delete any OLD unzipped folder (Downloads names like "... (25)"
+   are stale).
+2. Download a NEW ZIP and unzip the WHOLE folder. You must see
+   PHOSPHENE.html AND phosphene.js sitting next to each other.
+3. Open File Explorer (folder icon on the taskbar, or Windows key + E).
+4. Double-click:
 
       Start Phosphene.bat
 
-   A black command window should flash, then Chrome or Edge opens.
-   THAT browser window is the program.
+   A black command window flashes, then a NEW Chrome or Edge window
+   opens. THAT window is the program.
 
-If you click PHOSPHENE.html inside Cursor, it will open as a text file.
-That is the wrong way. Use File Explorer and the .bat file.
+   Plasma should move immediately. The full instrument appears a
+   moment later.
 
 
 HOW TO OPEN IT (Mac)

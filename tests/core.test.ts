@@ -11,7 +11,7 @@ import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
-import { GENERATOR_GLSL } from "../src/engine/shaders";
+import { BOOT_GENERATOR_GLSL, GENERATOR_GLSL } from "../src/engine/shaders";
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
@@ -281,6 +281,9 @@ describe("effects registry", () => {
     expect(GENERATOR_GLSL).toContain("uMode == 7");
     expect(GENERATOR_GLSL).toContain("u_audio");
     expect(GENERATOR_GLSL).toContain("u_bass");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("genStars");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("critterField");
+    expect(BOOT_GENERATOR_GLSL).toContain("uMode");
   });
 
   it("compiles each effect into a wrapped apply() shader", () => {

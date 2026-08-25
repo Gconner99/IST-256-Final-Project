@@ -745,8 +745,15 @@ export function resizeCanvas(canvas: HTMLCanvasElement, host: HTMLElement) {
   if (store.state.ui.exporting) return;
   const dpr = 1;
   const r = host.getBoundingClientRect();
-  const w = Math.max(16, Math.floor(r.width * dpr));
-  const h = Math.max(16, Math.floor(r.height * dpr));
+  let w = Math.max(16, Math.floor(r.width * dpr));
+  let h = Math.max(16, Math.floor(r.height * dpr));
+  const cap = 640;
+  const long = Math.max(w, h);
+  if (long > cap) {
+    const s = cap / long;
+    w = Math.max(16, Math.floor(w * s));
+    h = Math.max(16, Math.floor(h * s));
+  }
   if (canvas.width !== w || canvas.height !== h) {
     canvas.width = w;
     canvas.height = h;

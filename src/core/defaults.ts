@@ -117,36 +117,21 @@ export function defaultLayer(name: string, sourceId: string | null, effects: str
 
 export function createDefaultProject(): Project {
   const plasma = defaultGeneratorSource("plasma");
-  const layer = defaultLayer("SIGNAL", plasma.id, ["grade", "bloom", "grain"]);
-  layer.effects.forEach((fx) => {
-    if (fx.typeId === "grade") {
-      fx.params.saturation = 0.22;
-      fx.params.contrast = 0.12;
-      fx.params.gamma = 0.92;
-    }
-    if (fx.typeId === "bloom") {
-      fx.params.amount = 0.42;
-      fx.params.halation = 0.28;
-    }
-    if (fx.typeId === "grain") {
-      fx.params.grain = 0.16;
-      fx.params.leak = 0.2;
-    }
-  });
+  const layer = defaultLayer("SIGNAL", plasma.id, []);
   const project: Project = {
     version: 1,
     app: "phosphene",
     name: "untitled",
     seed: 256,
     randomAmount: 0.82,
-    quality: "preview",
+    quality: "draft",
     duration: 8,
     fps: 30,
     sources: [plasma],
     layers: [layer],
     keyframes: [],
     playback: defaultPlayback(),
-    globalFeedback: { ...defaultFeedback(), amount: 0.18, opacity: 0.55, scale: 1.01 },
+    globalFeedback: defaultFeedback(),
     exportSettings: defaultExportSettings(),
     presets: [],
   };

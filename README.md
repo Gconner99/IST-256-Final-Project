@@ -8,7 +8,7 @@ Not a Premiere or Photoshop clone. Phosphene is a GPU effect pipeline with a tac
 
 Do **not** open the files inside Cursor.
 
-On Windows, open the folder in **File Explorer** and double-click **`Start Phosphene.bat`**. A command window flashes, then Chrome or Edge opens — that browser window is the program.
+On Windows, open the folder in **File Explorer** and double-click **`Start Phosphene.bat`**. That opens a **private** Chrome or Edge window that does not use your graphics-card driver (the thing that was killing the tab). Unzip the whole folder: `PHOSPHENE.html` plus `phosphene.js`.
 
 Read `START HERE.txt` if you get stuck.
 

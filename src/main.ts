@@ -6,24 +6,35 @@ import { applyTransport, getSoundtrack } from "./media/audio";
 import { seekVideo } from "./media/sources";
 import { mount, resizeCanvas, tickHud } from "./ui/app";
 
+const bootWin = window as unknown as { __phospheneMark?: boolean; __phospheneGone?: boolean };
+bootWin.__phospheneMark = true;
+
 const rootEl = document.querySelector<HTMLElement>("#app");
 if (!rootEl) throw new Error("#app missing");
 const root: HTMLElement = rootEl;
 
 const canvas = document.createElement("canvas");
-let renderer: Renderer;
-try {
-  renderer = new Renderer(canvas);
-} catch (err) {
-  root.innerHTML = `<div style="padding:24px;font-family:monospace;color:#d6ff3d">
-    <h1>PHOSPHENE</h1>
-    <p>WebGL2 is required. ${err instanceof Error ? err.message : String(err)}</p>
-  </div>`;
-  throw err;
-}
 
-mount(root, renderer);
-renderer.prewarmEffects();
+async function start() {
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  let renderer: Renderer;
+  try {
+    renderer = new Renderer(canvas);
+  } catch (err) {
+    const note = document.querySelector("#boot-note");
+    if (note) {
+      note.textContent = `PHOSPHENE · plasma · ${err instanceof Error ? err.message : "WebGL failed"}`;
+    } else {
+      root.innerHTML = `<div style="padding:24px;font-family:monospace;color:#d6ff3d">
+        <h1>PHOSPHENE</h1>
+        <p>WebGL2 is required. ${err instanceof Error ? err.message : String(err)}</p>
+      </div>`;
+    }
+    return;
+  }
+
+  mount(root, renderer);
+  bootWin.__phospheneGone = true;
 
 const view = document.querySelector<HTMLElement>("#view")!;
 const ro = new ResizeObserver(() => resizeCanvas(canvas, view));
@@ -92,4 +103,7 @@ function frame(now: number) {
   requestAnimationFrame(frame);
 }
 
-requestAnimationFrame(frame);
+  requestAnimationFrame(frame);
+}
+
+void start();
