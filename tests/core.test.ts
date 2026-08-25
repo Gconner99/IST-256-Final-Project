@@ -93,6 +93,10 @@ describe("timeline", () => {
 });
 
 describe("project files", () => {
+  it("starts in draft so the first picture stays light", () => {
+    expect(createDefaultProject().quality).toBe("draft");
+  });
+
   it("round-trips JSON without runtime media", () => {
     const p = createDefaultProject();
     p.sources[0].bitmap = {} as ImageBitmap;

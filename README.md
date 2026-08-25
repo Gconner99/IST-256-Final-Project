@@ -10,6 +10,8 @@ Do **not** open the files inside Cursor.
 
 On Windows, open the folder in **File Explorer** and double-click **`Start Phosphene.bat`**. A command window flashes, then Chrome or Edge opens — that browser window is the program.
 
+Plasma should move as soon as Chrome opens. If it doesn’t, you still have an old unzipped folder (names like `...(25)`). Download a fresh ZIP.
+
 Read `START HERE.txt` if you get stuck.
 
 ## Run (developers)

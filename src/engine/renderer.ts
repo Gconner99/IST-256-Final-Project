@@ -1,7 +1,7 @@
 import type { EffectInstance, Layer, MediaSource, Project, QualityMode } from "../core/types";
 import { resolvedLayerParams } from "../core/timeline";
 import { dancerForCompile } from "../effects/dancer";
-import { allEffects, getEffect } from "../effects/registry";
+import { getEffect } from "../effects/registry";
 import { getSoundtrack, sampleAudio } from "../media/audio";
 import {
   BLEND_INDEX,
@@ -27,7 +27,7 @@ import {
   TEXTURE_GLSL,
 } from "./shaders";
 
-const RING = 8;
+const RING = 4;
 
 function imageData(pixels: Uint8ClampedArray, width: number, height: number) {
   return new ImageData(pixels as unknown as ImageDataArray, width, height);
@@ -61,7 +61,10 @@ export class Renderer {
   private generatorProg: Program;
   private generatorFull: Program | null = null;
   private generatorCritters: Program | null = null;
-  private generatorUpgradeQueued = false;
+  private compileQueued = new Set<string>();
+  private compileJobs: Array<() => void> = [];
+  private compileBusy = false;
+  private eagerCompile = false;
   private textureProg: Program;
   private black: WebGLTexture;
   lastError: string | null = null;
@@ -88,10 +91,31 @@ export class Renderer {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
   }
 
-  private compileType(typeId: string, mini = false): Program | null {
-    const key = typeId !== "dancer" ? typeId : mini ? "dancer:mini" : "dancer";
-    const cached = this.effectProg.get(key);
-    if (cached) return cached;
+  /** One shader per animation frame so Chrome can paint plasma before the heavy looks. */
+  private scheduleCompile(key: string, work: () => void) {
+    if (this.compileQueued.has(key)) return;
+    this.compileQueued.add(key);
+    this.compileJobs.push(work);
+    this.pumpCompile();
+  }
+
+  private pumpCompile() {
+    if (this.compileBusy || this.compileJobs.length === 0) return;
+    this.compileBusy = true;
+    const job = this.compileJobs.shift()!;
+    requestAnimationFrame(() => {
+      try {
+        job();
+      } catch (err) {
+        this.lastError = err instanceof Error ? err.message : String(err);
+        console.warn(this.lastError);
+      }
+      this.compileBusy = false;
+      this.pumpCompile();
+    });
+  }
+
+  private buildEffect(typeId: string, mini: boolean, key: string): Program | null {
     const def = typeId === "dancer" ? dancerForCompile(mini) : getEffect(typeId);
     if (!def) return null;
     try {
@@ -105,55 +129,50 @@ export class Renderer {
     }
   }
 
-  /** Compile light looks after the picture paints. Idol / Floaters wait until first use. */
-  prewarmEffects() {
-    const skip = new Set(["dancer", "critters"]);
-    const ids = allEffects()
-      .map((e) => e.id)
-      .filter((id) => !skip.has(id));
-    let i = 0;
-    const step = () => {
-      if (i < ids.length) {
-        this.compileType(ids[i++]);
-        requestAnimationFrame(step);
-      }
-    };
-    requestAnimationFrame(step);
-  }
-
-  private queueGeneratorUpgrade() {
-    if (this.generatorUpgradeQueued) return;
-    this.generatorUpgradeQueued = true;
-    requestAnimationFrame(() => {
-      try {
-        this.generatorFull = new Program(this.gl, GENERATOR_GLSL);
-      } catch (err) {
-        this.lastError = `places: ${err instanceof Error ? err.message : String(err)}`;
-        console.warn(this.lastError);
-      }
-      this.prewarmEffects();
+  private compileType(typeId: string, mini = false, sync = false): Program | null {
+    const key = typeId !== "dancer" ? typeId : mini ? "dancer:mini" : "dancer";
+    const cached = this.effectProg.get(key);
+    if (cached) return cached;
+    if (sync || this.eagerCompile) return this.buildEffect(typeId, mini, key);
+    this.scheduleCompile(key, () => {
+      if (this.effectProg.has(key)) return;
+      this.buildEffect(typeId, mini, key);
     });
+    return this.effectProg.get(key) ?? null;
   }
 
-  private progForGenerator(mode: number): Program {
+  private progForGenerator(mode: number, sync = false): Program {
+    const now = sync || this.eagerCompile;
     if (mode === 6) {
-      if (!this.generatorCritters) {
-        try {
-          this.generatorCritters = new Program(this.gl, GENERATOR_CRITTERS_GLSL);
-        } catch (err) {
-          this.lastError = `floaters place: ${err instanceof Error ? err.message : String(err)}`;
-          console.warn(this.lastError);
-          return this.generatorFull ?? this.generatorProg;
-        }
+      if (this.generatorCritters) return this.generatorCritters;
+      if (now) {
+        this.generatorCritters = new Program(this.gl, GENERATOR_CRITTERS_GLSL);
+        return this.generatorCritters;
       }
-      return this.generatorCritters;
+      this.scheduleCompile("gen:critters", () => {
+        if (this.generatorCritters) return;
+        this.generatorCritters = new Program(this.gl, GENERATOR_CRITTERS_GLSL);
+      });
+      return this.generatorProg;
     }
-    return this.generatorFull ?? this.generatorProg;
+    if (mode >= 7) {
+      if (this.generatorFull) return this.generatorFull;
+      if (now) {
+        this.generatorFull = new Program(this.gl, GENERATOR_GLSL);
+        return this.generatorFull;
+      }
+      this.scheduleCompile("gen:places", () => {
+        if (this.generatorFull) return;
+        this.generatorFull = new Program(this.gl, GENERATOR_GLSL);
+      });
+      return this.generatorProg;
+    }
+    return this.generatorProg;
   }
 
-  private progFor(fx: EffectInstance): Program | null {
-    if (fx.typeId !== "dancer") return this.compileType(fx.typeId);
-    return this.compileType("dancer", fx.params.crowd === "mini");
+  private progFor(fx: EffectInstance, sync = false): Program | null {
+    if (fx.typeId !== "dancer") return this.compileType(fx.typeId, false, sync);
+    return this.compileType("dancer", fx.params.crowd === "mini", sync);
   }
 
   resetTemporal() {
@@ -307,9 +326,9 @@ export class Renderer {
   }
 
   render(project: Project, time: number, opts?: { width?: number; height?: number; quality?: QualityMode; vignette?: number }) {
-    this.queueGeneratorUpgrade();
     const gl = this.gl;
     const quality = opts?.quality ?? project.quality;
+    this.eagerCompile = quality === "export";
     const scale = quality === "draft" ? 0.5 : 1;
     const w = Math.max(16, Math.floor((opts?.width ?? this.canvas.width) * scale));
     const h = Math.max(16, Math.floor((opts?.height ?? this.canvas.height) * scale));

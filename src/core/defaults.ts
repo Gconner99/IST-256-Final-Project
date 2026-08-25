@@ -139,7 +139,7 @@ export function createDefaultProject(): Project {
     name: "untitled",
     seed: 256,
     randomAmount: 0.82,
-    quality: "preview",
+    quality: "draft",
     duration: 8,
     fps: 30,
     sources: [plasma],

@@ -97,10 +97,11 @@ vec4 apply(vec2 uv) {
   vec3 src = sampleSrc(uv).rgb;
   vec3 acc = vec3(0.0);
   float wsum = 0.0;
-  float taps = mix(3.0, 6.0, uQuality);
+  float span = uQuality < 0.5 ? 1.0 : uQuality < 1.5 ? 2.0 : 3.0;
   for (float y = -3.0; y <= 3.0; y++) {
+    if (abs(y) > span) continue;
     for (float x = -3.0; x <= 3.0; x++) {
-      if (abs(x) + abs(y) > taps) continue;
+      if (abs(x) > span) continue;
       vec2 o = vec2(x, y) * uTexel * u_size;
       vec3 s = sampleSrc(uv + o).rgb;
       float l = luminance(s);

@@ -16,6 +16,9 @@ HOW TO OPEN IT (Windows)
    A black command window should flash, then Chrome or Edge opens.
    THAT browser window is the program.
 
+   Plasma should move as soon as Chrome opens. Looks load one at a time
+   after that. Quality starts on Draft so the picture stays alive.
+
    If Chrome opens but the picture never moves, you are in an OLD unzipped
    folder (Downloads names like "... (25)" are stale). Delete that folder,
    download a new ZIP, unzip, then double-click Start Phosphene.bat again.

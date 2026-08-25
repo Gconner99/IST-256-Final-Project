@@ -577,11 +577,11 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, f
   vec3 vv = cross(ww, uu);
   vec3 rd = normalize(q.x * uu + q.y * vv + 1.35 * ww);
   int k = int(n + 0.5);
-  float stepF = mix(10.0, 14.0, min(uQuality, 1.0));
+  float stepF = mix(6.0, 12.0, min(uQuality, 1.0));
   if (uQuality > 1.5) stepF = 16.0;
   if (n > 1.5) stepF -= 2.0;
   if (n > 2.5) stepF -= 2.0;
-  int steps = int(max(stepF, 8.0));
+  int steps = int(max(stepF, 6.0));
   float bestT = 9.0;
   float bestH = 1e5;
   float bestM = 0.0;
@@ -730,9 +730,9 @@ vec4 figureRenderMini(vec2 uv, float seed, float time, float sizeMul, float coun
   vec3 vv = cross(ww, uu);
   vec3 rd = normalize(q.x * uu + q.y * vv + 1.35 * ww);
   int k = int(n + 0.5);
-  float stepF = mix(11.0, 14.0, min(uQuality, 1.0));
+  float stepF = mix(8.0, 12.0, min(uQuality, 1.0));
   if (uQuality > 1.5) stepF = 16.0;
-  int steps = int(max(stepF, 10.0));
+  int steps = int(max(stepF, 8.0));
   float bestT = 9.0;
   float bestH = 1e5;
   float bestM = 0.0;

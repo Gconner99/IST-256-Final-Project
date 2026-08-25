@@ -211,7 +211,7 @@ void main() {
 }
 `;
 
-/** Tiny first-paint shader. No floaters, no cave/marsh — those compile after the picture is up. */
+/** Tiny first-paint shader. Plasma / noise / bars only. Stars and Marsh compile later, one at a time. */
 export const BOOT_GENERATOR_GLSL = `#version 300 es
 precision highp float;
 in vec2 vUv;
@@ -442,7 +442,7 @@ void main() {
 }
 `;
 
-/** Places after first paint. No extra Floater kits — those live on the Floaters effect. */
+/** Places after you click Stars / Marsh / Oil / Paper / Cave. Not compiled at boot. */
 export const GENERATOR_GLSL = generatorSource(CRITTER_FIELD_STUB);
 
 /** Floaters-as-place only. Compiled the first time that button is used. */
