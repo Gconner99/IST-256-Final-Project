@@ -26,7 +26,7 @@ import {
   TEXTURE_GLSL,
 } from "./shaders";
 
-const RING = 2;
+const RING = 8;
 
 function imageData(pixels: Uint8ClampedArray, width: number, height: number) {
   return new ImageData(pixels as unknown as ImageDataArray, width, height);

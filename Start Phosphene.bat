@@ -4,7 +4,6 @@ cd /d "%~dp0"
 echo.
 echo   PHOSPHENE
 echo   Opening a private Chrome/Edge window — not in Cursor.
-echo   That private window is required so your GPU driver cannot kill the tab.
 echo.
 
 if not exist "PHOSPHENE.html" (
@@ -24,30 +23,30 @@ if not exist "phosphene.js" (
 )
 
 set "PAGE=%cd%\PHOSPHENE.html"
-set "PROFILE=%TEMP%\phosphene-chrome"
+set "PROFILE=%TEMP%\phosphene-gpu"
 
 if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" (
-  start "" "%LocalAppData%\Google\Chrome\Application\chrome.exe" --user-data-dir="%PROFILE%" --no-first-run --no-default-browser-check --disable-gpu --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --allow-file-access-from-files --new-window "%PAGE%"
+  start "" "%LocalAppData%\Google\Chrome\Application\chrome.exe" --user-data-dir="%PROFILE%" --no-first-run --no-default-browser-check --allow-file-access-from-files --new-window "%PAGE%"
   goto :ok
 )
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" (
-  start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --user-data-dir="%PROFILE%" --no-first-run --no-default-browser-check --disable-gpu --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --allow-file-access-from-files --new-window "%PAGE%"
+  start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --user-data-dir="%PROFILE%" --no-first-run --no-default-browser-check --allow-file-access-from-files --new-window "%PAGE%"
   goto :ok
 )
 if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" (
-  start "" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --user-data-dir="%PROFILE%" --no-first-run --no-default-browser-check --disable-gpu --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --allow-file-access-from-files --new-window "%PAGE%"
+  start "" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --user-data-dir="%PROFILE%" --no-first-run --no-default-browser-check --allow-file-access-from-files --new-window "%PAGE%"
   goto :ok
 )
 if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" (
-  start "" "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" --user-data-dir="%TEMP%\phosphene-edge" --no-first-run --no-default-browser-check --disable-gpu --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --allow-file-access-from-files --new-window "%PAGE%"
+  start "" "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" --user-data-dir="%TEMP%\phosphene-gpu-edge" --no-first-run --no-default-browser-check --allow-file-access-from-files --new-window "%PAGE%"
   goto :ok
 )
 if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" (
-  start "" "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" --user-data-dir="%TEMP%\phosphene-edge" --no-first-run --no-default-browser-check --disable-gpu --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --allow-file-access-from-files --new-window "%PAGE%"
+  start "" "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" --user-data-dir="%TEMP%\phosphene-gpu-edge" --no-first-run --no-default-browser-check --allow-file-access-from-files --new-window "%PAGE%"
   goto :ok
 )
 if exist "%LocalAppData%\Microsoft\WindowsApps\msedge.exe" (
-  start "" "%LocalAppData%\Microsoft\WindowsApps\msedge.exe" --user-data-dir="%TEMP%\phosphene-edge" --no-first-run --no-default-browser-check --disable-gpu --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --allow-file-access-from-files --new-window "%PAGE%"
+  start "" "%LocalAppData%\Microsoft\WindowsApps\msedge.exe" --user-data-dir="%TEMP%\phosphene-gpu-edge" --no-first-run --no-default-browser-check --allow-file-access-from-files --new-window "%PAGE%"
   goto :ok
 )
 

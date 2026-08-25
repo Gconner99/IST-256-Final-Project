@@ -19,8 +19,8 @@ if [ ! -f "phosphene.js" ]; then
 fi
 
 PAGE="$PWD/PHOSPHENE.html"
-PROFILE="${TMPDIR:-/tmp}/phosphene-chrome"
-FLAGS=(--user-data-dir="$PROFILE" --no-first-run --disable-gpu --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --allow-file-access-from-files)
+PROFILE="${TMPDIR:-/tmp}/phosphene-gpu"
+FLAGS=(--user-data-dir="$PROFILE" --no-first-run --allow-file-access-from-files)
 
 if [ -d "/Applications/Google Chrome.app" ]; then
   open -na "Google Chrome" --args "${FLAGS[@]}" "$PAGE"

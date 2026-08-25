@@ -29,8 +29,11 @@ HOW TO OPEN IT (Windows)
    A black command window flashes, then a NEW Chrome or Edge window
    opens. THAT window is the program.
 
-   Plasma should move immediately. The full instrument appears a
-   moment later.
+   The picture should look sharp again (Preview quality, full size,
+   grade/bloom). Use the top-bar quality menu if you want Draft/Full.
+
+   If that window crashes: double-click  Start Phosphene Safe.bat
+   instead. The picture will be softer, but Chrome should stay up.
 
 
 HOW TO OPEN IT (Mac)
