@@ -109,7 +109,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place.</li>
           <li><strong>Idol</strong> is a small low-poly creature. Grow picks petals, halo, antenna, skirt, or quiet. Coat tints the paint (cream, moss, sodium, night). Stamp it for a new seed. Crowd → Mini army.</li>
-          <li><strong>Buddy</strong> is a toy-pop centerpiece like Idol: a music note, guitar, piano, boombox, vinyl, or heart with googly eyes. Kind Mix rolls a new mascot. Stamp buddy for a new seed. They bounce to the soundtrack.</li>
+          <li><strong>Buddy</strong> is a 2D centerpiece like Idol — same ink outline and faceted paint, but seed-grown and a little wrong. Kind leans note, guitar, piano, boombox, vinyl, or heart without drawing a sticker. Mix rolls a new one. Stamp buddy for a new seed. They bounce to the soundtrack.</li>
           <li><strong>Stamp chaos</strong> rerolls floater + idol + buddy seeds and their kit/grow/coat/kind — keeps the backdrop. <strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, Cave, Stage, and Sketch. Stage is a candy toy-pop room. Sketch is a composition-notebook sticker album — cream paper, ruled lines, washi tape, doodled notes. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom/keys breathe with the mix.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
@@ -507,7 +507,7 @@ function paintRail(n: HTMLElement) {
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-buddy-rail" ${ui.includeBuddy ? "checked" : ""}/> include buddy in Rand all</label>
-    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop (notes, piano, guitar, boombox…). Buddy Kind: note, guitar, piano, boombox, vinyl, heart. Sketch is a sticker-notebook place. Stamp chaos rerolls those, not the backdrop.</div>
+    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop (notes, piano, guitar, boombox…). Buddy Kind leans note / guitar / piano / boombox / vinyl / heart — lumpy, inked, odd colors. Sketch is a sticker-notebook place. Stamp chaos rerolls those, not the backdrop.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"

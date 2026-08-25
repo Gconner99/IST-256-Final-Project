@@ -5,7 +5,7 @@ export const buddy: EffectType = {
   id: "buddy",
   name: "Buddy",
   category: "wacky",
-  description: "A toy-pop centerpiece like Idol: a music note, guitar, piano, boombox, vinyl, or heart with googly eyes. Kind Mix rolls a new mascot. Drop an MP3 and they bounce to the bass",
+  description: "A seed-grown music mascot with idol ink and faceted paint. Kind leans note, guitar, piano, boombox, vinyl, or heart — lumpy and a bit wrong. Mix rolls a new one. Googly eyes. Drop an MP3 and they bounce to the bass",
   params: [
     {
       id: "kind",

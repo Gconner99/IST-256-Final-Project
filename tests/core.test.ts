@@ -302,6 +302,9 @@ describe("effects registry", () => {
     expect(buddySrc.includes("bdGoogly")).toBe(true);
     expect(buddySrc.includes("bdNote")).toBe(true);
     expect(buddySrc.includes("bdGuitar")).toBe(true);
+    expect(buddySrc.includes("bdLump")).toBe(true);
+    expect(buddySrc.includes("bdPal")).toBe(true);
+    expect(buddySrc.includes("hsv2rgb")).toBe(true);
     expect(buddySrc.includes("u_kind")).toBe(true);
     expect(buddySrc.includes("figureRender")).toBe(false);
     expect(BOOT_GENERATOR_GLSL.includes("buddyRender")).toBe(false);
