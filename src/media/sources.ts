@@ -1,5 +1,5 @@
 import { uid } from "../core/ids";
-import type { MediaSource } from "../core/types";
+import type { MediaSource, PlaybackMode } from "../core/types";
 import { isAudioFile, loadAudio } from "./audio";
 
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|bmp|tiff?|avif)$/i;
@@ -127,12 +127,55 @@ export function disposeSource(source: MediaSource) {
   source.frozenFrame = null;
 }
 
-export function seekVideo(source: MediaSource, time: number) {
+export function seekVideo(
+  source: MediaSource,
+  time: number,
+  playback?: { playing?: boolean; freeze?: boolean; mode?: PlaybackMode; speed?: number },
+) {
   if (source.kind !== "video" || !source.video) return;
-  const d = source.video.duration;
+  const video = source.video;
+  const d = video.duration;
   if (!Number.isFinite(d) || d <= 0) return;
   const t = ((time % d) + d) % d;
-  if (Math.abs(source.video.currentTime - t) > 1 / 60) {
-    source.video.currentTime = t;
+  const playing = !!playback?.playing && !playback?.freeze;
+  const forward = (playback?.mode ?? "forward") === "forward";
+  const speed = playback?.speed ?? 1;
+  const native = playing && forward && speed > 0.92 && speed < 1.08;
+  const drift = Math.abs(video.currentTime - t);
+
+  if (!playing) {
+    if (!video.paused) video.pause();
+    if (drift > 1 / 30) {
+      try {
+        video.currentTime = t;
+      } catch {
+        /* ignore seek until metadata is ready */
+      }
+    }
+    return;
+  }
+
+  if (native) {
+    if (video.playbackRate !== 1) video.playbackRate = 1;
+    if (video.paused) void video.play().catch(() => undefined);
+    if (drift > 0.35) {
+      try {
+        video.currentTime = t;
+      } catch {
+        /* ignore */
+      }
+    }
+    return;
+  }
+
+  if (!video.paused) video.pause();
+  const rate = Math.max(0.25, Math.min(4, Math.abs(speed) || 1));
+  if (video.playbackRate !== rate) video.playbackRate = rate;
+  if (drift > 1 / 30) {
+    try {
+      video.currentTime = t;
+    } catch {
+      /* ignore */
+    }
   }
 }

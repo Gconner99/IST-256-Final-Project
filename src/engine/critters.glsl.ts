@@ -484,15 +484,7 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, flo
     vec2 p = crRot(dlt, spin) / (sz * (1.0 - fk * 0.08));
     float sd = weirdBody(p, id, famSlot, kit);
     float fillSoft = kit > 0.5 ? 0.07 : 0.14;
-    if (kit > 0.5 && kit < 1.5) {
-      fillSoft = 0.048;
-      if (fk < 0.5) {
-        float dBack = weirdBody(p + vec2(-0.14, 0.16), id, famSlot, kit);
-        float sh = 1.0 - smoothstep(-0.02, 0.14, dBack);
-        accCol = mix(accCol, vec3(0.14, 0.06, 0.2), sh * 0.78);
-        accA = max(accA, sh * 0.72);
-      }
-    }
+    if (kit > 0.5 && kit < 1.5) fillSoft = 0.048;
     float fill = 1.0 - smoothstep(-0.02, fillSoft, sd);
     float rim = 1.0 - smoothstep(0.0, 0.18, abs(sd + 0.02));
     float glow = exp(-max(sd, 0.0) * 3.6) * 0.48;

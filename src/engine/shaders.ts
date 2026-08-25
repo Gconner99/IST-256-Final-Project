@@ -387,72 +387,6 @@ vec3 genCave(vec2 uv) {
   float vig = smoothstep(0.92, 0.22, length((uv - 0.5) * vec2(1.22, 1.0)));
   return col * vig;
 }
-vec3 stageSticker(vec3 col, float d, float dBack, vec3 fill) {
-  float face = 1.0 - smoothstep(0.0, 0.07, d);
-  float sh = 1.0 - smoothstep(0.0, 0.11, dBack);
-  col = mix(col, vec3(0.16, 0.07, 0.22), sh * 0.55 * (1.0 - face));
-  return mix(col, fill, face);
-}
-vec3 genStage(vec2 uv) {
-  float t = uTime;
-  vec3 pink = mix(vec3(1.0, 0.58, 0.76), uColorA, 0.2);
-  vec3 sky = mix(vec3(0.52, 0.86, 1.0), uColorB, 0.22);
-  vec3 col = mix(pink, sky, smoothstep(0.12, 0.95, uv.y));
-  col = mix(col, vec3(1.0, 0.9, 0.45), 0.1 + 0.12 * u_bass);
-  vec2 dots = uv * vec2(10.0, 7.0);
-  vec2 di = floor(dots);
-  vec2 df = fract(dots) - 0.5;
-  float polka = smoothstep(0.22, 0.11, length(df));
-  vec3 dc = mix(vec3(1.0, 0.45, 0.7), vec3(1.0, 0.92, 0.4), step(0.5, hash21(di + uSeed)));
-  col = mix(col, dc, polka * 0.28);
-  vec2 sunP = (uv - vec2(0.88, 0.90)) * 5.4;
-  col = stageSticker(col, vinyl(sunP, 11.0), vinyl(sunP + vec2(0.08, -0.1), 11.0), mix(vec3(0.2, 0.12, 0.28), vec3(1.0, 0.55, 0.8), 0.35));
-  vec2 gP = (uv - vec2(0.13, 0.88)) * 6.2;
-  col = stageSticker(col, musicGuitar(gP, 2.0), musicGuitar(gP + vec2(0.1, -0.12), 2.0), vec3(0.95, 0.38, 0.55));
-  vec2 bP = (uv - vec2(0.5, 0.91)) * vec2(6.4, 6.8);
-  col = stageSticker(col, musicBoombox(bP, 5.0), musicBoombox(bP + vec2(0.1, -0.12), 5.0), mix(vec3(0.35, 0.78, 0.98), vec3(1.0, 0.75, 0.3), u_bass));
-  vec2 tP = (uv - vec2(0.32, 0.88)) * 7.2;
-  col = stageSticker(col, musicTrumpet(tP, 4.0), musicTrumpet(tP + vec2(0.1, -0.12), 4.0), vec3(1.0, 0.78, 0.28));
-  vec2 dP = (uv - vec2(0.9, 0.3)) * 7.4;
-  col = stageSticker(col, musicDrum(dP, 6.0), musicDrum(dP + vec2(0.1, -0.12), 6.0), vec3(0.55, 0.42, 0.95));
-  vec2 sP = (uv - vec2(0.1, 0.3)) * 7.6;
-  col = stageSticker(col, musicSax(sP, 7.0), musicSax(sP + vec2(0.1, -0.12), 7.0), vec3(0.98, 0.55, 0.32));
-  float s0 = 0.48;
-  for (int i = 0; i < 5; i++) {
-    float y = s0 + float(i) * 0.026;
-    col = mix(col, vec3(0.18, 0.08, 0.24), 1.0 - smoothstep(0.0, 0.0028, abs(uv.y - y)));
-  }
-  vec2 cP = (uv - vec2(0.07, s0 + 0.05)) * 7.5;
-  col = mix(col, vec3(0.14, 0.06, 0.2), 1.0 - smoothstep(0.0, 0.08, clef(cP, 8.0)));
-  for (int n = 0; n < 6; n++) {
-    float fi = float(n);
-    vec2 np = vec2(0.18 + fi * 0.13 + 0.02 * sin(t * 1.3 + fi), s0 + 0.02 + 0.08 * abs(sin(t * 2.5 + fi * 1.2)) + u_bass * 0.035);
-    vec2 lp = (uv - np) * 8.5;
-    vec3 nc = mix(vec3(0.12, 0.05, 0.2), vec3(0.95, 0.4, 0.75), 0.45 + 0.25 * sin(fi + t));
-    col = stageSticker(col, musicNote(lp, 20.0 + fi), musicNote(lp + vec2(0.12, -0.14), 20.0 + fi), nc);
-  }
-  if (uv.y < 0.24) {
-    float keys = 14.0;
-    float kx = uv.x * keys;
-    float ki = floor(kx);
-    float kf = fract(kx);
-    float m = mod(ki, 7.0);
-    float pulse = max(0.0, sin(t * 8.0 + ki * 1.7));
-    pulse *= 0.25 + 0.75 * u_bass;
-    float lift = pulse * 0.03;
-    float face = step(0.04 + lift, uv.y);
-    float canBlack = max(step(m, 1.51), step(2.5, m) * step(m, 5.51));
-    float black = step(0.58, kf) * step(kf, 0.84) * canBlack;
-    vec3 wh = mix(vec3(0.78, 0.68, 0.74), vec3(0.99, 0.97, 0.94), face);
-    vec3 kc = mix(wh, vec3(0.12, 0.08, 0.18), black);
-    kc = mix(kc, vec3(1.0, 0.62, 0.88), pulse * 0.6);
-    col = mix(kc, col, smoothstep(0.21, 0.24, uv.y));
-    col = mix(col, vec3(0.22, 0.1, 0.18), (1.0 - smoothstep(0.0, 0.01, kf)) * step(uv.y, 0.23));
-  }
-  vec2 pP = (uv - vec2(0.78, 0.31)) * 6.4;
-  col = stageSticker(col, musicPiano(pP, 9.0), musicPiano(pP + vec2(0.1, -0.12), 9.0), vec3(0.22, 0.12, 0.28));
-  return col;
-}
 
 void main() {
   vec2 uv = vUv;
@@ -495,10 +429,111 @@ void main() {
     col = genOil(uv);
   } else if (uMode == 10) {
     col = genPaper(uv);
-  } else if (uMode == 11) {
-    col = genCave(uv);
   } else {
-    col = genStage(uv);
+    col = genCave(uv);
+  }
+  fragColor = vec4(col, 1.0);
+}
+`;
+
+/** Candy toy-pop room. Own program so Stars/Cave/video do not pay for it. */
+export const STAGE_GENERATOR_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+float sdBox(vec2 p, vec2 b) {
+  vec2 q = abs(p) - b;
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+}
+vec3 stamp(vec3 col, float d, vec3 fill) {
+  float face = 1.0 - smoothstep(0.0, 0.012, d);
+  float sh = 1.0 - smoothstep(0.0, 0.028, d - 0.012);
+  col = mix(col, vec3(0.16, 0.07, 0.22), sh * 0.4 * (1.0 - face));
+  return mix(col, fill, face);
+}
+void main() {
+  vec2 uv = vUv;
+  float t = uTime;
+  vec3 pink = mix(vec3(1.0, 0.58, 0.76), uColorA, 0.2);
+  vec3 sky = mix(vec3(0.52, 0.86, 1.0), uColorB, 0.22);
+  vec3 col = mix(pink, sky, smoothstep(0.12, 0.95, uv.y));
+  col = mix(col, vec3(1.0, 0.9, 0.45), 0.1 + 0.12 * u_bass);
+  vec2 dots = uv * vec2(10.0, 7.0);
+  vec2 df = fract(dots) - 0.5;
+  float polka = smoothstep(0.2, 0.1, length(df));
+  vec3 dc = mix(vec3(1.0, 0.45, 0.7), vec3(1.0, 0.92, 0.4), step(0.5, hash21(floor(dots) + uSeed)));
+  col = mix(col, dc, polka * 0.28);
+
+  vec2 gv = uv - vec2(0.13, 0.88);
+  float guitar = min(length(gv - vec2(0.0, -0.02)) - 0.055, sdBox(gv - vec2(0.0, 0.07), vec2(0.012, 0.08)));
+  col = stamp(col, guitar, vec3(0.95, 0.38, 0.55));
+  vec2 tv = uv - vec2(0.34, 0.89);
+  float trumpet = min(sdBox(tv, vec2(0.07, 0.012)), length(tv - vec2(0.08, 0.0)) - 0.028);
+  col = stamp(col, trumpet, vec3(1.0, 0.78, 0.28));
+  vec2 bv = uv - vec2(0.52, 0.9);
+  float boom = min(sdBox(bv, vec2(0.07, 0.04)), min(length(bv - vec2(-0.03, 0.0)) - 0.022, length(bv - vec2(0.03, 0.0)) - 0.022));
+  col = stamp(col, boom, mix(vec3(0.35, 0.78, 0.98), vec3(1.0, 0.75, 0.3), u_bass));
+  vec2 vv = uv - vec2(0.88, 0.9);
+  float vinyl = abs(length(vv) - 0.055) - 0.016;
+  col = stamp(col, vinyl, mix(vec3(0.2, 0.12, 0.28), vec3(1.0, 0.55, 0.8), 0.35));
+  vec2 sv = uv - vec2(0.1, 0.3);
+  float sax = min(sdBox(sv - vec2(0.0, 0.02), vec2(0.014, 0.07)), length(sv - vec2(0.03, -0.05)) - 0.032);
+  col = stamp(col, sax, vec3(0.98, 0.55, 0.32));
+  vec2 dv = uv - vec2(0.9, 0.3);
+  float drum = min(sdBox(dv, vec2(0.05, 0.035)), length((dv - vec2(0.0, 0.035)) * vec2(1.0, 1.8)) - 0.05);
+  col = stamp(col, drum, vec3(0.55, 0.42, 0.95));
+  vec2 pv = uv - vec2(0.78, 0.31);
+  float piano = min(sdBox(pv, vec2(0.08, 0.035)), sdBox(pv - vec2(-0.02, 0.05), vec2(0.055, 0.016)));
+  col = stamp(col, piano, vec3(0.22, 0.12, 0.28));
+
+  float s0 = 0.48;
+  col = mix(col, vec3(0.18, 0.08, 0.24), 1.0 - smoothstep(0.0, 0.0028, abs(uv.y - s0)));
+  col = mix(col, vec3(0.18, 0.08, 0.24), 1.0 - smoothstep(0.0, 0.0028, abs(uv.y - (s0 + 0.026))));
+  col = mix(col, vec3(0.18, 0.08, 0.24), 1.0 - smoothstep(0.0, 0.0028, abs(uv.y - (s0 + 0.052))));
+  col = mix(col, vec3(0.18, 0.08, 0.24), 1.0 - smoothstep(0.0, 0.0028, abs(uv.y - (s0 + 0.078))));
+  col = mix(col, vec3(0.18, 0.08, 0.24), 1.0 - smoothstep(0.0, 0.0028, abs(uv.y - (s0 + 0.104))));
+  float clef = min(sdBox(uv - vec2(0.07, s0 + 0.05), vec2(0.01, 0.07)), length(uv - vec2(0.085, s0 + 0.09)) - 0.018);
+  col = mix(col, vec3(0.14, 0.06, 0.2), 1.0 - smoothstep(0.0, 0.01, clef));
+
+  for (int n = 0; n < 4; n++) {
+    float fi = float(n);
+    vec2 np = vec2(0.22 + fi * 0.16 + 0.02 * sin(t * 1.3 + fi), s0 + 0.02 + 0.07 * abs(sin(t * 2.5 + fi * 1.2)) + u_bass * 0.03);
+    vec2 lp = uv - np;
+    float note = min(length(lp * vec2(1.35, 1.0) - vec2(-0.006, -0.006)) - 0.016, sdBox(lp - vec2(0.012, 0.03), vec2(0.005, 0.04)));
+    vec3 nc = mix(vec3(0.12, 0.05, 0.2), vec3(0.95, 0.4, 0.75), 0.45 + 0.25 * sin(fi + t));
+    col = stamp(col, note, nc);
+  }
+
+  if (uv.y < 0.24) {
+    float keys = 14.0;
+    float kx = uv.x * keys;
+    float ki = floor(kx);
+    float kf = fract(kx);
+    float m = mod(ki, 7.0);
+    float pulse = max(0.0, sin(t * 8.0 + ki * 1.7));
+    pulse *= 0.25 + 0.75 * u_bass;
+    float lift = pulse * 0.03;
+    float face = step(0.04 + lift, uv.y);
+    float canBlack = max(step(m, 1.51), step(2.5, m) * step(m, 5.51));
+    float black = step(0.58, kf) * step(kf, 0.84) * canBlack;
+    vec3 wh = mix(vec3(0.78, 0.68, 0.74), vec3(0.99, 0.97, 0.94), face);
+    vec3 kc = mix(wh, vec3(0.12, 0.08, 0.18), black);
+    kc = mix(kc, vec3(1.0, 0.62, 0.88), pulse * 0.6);
+    col = mix(kc, col, smoothstep(0.21, 0.24, uv.y));
+    col = mix(col, vec3(0.22, 0.1, 0.18), (1.0 - smoothstep(0.0, 0.01, kf)) * step(uv.y, 0.23));
   }
   fragColor = vec4(col, 1.0);
 }

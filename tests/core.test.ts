@@ -11,11 +11,12 @@ import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
-import { BOOT_GENERATOR_GLSL, GENERATOR_GLSL } from "../src/engine/shaders";
+import { BOOT_GENERATOR_GLSL, GENERATOR_GLSL, STAGE_GENERATOR_GLSL } from "../src/engine/shaders";
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
 import { isAudioFile, sampleLevelsFromSamples } from "../src/media/audio";
+import { seekVideo } from "../src/media/sources";
 
 describe("seeded random", () => {
   it("is reproducible", () => {
@@ -287,8 +288,10 @@ describe("effects registry", () => {
     expect(GENERATOR_GLSL).toContain("genOil");
     expect(GENERATOR_GLSL).toContain("genPaper");
     expect(GENERATOR_GLSL).toContain("genCave");
-    expect(GENERATOR_GLSL).toContain("genStage");
-    expect(GENERATOR_GLSL).toContain("stageSticker");
+    expect(GENERATOR_GLSL).not.toContain("genStage");
+    expect(STAGE_GENERATOR_GLSL).toContain("stamp");
+    expect(STAGE_GENERATOR_GLSL).toContain("guitar");
+    expect(STAGE_GENERATOR_GLSL).not.toContain("musicNote");
     expect(GENERATOR_GLSL).toContain("musicPiano");
     expect(GENERATOR_GLSL).toContain("starLayer");
     expect(GENERATOR_GLSL).toContain("reed");
@@ -296,7 +299,6 @@ describe("effects registry", () => {
     expect(GENERATOR_GLSL).not.toContain("genChapel");
     expect(GENERATOR_GLSL).not.toContain("genLamp");
     expect(GENERATOR_GLSL).toContain("uMode == 7");
-    expect(GENERATOR_GLSL).toContain("uMode == 11");
     expect(GENERATOR_GLSL).toContain("u_audio");
     expect(GENERATOR_GLSL).toContain("u_bass");
     expect(BOOT_GENERATOR_GLSL).not.toContain("genStars");
@@ -438,6 +440,52 @@ describe("prompt generation", () => {
     const palette = samplePaletteFromImageData(data, 24, 24);
     expect(palette[0]).toBe("#0a141e");
     expect(palette.length).toBeGreaterThan(0);
+  });
+});
+
+describe("video transport", () => {
+  function fakeVideo(
+    overrides: Partial<{ duration: number; currentTime: number; paused: boolean; playbackRate: number }> = {},
+  ) {
+    const video = {
+      duration: 10,
+      currentTime: 1,
+      paused: true,
+      playbackRate: 1,
+      pause() {
+        video.paused = true;
+      },
+      play() {
+        video.paused = false;
+        return Promise.resolve();
+      },
+      ...overrides,
+    };
+    return video;
+  }
+
+  it("lets a forward clip play instead of seeking every frame", () => {
+    const video = fakeVideo({ paused: false, currentTime: 1 });
+    seekVideo({ kind: "video", video } as never, 1.05, {
+      playing: true,
+      freeze: false,
+      mode: "forward",
+      speed: 1,
+    });
+    expect(video.currentTime).toBe(1);
+    expect(video.paused).toBe(false);
+  });
+
+  it("seeks when paused", () => {
+    const video = fakeVideo({ paused: false, currentTime: 1 });
+    seekVideo({ kind: "video", video } as never, 4, {
+      playing: false,
+      freeze: false,
+      mode: "forward",
+      speed: 1,
+    });
+    expect(video.paused).toBe(true);
+    expect(video.currentTime).toBe(4);
   });
 });
 

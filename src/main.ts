@@ -81,7 +81,12 @@ function frame(now: number) {
         1,
         store.project.playback.loop,
       );
-      seekVideo(src, vt);
+      seekVideo(src, vt, {
+        playing: store.project.playback.playing,
+        freeze: store.project.playback.freeze,
+        mode: store.project.playback.mode,
+        speed: store.project.playback.speed,
+      });
     }
   }
 
