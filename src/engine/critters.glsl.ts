@@ -229,8 +229,75 @@ float clef(vec2 p, float id) {
   d = min(d, length(p - vec2(0.38, 0.12)) - 0.15);
   return d;
 }
+float musicPiano(vec2 p, float id) {
+  float w = mix(0.92, 1.1, crHash(vec2(id, 1.0)));
+  float d = crBox2(p - vec2(0.0, -0.08), vec2(w, 0.42));
+  d = min(d, crBox2(p - vec2(-0.1, 0.5), vec2(w * 0.72, 0.16)));
+  d = min(d, crBox2(p - vec2(-w * 0.82, -0.64), vec2(0.08, 0.22)));
+  d = min(d, crBox2(p - vec2(w * 0.82, -0.64), vec2(0.08, 0.22)));
+  d = min(d, crBox2(p - vec2(-0.48, 0.08), vec2(0.07, 0.18)));
+  d = min(d, crBox2(p - vec2(-0.16, 0.08), vec2(0.07, 0.18)));
+  d = min(d, crBox2(p - vec2(0.18, 0.08), vec2(0.07, 0.18)));
+  d = min(d, crBox2(p - vec2(0.5, 0.08), vec2(0.07, 0.18)));
+  return d;
+}
+float musicGuitar(vec2 p, float id) {
+  float s = mix(0.9, 1.14, crHash(vec2(id, 1.0)));
+  p /= s;
+  float d = length(p - vec2(0.0, -0.22)) - 0.52;
+  d = min(d, length(p - vec2(0.0, 0.2)) - 0.38);
+  d = min(d, crCap(p, vec2(0.0, 0.42), vec2(0.0, 1.14), 0.07));
+  d = min(d, crBox2(p - vec2(0.0, 1.2), vec2(0.16, 0.1)));
+  d = max(d, -(length(p - vec2(0.0, -0.16)) - 0.12));
+  return d;
+}
+float musicTrumpet(vec2 p, float id) {
+  p.x += mix(-0.08, 0.08, crHash(vec2(id, 1.0)));
+  float d = crCap(p, vec2(-0.92, 0.0), vec2(0.42, 0.0), 0.08);
+  d = min(d, length((p - vec2(0.72, 0.0)) * vec2(0.7, 1.0)) - 0.32);
+  d = min(d, crBox2(p - vec2(-0.18, 0.28), vec2(0.055, 0.22)));
+  d = min(d, crBox2(p - vec2(0.04, 0.28), vec2(0.055, 0.22)));
+  d = min(d, crBox2(p - vec2(0.26, 0.28), vec2(0.055, 0.22)));
+  d = min(d, crCap(p, vec2(-0.92, 0.0), vec2(-1.08, 0.14), 0.05));
+  return d;
+}
+float musicDrum(vec2 p, float id) {
+  float w = mix(0.55, 0.72, crHash(vec2(id, 1.0)));
+  float d = crBox2(p, vec2(w, 0.38));
+  d = min(d, length((p - vec2(0.0, 0.38)) * vec2(1.0, 1.85)) - w);
+  d = min(d, crCap(p, vec2(-w, 0.52), vec2(-w - 0.28, 1.0), 0.05));
+  d = min(d, crCap(p, vec2(w, 0.52), vec2(w + 0.28, 1.0), 0.05));
+  return d;
+}
+float musicSax(vec2 p, float id) {
+  p.x += mix(-0.06, 0.06, crHash(vec2(id, 1.0)));
+  float d = crCap(p, vec2(-0.08, 0.88), vec2(0.06, -0.12), 0.11);
+  d = min(d, length((p - vec2(0.3, -0.52)) * vec2(0.82, 1.0)) - 0.32);
+  d = min(d, crCap(p, vec2(-0.08, 0.88), vec2(-0.24, 1.08), 0.055));
+  d = min(d, crBox2(p - vec2(0.2, 0.22), vec2(0.14, 0.05)));
+  return d;
+}
+float musicBoombox(vec2 p, float id) {
+  float w = mix(0.86, 1.08, crHash(vec2(id, 1.0)));
+  float d = crBox2(p, vec2(w, 0.52));
+  d = min(d, crBox2(p - vec2(0.0, 0.64), vec2(0.32, 0.08)));
+  d = min(d, abs(length(p - vec2(-w * 0.42, -0.04)) - 0.28) - 0.08);
+  d = min(d, abs(length(p - vec2(w * 0.42, -0.04)) - 0.28) - 0.08);
+  return d;
+}
+float musicEighth(vec2 p, float id) {
+  p.x += mix(-0.06, 0.06, crHash(vec2(id, 1.0)));
+  vec2 h1 = (p - vec2(-0.38, -0.5)) * vec2(1.35, 1.0);
+  vec2 h2 = (p - vec2(0.48, -0.4)) * vec2(1.35, 1.0);
+  float d = length(h1) - 0.28;
+  d = min(d, length(h2) - 0.28);
+  d = min(d, crCap(p, vec2(-0.14, -0.45), vec2(-0.08, 0.96), 0.06));
+  d = min(d, crCap(p, vec2(0.7, -0.36), vec2(0.76, 0.9), 0.06));
+  d = min(d, crCap(p, vec2(-0.08, 0.96), vec2(0.76, 0.9), 0.07));
+  return d;
+}
 float musicFam(vec2 p, float id, float fam) {
-  float k = mod(fam, 9.0);
+  float k = mod(fam, 16.0);
   if (k < 0.5) return musicNote(p, id);
   if (k < 1.5) return vinyl(p, id);
   if (k < 2.5) return cassette(p, id);
@@ -239,7 +306,14 @@ float musicFam(vec2 p, float id, float fam) {
   if (k < 5.5) return sparkle(p, id);
   if (k < 6.5) return mic(p, id);
   if (k < 7.5) return speaker(p, id);
-  return clef(p, id);
+  if (k < 8.5) return clef(p, id);
+  if (k < 9.5) return musicPiano(p, id);
+  if (k < 10.5) return musicGuitar(p, id);
+  if (k < 11.5) return musicTrumpet(p, id);
+  if (k < 12.5) return musicDrum(p, id);
+  if (k < 13.5) return musicSax(p, id);
+  if (k < 14.5) return musicBoombox(p, id);
+  return musicEighth(p, id);
 }
 float candle(vec2 p, float id) {
   float d = crBox2(p - vec2(0.0, -0.18), vec2(mix(0.14, 0.2, crHash(vec2(id, 1.0))), 0.52));
@@ -370,11 +444,13 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, flo
   float bobHz = mix(0.4, 1.4, crHash(vec2(id, 3.1)));
   vec2 pos = start + vel * time;
   pos.y += bob * sin(time * bobHz + id);
+  if (kit > 0.5 && kit < 1.5) pos.y += 0.02 * u_bass * sin(time * 10.0 + id);
   pos = fract(pos);
   float heading = atan(vel.y + bob * cos(time * bobHz + id) * bobHz, vel.x + 0.0001);
   float spin = heading + time * mix(-2.2, 2.2, crHash(vec2(id, 12.1)));
   float sz = mix(0.035, 0.17, crHash(vec2(id, 9.2))) * max(sizeMul, 0.2);
   sz *= 1.0 + 0.08 * sin(time * 1.7 + id);
+  if (kit > 0.5 && kit < 1.5) sz *= 1.1 + 0.16 * u_bass;
   float hue = crHash(vec2(id, 0.41));
   if (kit > 0.5 && kit < 1.5) {
     float candy = crHash(vec2(id, 0.47));
@@ -408,12 +484,22 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, flo
     vec2 p = crRot(dlt, spin) / (sz * (1.0 - fk * 0.08));
     float sd = weirdBody(p, id, famSlot, kit);
     float fillSoft = kit > 0.5 ? 0.07 : 0.14;
+    if (kit > 0.5 && kit < 1.5) {
+      fillSoft = 0.048;
+      if (fk < 0.5) {
+        float dBack = weirdBody(p + vec2(-0.14, 0.16), id, famSlot, kit);
+        float sh = 1.0 - smoothstep(-0.02, 0.14, dBack);
+        accCol = mix(accCol, vec3(0.14, 0.06, 0.2), sh * 0.78);
+        accA = max(accA, sh * 0.72);
+      }
+    }
     float fill = 1.0 - smoothstep(-0.02, fillSoft, sd);
     float rim = 1.0 - smoothstep(0.0, 0.18, abs(sd + 0.02));
     float glow = exp(-max(sd, 0.0) * 3.6) * 0.48;
+    if (kit > 0.5 && kit < 1.5) glow *= 1.28;
     float hl = fill * (1.0 - smoothstep(0.45, 0.0, length(p - vec2(-0.2, -0.25))));
     vec3 col = mix(fillCol, rimCol, rim * 0.6);
-    col = mix(col, vec3(1.0), hl * 0.28);
+    col = mix(col, vec3(1.0), hl * (kit > 0.5 && kit < 1.5 ? 0.42 : 0.28));
     float a = max(fill, glow * 0.5) * (1.0 - fk * 0.34);
     accCol = mix(accCol, col, a);
     accA = max(accA, a);
@@ -425,7 +511,8 @@ vec4 critterField(vec2 uv, float count, float seed, float time, float sizeMul, f
   time += u_audio * 0.14;
   sizeMul *= mix(1.0, 1.12, u_bass);
   float nFam = 9.0;
-  if (kit > 1.5 && kit < 2.5) nFam = 18.0;
+  if (kit > 0.5 && kit < 1.5) nFam = 16.0;
+  else if (kit > 1.5 && kit < 2.5) nFam = 25.0;
   else if (kit > 2.5) nFam = 6.0;
   float famSpin = floor(crHash(vec2(seed * 0.071, 4.4)) * nFam);
   for (int i = 0; i < 8; i++) {

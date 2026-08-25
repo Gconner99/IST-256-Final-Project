@@ -12,7 +12,8 @@ export type GeneratorType =
   | "marsh"
   | "oil"
   | "paper"
-  | "cave";
+  | "cave"
+  | "stage";
 export type BlendMode =
   | "normal"
   | "add"

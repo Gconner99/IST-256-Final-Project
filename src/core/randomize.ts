@@ -66,6 +66,9 @@ const LOOKS: Look[] = [
   { name: "chapel idol", mood: "lush", wacky: true, stack: ["grade", "bloom", "grain", "dancer"], blend: "normal" },
   { name: "cream garden", mood: "lush", wacky: true, stack: ["grade", "bloom", "grain", "critters"], blend: "normal" },
   { name: "charm lamp", mood: "mix", wacky: true, stack: ["duotone", "bloom", "grain", "critters"], blend: "screen" },
+  { name: "toy recital", mood: "mix", wacky: true, stack: ["duotone", "bloom", "grain", "critters"], blend: "screen" },
+  { name: "candy keys", mood: "mix", wacky: true, stack: ["grade", "bloom", "critters", "dancer"], blend: "normal" },
+  { name: "boombox garden", mood: "mix", wacky: true, stack: ["duotone", "bloom", "grain", "critters"], blend: "screen" },
 ];
 
 function randForParam(rng: () => number, def: ParamDef, current: number | string | boolean, amount: number) {
@@ -278,7 +281,7 @@ function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false)
   const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
   const stack = look.stack.filter((id) => getEffect(id)).slice(0, 5);
   const effects = stack.map((id, i) => applyMood(makeFx(id, seed + i * 997, amount), look.mood, palette, rng));
-  if (look.name === "toy pop" || look.name === "candy idol" || look.name === "flower drift" || look.name === "chapel idol" || look.name === "cream garden" || look.name === "charm lamp") {
+  if (look.name === "toy pop" || look.name === "candy idol" || look.name === "flower drift" || look.name === "chapel idol" || look.name === "cream garden" || look.name === "charm lamp" || look.name === "toy recital" || look.name === "candy keys" || look.name === "boombox garden") {
     for (const fx of effects) {
       if (fx.typeId === "critters") {
         if (look.name === "candy idol") fx.params.kit = "mix";
@@ -292,6 +295,10 @@ function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false)
         if (look.name === "chapel idol" || look.name === "flower drift") {
           fx.params.grow = look.name === "chapel idol" ? "halo" : "petals";
           fx.params.coat = "cream";
+        }
+        if (look.name === "candy keys") {
+          fx.params.grow = "petals";
+          fx.params.coat = "candy";
         }
       }
     }
@@ -343,8 +350,12 @@ export function randomizeProject(
   });
 
   const places = wacky
-    ? (["marsh", "oil", "paper", "stars", "cave"] as const)
-    : (["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave"] as const);
+    ? (["marsh", "oil", "paper", "stars", "cave", "stage"] as const)
+    : (["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave", "stage"] as const);
+  const lookRng = mulberry32((seed + 0 * 7919) >>> 0);
+  const lookPool = wacky ? LOOKS.filter((l) => l.wacky) : LOOKS;
+  const look = lookPool[Math.floor(lookRng() * lookPool.length)] ?? LOOKS[0];
+  const wantStage = look.name === "toy recital" || look.name === "candy keys" || look.name === "boombox garden";
   const sources = project.sources.map((src, i) => {
     if (mode !== "all" || src.kind !== "generator") return src;
     const prng = mulberry32(seed + i * 131);
@@ -352,9 +363,9 @@ export function randomizeProject(
     const keep = wacky ? prng() > 0.45 : prng() > 0.35;
     return {
       ...src,
-      generator: keep ? src.generator : places[Math.floor(prng() * places.length)],
-      colorA: pal.inkA,
-      colorB: pal.inkB,
+      generator: wantStage ? "stage" : keep ? src.generator : places[Math.floor(prng() * places.length)],
+      colorA: wantStage ? "#ff8ab8" : pal.inkA,
+      colorB: wantStage ? "#7ad8ff" : pal.inkB,
     };
   });
 

@@ -154,6 +154,11 @@ describe("place buttons", () => {
     const marsh = defaultGeneratorSource("marsh");
     addSource(marsh, true);
     expect(store.project.layers[0].sourceId).toBe(marsh.id);
+    const stage = defaultGeneratorSource("stage");
+    addSource(stage, true);
+    expect(store.project.layers[0].sourceId).toBe(stage.id);
+    expect(stage.name).toBe("STAGE");
+    expect(stage.generator).toBe("stage");
   });
 });
 
@@ -199,6 +204,13 @@ describe("effects registry", () => {
       "mic",
       "speaker",
       "clef",
+      "musicPiano",
+      "musicGuitar",
+      "musicTrumpet",
+      "musicDrum",
+      "musicSax",
+      "musicBoombox",
+      "musicEighth",
       "u_kit",
       "musicFam",
       "votiveFam",
@@ -210,6 +222,7 @@ describe("effects registry", () => {
     ]) {
       expect(critterSrc.includes(family)).toBe(true);
     }
+    expect(critterSrc.includes("nFam = 16.0")).toBe(true);
     const idol = getEffect("dancer")!;
     expect(idol.params.find((p) => p.id === "count")?.default).toBe(1);
     expect(Number(idol.params.find((p) => p.id === "size")?.default)).toBeCloseTo(0.12);
@@ -266,6 +279,7 @@ describe("effects registry", () => {
     expect(GEN_INDEX.oil).toBe(9);
     expect(GEN_INDEX.paper).toBe(10);
     expect(GEN_INDEX.cave).toBe(11);
+    expect(GEN_INDEX.stage).toBe(12);
     expect(GEN_INDEX.lot).toBeUndefined();
     expect(GEN_INDEX.chapel).toBeUndefined();
     expect(GENERATOR_GLSL).toContain("genStars");
@@ -273,15 +287,21 @@ describe("effects registry", () => {
     expect(GENERATOR_GLSL).toContain("genOil");
     expect(GENERATOR_GLSL).toContain("genPaper");
     expect(GENERATOR_GLSL).toContain("genCave");
+    expect(GENERATOR_GLSL).toContain("genStage");
+    expect(GENERATOR_GLSL).toContain("stageSticker");
+    expect(GENERATOR_GLSL).toContain("musicPiano");
     expect(GENERATOR_GLSL).toContain("starLayer");
     expect(GENERATOR_GLSL).toContain("reed");
     expect(GENERATOR_GLSL).not.toContain("genLot");
     expect(GENERATOR_GLSL).not.toContain("genChapel");
     expect(GENERATOR_GLSL).not.toContain("genLamp");
     expect(GENERATOR_GLSL).toContain("uMode == 7");
+    expect(GENERATOR_GLSL).toContain("uMode == 11");
     expect(GENERATOR_GLSL).toContain("u_audio");
     expect(GENERATOR_GLSL).toContain("u_bass");
     expect(BOOT_GENERATOR_GLSL).not.toContain("genStars");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("genStage");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("musicPiano");
     expect(BOOT_GENERATOR_GLSL).not.toContain("critterField");
     expect(BOOT_GENERATOR_GLSL).toContain("uMode");
   });

@@ -200,4 +200,5 @@ export const GEN_INDEX: Record<string, number> = {
   oil: 9,
   paper: 10,
   cave: 11,
+  stage: 12,
 };

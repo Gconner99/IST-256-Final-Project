@@ -106,7 +106,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place.</li>
           <li><strong>Idol</strong> is a small low-poly creature. Grow picks petals, halo, antenna, skirt, or quiet. Coat tints the paint (cream, moss, sodium, night). Stamp it for a new seed. Crowd → Mini army.</li>
           <li><strong>Stamp chaos</strong> rerolls floater + idol seeds and their kit/grow/coat — keeps the backdrop. <strong>Print frame</strong> turns the live picture into a still.</li>
-          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, and Cave. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom breathe with the mix.</li>
+          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, Cave, and Stage. Stage is a candy toy-pop room — piano keys, staff, bouncing notes, stickers of guitars and boomboxes. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom/keys breathe with the mix.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
@@ -477,6 +477,7 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="oil">Oil</button>
       <button class="btn tiny acid" data-act="gen" data-kind="paper">Paper</button>
       <button class="btn tiny acid" data-act="gen" data-kind="cave">Cave</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="stage">Stage</button>
     </div>
     <div class="row">
       <button class="btn tiny acid" data-act="gen" data-kind="critters">Floaters</button>
@@ -489,7 +490,7 @@ function paintRail(n: HTMLElement) {
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop, Votives, Moths, Charms. Idol Grow / Coat pick a wardrobe without changing the creature language. Stamp chaos rerolls those, not the backdrop.</div>
+    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop (notes, piano, guitar, boombox…), Votives, Moths, Charms. Idol Grow / Coat pick a wardrobe without changing the creature language. Stamp chaos rerolls those, not the backdrop.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"

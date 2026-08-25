@@ -6,7 +6,7 @@ export const critters: EffectType = {
   id: "critters",
   name: "Floaters",
   category: "wacky",
-  description: "Drifting stickers. Kit picks lumpy families, toy-pop music icons, chapel votives, moths, or small charms",
+  description: "Drifting stickers. Kit picks lumpy families, toy-pop music (notes, piano, guitar, trumpet, drums, sax, boombox), chapel votives, moths, or small charms",
   params: [
     {
       id: "kit",

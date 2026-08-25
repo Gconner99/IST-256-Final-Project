@@ -387,6 +387,72 @@ vec3 genCave(vec2 uv) {
   float vig = smoothstep(0.92, 0.22, length((uv - 0.5) * vec2(1.22, 1.0)));
   return col * vig;
 }
+vec3 stageSticker(vec3 col, float d, float dBack, vec3 fill) {
+  float face = 1.0 - smoothstep(0.0, 0.07, d);
+  float sh = 1.0 - smoothstep(0.0, 0.11, dBack);
+  col = mix(col, vec3(0.16, 0.07, 0.22), sh * 0.55 * (1.0 - face));
+  return mix(col, fill, face);
+}
+vec3 genStage(vec2 uv) {
+  float t = uTime;
+  vec3 pink = mix(vec3(1.0, 0.58, 0.76), uColorA, 0.2);
+  vec3 sky = mix(vec3(0.52, 0.86, 1.0), uColorB, 0.22);
+  vec3 col = mix(pink, sky, smoothstep(0.12, 0.95, uv.y));
+  col = mix(col, vec3(1.0, 0.9, 0.45), 0.1 + 0.12 * u_bass);
+  vec2 dots = uv * vec2(10.0, 7.0);
+  vec2 di = floor(dots);
+  vec2 df = fract(dots) - 0.5;
+  float polka = smoothstep(0.22, 0.11, length(df));
+  vec3 dc = mix(vec3(1.0, 0.45, 0.7), vec3(1.0, 0.92, 0.4), step(0.5, hash21(di + uSeed)));
+  col = mix(col, dc, polka * 0.28);
+  vec2 sunP = (uv - vec2(0.86, 0.88)) * 4.2;
+  col = stageSticker(col, vinyl(sunP, 11.0), vinyl(sunP + vec2(0.08, -0.1), 11.0), mix(vec3(0.2, 0.12, 0.28), vec3(1.0, 0.55, 0.8), 0.35));
+  vec2 gP = (uv - vec2(0.16, 0.78)) * 4.6;
+  col = stageSticker(col, musicGuitar(gP, 2.0), musicGuitar(gP + vec2(0.1, -0.12), 2.0), vec3(0.95, 0.38, 0.55));
+  vec2 bP = (uv - vec2(0.5, 0.84)) * vec2(5.2, 5.6);
+  col = stageSticker(col, musicBoombox(bP, 5.0), musicBoombox(bP + vec2(0.1, -0.12), 5.0), mix(vec3(0.35, 0.78, 0.98), vec3(1.0, 0.75, 0.3), u_bass));
+  vec2 tP = (uv - vec2(0.34, 0.7)) * 5.8;
+  col = stageSticker(col, musicTrumpet(tP, 4.0), musicTrumpet(tP + vec2(0.1, -0.12), 4.0), vec3(1.0, 0.78, 0.28));
+  vec2 dP = (uv - vec2(0.88, 0.56)) * 6.0;
+  col = stageSticker(col, musicDrum(dP, 6.0), musicDrum(dP + vec2(0.1, -0.12), 6.0), vec3(0.55, 0.42, 0.95));
+  vec2 sP = (uv - vec2(0.12, 0.54)) * 6.2;
+  col = stageSticker(col, musicSax(sP, 7.0), musicSax(sP + vec2(0.1, -0.12), 7.0), vec3(0.98, 0.55, 0.32));
+  float s0 = 0.40;
+  for (int i = 0; i < 5; i++) {
+    float y = s0 + float(i) * 0.026;
+    col = mix(col, vec3(0.18, 0.08, 0.24), 1.0 - smoothstep(0.0, 0.0028, abs(uv.y - y)));
+  }
+  vec2 cP = (uv - vec2(0.07, s0 + 0.05)) * 7.5;
+  col = mix(col, vec3(0.14, 0.06, 0.2), 1.0 - smoothstep(0.0, 0.08, clef(cP, 8.0)));
+  for (int n = 0; n < 6; n++) {
+    float fi = float(n);
+    vec2 np = vec2(0.18 + fi * 0.13 + 0.02 * sin(t * 1.3 + fi), s0 + 0.02 + 0.08 * abs(sin(t * 2.5 + fi * 1.2)) + u_bass * 0.035);
+    vec2 lp = (uv - np) * 8.5;
+    vec3 nc = mix(vec3(0.12, 0.05, 0.2), vec3(0.95, 0.4, 0.75), 0.45 + 0.25 * sin(fi + t));
+    col = stageSticker(col, musicNote(lp, 20.0 + fi), musicNote(lp + vec2(0.12, -0.14), 20.0 + fi), nc);
+  }
+  if (uv.y < 0.24) {
+    float keys = 14.0;
+    float kx = uv.x * keys;
+    float ki = floor(kx);
+    float kf = fract(kx);
+    float m = mod(ki, 7.0);
+    float pulse = max(0.0, sin(t * 8.0 + ki * 1.7));
+    pulse *= 0.25 + 0.75 * u_bass;
+    float lift = pulse * 0.03;
+    float face = step(0.04 + lift, uv.y);
+    float canBlack = max(step(m, 1.51), step(2.5, m) * step(m, 5.51));
+    float black = step(0.58, kf) * step(kf, 0.84) * canBlack;
+    vec3 wh = mix(vec3(0.78, 0.68, 0.74), vec3(0.99, 0.97, 0.94), face);
+    vec3 kc = mix(wh, vec3(0.12, 0.08, 0.18), black);
+    kc = mix(kc, vec3(1.0, 0.62, 0.88), pulse * 0.6);
+    col = mix(kc, col, smoothstep(0.21, 0.24, uv.y));
+    col = mix(col, vec3(0.22, 0.1, 0.18), (1.0 - smoothstep(0.0, 0.01, kf)) * step(uv.y, 0.23));
+  }
+  vec2 pP = (uv - vec2(0.78, 0.32)) * 5.0;
+  col = stageSticker(col, musicPiano(pP, 9.0), musicPiano(pP + vec2(0.1, -0.12), 9.0), vec3(0.22, 0.12, 0.28));
+  return col;
+}
 
 void main() {
   vec2 uv = vUv;
@@ -429,8 +495,10 @@ void main() {
     col = genOil(uv);
   } else if (uMode == 10) {
     col = genPaper(uv);
-  } else {
+  } else if (uMode == 11) {
     col = genCave(uv);
+  } else {
+    col = genStage(uv);
   }
   fragColor = vec4(col, 1.0);
 }
