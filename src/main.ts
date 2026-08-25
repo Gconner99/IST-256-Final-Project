@@ -23,7 +23,6 @@ try {
 }
 
 mount(root, renderer);
-renderer.prewarmEffects();
 
 const view = document.querySelector<HTMLElement>("#view")!;
 const ro = new ResizeObserver(() => resizeCanvas(canvas, view));

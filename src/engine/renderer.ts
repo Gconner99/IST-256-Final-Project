@@ -18,9 +18,11 @@ import {
 import { compileEffectProgram, hexToRgb } from "./compile";
 import {
   BLIT_GLSL,
+  BOOT_GENERATOR_GLSL,
   COMPOSITE_GLSL,
   COPY_GLSL,
   FEEDBACK_GLSL,
+  GENERATOR_CRITTERS_GLSL,
   GENERATOR_GLSL,
   TEXTURE_GLSL,
 } from "./shaders";
@@ -57,6 +59,9 @@ export class Renderer {
   private compositeProg: Program;
   private feedbackProg: Program;
   private generatorProg: Program;
+  private generatorFull: Program | null = null;
+  private generatorCritters: Program | null = null;
+  private generatorUpgradeQueued = false;
   private textureProg: Program;
   private black: WebGLTexture;
   lastError: string | null = null;
@@ -76,7 +81,7 @@ export class Renderer {
     this.blit = new Program(gl, BLIT_GLSL);
     this.compositeProg = new Program(gl, COMPOSITE_GLSL);
     this.feedbackProg = new Program(gl, FEEDBACK_GLSL);
-    this.generatorProg = new Program(gl, GENERATOR_GLSL);
+    this.generatorProg = new Program(gl, BOOT_GENERATOR_GLSL);
     this.textureProg = new Program(gl, TEXTURE_GLSL);
     this.black = createTexture(gl);
     gl.bindTexture(gl.TEXTURE_2D, this.black);
@@ -100,25 +105,50 @@ export class Renderer {
     }
   }
 
-  /** Compile light looks first so the picture can paint; Idol / Floaters last. */
+  /** Compile light looks after the picture paints. Idol / Floaters wait until first use. */
   prewarmEffects() {
-    const heavy = new Set(["dancer", "critters"]);
+    const skip = new Set(["dancer", "critters"]);
     const ids = allEffects()
       .map((e) => e.id)
-      .sort((a, b) => Number(heavy.has(a)) - Number(heavy.has(b)));
+      .filter((id) => !skip.has(id));
     let i = 0;
     const step = () => {
       if (i < ids.length) {
         this.compileType(ids[i++]);
         requestAnimationFrame(step);
-        return;
-      }
-      if (i === ids.length) {
-        this.compileType("dancer", true);
-        i++;
       }
     };
     requestAnimationFrame(step);
+  }
+
+  private queueGeneratorUpgrade() {
+    if (this.generatorUpgradeQueued) return;
+    this.generatorUpgradeQueued = true;
+    requestAnimationFrame(() => {
+      try {
+        this.generatorFull = new Program(this.gl, GENERATOR_GLSL);
+      } catch (err) {
+        this.lastError = `places: ${err instanceof Error ? err.message : String(err)}`;
+        console.warn(this.lastError);
+      }
+      this.prewarmEffects();
+    });
+  }
+
+  private progForGenerator(mode: number): Program {
+    if (mode === 6) {
+      if (!this.generatorCritters) {
+        try {
+          this.generatorCritters = new Program(this.gl, GENERATOR_CRITTERS_GLSL);
+        } catch (err) {
+          this.lastError = `floaters place: ${err instanceof Error ? err.message : String(err)}`;
+          console.warn(this.lastError);
+          return this.generatorFull ?? this.generatorProg;
+        }
+      }
+      return this.generatorCritters;
+    }
+    return this.generatorFull ?? this.generatorProg;
   }
 
   private progFor(fx: EffectInstance): Program | null {
@@ -177,18 +207,20 @@ export class Renderer {
 
   private drawGenerator(target: FBO, src: MediaSource, time: number, seed = 77) {
     const gl = this.gl;
+    const mode = GEN_INDEX[src.generator ?? "plasma"] ?? 0;
+    const prog = this.progForGenerator(mode);
     target.bind();
-    this.generatorProg.use();
-    this.generatorProg.i("uMode", GEN_INDEX[src.generator ?? "plasma"] ?? 0);
-    this.generatorProg.f("uTime", time);
+    prog.use();
+    prog.i("uMode", mode);
+    prog.f("uTime", time);
     const a = src.colorA ? hexToRgb(src.colorA) : ([0.07, 0.04, 0.1] as const);
     const b = src.colorB ? hexToRgb(src.colorB) : ([0.92, 0.78, 0.55] as const);
-    this.generatorProg.v3("uColorA", a[0], a[1], a[2]);
-    this.generatorProg.v3("uColorB", b[0], b[1], b[2]);
-    this.generatorProg.f("uScale", 6);
-    this.generatorProg.f("uSeed", seed);
-    this.generatorProg.f("u_audio", this.audioEnergy);
-    this.generatorProg.f("u_bass", this.audioBass);
+    prog.v3("uColorA", a[0], a[1], a[2]);
+    prog.v3("uColorB", b[0], b[1], b[2]);
+    prog.f("uScale", 6);
+    prog.f("uSeed", seed);
+    prog.f("u_audio", this.audioEnergy);
+    prog.f("u_bass", this.audioBass);
     drawTri(gl);
   }
 
@@ -275,6 +307,7 @@ export class Renderer {
   }
 
   render(project: Project, time: number, opts?: { width?: number; height?: number; quality?: QualityMode; vignette?: number }) {
+    this.queueGeneratorUpgrade();
     const gl = this.gl;
     const quality = opts?.quality ?? project.quality;
     const scale = quality === "draft" ? 0.5 : 1;
