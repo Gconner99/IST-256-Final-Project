@@ -36,13 +36,18 @@ uniform float u_speed;
 uniform float u_amount;
 vec2 figFoldUv(vec2 uv) {
   if (u_fold < 0.5) return uv;
+  if (u_fold > 2.5) {
+    uv.x = 0.5 - abs(uv.x - 0.5);
+    return uv;
+  }
   vec2 c = vec2(0.5, 0.42);
   vec2 p = uv - c;
   float aspect = uResolution.x / max(uResolution.y, 1.0);
   p.x *= aspect;
   float a = atan(p.y, p.x);
   float r = length(p);
-  float slice = 6.2831853 / 6.0;
+  float segs = u_fold < 1.5 ? 6.0 : 2.0;
+  float slice = 6.2831853 / segs;
   a = mod(a, slice);
   a = abs(a - slice * 0.5);
   p = vec2(cos(a), sin(a)) * r;
@@ -90,7 +95,6 @@ export const dancer: EffectType = {
         { value: "drift", label: "Drift" },
         { value: "float", label: "Float" },
         { value: "orbit", label: "Orbit" },
-        { value: "hold", label: "Hold" },
       ],
     },
     {
@@ -112,6 +116,12 @@ export const dancer: EffectType = {
         { value: "twin", label: "Twin face" },
         { value: "neck", label: "Long neck" },
         { value: "pack", label: "Pack" },
+        { value: "horns", label: "Horns" },
+        { value: "wings", label: "Wings" },
+        { value: "tail", label: "Tail" },
+        { value: "collar", label: "Collar" },
+        { value: "tusks", label: "Tusks" },
+        { value: "arms", label: "Extra arms" },
       ],
     },
     {
@@ -129,6 +139,11 @@ export const dancer: EffectType = {
         { value: "bruise", label: "Bruise" },
         { value: "gold", label: "Gold leaf" },
         { value: "xerox", label: "Xerox pink" },
+        { value: "rust", label: "Rust" },
+        { value: "ice", label: "Ice" },
+        { value: "blood", label: "Blood" },
+        { value: "acid", label: "Acid" },
+        { value: "ink", label: "Ink" },
       ],
     },
     {
@@ -140,6 +155,8 @@ export const dancer: EffectType = {
       options: [
         { value: "none", label: "None" },
         { value: "prism", label: "Prism" },
+        { value: "gate", label: "Gate" },
+        { value: "mirror", label: "Mirror" },
       ],
     },
     { id: "echo", label: "Echo", kind: "float", min: 0, max: 1, step: 0.01, default: 0.5 },

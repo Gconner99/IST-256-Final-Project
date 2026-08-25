@@ -39,10 +39,10 @@ HOW TO USE IT
   OR click Plasma / Noise / Bars / Stars / Marsh / Oil / Paper / Cave / Floaters on the left
   (that click puts the place on the picture)
 - Type a prompt on the left and click Generate to make a NEW image. Again rolls a new seed.
-- Drop an MP3 to use it as a soundtrack. Hit Play — idols, floaters, and places move with the mix
+- Click the lime Pick an MP3 box at the top of the left rail (or drop a song on the picture). Hit Play — idols, floaters, and places move with the mix
 - Click Stamp floaters / Stamp idol / Stamp chaos (new seeds and wardrobe, same place)
-- Idol Grow / Coat dress the same creature (crown, extra eyes, votive, bow…). Floaters Kit picks votives, moths, dice, fruit, tape, moons, saints
-- Rand scene draws one named card: a place + look + kit + grow/coat together
+- Idol Grow / Coat dress the same creature (crown, horns, wings, tail, tusks, rust, ice, blood, acid, ink…). Floaters Kit picks votives, moths, dice, shells, bells, coins, stamps, eyes, bones
+- Fold can Prism, Gate, or Mirror the creature. Rand scene draws one named card: a place + look + kit + grow/coat together
 - Click Print frame to turn the live picture into a still
 - Click Rand all for a new look. Rand wacky stays pretty (cream / toy-pop).
 - Click New at the top to start over

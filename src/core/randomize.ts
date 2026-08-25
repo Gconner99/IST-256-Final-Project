@@ -88,9 +88,18 @@ const SCENES: Scene[] = [
   { name: "bruise dice", place: "oil", look: "bruise print", kit: "dice", grow: "pack", coat: "bruise" },
   { name: "candy fruit", place: "marsh", look: "toy pop", kit: "fruit", grow: "bow", coat: "candy" },
   { name: "night keys", place: "cave", look: "night idol", kit: "keys", grow: "twin", coat: "night" },
-  { name: "tape hold", place: "oil", look: "tv dropout", kit: "tape", grow: "votive", coat: "night", move: "hold" },
+  { name: "tape drift", place: "oil", look: "tv dropout", kit: "tape", grow: "votive", coat: "night", move: "drift" },
   { name: "moon float", place: "stars", look: "aquarium idol", kit: "moons", grow: "neck", coat: "cream", move: "float" },
   { name: "charm marsh", place: "marsh", look: "charm lamp", kit: "charms", grow: "halo", coat: "moss" },
+  { name: "ice shells", place: "stars", look: "aquarium idol", kit: "shells", grow: "horns", coat: "ice", move: "float" },
+  { name: "rust bells", place: "oil", look: "bruise print", kit: "bells", grow: "collar", coat: "rust" },
+  { name: "blood stamp", place: "paper", look: "xerox folk", kit: "stamps", grow: "wings", coat: "blood", fold: "gate" },
+  { name: "coin orbit", place: "cave", look: "chapel idol", kit: "coins", grow: "tail", coat: "gold", move: "orbit" },
+  { name: "gate saint", place: "stars", look: "chapel idol", kit: "saints", grow: "crown", coat: "gold", fold: "gate" },
+  { name: "acid eyes", place: "marsh", look: "toy pop", kit: "eyes", grow: "eyes", coat: "acid", move: "orbit" },
+  { name: "ink bones", place: "cave", look: "night idol", kit: "bones", grow: "tusks", coat: "ink" },
+  { name: "tusk marsh", place: "marsh", look: "cream garden", kit: "shells", grow: "tusks", coat: "moss" },
+  { name: "moth mirror", place: "cave", look: "moth lamp", kit: "moths", grow: "antenna", coat: "sodium", fold: "mirror" },
 ];
 
 function randForParam(rng: () => number, def: ParamDef, current: number | string | boolean, amount: number) {
@@ -218,9 +227,9 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.speed = 0.7 + rng() * 1.3;
     p.seed = 1 + Math.floor(rng() * 9998);
     const roll = rng();
-    if (mood === "lush") p.kit = roll > 0.78 ? "saints" : roll > 0.62 ? "votives" : roll > 0.44 ? "charms" : roll > 0.28 ? "fruit" : roll > 0.14 ? "moons" : "shapes";
-    else if (mood === "mix") p.kit = roll > 0.82 ? "dice" : roll > 0.68 ? "moths" : roll > 0.54 ? "tape" : roll > 0.4 ? "toy pop" : roll > 0.24 ? "keys" : roll > 0.12 ? "mix" : "shapes";
-    else p.kit = roll > 0.72 ? "teeth" : roll > 0.5 ? "toy pop" : roll > 0.28 ? "mix" : "shapes";
+    if (mood === "lush") p.kit = roll > 0.94 ? "eyes" : roll > 0.92 ? "shells" : roll > 0.78 ? "saints" : roll > 0.62 ? "votives" : roll > 0.44 ? "charms" : roll > 0.28 ? "fruit" : roll > 0.14 ? "moons" : "shapes";
+    else if (mood === "mix") p.kit = roll > 0.94 ? "bones" : roll > 0.92 ? "bells" : roll > 0.86 ? "coins" : roll > 0.82 ? "dice" : roll > 0.68 ? "moths" : roll > 0.54 ? "tape" : roll > 0.4 ? "toy pop" : roll > 0.24 ? "keys" : roll > 0.12 ? "mix" : "shapes";
+    else p.kit = roll > 0.92 ? "bones" : roll > 0.88 ? "stamps" : roll > 0.72 ? "teeth" : roll > 0.5 ? "toy pop" : roll > 0.28 ? "mix" : "shapes";
   }
   if (fx.typeId === "dancer") {
     p.size = 0.12 + rng() * 0.05;
@@ -228,22 +237,22 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.crowd = "normal";
     p.place = "center";
     const mv = rng();
-    if (mood === "lush") p.move = mv > 0.42 ? "float" : mv > 0.22 ? "drift" : mv > 0.08 ? "hold" : "dance";
-    else if (mood === "mix") p.move = mv > 0.58 ? "float" : mv > 0.36 ? "drift" : mv > 0.2 ? "orbit" : mv > 0.08 ? "hold" : "dance";
-    else p.move = mv > 0.82 ? "hold" : mv > 0.68 ? "drift" : "dance";
+    if (mood === "lush") p.move = mv > 0.42 ? "float" : mv > 0.22 ? "drift" : "dance";
+    else if (mood === "mix") p.move = mv > 0.58 ? "float" : mv > 0.36 ? "drift" : mv > 0.2 ? "orbit" : "dance";
+    else p.move = mv > 0.68 ? "drift" : "dance";
     p.echo = 0.35 + rng() * 0.5;
     p.amount = 1;
-    p.speed = p.move === "dance" ? 0.55 + rng() * 1.5 : p.move === "hold" ? 0 : 0.32 + rng() * 0.7;
+    p.speed = p.move === "dance" ? 0.55 + rng() * 1.5 : 0.32 + rng() * 0.7;
     p.seed = 1 + Math.floor(rng() * 9998);
-    p.fold = rng() > 0.88 ? "prism" : "none";
+    p.fold = rng() > 0.94 ? "mirror" : rng() > 0.9 ? "gate" : rng() > 0.84 ? "prism" : "none";
     const g = rng();
-    if (mood === "lush") p.grow = g > 0.78 ? "crown" : g > 0.62 ? "petals" : g > 0.44 ? "halo" : g > 0.28 ? "bow" : g > 0.14 ? "quiet" : "wild";
-    else if (mood === "mix") p.grow = g > 0.82 ? "twin" : g > 0.68 ? "eyes" : g > 0.54 ? "skirt" : g > 0.4 ? "antenna" : g > 0.26 ? "votive" : g > 0.14 ? "petals" : "wild";
-    else p.grow = g > 0.78 ? "pack" : g > 0.62 ? "neck" : g > 0.48 ? "quiet" : "wild";
+    if (mood === "lush") p.grow = g > 0.94 ? "tusks" : g > 0.9 ? "horns" : g > 0.78 ? "crown" : g > 0.62 ? "petals" : g > 0.44 ? "halo" : g > 0.28 ? "bow" : g > 0.14 ? "quiet" : "wild";
+    else if (mood === "mix") p.grow = g > 0.94 ? "arms" : g > 0.92 ? "wings" : g > 0.82 ? "twin" : g > 0.68 ? "eyes" : g > 0.54 ? "skirt" : g > 0.4 ? "antenna" : g > 0.26 ? "votive" : g > 0.14 ? "petals" : "wild";
+    else p.grow = g > 0.94 ? "tusks" : g > 0.9 ? "tail" : g > 0.84 ? "collar" : g > 0.78 ? "pack" : g > 0.62 ? "neck" : g > 0.48 ? "quiet" : "wild";
     const c = rng();
-    if (mood === "lush") p.coat = c > 0.72 ? "gold" : c > 0.5 ? "cream" : c > 0.28 ? "moss" : "wild";
-    else if (mood === "mix") p.coat = c > 0.72 ? "xerox" : c > 0.52 ? "sodium" : c > 0.3 ? "cream" : "wild";
-    else p.coat = c > 0.7 ? "bruise" : c > 0.48 ? "night" : "wild";
+    if (mood === "lush") p.coat = c > 0.92 ? "acid" : c > 0.88 ? "ice" : c > 0.72 ? "gold" : c > 0.5 ? "cream" : c > 0.28 ? "moss" : "wild";
+    else if (mood === "mix") p.coat = c > 0.92 ? "ink" : c > 0.88 ? "rust" : c > 0.72 ? "xerox" : c > 0.52 ? "sodium" : c > 0.3 ? "cream" : "wild";
+    else p.coat = c > 0.92 ? "ink" : c > 0.88 ? "blood" : c > 0.7 ? "bruise" : c > 0.48 ? "night" : "wild";
   }
   if (fx.typeId === "kaleido") {
     p.segments = mood === "lush" ? 4 + Math.floor(rng() * 4) : 5 + Math.floor(rng() * 8);
@@ -404,8 +413,8 @@ export function chaosStamp(project: Project): Project {
   const seed = (project.seed + 7919) >>> 0;
   const rng = mulberry32(seed ^ 0x85ebca6b);
   const kits = FLOATER_KITS.filter((k) => k !== "mix");
-  const grows = ["wild", "petals", "halo", "quiet", "crown", "bow", "eyes", "votive"] as const;
-  const coats = ["wild", "cream", "moss", "sodium", "gold", "bruise", "xerox"] as const;
+  const grows = ["wild", "petals", "halo", "quiet", "crown", "bow", "eyes", "votive", "horns", "wings", "tail", "collar", "tusks", "arms"] as const;
+  const coats = ["wild", "cream", "moss", "sodium", "gold", "bruise", "xerox", "rust", "ice", "blood", "acid", "ink"] as const;
   let next: Project = {
     ...project,
     seed,
@@ -430,6 +439,7 @@ export function chaosStamp(project: Project): Project {
               seed: 1 + Math.floor(rng() * 9998),
               grow: grows[Math.floor(rng() * grows.length)],
               coat: coats[Math.floor(rng() * coats.length)],
+              fold: rng() > 0.78 ? (rng() > 0.66 ? "mirror" : rng() > 0.5 ? "gate" : "prism") : "none",
             },
           };
         }
@@ -461,7 +471,7 @@ function dressScene(project: Project, scene: Scene, seed: number): Project {
               move: scene.move ?? fx.params.move,
               fold: scene.fold ?? "none",
               echo: Math.max(Number(fx.params.echo) || 0, 0.42),
-              speed: scene.move === "hold" ? 0 : fx.params.speed,
+              speed: fx.params.speed,
               crowd: "normal",
               count: 1,
               place: "center",
@@ -510,5 +520,15 @@ export function randomizeScene(project: Project): { project: Project; name: stri
   next = ensureCritters(next);
   next = ensureIdol(next);
   next = dressScene(next, scene, seed);
+  next = {
+    ...next,
+    layers: next.layers.map((layer) => {
+      if (layer.effects.length <= 5) return layer;
+      const keep = layer.effects.filter((e) => e.typeId === "dancer" || e.typeId === "critters");
+      const rest = layer.effects.filter((e) => e.typeId !== "dancer" && e.typeId !== "critters");
+      const room = Math.max(0, 5 - keep.length);
+      return { ...layer, effects: [...rest.slice(Math.max(0, rest.length - room)), ...keep] };
+    }),
+  };
   return { project: next, name: scene.name };
 }

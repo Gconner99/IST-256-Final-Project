@@ -184,6 +184,12 @@ describe("effects registry", () => {
       "tape",
       "moons",
       "saints",
+      "shells",
+      "bells",
+      "coins",
+      "stamps",
+      "eyes",
+      "bones",
     ]);
     for (const family of [
       "classicBody",
@@ -221,6 +227,12 @@ describe("effects registry", () => {
       "tapeFam",
       "moonFam",
       "saintFam",
+      "shellFam",
+      "chimeFam",
+      "coinFam",
+      "stampFam",
+      "eyesFam",
+      "bonesFam",
     ]) {
       expect(critterSrc.includes(family)).toBe(true);
     }
@@ -236,11 +248,12 @@ describe("effects registry", () => {
       "drift",
       "float",
       "orbit",
-      "hold",
     ]);
     expect(idol.params.find((p) => p.id === "grow")?.default).toBe("wild");
     expect(idol.params.find((p) => p.id === "grow")?.options?.map((o) => o.value)).toContain("crown");
     expect(idol.params.find((p) => p.id === "grow")?.options?.map((o) => o.value)).toContain("twin");
+    expect(idol.params.find((p) => p.id === "grow")?.options?.map((o) => o.value)).toContain("tusks");
+    expect(idol.params.find((p) => p.id === "grow")?.options?.map((o) => o.value)).toContain("arms");
     expect(idol.params.find((p) => p.id === "coat")?.default).toBe("wild");
     expect(idol.params.find((p) => p.id === "coat")?.options?.map((o) => o.value)).toEqual([
       "wild",
@@ -252,8 +265,14 @@ describe("effects registry", () => {
       "bruise",
       "gold",
       "xerox",
+      "rust",
+      "ice",
+      "blood",
+      "acid",
+      "ink",
     ]);
     expect(idol.params.find((p) => p.id === "fold")?.default).toBe("none");
+    expect(idol.params.find((p) => p.id === "fold")?.options?.map((o) => o.value)).toEqual(["none", "prism", "gate", "mirror"]);
     expect(idol.params.find((p) => p.id === "form")).toBeUndefined();
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
@@ -327,6 +346,9 @@ describe("effects registry", () => {
     expect(GENERATOR_GLSL).not.toContain("diceFam");
     expect(GENERATOR_GLSL).not.toContain("fruitFam");
     expect(GENERATOR_GLSL).not.toContain("saintFam");
+    expect(GENERATOR_GLSL).not.toContain("shellFam");
+    expect(GENERATOR_GLSL).not.toContain("eyesFam");
+    expect(GENERATOR_GLSL).not.toContain("bonesFam");
     expect(GENERATOR_GLSL).not.toContain("classicBody");
     expect(BOOT_GENERATOR_GLSL).not.toContain("genStars");
     expect(BOOT_GENERATOR_GLSL).not.toContain("critterField");
@@ -424,6 +446,7 @@ describe("randomize + presets", () => {
       expect(idol.params.form).toBeUndefined();
       expect(Number(idol.params.size)).toBeLessThan(0.2);
       expect(idol.params.crowd).toBe("normal");
+      expect(idol.params.move).not.toBe("hold");
       expect(typeof critters.params.kit).toBe("string");
       expect(project.sources.some((s) => s.kind === "generator" && s.generator)).toBe(true);
     }

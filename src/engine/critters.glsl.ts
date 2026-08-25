@@ -421,6 +421,60 @@ float saintFam(vec2 p, float id, float fam) {
   if (k < 4.5) return teardrop(p, id);
   return heart(p, id);
 }
+float shellFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 6.0);
+  if (k < 0.5) return crescent(p, id);
+  if (k < 1.5) return teardrop(p, id);
+  if (k < 2.5) return ring(p, id);
+  if (k < 3.5) return cloud(p, id);
+  if (k < 4.5) return leaf(p, id);
+  return sparkle(p, id);
+}
+float chimeFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 6.0);
+  if (k < 0.5) return bell(p, id);
+  if (k < 1.5) return lantern(p, id);
+  if (k < 2.5) return sparkle(p, id);
+  if (k < 3.5) return ring(p, id);
+  if (k < 4.5) return candle(p, id);
+  return heart(p, id);
+}
+float coinFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 6.0);
+  if (k < 0.5) return ring(p, id);
+  if (k < 1.5) return vinyl(p, id);
+  if (k < 2.5) return sparkle(p, id);
+  if (k < 3.5) return crBox2(p, vec2(0.55));
+  if (k < 4.5) return heart(p, id);
+  return crescent(p, id);
+}
+float stampFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 6.0);
+  if (k < 0.5) return crBox2(p, vec2(0.62, 0.48));
+  if (k < 1.5) return saw(p, id);
+  if (k < 2.5) return sparkle(p, id);
+  if (k < 3.5) return heart(p, id);
+  if (k < 4.5) return ring(p, id);
+  return classicBody(p, id);
+}
+float eyesFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 6.0);
+  if (k < 0.5) return ring(p, id);
+  if (k < 1.5) return sparkle(p, id);
+  if (k < 2.5) return twins(p, id);
+  if (k < 3.5) return teardrop(p, id);
+  if (k < 4.5) return heart(p, id);
+  return crescent(p, id);
+}
+float bonesFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 6.0);
+  if (k < 0.5) return saw(p, id);
+  if (k < 1.5) return classicBody(p, id);
+  if (k < 2.5) return constellation(p, id);
+  if (k < 3.5) return crBox2(p, vec2(0.78, 0.18));
+  if (k < 4.5) return spikes(p, id);
+  return scribble(p, id);
+}
 float extraKitBody(vec2 p, float id, float famSlot, float kit) {
   if (kit < 6.5) return diceFam(p, id, famSlot);
   if (kit < 7.5) return fruitFam(p, id, famSlot);
@@ -428,7 +482,13 @@ float extraKitBody(vec2 p, float id, float famSlot, float kit) {
   if (kit < 9.5) return teethFam(p, id, famSlot);
   if (kit < 10.5) return tapeFam(p, id, famSlot);
   if (kit < 11.5) return moonFam(p, id, famSlot);
-  return saintFam(p, id, famSlot);
+  if (kit < 12.5) return saintFam(p, id, famSlot);
+  if (kit < 13.5) return shellFam(p, id, famSlot);
+  if (kit < 14.5) return chimeFam(p, id, famSlot);
+  if (kit < 15.5) return coinFam(p, id, famSlot);
+  if (kit < 16.5) return stampFam(p, id, famSlot);
+  if (kit < 17.5) return eyesFam(p, id, famSlot);
+  return bonesFam(p, id, famSlot);
 }
 `;
 
@@ -514,8 +574,20 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, flo
     hue = mix(0.72, 0.95, crHash(vec2(id, 0.48)));
   } else if (kit > 10.5 && kit < 11.5) {
     hue = mix(0.12, 0.2, crHash(vec2(id, 0.48)));
-  } else if (kit > 11.5) {
+  } else if (kit > 11.5 && kit < 12.5) {
     hue = mix(0.08, 0.16, crHash(vec2(id, 0.48)));
+  } else if (kit > 12.5 && kit < 13.5) {
+    hue = mix(0.08, 0.14, crHash(vec2(id, 0.48)));
+  } else if (kit > 13.5 && kit < 14.5) {
+    hue = mix(0.1, 0.16, crHash(vec2(id, 0.48)));
+  } else if (kit > 14.5 && kit < 15.5) {
+    hue = mix(0.1, 0.18, crHash(vec2(id, 0.48)));
+  } else if (kit > 15.5 && kit < 16.5) {
+    hue = mix(0.92, 0.08, crHash(vec2(id, 0.48)));
+  } else if (kit > 16.5 && kit < 17.5) {
+    hue = mix(0.78, 0.95, crHash(vec2(id, 0.48)));
+  } else if (kit > 17.5) {
+    hue = mix(0.04, 0.12, crHash(vec2(id, 0.48)));
   }
   float vibe = crHash(vec2(id, 0.74));
   float sat = vibe < 0.22 ? mix(0.2, 0.48, crHash(vec2(id, 0.52))) : mix(0.55, 0.92, crHash(vec2(id, 0.52)));
@@ -529,7 +601,13 @@ vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, flo
   if (kit > 8.5 && kit < 9.5) sat = mix(0.0, 0.22, crHash(vec2(id, 0.52)));
   if (kit > 9.5 && kit < 10.5) sat = mix(0.4, 0.75, crHash(vec2(id, 0.52)));
   if (kit > 10.5 && kit < 11.5) sat = mix(0.15, 0.5, crHash(vec2(id, 0.52)));
-  if (kit > 11.5) sat = mix(0.28, 0.62, crHash(vec2(id, 0.52)));
+  if (kit > 11.5 && kit < 12.5) sat = mix(0.28, 0.62, crHash(vec2(id, 0.52)));
+  if (kit > 12.5 && kit < 13.5) sat = mix(0.12, 0.38, crHash(vec2(id, 0.52)));
+  if (kit > 13.5 && kit < 14.5) sat = mix(0.45, 0.8, crHash(vec2(id, 0.52)));
+  if (kit > 14.5 && kit < 15.5) sat = mix(0.5, 0.85, crHash(vec2(id, 0.52)));
+  if (kit > 15.5 && kit < 16.5) sat = mix(0.35, 0.7, crHash(vec2(id, 0.52)));
+  if (kit > 16.5 && kit < 17.5) sat = mix(0.08, 0.32, crHash(vec2(id, 0.52)));
+  if (kit > 17.5) sat = mix(0.0, 0.22, crHash(vec2(id, 0.52)));
   float val = mix(0.72, 1.0, crHash(vec2(id, 0.63)));
   vec3 fillCol = crHsv(vec3(hue, sat, val));
   vec3 rimCol = crHsv(vec3(fract(hue + mix(0.08, 0.52, crHash(vec2(id, 0.81)))), mix(0.28, 0.9, crHash(vec2(id, 0.82))), 1.0));
