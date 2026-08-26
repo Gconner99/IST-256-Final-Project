@@ -121,7 +121,7 @@ Fig figRoll(float seed, float time) {
   f.orb = step(0.82, figH(seed + 5.8));
   f.nEyes = 1.0 + floor(pow(figH(seed + 6.1), 0.88) * 2.15);
   f.eyeY = f.hs * mix(-0.04, 0.26, figH(seed + 6.2));
-  f.eyeZ = f.hs * mix(0.88, 1.28, figH(seed + 6.3));
+  f.eyeZ = -f.hs * mix(0.88, 1.28, figH(seed + 6.3));
   f.eyeSpread = f.hs * mix(0.18, 0.82, figH(seed + 6.4));
   f.eyeR = f.hs * mix(0.2, 0.55, figH(seed + 6.5));
   f.eyeSq = mix(0.4, 1.7, figH(seed + 6.55));
@@ -160,7 +160,7 @@ Fig figRoll(float seed, float time) {
 }
 vec2 figureFaceF(vec3 hp, Fig f) {
   float hs = f.hs;
-  vec2 d = vec2(figBox(hp - vec3(0.0, hs * 0.02, hs * 0.82), vec3(hs * 0.72, hs * 0.62, hs * 0.14)), 2.4);
+  vec2 d = vec2(figBox(hp - vec3(0.0, hs * 0.02, -hs * 0.82), vec3(hs * 0.72, hs * 0.62, hs * 0.14)), 2.4);
   for (int i = 0; i < 3; i++) {
     if (float(i) >= f.nEyes) break;
     float xi = 0.0;
@@ -170,27 +170,28 @@ vec2 figureFaceF(vec3 hp, Fig f) {
     float eR = f.eyeR * mix(0.72, 1.38, fract(f.mouth + float(i) * 0.37));
     vec3 ep = hp - vec3(xi, yi, f.eyeZ);
     ep.y *= f.eyeSq;
+    ep.z *= 1.35;
     d = figMin(d, vec2(length(ep) - eR, 5.0));
     vec3 look = vec3((u_audio - 0.35) * 0.32, u_bass * 0.22 - 0.05, 0.0) * eR;
-    d = figMin(d, vec2(length(ep - vec3(0.0, 0.0, eR * 0.5) - look) - eR * 0.45, 5.6));
+    d = figMin(d, vec2(length(ep - vec3(0.0, 0.0, -eR * 0.4) - look) - eR * 0.42, 5.6));
   }
   if (f.mouth < 0.3 || f.snout > 0.72) {
-    vec3 sn = hp - vec3(0.0, hs * -0.02, hs * mix(1.35, 1.7, f.snout));
+    vec3 sn = hp - vec3(0.0, hs * -0.02, -hs * mix(1.35, 1.7, f.snout));
     d = figMin(d, vec2(figBox(sn, vec3(hs * mix(0.22, 0.38, f.snout), hs * 0.16, hs * mix(0.32, 0.52, f.snout))), 6.0));
   } else if (f.mouth < 0.55) {
-    d = figMin(d, vec2(figCap(hp, vec3(0.0, -hs * 0.02, hs * 0.4), vec3(0.0, 0.0, hs * 1.7), hs * 0.09), 7.0));
+    d = figMin(d, vec2(figCap(hp, vec3(0.0, -hs * 0.02, -hs * 0.4), vec3(0.0, 0.0, -hs * 1.7), hs * 0.09), 7.0));
   } else if (f.mouth < 0.78) {
-    d = figMin(d, vec2(figCap(hp, vec3(0.0, -hs * 0.06, hs * 0.5), vec3(hs * 0.12, -hs * 0.4, hs * 1.5), hs * 0.1), 6.0));
+    d = figMin(d, vec2(figCap(hp, vec3(0.0, -hs * 0.06, -hs * 0.5), vec3(hs * 0.12, -hs * 0.4, -hs * 1.5), hs * 0.1), 6.0));
   } else {
-    d = figMin(d, vec2(figBox(hp - vec3(0.0, -hs * 0.12, hs * 0.95), vec3(hs * 0.32, hs * 0.08, hs * 0.18)), 7.0));
+    d = figMin(d, vec2(figBox(hp - vec3(0.0, -hs * 0.12, -hs * 0.95), vec3(hs * 0.32, hs * 0.08, hs * 0.18)), 7.0));
   }
   if (f.ears > 0.5) {
     d = figMin(d, vec2(figCap(hp, vec3(-hs * 0.48, hs * 0.55, 0.08), vec3(-hs * 1.15, hs * 1.35, 0.12), hs * 0.09), 7.5));
     d = figMin(d, vec2(figCap(hp, vec3(hs * 0.52, hs * 0.42, 0.1), vec3(hs * 0.88, hs * 0.85, -0.05), hs * 0.07), 7.5));
   }
   if (f.tusks > 0.5) {
-    d = figMin(d, vec2(figCap(hp, vec3(-hs * 0.16, -hs * 0.14, hs * 0.62), vec3(-hs * 0.22, -hs * 0.48, hs * 1.1), hs * 0.042), 8.0));
-    d = figMin(d, vec2(figCap(hp, vec3(hs * 0.16, -hs * 0.14, hs * 0.62), vec3(hs * 0.22, -hs * 0.48, hs * 1.1), hs * 0.042), 8.0));
+    d = figMin(d, vec2(figCap(hp, vec3(-hs * 0.16, -hs * 0.14, -hs * 0.62), vec3(-hs * 0.22, -hs * 0.48, -hs * 1.1), hs * 0.042), 8.0));
+    d = figMin(d, vec2(figCap(hp, vec3(hs * 0.16, -hs * 0.14, -hs * 0.62), vec3(hs * 0.22, -hs * 0.48, -hs * 1.1), hs * 0.042), 8.0));
   }
   if (f.blush > 0.5) {
     d = figMin(d, vec2(length(hp - vec3(-hs * 0.42, -hs * 0.06, f.eyeZ * 0.62)) - hs * 0.12, 6.9));
@@ -203,7 +204,7 @@ vec2 figureFaceF(vec3 hp, Fig f) {
   if (f.petals > 0.5 && uQuality >= 0.5) {
     for (int k = 0; k < 5; k++) {
       float a = float(k) * 1.25663706 + 0.18;
-      vec3 tip = vec3(sin(a) * hs * 1.32, cos(a) * hs * 1.18, hs * 0.12);
+      vec3 tip = vec3(sin(a) * hs * 1.32, cos(a) * hs * 1.18, -hs * 0.12);
       d = figMin(d, vec2(figCap(hp, vec3(0.0, hs * 0.18, 0.0), tip, hs * 0.068), 6.9));
     }
   }
@@ -260,7 +261,7 @@ vec2 figureHit(vec3 p, Fig f, float seed) {
     d = figMin(d, vec2(figCap(hp, vec3(0.0, -f.hs * 0.2, 0.0), vec3(0.0, f.hs * 1.4, 0.0), f.hs * 0.45), 2.0));
   } else if (f.headKind < 0.84) {
     d = figMin(d, vec2(figBox(hp, vec3(f.hs * 1.32, f.hs * 0.48, f.hs * 0.4)), 2.0));
-    d = figMin(d, vec2(figOcta(hp - vec3(0.0, f.hs * 0.22, f.hs * 0.12), f.hs * 0.55), 2.2));
+    d = figMin(d, vec2(figOcta(hp - vec3(0.0, f.hs * 0.22, -f.hs * 0.12), f.hs * 0.55), 2.2));
   } else {
     d = figMin(d, vec2(figOcta(hp - vec3(0.0, f.hs * 0.58, 0.0), f.hs * 0.7), 2.0));
     d = figMin(d, vec2(figOcta(hp + vec3(0.0, f.hs * 0.12, 0.0), f.hs * 0.92), 2.2));
@@ -299,10 +300,10 @@ vec2 figureHit(vec3 p, Fig f, float seed) {
     d = figMin(d, vec2(figCap(ap, vec3(0.0), tip, armR), 4.0));
     d = figMin(d, vec2(figOcta(ap - tip, 0.075), 4.0));
   }
-  if (f.pack > 0.5) d = figMin(d, vec2(figBox(p - vec3(0.0, 0.0, -(f.ts.z + 0.08)), vec3(0.12, 0.12, 0.08)), 1.5));
+  if (f.pack > 0.5) d = figMin(d, vec2(figBox(p - vec3(0.0, 0.0, f.ts.z + 0.08), vec3(0.12, 0.12, 0.08)), 1.5));
   if (f.tail > 0.5) {
-    vec3 tb = vec3(0.0, -f.ts.y * 0.42, -f.ts.z * 0.4);
-    vec3 te = tb + vec3(sin(f.t * 3.7) * 0.24, 0.05, -0.4);
+    vec3 tb = vec3(0.0, -f.ts.y * 0.42, f.ts.z * 0.4);
+    vec3 te = tb + vec3(sin(f.t * 3.7) * 0.24, 0.05, 0.4);
     d = figMin(d, vec2(figCap(p, tb, te, 0.05), 1.5));
   }
   if (f.orb > 0.5) d = figMin(d, vec2(length(p - vec3(0.32, 0.12, 0.12)) - 0.1, 4.0));
@@ -317,8 +318,8 @@ vec2 figureHit(vec3 p, Fig f, float seed) {
     d = figMin(d, vec2(max(ring, abs(cp.y) - 0.028), 8.0));
   }
   if (f.wings > 0.5 && uQuality >= 0.5) {
-    d = figMin(d, vec2(figCap(p, vec3(-f.ts.x * 0.2, f.ts.y * 0.18, -f.ts.z * 0.4), vec3(-f.ts.x * 1.55, f.ts.y * 0.62, 0.08), 0.048), 6.9));
-    d = figMin(d, vec2(figCap(p, vec3(f.ts.x * 0.2, f.ts.y * 0.18, -f.ts.z * 0.4), vec3(f.ts.x * 1.55, f.ts.y * 0.62, 0.08), 0.048), 6.9));
+    d = figMin(d, vec2(figCap(p, vec3(-f.ts.x * 0.2, f.ts.y * 0.18, f.ts.z * 0.4), vec3(-f.ts.x * 1.55, f.ts.y * 0.62, 0.08), 0.048), 6.9));
+    d = figMin(d, vec2(figCap(p, vec3(f.ts.x * 0.2, f.ts.y * 0.18, f.ts.z * 0.4), vec3(f.ts.x * 1.55, f.ts.y * 0.62, 0.08), 0.048), 6.9));
     d = figMin(d, vec2(figOcta(p - vec3(-f.ts.x * 1.18, f.ts.y * 0.48, 0.0), 0.12), 6.9));
     d = figMin(d, vec2(figOcta(p - vec3(f.ts.x * 1.18, f.ts.y * 0.48, 0.0), 0.12), 6.9));
   }

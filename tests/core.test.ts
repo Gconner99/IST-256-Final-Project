@@ -314,7 +314,7 @@ describe("effects registry", () => {
     expect(idolSrc.includes("f.crest")).toBe(true);
     expect(idolSrc.includes("figFacet")).toBe(true);
     expect(idolSrc.includes("f.facing = 0.0")).toBe(true);
-    expect(idolSrc.includes("f.eyeZ = f.hs")).toBe(true);
+    expect(idolSrc.includes("f.eyeZ = -f.hs")).toBe(true);
     expect(idolSrc.includes("u_audio")).toBe(true);
     expect(idolSrc.includes("u_bass")).toBe(true);
     const miniSrc = compileEffectSource(dancerForCompile(true));
