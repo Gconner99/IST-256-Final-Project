@@ -52,8 +52,8 @@ HOW TO USE IT
   (that click puts the place on the picture)
 - Type a prompt on the left and click Generate to make a NEW image. Again rolls a new seed.
 - Drop an MP3 to use it as a soundtrack. Hit Play — idols, floaters, and places move with the mix
-- Click Stamp floaters / Stamp idol / Stamp buddy / Stamp chaos (new seeds and wardrobe, same place)
-- Idol Grow / Coat pick petals, halo, cream paint, etc. Buddy Kind picks a googly note, guitar, piano, boombox, vinyl, or heart. Floaters Kit picks toy-pop (piano, guitar, notes, boombox), votives, moths, charms
+- Click Stamp floaters / Stamp idol / Stamp chaos (new seeds and wardrobe, same place)
+- Idol Grow / Coat pick petals, halo, wings, horns, cream paint, etc. Floaters Kit picks toy-pop (piano, guitar, notes, boombox), votives, moths, charms
 - Sketch is a composition-notebook / sticker-album place (cream paper, tape, doodles)
 - Click Print frame to turn the live picture into a still
 - Click Rand all for a new look. Rand wacky stays pretty (cream / toy-pop).

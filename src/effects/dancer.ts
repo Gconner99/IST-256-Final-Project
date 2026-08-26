@@ -39,7 +39,7 @@ export const dancer: EffectType = {
   id: "dancer",
   name: "Idol",
   category: "wacky",
-  description: "One seed-grown low-poly creature with a face like an animal that does not exist. Grow picks petals, a halo, antennae, a skirt, or a quieter body. Coat tints the paint. Drop an MP3 and they dance to it. Mini army fills the frame with tiny ones in sync",
+  description: "One seed-grown low-poly creature with a face like an animal that does not exist. Grow picks petals, a halo, antennae, a skirt, wings, horns, or a quieter body. Coat tints the paint. Stamp for a new silhouette. Drop an MP3 and they dance to it. Mini army fills the frame with tiny ones in sync",
   params: [
     { id: "count", label: "Count", kind: "int", min: 1, max: 4, step: 1, default: 1 },
     { id: "size", label: "Size", kind: "float", min: 0.12, max: 2.5, step: 0.01, default: 0.12 },
@@ -87,6 +87,8 @@ export const dancer: EffectType = {
         { value: "halo", label: "Halo" },
         { value: "antenna", label: "Antenna" },
         { value: "skirt", label: "Skirt" },
+        { value: "wings", label: "Wings" },
+        { value: "horns", label: "Horns" },
         { value: "quiet", label: "Quiet" },
       ],
     },

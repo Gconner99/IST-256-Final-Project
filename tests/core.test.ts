@@ -4,7 +4,7 @@ import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../s
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureBuddy, ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -166,24 +166,18 @@ describe("place buttons", () => {
     expect(sketch.name).toBe("SKETCH");
     expect(sketch.generator).toBe("sketch");
   });
-
-  it("can drop a buddy onto a layer that does not have one", () => {
-    const p = ensureBuddy(createDefaultProject());
-    expect(p.layers[0].effects.some((e) => e.typeId === "buddy")).toBe(true);
-    expect(ensureBuddy(p).layers[0].effects.filter((e) => e.typeId === "buddy")).toHaveLength(1);
-  });
 });
 
 describe("effects registry", () => {
   it("ships a usable MVP library", () => {
     expect(allEffects().length).toBeGreaterThanOrEqual(15);
-    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer", "buddy"]) {
+    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer"]) {
       expect(getEffect(id)).toBeTruthy();
     }
     expect(getEffect("critters")?.category).toBe("wacky");
     expect(getEffect("critters")?.name).toBe("Floaters");
     expect(getEffect("dancer")?.name).toBe("Idol");
-    expect(getEffect("buddy")?.name).toBe("Buddy");
+    expect(getEffect("buddy")).toBeUndefined();
     expect(getEffect("window")).toBeUndefined();
     expect(allEffects().some((fx) => fx.id === "window")).toBe(false);
     const critterSrc = compileEffectSource(getEffect("critters")!);
@@ -244,6 +238,16 @@ describe("effects registry", () => {
     expect(idol.params.find((p) => p.id === "crowd")?.default).toBe("normal");
     expect(idol.params.find((p) => p.id === "move")?.default).toBe("dance");
     expect(idol.params.find((p) => p.id === "grow")?.default).toBe("wild");
+    expect(idol.params.find((p) => p.id === "grow")?.options?.map((o) => o.value)).toEqual([
+      "wild",
+      "petals",
+      "halo",
+      "antenna",
+      "skirt",
+      "wings",
+      "horns",
+      "quiet",
+    ]);
     expect(idol.params.find((p) => p.id === "coat")?.default).toBe("wild");
     expect(idol.params.find((p) => p.id === "form")).toBeUndefined();
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
@@ -276,6 +280,8 @@ describe("effects registry", () => {
     expect(idolSrc.includes("f.antenna")).toBe(true);
     expect(idolSrc.includes("f.halo")).toBe(true);
     expect(idolSrc.includes("f.blush")).toBe(true);
+    expect(idolSrc.includes("f.crest")).toBe(true);
+    expect(idolSrc.includes("figFacet")).toBe(true);
     expect(idolSrc.includes("u_audio")).toBe(true);
     expect(idolSrc.includes("u_bass")).toBe(true);
     const miniSrc = compileEffectSource(dancerForCompile(true));
@@ -284,31 +290,6 @@ describe("effects registry", () => {
     expect(miniSrc.includes("figMiniPlace")).toBe(true);
     expect(miniSrc.includes("geomRender")).toBe(false);
     expect(miniSrc.includes("impRender")).toBe(false);
-    const buddy = getEffect("buddy")!;
-    expect(buddy.params.find((p) => p.id === "kind")?.default).toBe("mix");
-    expect(buddy.params.find((p) => p.id === "kind")?.options?.map((o) => o.value)).toEqual([
-      "note",
-      "guitar",
-      "piano",
-      "boombox",
-      "vinyl",
-      "heart",
-      "mix",
-    ]);
-    expect(buddy.params.find((p) => p.id === "place")?.default).toBe("center");
-    expect(buddy.params.find((p) => p.id === "move")?.default).toBe("dance");
-    const buddySrc = compileEffectSource(buddy);
-    expect(buddySrc.includes("buddyRender")).toBe(true);
-    expect(buddySrc.includes("bdGoogly")).toBe(true);
-    expect(buddySrc.includes("bdNote")).toBe(true);
-    expect(buddySrc.includes("bdGuitar")).toBe(true);
-    expect(buddySrc.includes("bdLump")).toBe(true);
-    expect(buddySrc.includes("bdPal")).toBe(true);
-    expect(buddySrc.includes("hsv2rgb")).toBe(true);
-    expect(/\bfloat patch\b/.test(buddySrc)).toBe(false);
-    expect(buddySrc.includes("u_kind")).toBe(true);
-    expect(buddySrc.includes("figureRender")).toBe(false);
-    expect(BOOT_GENERATOR_GLSL.includes("buddyRender")).toBe(false);
   });
 
   it("ships a short set of background places", () => {

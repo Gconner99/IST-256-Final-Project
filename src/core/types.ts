@@ -215,7 +215,6 @@ export interface AppUi {
   generating: boolean;
   includeCritters: boolean;
   includeIdol: boolean;
-  includeBuddy: boolean;
   exporting: boolean;
 }
 

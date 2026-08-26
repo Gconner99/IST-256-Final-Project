@@ -3,7 +3,7 @@ import { store } from "../core/store";
 import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
-import { chaosStamp, ensureBuddy, ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
+import { chaosStamp, ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
 import { resumeAudio } from "../media/audio";
@@ -174,7 +174,6 @@ export function randomize(mode: "all" | "selected" | "param", wacky = false) {
     let out = next;
     if (mode === "all" && (ui.includeCritters || wacky)) out = ensureCritters(out);
     if (mode === "all" && (ui.includeIdol || wacky)) out = ensureIdol(out);
-    if (mode === "all" && (ui.includeBuddy || wacky)) out = ensureBuddy(out);
     return out;
   });
   const names = store.project.layers[0]?.effects.map((e) => e.typeId).join(" · ");
@@ -215,26 +214,9 @@ export function stampIdol() {
   store.patchUi({ status: "stamped idol" });
 }
 
-export function stampBuddy() {
-  const layer = selectedLayer(store.project);
-  if (!layer) return;
-  const existing = layer.effects.find((e) => e.typeId === "buddy");
-  const seed = 1 + ((store.project.seed + Date.now() + 29) % 9998);
-  if (existing) {
-    setParam(layer.id, existing.id, "seed", seed);
-    store.patchUi({ selectedEffectId: existing.id, status: "rerolled buddy" });
-    return;
-  }
-  addEffect("buddy");
-  const nextLayer = selectedLayer(store.project);
-  const fx = selectedEffect(nextLayer);
-  if (nextLayer && fx?.typeId === "buddy") setParam(nextLayer.id, fx.id, "seed", seed);
-  store.patchUi({ status: "stamped buddy" });
-}
-
 export function stampChaos() {
   store.setProject((p) => chaosStamp({ ...p, seed: (p.seed + 1 + (Date.now() & 255)) >>> 0 }));
-  store.patchUi({ status: "new floater, idol, and buddy seeds" });
+  store.patchUi({ status: "new floater and idol seeds" });
 }
 
 export async function reprintFrame(renderer: Renderer) {

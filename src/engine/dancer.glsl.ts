@@ -52,7 +52,7 @@ struct Fig {
   float kickHz, kickAmt, extraLeg, arms, pack, tail, orb;
   float nEyes, eyeY, eyeZ, eyeSpread, eyeR, eyeSq, mouth, ears, tusks;
   float petals, skirt, antenna, halo, blush;
-  float wings, collar, bow;
+  float wings, collar, bow, crest, snout;
   vec3 ts;
 };
 Fig figRoll(float seed, float time) {
@@ -93,8 +93,8 @@ Fig figRoll(float seed, float time) {
     f.sway = sin(f.t * 5.6) * 0.38;
     f.bob = sin(f.t * 8.3) * 0.14;
   }
-  f.sx = mix(0.62, 1.48, figH(seed + 1.22));
-  f.sz = mix(0.7, 1.38, figH(seed + 1.26));
+  f.sx = mix(0.48, 1.72, figH(seed + 1.22));
+  f.sz = mix(0.55, 1.55, figH(seed + 1.26));
   f.torsoKind = figH(seed + 1.1);
   f.ts = vec3(
     mix(0.12, 0.42, figH(seed + 1.2)),
@@ -103,7 +103,7 @@ Fig figRoll(float seed, float time) {
   );
   f.neck = mix(0.0, 0.52, pow(figH(seed + 2.05), 1.2));
   f.headKind = figH(seed + 2.2);
-  f.hs = mix(0.18, 0.54, pow(figH(seed + 2.3), 0.68));
+  f.hs = mix(0.14, 0.62, pow(figH(seed + 2.3), 0.62));
   if (figH(seed + 2.35) > 0.76) f.hs *= 1.42;
   f.horn = step(0.48, figH(seed + 2.8));
   f.kickHz = mix(4.4, 6.2, figH(seed + 3.1));
@@ -136,15 +136,20 @@ Fig figRoll(float seed, float time) {
   f.wings = step(0.76, figH(seed + 0.81));
   f.collar = step(0.72, figH(seed + 0.84));
   f.bow = step(0.8, figH(seed + 0.88));
+  f.crest = step(0.62, figH(seed + 0.93));
+  f.snout = figH(seed + 7.4);
   if (f.petals > 0.5) f.halo = 0.0;
   if (u_grow > 0.5 && u_grow < 1.5) { f.petals = 1.0; f.halo = 0.0; f.antenna = 0.0; }
   else if (u_grow > 1.5 && u_grow < 2.5) { f.halo = 1.0; f.petals = 0.0; }
   else if (u_grow > 2.5 && u_grow < 3.5) { f.antenna = 1.0; f.halo = 0.0; }
   else if (u_grow > 3.5 && u_grow < 4.5) { f.skirt = 1.0; }
-  else if (u_grow > 4.5) {
+  else if (u_grow > 4.5 && u_grow < 5.5) { f.wings = 1.0; }
+  else if (u_grow > 5.5 && u_grow < 6.5) { f.horn = 1.0; f.crest = 1.0; }
+  else if (u_grow > 6.5) {
     f.petals = 0.0; f.skirt = 0.0; f.antenna = 0.0; f.halo = 0.0;
     f.tusks = 0.0; f.wings = 0.0; f.bow = 0.0; f.pack = 0.0; f.orb = 0.0;
     f.extraLeg = 0.0; f.arms = 2.0; f.nEyes = min(f.nEyes, 2.0);
+    f.crest = 0.0; f.horn = 0.0;
   }
   if (u_audio > 0.001) {
     f.kickAmt *= mix(1.0, 1.65, u_bass);
@@ -166,11 +171,12 @@ vec2 figureFaceF(vec3 hp, Fig f) {
     vec3 ep = hp - vec3(xi, yi, f.eyeZ);
     ep.y *= f.eyeSq;
     d = figMin(d, vec2(length(ep) - eR, 5.0));
-    d = figMin(d, vec2(length(ep - vec3(0.0, 0.0, -eR * 0.5)) - eR * 0.45, 5.6));
+    vec3 look = vec3((u_audio - 0.35) * 0.32, u_bass * 0.22 - 0.05, 0.0) * eR;
+    d = figMin(d, vec2(length(ep - vec3(0.0, 0.0, -eR * 0.5) - look) - eR * 0.45, 5.6));
   }
-  if (f.mouth < 0.3) {
-    vec3 sn = hp - vec3(0.0, hs * -0.02, -hs * 1.35);
-    d = figMin(d, vec2(figBox(sn, vec3(hs * 0.28, hs * 0.16, hs * 0.38)), 6.0));
+  if (f.mouth < 0.3 || f.snout > 0.72) {
+    vec3 sn = hp - vec3(0.0, hs * -0.02, -hs * mix(1.35, 1.7, f.snout));
+    d = figMin(d, vec2(figBox(sn, vec3(hs * mix(0.22, 0.38, f.snout), hs * 0.16, hs * mix(0.32, 0.52, f.snout))), 6.0));
   } else if (f.mouth < 0.55) {
     d = figMin(d, vec2(figCap(hp, vec3(0.0, -hs * 0.02, -hs * 0.4), vec3(0.0, 0.0, -hs * 1.7), hs * 0.09), 7.0));
   } else if (f.mouth < 0.78) {
@@ -214,6 +220,11 @@ vec2 figureFaceF(vec3 hp, Fig f) {
     float ring = abs(length(hz.xy) - hs * 1.32) - 0.032;
     d = figMin(d, vec2(max(ring, abs(hz.z) - 0.022), 8.0));
   }
+  if (f.crest > 0.5) {
+    d = figMin(d, vec2(figOcta(hp - vec3(0.0, hs * 1.08, 0.05), hs * 0.22), 4.0));
+    d = figMin(d, vec2(figCap(hp, vec3(-hs * 0.16, hs * 0.7, 0.02), vec3(-hs * 0.06, hs * 1.32, 0.08), hs * 0.042), 4.0));
+    d = figMin(d, vec2(figCap(hp, vec3(hs * 0.16, hs * 0.68, 0.02), vec3(hs * 0.08, hs * 1.24, 0.06), hs * 0.038), 4.0));
+  }
   return d;
 }
 vec2 figureFace(vec3 hp, float seed, float hs) {
@@ -230,26 +241,34 @@ vec2 figureHit(vec3 p, Fig f, float seed) {
   p.x *= f.sx;
   p.z *= f.sz;
   vec2 d;
-  if (f.torsoKind < 0.34) d = vec2(figBox(p, f.ts), 1.0);
-  else if (f.torsoKind < 0.68) d = vec2(figOcta(p * vec3(1.0, 0.75, 1.1), mix(0.28, 0.48, figH(seed + 1.5))), 1.0);
-  else d = vec2(figCap(p, vec3(0.0, f.ts.y * 0.55, 0.0), vec3(0.0, -f.ts.y * 0.7, 0.0), f.ts.x * 0.72), 1.0);
+  if (f.torsoKind < 0.25) d = vec2(figBox(p, f.ts), 1.0);
+  else if (f.torsoKind < 0.5) d = vec2(figOcta(p * vec3(1.0, 0.75, 1.1), mix(0.28, 0.48, figH(seed + 1.5))), 1.0);
+  else if (f.torsoKind < 0.75) d = vec2(figCap(p, vec3(0.0, f.ts.y * 0.55, 0.0), vec3(0.0, -f.ts.y * 0.7, 0.0), f.ts.x * 0.72), 1.0);
+  else d = vec2(figBox(p, vec3(f.ts.x * 1.38, f.ts.y * 0.38, f.ts.z * 1.15)), 1.0);
   if (f.neck > 0.07) {
     d = figMin(d, vec2(figCap(p, vec3(0.0, f.ts.y * 0.65, 0.0), vec3(0.0, f.ts.y + f.neck, 0.0), 0.055), 1.0));
   }
   vec3 hp = p - vec3(0.0, f.ts.y + mix(0.16, 0.28, figH(seed + 2.1)) + f.neck, 0.0);
   hp = figRotZ(hp, sin(f.t * 4.1) * 0.1);
   hp = figRotX(hp, cos(f.t * 3.2) * 0.06 - f.peck);
-  if (f.headKind < 0.22) d = figMin(d, vec2(figOcta(hp, f.hs * 1.35), 2.0));
-  else if (f.headKind < 0.42) d = figMin(d, vec2(figBox(hp, vec3(f.hs, f.hs * 1.05, f.hs * 0.85)), 2.0));
-  else if (f.headKind < 0.78) {
+  if (f.headKind < 0.16) d = figMin(d, vec2(figOcta(hp, f.hs * 1.35), 2.0));
+  else if (f.headKind < 0.32) d = figMin(d, vec2(figBox(hp, vec3(f.hs, f.hs * 1.05, f.hs * 0.85)), 2.0));
+  else if (f.headKind < 0.5) {
     d = figMin(d, vec2(figOcta(hp - vec3(f.hs * 0.55, 0.0, 0.0), f.hs), 2.0));
     d = figMin(d, vec2(figOcta(hp + vec3(f.hs * 0.62, f.hs * 0.08, 0.0), f.hs * 0.88), 2.2));
-  } else {
+  } else if (f.headKind < 0.68) {
     d = figMin(d, vec2(figCap(hp, vec3(0.0, -f.hs * 0.2, 0.0), vec3(0.0, f.hs * 1.4, 0.0), f.hs * 0.45), 2.0));
+  } else if (f.headKind < 0.84) {
+    d = figMin(d, vec2(figBox(hp, vec3(f.hs * 1.32, f.hs * 0.48, f.hs * 0.4)), 2.0));
+    d = figMin(d, vec2(figOcta(hp - vec3(0.0, f.hs * 0.22, -f.hs * 0.12), f.hs * 0.55), 2.2));
+  } else {
+    d = figMin(d, vec2(figOcta(hp - vec3(0.0, f.hs * 0.58, 0.0), f.hs * 0.7), 2.0));
+    d = figMin(d, vec2(figOcta(hp + vec3(0.0, f.hs * 0.12, 0.0), f.hs * 0.92), 2.2));
   }
   if (length(hp) < f.hs * 2.8) d = figMin(d, figureFaceF(hp, f));
   if (f.horn > 0.5) {
-    d = figMin(d, vec2(figCap(hp, vec3(0.0, f.hs * 0.6, 0.0), vec3(0.0, f.hs * 1.7, 0.0), 0.055), 4.0));
+    d = figMin(d, vec2(figCap(hp, vec3(-f.hs * 0.22, f.hs * 0.55, 0.0), vec3(-f.hs * 0.12, f.hs * 1.72, 0.08), 0.05), 4.0));
+    d = figMin(d, vec2(figCap(hp, vec3(f.hs * 0.22, f.hs * 0.55, 0.0), vec3(f.hs * 0.16, f.hs * 1.55, 0.04), 0.045), 4.0));
   }
   float legLen = mix(0.34, 0.52, figH(seed + 3.3));
   float legR = mix(0.045, 0.09, figH(seed + 3.4));
@@ -298,8 +317,10 @@ vec2 figureHit(vec3 p, Fig f, float seed) {
     d = figMin(d, vec2(max(ring, abs(cp.y) - 0.028), 8.0));
   }
   if (f.wings > 0.5 && uQuality >= 0.5) {
-    d = figMin(d, vec2(figCap(p, vec3(-f.ts.x * 0.2, f.ts.y * 0.18, f.ts.z * 0.4), vec3(-f.ts.x * 1.28, f.ts.y * 0.52, -0.04), 0.042), 6.9));
-    d = figMin(d, vec2(figCap(p, vec3(f.ts.x * 0.2, f.ts.y * 0.18, f.ts.z * 0.4), vec3(f.ts.x * 1.28, f.ts.y * 0.52, -0.04), 0.042), 6.9));
+    d = figMin(d, vec2(figCap(p, vec3(-f.ts.x * 0.2, f.ts.y * 0.18, f.ts.z * 0.4), vec3(-f.ts.x * 1.55, f.ts.y * 0.62, -0.08), 0.048), 6.9));
+    d = figMin(d, vec2(figCap(p, vec3(f.ts.x * 0.2, f.ts.y * 0.18, f.ts.z * 0.4), vec3(f.ts.x * 1.55, f.ts.y * 0.62, -0.08), 0.048), 6.9));
+    d = figMin(d, vec2(figOcta(p - vec3(-f.ts.x * 1.18, f.ts.y * 0.48, 0.0), 0.12), 6.9));
+    d = figMin(d, vec2(figOcta(p - vec3(f.ts.x * 1.18, f.ts.y * 0.48, 0.0), 0.12), 6.9));
   }
   float sMin = min(f.sx, f.sz);
   d.x *= sMin;
@@ -321,6 +342,12 @@ vec3 figPal(float seed, float matId) {
   float hue = fract(figH(seed + matId * 1.71) * 0.92 + figH(seed) * 0.22);
   float sat = mix(0.42, 0.82, figH(seed + matId + 8.2));
   float val = mix(0.78, 0.98, figH(seed + matId + 9.1));
+  float vibe = figH(seed + 0.11);
+  if (u_coat < 0.5) {
+    if (vibe > 0.8) hue = mix(0.86, 0.98, figH(seed + matId));
+    else if (vibe > 0.62) hue = mix(0.07, 0.16, figH(seed + matId));
+    else if (vibe > 0.44) hue = mix(0.52, 0.74, figH(seed + matId));
+  }
   if (figH(seed + 0.03) > 0.55) hue = fract(hue + 0.12);
   if (figH(seed + 0.04) > 0.78) {
     sat = mix(0.7, 0.92, figH(seed + 0.05));
@@ -453,17 +480,22 @@ Fig figSoften(Fig f, float move) {
   }
   return f;
 }
+vec3 figFacet(vec3 n) {
+  n = normalize(n + 1e-5);
+  return normalize(floor(n * 3.2 + 0.5) / 3.2);
+}
 vec4 figureShade(vec3 p, vec3 rd, Fig f, float seed, float matId) {
-  vec3 n = figNormal(p, f, seed);
+  vec3 n = figFacet(figNormal(p, f, seed));
   vec3 l = normalize(vec3(0.35, 0.95, 0.55));
   float ndv = max(0.0, dot(n, -rd));
-  float dif = 0.86 + 0.14 * max(0.0, dot(n, l));
-  float rim = pow(1.0 - ndv, 2.4) * 0.28;
-  float spec = pow(max(0.0, dot(n, normalize(l - rd))), 18.0) * 0.12;
+  float dif = 0.82 + 0.18 * max(0.0, dot(n, l));
+  dif = floor(dif * 5.0 + 0.12) / 5.0;
+  float rim = pow(1.0 - ndv, 2.4) * 0.32;
+  float spec = pow(max(0.0, dot(n, normalize(l - rd))), 14.0) * 0.1;
   vec3 albedo = figPal(seed, matId);
   vec3 col = albedo * dif + albedo * rim + vec3(spec);
-  float ink = 1.0 - smoothstep(0.1, 0.38, ndv);
-  col = mix(col, vec3(0.03, 0.015, 0.05), ink * 0.92);
+  float ink = 1.0 - smoothstep(0.08, 0.36, ndv);
+  col = mix(col, vec3(0.03, 0.015, 0.05), ink * 0.94);
   return vec4(col, 1.0);
 }
 bool figRaySphere(vec3 ro, vec3 rd, vec3 c, float r, out float tEnter) {
