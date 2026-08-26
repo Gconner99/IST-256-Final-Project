@@ -59,7 +59,7 @@ Fig figRoll(float seed, float time) {
   Fig f;
   f.t = figDanceT(seed, time + (u_audio > 0.001 ? u_audio * 0.12 : 0.0));
   f.style = figDanceStyle(seed);
-  f.facing = mix(-0.28, 0.28, figH(seed + 0.48));
+  f.facing = 3.14159265 + mix(-0.1, 0.1, figH(seed + 0.48));
   f.sway = sin(f.t * 3.4) * mix(0.06, 0.16, figH(seed + 0.31));
   f.bob = abs(sin(f.t * 6.6)) * mix(0.02, 0.12, figH(seed + 0.37));
   f.spin = 0.0;
@@ -516,7 +516,7 @@ vec4 figureRender(vec2 uv, float seed, float time, float sizeMul, float count, f
   float figSc = min(max(sizeMul, 0.08) / 0.25, 1.0);
   if (move < 0.5 && dot(q, q) > mix(0.7, 2.2, spread) * mix(0.42, 1.0, figSc) && uv.y > 0.1) return miss;
   float camZ = mix(4.55, 1.72, clamp((max(sizeMul, 0.25) - 0.25) / 2.25, 0.0, 1.0));
-  float camA = figH(seed + 0.5) * 0.22 - 0.11;
+  float camA = figH(seed + 0.5) * 0.1 - 0.05;
   vec3 ro = figRotY(vec3(0.0, 0.42, camZ), camA);
   vec3 ta = vec3(0.0, 0.32, 0.0);
   vec3 ww = normalize(ta - ro);

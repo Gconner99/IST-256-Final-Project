@@ -25,6 +25,9 @@ import {
   GENERATOR_GLSL,
   SKETCH_GENERATOR_GLSL,
   STAGE_GENERATOR_GLSL,
+  FELT_GENERATOR_GLSL,
+  FOIL_GENERATOR_GLSL,
+  PLUSH_GENERATOR_GLSL,
   TEXTURE_GLSL,
 } from "./shaders";
 
@@ -63,6 +66,9 @@ export class Renderer {
   private generatorFull: Program | null = null;
   private stageProg: Program | null = null;
   private sketchProg: Program | null = null;
+  private feltProg: Program | null = null;
+  private foilProg: Program | null = null;
+  private plushProg: Program | null = null;
   private textureProg: Program | null = null;
   private black: WebGLTexture | null = null;
   lastError: string | null = null;
@@ -133,6 +139,18 @@ export class Renderer {
     if (mode === 13) {
       this.sketchProg ??= new Program(this.gl, SKETCH_GENERATOR_GLSL);
       return this.sketchProg;
+    }
+    if (mode === 14) {
+      this.feltProg ??= new Program(this.gl, FELT_GENERATOR_GLSL);
+      return this.feltProg;
+    }
+    if (mode === 15) {
+      this.foilProg ??= new Program(this.gl, FOIL_GENERATOR_GLSL);
+      return this.foilProg;
+    }
+    if (mode === 16) {
+      this.plushProg ??= new Program(this.gl, PLUSH_GENERATOR_GLSL);
+      return this.plushProg;
     }
     this.generatorFull ??= new Program(this.gl, GENERATOR_GLSL);
     return this.generatorFull;

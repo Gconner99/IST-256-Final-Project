@@ -202,4 +202,7 @@ export const GEN_INDEX: Record<string, number> = {
   cave: 11,
   stage: 12,
   sketch: 13,
+  felt: 14,
+  foil: 15,
+  plush: 16,
 };

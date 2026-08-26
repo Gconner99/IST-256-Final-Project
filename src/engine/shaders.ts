@@ -629,6 +629,166 @@ void main() {
 }
 `;
 
+/** Wool felt board. Own program so boot/stars stay light. */
+export const FELT_GENERATOR_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash21(i);
+  float b = hash21(i + vec2(1.0, 0.0));
+  float c = hash21(i + vec2(0.0, 1.0));
+  float d = hash21(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+float sdBox(vec2 p, vec2 b) {
+  vec2 q = abs(p) - b;
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+}
+void main() {
+  vec2 uv = vUv;
+  float wool = vnoise(uv * 48.0) * 0.55 + vnoise(uv * 96.0 + 2.1) * 0.45;
+  vec3 board = mix(vec3(0.93, 0.84, 0.76), uColorA, 0.18);
+  board = mix(board, vec3(0.86, 0.62, 0.72), 0.12 + 0.08 * u_bass);
+  board *= 0.9 + 0.16 * wool;
+  float nap = abs(sin(uv.x * 90.0 + wool * 4.0)) * 0.04;
+  board += nap * vec3(0.08, 0.04, 0.05);
+  vec3 col = board;
+  vec2 c0 = uv - vec2(0.14, 0.82);
+  float cloud = min(length(c0) - 0.07, min(length(c0 - vec2(0.06, 0.02)) - 0.055, length(c0 - vec2(-0.05, 0.0)) - 0.05));
+  col = mix(col, mix(vec3(0.98, 0.9, 0.94), uColorB, 0.15), 1.0 - smoothstep(0.0, 0.01, cloud));
+  vec2 s1 = uv - vec2(0.86, 0.8);
+  float star = abs(s1.x) + abs(s1.y) - 0.055;
+  col = mix(col, vec3(1.0, 0.78, 0.42), (1.0 - smoothstep(0.0, 0.01, star)) * 0.92);
+  vec2 h1 = uv - vec2(0.12, 0.18);
+  float heart = min(length(h1 - vec2(-0.03, 0.02)) - 0.04, length(h1 - vec2(0.03, 0.02)) - 0.04);
+  heart = min(heart, sdBox(h1 - vec2(0.0, -0.02), vec2(0.045, 0.03)));
+  col = mix(col, vec3(0.96, 0.42, 0.58), (1.0 - smoothstep(0.0, 0.01, heart)) * 0.9);
+  vec2 m1 = uv - vec2(0.88, 0.2);
+  float moon = max(length(m1) - 0.07, -(length(m1 - vec2(0.03, 0.02)) - 0.055));
+  col = mix(col, mix(vec3(0.55, 0.82, 0.78), uColorB, 0.25), 1.0 - smoothstep(0.0, 0.01, moon));
+  float stitch = step(0.5, fract((uv.x + uv.y) * 42.0)) * (1.0 - smoothstep(0.04, 0.07, min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y))));
+  col = mix(col, vec3(0.78, 0.32, 0.48), stitch * 0.55);
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
+/** Candy-wrapper foil. Own program so boot/stars stay light. */
+export const FOIL_GENERATOR_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash21(i);
+  float b = hash21(i + vec2(1.0, 0.0));
+  float c = hash21(i + vec2(0.0, 1.0));
+  float d = hash21(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+void main() {
+  vec2 uv = vUv;
+  float crinkle = vnoise(uv * 14.0 + uSeed) * 0.08 + vnoise(uv * 36.0 - uTime * 0.05) * 0.04;
+  vec2 w = uv + vec2(crinkle, -crinkle * 0.7);
+  float stripe = fract(w.x * 7.0 + w.y * 1.4 + uTime * 0.08);
+  vec3 a = mix(vec3(1.0, 0.45, 0.78), uColorA, 0.28);
+  vec3 b = mix(vec3(0.45, 0.92, 1.0), uColorB, 0.28);
+  vec3 gold = vec3(1.0, 0.84, 0.38);
+  vec3 col = mix(a, b, smoothstep(0.15, 0.85, stripe));
+  col = mix(col, gold, 0.18 * step(0.46, stripe) * step(stripe, 0.54));
+  float shine = pow(max(0.0, sin((w.x * 9.0 + w.y * 3.0) * 3.14159 + uTime * 1.4 + u_bass)), 8.0);
+  col += shine * vec3(0.55, 0.5, 0.45);
+  float fold = 1.0 - smoothstep(0.0, 0.012, abs(fract(w.y * 5.0 + crinkle * 2.0) - 0.5));
+  col = mix(col, col * 0.72, fold * 0.55);
+  float speckle = step(0.92, hash21(floor(w * 80.0)));
+  col = mix(col, vec3(1.0, 0.95, 0.8), speckle * 0.35);
+  col = mix(col, gold, 0.08 + 0.1 * u_bass);
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
+/** Playroom plush pile. Own program so boot/stars stay light. */
+export const PLUSH_GENERATOR_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash21(i);
+  float b = hash21(i + vec2(1.0, 0.0));
+  float c = hash21(i + vec2(0.0, 1.0));
+  float d = hash21(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+void main() {
+  vec2 uv = vUv;
+  vec3 pile = mix(vec3(0.92, 0.62, 0.74), uColorA, 0.22);
+  vec3 mint = mix(vec3(0.55, 0.86, 0.78), uColorB, 0.25);
+  float band = step(0.5, fract(uv.y * 6.0));
+  vec3 col = mix(pile, mint, band * 0.55);
+  vec2 tuft = uv * vec2(18.0, 14.0);
+  vec2 cell = floor(tuft);
+  vec2 f = fract(tuft) - 0.5;
+  float id = hash21(cell + uSeed);
+  vec2 jitter = vec2(id, hash21(cell + 9.1)) - 0.5;
+  float fluff = length(f - jitter * 0.18);
+  float pileH = mix(0.28, 0.48, id);
+  float tuftM = 1.0 - smoothstep(pileH * 0.35, pileH, fluff);
+  col = mix(col, col * (0.78 + 0.28 * id), tuftM * 0.7);
+  float nap = vnoise(uv * 28.0 + vec2(0.0, uTime * 0.04));
+  col *= 0.9 + 0.14 * nap;
+  col = mix(col, vec3(1.0, 0.82, 0.9), 0.08 + 0.1 * u_bass);
+  float edge = pow(length(uv - 0.5) * 1.1, 2.2) * 0.12;
+  fragColor = vec4(clamp(col - vec3(edge * 0.4, edge * 0.5, edge * 0.35), 0.0, 1.0), 1.0);
+}
+`;
+
 export const COPY_GLSL = `#version 300 es
 precision highp float;
 in vec2 vUv;

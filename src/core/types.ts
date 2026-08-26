@@ -14,7 +14,10 @@ export type GeneratorType =
   | "paper"
   | "cave"
   | "stage"
-  | "sketch";
+  | "sketch"
+  | "felt"
+  | "foil"
+  | "plush";
 export type BlendMode =
   | "normal"
   | "add"

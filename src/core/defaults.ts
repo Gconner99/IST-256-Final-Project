@@ -77,6 +77,9 @@ const GEN_INK: Record<string, { a: string; b: string }> = {
   cave: { a: "#08060c", b: "#7aa2ff" },
   stage: { a: "#ff8ab8", b: "#7ad8ff" },
   sketch: { a: "#efe4c8", b: "#c45c66" },
+  felt: { a: "#f0d4c4", b: "#7ec9c0" },
+  foil: { a: "#ff7ad2", b: "#7ae8ff" },
+  plush: { a: "#f09ab8", b: "#7ed8c4" },
 };
 
 export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"): MediaSource {

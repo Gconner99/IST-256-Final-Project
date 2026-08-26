@@ -11,7 +11,7 @@ import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
-import { BOOT_GENERATOR_GLSL, GENERATOR_GLSL, SKETCH_GENERATOR_GLSL, STAGE_GENERATOR_GLSL } from "../src/engine/shaders";
+import { BOOT_GENERATOR_GLSL, FELT_GENERATOR_GLSL, FOIL_GENERATOR_GLSL, GENERATOR_GLSL, PLUSH_GENERATOR_GLSL, SKETCH_GENERATOR_GLSL, STAGE_GENERATOR_GLSL } from "../src/engine/shaders";
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
@@ -143,6 +143,18 @@ describe("project files", () => {
     expect(loaded.layers[0].effects.some((fx) => fx.typeId === "window")).toBe(false);
     expect(getEffect("window")).toBeUndefined();
   });
+
+  it("drops retired Buddy effects from old saves", () => {
+    const p = createDefaultProject();
+    p.layers[0].effects.push({
+      id: "fx-buddy",
+      typeId: "buddy",
+      enabled: true,
+      params: { kind: "mix", mix: 1 },
+    });
+    const loaded = parseProject(serializeProject(p));
+    expect(loaded.layers[0].effects.some((fx) => fx.typeId === "buddy")).toBe(false);
+  });
 });
 
 describe("place buttons", () => {
@@ -165,6 +177,16 @@ describe("place buttons", () => {
     expect(store.project.layers[0].sourceId).toBe(sketch.id);
     expect(sketch.name).toBe("SKETCH");
     expect(sketch.generator).toBe("sketch");
+    const felt = defaultGeneratorSource("felt");
+    addSource(felt, true);
+    expect(store.project.layers[0].sourceId).toBe(felt.id);
+    expect(felt.name).toBe("FELT");
+    const foil = defaultGeneratorSource("foil");
+    addSource(foil, true);
+    expect(foil.generator).toBe("foil");
+    const plush = defaultGeneratorSource("plush");
+    addSource(plush, true);
+    expect(plush.name).toBe("PLUSH");
   });
 });
 
@@ -282,6 +304,7 @@ describe("effects registry", () => {
     expect(idolSrc.includes("f.blush")).toBe(true);
     expect(idolSrc.includes("f.crest")).toBe(true);
     expect(idolSrc.includes("figFacet")).toBe(true);
+    expect(idolSrc.includes("3.14159265")).toBe(true);
     expect(idolSrc.includes("u_audio")).toBe(true);
     expect(idolSrc.includes("u_bass")).toBe(true);
     const miniSrc = compileEffectSource(dancerForCompile(true));
@@ -300,6 +323,9 @@ describe("effects registry", () => {
     expect(GEN_INDEX.cave).toBe(11);
     expect(GEN_INDEX.stage).toBe(12);
     expect(GEN_INDEX.sketch).toBe(13);
+    expect(GEN_INDEX.felt).toBe(14);
+    expect(GEN_INDEX.foil).toBe(15);
+    expect(GEN_INDEX.plush).toBe(16);
     expect(GEN_INDEX.lot).toBeUndefined();
     expect(GEN_INDEX.chapel).toBeUndefined();
     expect(GENERATOR_GLSL).toContain("genStars");
@@ -308,13 +334,20 @@ describe("effects registry", () => {
     expect(GENERATOR_GLSL).toContain("genPaper");
     expect(GENERATOR_GLSL).toContain("genCave");
     expect(GENERATOR_GLSL).not.toContain("genStage");
+    expect(GENERATOR_GLSL).not.toContain("genFelt");
     expect(STAGE_GENERATOR_GLSL).toContain("stamp");
     expect(STAGE_GENERATOR_GLSL).toContain("guitar");
     expect(STAGE_GENERATOR_GLSL).not.toContain("musicNote");
     expect(SKETCH_GENERATOR_GLSL).toContain("fiber");
     expect(SKETCH_GENERATOR_GLSL).toContain("tape");
+    expect(FELT_GENERATOR_GLSL).toContain("wool");
+    expect(FOIL_GENERATOR_GLSL).toContain("crinkle");
+    expect(PLUSH_GENERATOR_GLSL).toContain("tuft");
     expect(GENERATOR_GLSL).not.toContain("genSketch");
     expect(BOOT_GENERATOR_GLSL).not.toContain("fiber");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("wool");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("crinkle");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("tuft");
     expect(GENERATOR_GLSL).toContain("musicPiano");
     expect(GENERATOR_GLSL).toContain("starLayer");
     expect(GENERATOR_GLSL).toContain("reed");
