@@ -904,7 +904,7 @@ Fig figRoll(float seed, float time) {
   Fig f;
   f.t = figDanceT(seed, time + (u_audio > 0.001 ? u_audio * 0.12 : 0.0));
   f.style = figDanceStyle(seed);
-  f.facing = 3.14159265 + mix(-0.1, 0.1, figH(seed + 0.48));
+  f.facing = 3.14159265;
   f.sway = sin(f.t * 3.4) * mix(0.06, 0.16, figH(seed + 0.31));
   f.bob = abs(sin(f.t * 6.6)) * mix(0.02, 0.12, figH(seed + 0.37));
   f.spin = 0.0;
@@ -918,12 +918,12 @@ Fig figRoll(float seed, float time) {
     f.sway = sin(f.t * 8.2) * 0.08;
     f.peck = 0.95 * max(0.0, sin(f.t * 10.5));
   } else if (f.style < 2.5) {
-    f.spin = f.t * mix(1.2, 2.4, figH(seed + 0.44));
-    f.sway = sin(f.t * 1.15) * 0.22;
+    f.spin = sin(f.t * mix(1.4, 2.6, figH(seed + 0.44))) * mix(0.16, 0.38, figH(seed + 0.45));
+    f.sway = sin(f.t * 1.15) * 0.16;
     f.bob = abs(sin(f.t * 3.1)) * 0.07;
   } else if (f.style < 3.5) {
-    f.lean = 1.05 + 0.18 * sin(f.t * 2.4);
-    f.bob = -0.22 + 0.06 * sin(f.t * 1.6);
+    f.lean = 0.16 + 0.1 * sin(f.t * 2.4);
+    f.bob = -0.08 + 0.05 * sin(f.t * 1.6);
   } else if (f.style < 4.5) {
     f.bob = 0.32 * max(0.0, sin(f.t * 5.9));
     f.sway = sin(f.t * 5.9) * 0.08;
