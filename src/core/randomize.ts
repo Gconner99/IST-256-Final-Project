@@ -1,7 +1,7 @@
 import { getEffect } from "../effects/registry";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
-import type { BlendMode, EffectInstance, Layer, ParamDef, Project } from "./types";
+import type { BlendMode, EffectInstance, GeneratorType, Layer, ParamDef, Project } from "./types";
 
 type Mood = "lush" | "outsider" | "mix";
 
@@ -75,6 +75,9 @@ const LOOKS: Look[] = [
   { name: "felt garden", mood: "lush", wacky: true, stack: ["grade", "bloom", "dancer"], blend: "normal" },
   { name: "foil wrap", mood: "mix", wacky: true, stack: ["duotone", "bloom", "grain", "critters"], blend: "screen" },
   { name: "plush recital", mood: "mix", wacky: true, stack: ["grade", "grain", "dancer"], blend: "normal" },
+  { name: "yarn garden", mood: "lush", wacky: true, stack: ["grade", "bloom", "dancer"], blend: "normal" },
+  { name: "sequin wrap", mood: "mix", wacky: true, stack: ["duotone", "bloom", "grain", "critters"], blend: "screen" },
+  { name: "quilt recital", mood: "mix", wacky: true, stack: ["grade", "grain", "dancer"], blend: "normal" },
 ];
 
 function randForParam(rng: () => number, def: ParamDef, current: number | string | boolean, amount: number) {
@@ -288,7 +291,7 @@ function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false)
   const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
   const stack = look.stack.filter((id) => getEffect(id)).slice(0, 5);
   const effects = stack.map((id, i) => applyMood(makeFx(id, seed + i * 997, amount), look.mood, palette, rng));
-  if (look.name === "toy pop" || look.name === "candy idol" || look.name === "flower drift" || look.name === "chapel idol" || look.name === "cream garden" || look.name === "charm lamp" || look.name === "toy recital" || look.name === "candy keys" || look.name === "boombox garden" || look.name === "sticker book" || look.name === "sketch idol" || look.name === "pencil garden" || look.name === "felt garden" || look.name === "foil wrap" || look.name === "plush recital") {
+  if (look.name === "toy pop" || look.name === "candy idol" || look.name === "flower drift" || look.name === "chapel idol" || look.name === "cream garden" || look.name === "charm lamp" || look.name === "toy recital" || look.name === "candy keys" || look.name === "boombox garden" || look.name === "sticker book" || look.name === "sketch idol" || look.name === "pencil garden" || look.name === "felt garden" || look.name === "foil wrap" || look.name === "plush recital" || look.name === "yarn garden" || look.name === "sequin wrap" || look.name === "quilt recital") {
     for (const fx of effects) {
       if (fx.typeId === "critters") {
         if (look.name === "candy idol") fx.params.kit = "mix";
@@ -322,6 +325,14 @@ function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false)
         if (look.name === "plush recital") {
           fx.params.grow = "wings";
           fx.params.coat = "candy";
+        }
+        if (look.name === "yarn garden") {
+          fx.params.grow = "petals";
+          fx.params.coat = "cream";
+        }
+        if (look.name === "quilt recital") {
+          fx.params.grow = "skirt";
+          fx.params.coat = "moss";
         }
       }
     }
@@ -373,59 +384,41 @@ export function randomizeProject(
   });
 
   const places = wacky
-    ? (["marsh", "oil", "paper", "stars", "cave", "stage", "sketch", "felt", "foil", "plush"] as const)
-    : (["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave", "stage", "sketch", "felt", "foil", "plush"] as const);
+    ? (["marsh", "oil", "paper", "stars", "cave", "stage", "sketch", "felt", "foil", "plush", "yarn", "sequin", "quilt"] as const)
+    : (["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave", "stage", "sketch", "felt", "foil", "plush", "yarn", "sequin", "quilt"] as const);
   const lookRng = mulberry32((seed + 0 * 7919) >>> 0);
   const lookPool = wacky ? LOOKS.filter((l) => l.wacky) : LOOKS;
   const look = lookPool[Math.floor(lookRng() * lookPool.length)] ?? LOOKS[0];
-  const wantStage = look.name === "toy recital" || look.name === "candy keys" || look.name === "boombox garden";
-  const wantSketch = look.name === "sticker book" || look.name === "pencil garden" || look.name === "sketch idol";
-  const wantFelt = look.name === "felt garden";
-  const wantFoil = look.name === "foil wrap";
-  const wantPlush = look.name === "plush recital";
+  const forcedPlace: Partial<Record<string, { generator: GeneratorType; a: string; b: string }>> = {
+    "toy recital": { generator: "stage", a: "#ff8ab8", b: "#7ad8ff" },
+    "candy keys": { generator: "stage", a: "#ff8ab8", b: "#7ad8ff" },
+    "boombox garden": { generator: "stage", a: "#ff8ab8", b: "#7ad8ff" },
+    "sticker book": { generator: "sketch", a: "#efe4c8", b: "#c45c66" },
+    "pencil garden": { generator: "sketch", a: "#efe4c8", b: "#c45c66" },
+    "sketch idol": { generator: "sketch", a: "#efe4c8", b: "#c45c66" },
+    "felt garden": { generator: "felt", a: "#f0d4c4", b: "#7ec9c0" },
+    "foil wrap": { generator: "foil", a: "#ff7ad2", b: "#7ae8ff" },
+    "plush recital": { generator: "plush", a: "#f09ab8", b: "#7ed8c4" },
+    "yarn garden": { generator: "yarn", a: "#f4b8d0", b: "#7ed8c4" },
+    "sequin wrap": { generator: "sequin", a: "#ff6ad8", b: "#7ae8ff" },
+    "quilt recital": { generator: "quilt", a: "#f2c48a", b: "#8a6ad8" },
+  };
+  const pinned = forcedPlace[look.name];
   const sources = project.sources.map((src, i) => {
     if (mode !== "all" || src.kind !== "generator") return src;
     const prng = mulberry32(seed + i * 131);
     const pal = PALETTES[Math.floor(prng() * PALETTES.length)];
     const keep = wacky ? prng() > 0.45 : prng() > 0.35;
-    let generator = wantSketch
-      ? "sketch"
-      : wantStage
-        ? "stage"
-        : wantFelt
-          ? "felt"
-          : wantFoil
-            ? "foil"
-            : wantPlush
-              ? "plush"
-              : keep
-                ? src.generator
-                : places[Math.floor(prng() * places.length)];
+    const generator = pinned
+      ? pinned.generator
+      : keep
+        ? src.generator
+        : places[Math.floor(prng() * places.length)];
     return {
       ...src,
       generator,
-      colorA: wantSketch
-        ? "#efe4c8"
-        : wantStage
-          ? "#ff8ab8"
-          : wantFelt
-            ? "#f0d4c4"
-            : wantFoil
-              ? "#ff7ad2"
-              : wantPlush
-                ? "#f09ab8"
-                : pal.inkA,
-      colorB: wantSketch
-        ? "#c45c66"
-        : wantStage
-          ? "#7ad8ff"
-          : wantFelt
-            ? "#7ec9c0"
-            : wantFoil
-              ? "#7ae8ff"
-              : wantPlush
-                ? "#7ed8c4"
-                : pal.inkB,
+      colorA: pinned ? pinned.a : pal.inkA,
+      colorB: pinned ? pinned.b : pal.inkB,
     };
   });
 

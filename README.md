@@ -47,7 +47,7 @@ Requires a browser (or Electron) with **WebGL2**.
 - Modular effects stack (bypass, reorder, per-effect mix + mask)
 - Floaters kits: lumpy shapes, toy-pop icons (notes, piano, guitar, trumpet, drums, sax, boombox), votives, moths, charms
 - Idol Grow (petals / halo / antenna / skirt / wings / horns / quiet) and Coat (cream / moss / sodium / night / candy)
-- Procedural backgrounds: plasma, noise, bars, plus **Stars**, **Marsh**, **Oil**, **Paper**, **Cave**, **Stage** (toy-pop piano / notes / instruments), **Sketch** (sticker-notebook paper), **Felt**, **Foil**, and **Plush**
+- Procedural backgrounds: plasma, noise, bars, plus **Stars**, **Marsh**, **Oil**, **Paper**, **Cave**, **Stage** (toy-pop piano / notes / instruments), **Sketch** (sticker-notebook paper), **Felt**, **Foil**, **Plush**, **Yarn**, **Sequins**, and **Quilt**
 - ~20 effects including **Floaters**, **Idol**, **Luma key**, and **Dropout**
 - Seeded randomization (all / selected / param) plus **Rand wacky** (outsider looks, short stacks)
 - **Stamp chaos** rerolls overlay seeds and generator inks; **Print frame** captures the live picture as a still

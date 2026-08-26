@@ -48,14 +48,14 @@ HOW TO USE IT
 -------------
 
 - Drag a photo, video, or MP3 onto the big dark area
-  OR click Plasma / Noise / Bars / Stars / Marsh / Oil / Paper / Cave / Stage / Sketch / Felt / Foil / Plush / Floaters on the left
+  OR click Plasma / Noise / Bars / Stars / Marsh / Oil / Paper / Cave / Stage / Sketch / Felt / Foil / Plush / Yarn / Sequins / Quilt / Floaters on the left
   (that click puts the place on the picture)
 - Type a prompt on the left and click Generate to make a NEW image. Again rolls a new seed.
 - Drop an MP3 to use it as a soundtrack. Hit Play — idols, floaters, and places move with the mix
 - Click Stamp floaters / Stamp idol / Stamp chaos (new seeds and wardrobe, same place)
 - Idol Grow / Coat pick petals, halo, wings, horns, cream paint, etc. Floaters Kit picks toy-pop (piano, guitar, notes, boombox), votives, moths, charms
 - Sketch is a composition-notebook / sticker-album place (cream paper, tape, doodles)
-- Felt / Foil / Plush are textured toy-pop places (wool board, candy wrapper, playroom pile)
+- Felt / Foil / Plush / Yarn / Sequins / Quilt are textured toy-pop places (wool, wrapper, pile, knit, sparkle, patchwork)
 - Click Print frame to turn the live picture into a still
 - Click Rand all for a new look. Rand wacky stays pretty (cream / toy-pop).
 - Click New at the top to start over

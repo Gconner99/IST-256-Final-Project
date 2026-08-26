@@ -205,4 +205,7 @@ export const GEN_INDEX: Record<string, number> = {
   felt: 14,
   foil: 15,
   plush: 16,
+  yarn: 17,
+  sequin: 18,
+  quilt: 19,
 };

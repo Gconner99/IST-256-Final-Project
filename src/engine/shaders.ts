@@ -789,6 +789,143 @@ void main() {
 }
 `;
 
+/** Knit yarn board. Own program so boot/stars stay light. */
+export const YARN_GENERATOR_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float a = hash21(i);
+  float b = hash21(i + vec2(1.0, 0.0));
+  float c = hash21(i + vec2(0.0, 1.0));
+  float d = hash21(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+void main() {
+  vec2 uv = vUv;
+  vec2 g = uv * vec2(16.0, 22.0);
+  vec2 cell = floor(g);
+  vec2 f = fract(g);
+  float id = hash21(cell + uSeed);
+  float rib = 0.5 + 0.5 * sin(uv.x * 52.0);
+  vec3 wool = mix(vec3(0.96, 0.78, 0.86), uColorA, 0.24);
+  vec3 mint = mix(vec3(0.62, 0.88, 0.82), uColorB, 0.28);
+  float stripe = step(0.5, fract(uv.x * 5.5 + uSeed * 0.08));
+  vec3 col = mix(wool, mint, stripe * 0.58);
+  float knit = abs(f.x - 0.5 - 0.2 * sin(f.y * 6.28318 + id * 6.2));
+  knit = 1.0 - smoothstep(0.07, 0.22, knit);
+  col *= 0.84 + 0.22 * knit;
+  col *= 0.9 + 0.12 * rib;
+  float bump = smoothstep(0.34, 0.12, length(f - vec2(0.5, 0.42)));
+  col += bump * vec3(0.09, 0.05, 0.06);
+  col *= 0.94 + 0.08 * vnoise(uv * 28.0);
+  col = mix(col, vec3(1.0, 0.88, 0.92), 0.05 + 0.08 * u_bass);
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
+/** Sequined disco paper. Own program so boot/stars stay light. */
+export const SEQUIN_GENERATOR_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+void main() {
+  vec2 uv = vUv;
+  vec2 g = uv * vec2(15.0, 13.0);
+  float row = floor(g.y);
+  g.x += 0.5 * step(0.5, fract(row * 0.5));
+  vec2 cell = floor(g);
+  vec2 f = fract(g) - 0.5;
+  float id = hash21(cell + uSeed);
+  float sequin = length(f * vec2(1.0, 1.12));
+  float disc = 1.0 - smoothstep(0.36, 0.46, sequin);
+  vec3 a = mix(vec3(1.0, 0.42, 0.78), uColorA, 0.3);
+  vec3 b = mix(vec3(0.42, 0.9, 1.0), uColorB, 0.3);
+  vec3 gold = vec3(1.0, 0.84, 0.36);
+  vec3 ink = mix(mix(a, b, fract(id * 3.7)), gold, step(0.78, id));
+  float twinkle = 0.55 + 0.45 * sin(uTime * (2.4 + id * 3.0) + id * 12.0 + u_bass * 4.0);
+  float flash = pow(max(0.0, 1.0 - length(f - vec2(-0.1, 0.12)) * 2.4), 5.0) * twinkle;
+  vec3 col = mix(vec3(0.16, 0.07, 0.16), ink, disc);
+  col += disc * flash * vec3(0.7, 0.62, 0.5);
+  col = mix(col, gold, disc * 0.08 * u_bass);
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
+/** Patchwork quilt. Own program so boot/stars stay light. */
+export const QUILT_GENERATOR_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+void main() {
+  vec2 uv = vUv;
+  vec2 g = uv * vec2(4.0, 3.0);
+  vec2 cell = floor(g);
+  vec2 f = fract(g);
+  float id = hash21(cell + uSeed);
+  vec3 c0 = mix(vec3(0.98, 0.82, 0.88), uColorA, 0.32);
+  vec3 c1 = mix(vec3(0.62, 0.86, 0.78), uColorB, 0.32);
+  vec3 c2 = vec3(1.0, 0.86, 0.42);
+  vec3 c3 = vec3(0.55, 0.42, 0.78);
+  vec3 quilt = mix(mix(c0, c1, step(0.25, id)), mix(c2, c3, step(0.75, id)), step(0.5, id));
+  float gingham = step(0.5, fract(f.x * 6.0)) * step(0.5, fract(f.y * 6.0));
+  float dots = step(0.7, hash21(floor(f * 8.0) + cell));
+  float stripes = step(0.5, fract(f.x * 5.0 + f.y * 0.35));
+  float kind = fract(id * 7.13);
+  quilt = mix(quilt, quilt * 0.8, gingham * step(kind, 0.33));
+  quilt = mix(quilt, mix(quilt, vec3(1.0), 0.2), dots * step(0.33, kind) * step(kind, 0.66));
+  quilt = mix(quilt, quilt * mix(0.84, 1.12, stripes), step(0.66, kind));
+  float seam = min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y));
+  float stitch = step(0.5, fract((uv.x + uv.y) * 46.0));
+  vec3 col = mix(quilt, vec3(0.94, 0.9, 0.84), (1.0 - smoothstep(0.0, 0.038, seam)) * 0.72);
+  col = mix(col, vec3(0.58, 0.28, 0.42), (1.0 - smoothstep(0.0, 0.016, seam)) * stitch * 0.5);
+  col = mix(col, vec3(1.0, 0.9, 0.92), 0.05 + 0.08 * u_bass);
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
 export const COPY_GLSL = `#version 300 es
 precision highp float;
 in vec2 vUv;

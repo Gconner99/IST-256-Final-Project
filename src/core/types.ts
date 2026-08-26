@@ -17,7 +17,10 @@ export type GeneratorType =
   | "sketch"
   | "felt"
   | "foil"
-  | "plush";
+  | "plush"
+  | "yarn"
+  | "sequin"
+  | "quilt";
 export type BlendMode =
   | "normal"
   | "add"

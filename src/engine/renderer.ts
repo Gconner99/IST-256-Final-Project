@@ -28,6 +28,9 @@ import {
   FELT_GENERATOR_GLSL,
   FOIL_GENERATOR_GLSL,
   PLUSH_GENERATOR_GLSL,
+  YARN_GENERATOR_GLSL,
+  SEQUIN_GENERATOR_GLSL,
+  QUILT_GENERATOR_GLSL,
   TEXTURE_GLSL,
 } from "./shaders";
 
@@ -69,6 +72,9 @@ export class Renderer {
   private feltProg: Program | null = null;
   private foilProg: Program | null = null;
   private plushProg: Program | null = null;
+  private yarnProg: Program | null = null;
+  private sequinProg: Program | null = null;
+  private quiltProg: Program | null = null;
   private textureProg: Program | null = null;
   private black: WebGLTexture | null = null;
   lastError: string | null = null;
@@ -151,6 +157,18 @@ export class Renderer {
     if (mode === 16) {
       this.plushProg ??= new Program(this.gl, PLUSH_GENERATOR_GLSL);
       return this.plushProg;
+    }
+    if (mode === 17) {
+      this.yarnProg ??= new Program(this.gl, YARN_GENERATOR_GLSL);
+      return this.yarnProg;
+    }
+    if (mode === 18) {
+      this.sequinProg ??= new Program(this.gl, SEQUIN_GENERATOR_GLSL);
+      return this.sequinProg;
+    }
+    if (mode === 19) {
+      this.quiltProg ??= new Program(this.gl, QUILT_GENERATOR_GLSL);
+      return this.quiltProg;
     }
     this.generatorFull ??= new Program(this.gl, GENERATOR_GLSL);
     return this.generatorFull;
