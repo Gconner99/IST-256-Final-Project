@@ -322,6 +322,11 @@ describe("effects registry", () => {
       "slime",
       "gold",
       "ink",
+      "soda",
+      "banana",
+      "berry",
+      "mint",
+      "cobalt",
     ]);
     expect(idol.params.find((p) => p.id === "form")).toBeUndefined();
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
@@ -341,6 +346,8 @@ describe("effects registry", () => {
     expect(idolSrc.includes("figCrowdOff")).toBe(true);
     expect(idolSrc.includes("figPlace")).toBe(true);
     expect(idolSrc.includes("figDanceStyle")).toBe(true);
+    expect(idolSrc.includes("floor(figH(seed + 0.11) * 12.0)")).toBe(true);
+    expect(idolSrc.includes("punch.y")).toBe(true);
     expect(idolSrc.includes("u_place")).toBe(true);
     expect(idolSrc.includes("u_crowd")).toBe(true);
     expect(idolSrc.includes("figRaySphere")).toBe(true);

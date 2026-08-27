@@ -487,7 +487,7 @@ export function chaosStamp(project: Project): Project {
   const rng = mulberry32(seed ^ 0x85ebca6b);
   const kits = ["shapes", "toy pop", "votives", "moths", "charms"] as const;
   const grows = ["wild", "petals", "halo", "antenna", "skirt", "wings", "horns", "crystal", "puff", "spikes", "sprout", "quiet"] as const;
-  const coats = ["wild", "cream", "moss", "sodium", "night", "candy", "jelly", "grape", "ice", "lava", "slime", "gold", "ink"] as const;
+  const coats = ["wild", "cream", "moss", "sodium", "night", "candy", "jelly", "grape", "ice", "lava", "slime", "gold", "ink", "soda", "banana", "berry", "mint", "cobalt"] as const;
   let next: Project = {
     ...project,
     seed,
