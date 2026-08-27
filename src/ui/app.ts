@@ -104,9 +104,9 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place.</li>
-          <li><strong>Idol</strong> is a small low-poly creature. Grow picks petals, a halo, antennae, a skirt, wings, horns, or a quieter body. Coat tints the paint (cream, moss, sodium, night, candy). Stamp it for a new seed — each stamp grows a different silhouette. Crowd → Mini army.</li>
+          <li><strong>Idol</strong> is a small low-poly creature. Grow picks petals, a halo, antennae, a skirt, wings, horns, crystals, puff, or a quieter body. Coat tints the paint (cream, moss, sodium, night, candy, jelly, grape, ice, lava). Stamp it for a new seed — each stamp grows a different silhouette. Crowd → Mini army.</li>
           <li><strong>Stamp chaos</strong> rerolls floater + idol seeds and their kit/grow/coat — keeps the backdrop. <strong>Print frame</strong> turns the live picture into a still.</li>
-          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, Cave, Stage, Sketch, Felt, Foil, Plush, Yarn, Sequins, and Quilt. Stage is a candy toy-pop room. Sketch is a composition-notebook sticker album. The rest are textured toy-pop places — wool, wrapper, pile, knit, sparkle, patchwork. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom/keys breathe with the mix.</li>
+          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, Cave, Stage, Sketch, Felt, Foil, Plush, Yarn, Sequins, Quilt, Cork, Gingham, Sprinkle, and Velvet. Stage is a candy toy-pop room. Sketch is a composition-notebook sticker album. The rest are textured toy-pop places — wool, wrapper, pile, knit, sparkle, patchwork, pin-board, picnic, frosting, crush pile. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom/keys breathe with the mix.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
@@ -485,6 +485,10 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="yarn">Yarn</button>
       <button class="btn tiny acid" data-act="gen" data-kind="sequin">Sequins</button>
       <button class="btn tiny acid" data-act="gen" data-kind="quilt">Quilt</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="cork">Cork</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="gingham">Gingham</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="sprinkle">Sprinkle</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="velvet">Velvet</button>
     </div>
     <div class="row">
       <button class="btn tiny acid" data-act="gen" data-kind="critters">Floaters</button>
@@ -497,7 +501,7 @@ function paintRail(n: HTMLElement) {
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop. Idol Grow: petals, halo, antenna, skirt, wings, horns, quiet. Places: Stage, Sketch, Felt, Foil, Plush, Yarn, Sequins, Quilt. Stamp chaos rerolls overlays, not the backdrop.</div>
+    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop. Idol Grow: petals, halo, antenna, skirt, wings, horns, crystal, puff, quiet. Coat: candy, jelly, grape, ice, lava. Places: Stage, Sketch, Felt, Foil, Plush, Yarn, Sequins, Quilt, Cork, Gingham, Sprinkle, Velvet. Stamp chaos rerolls overlays, not the backdrop.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"

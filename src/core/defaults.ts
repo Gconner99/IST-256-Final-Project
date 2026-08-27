@@ -83,6 +83,10 @@ const GEN_INK: Record<string, { a: string; b: string }> = {
   yarn: { a: "#f4b8d0", b: "#7ed8c4" },
   sequin: { a: "#ff6ad8", b: "#7ae8ff" },
   quilt: { a: "#f2c48a", b: "#8a6ad8" },
+  cork: { a: "#c48a5a", b: "#e87890" },
+  gingham: { a: "#f4e6e4", b: "#d44c66" },
+  sprinkle: { a: "#ffd6e8", b: "#7ad8ff" },
+  velvet: { a: "#6a2048", b: "#e878a0" },
 };
 
 export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"): MediaSource {

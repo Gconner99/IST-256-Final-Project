@@ -31,6 +31,10 @@ import {
   YARN_GENERATOR_GLSL,
   SEQUIN_GENERATOR_GLSL,
   QUILT_GENERATOR_GLSL,
+  CORK_GENERATOR_GLSL,
+  GINGHAM_GENERATOR_GLSL,
+  SPRINKLE_GENERATOR_GLSL,
+  VELVET_GENERATOR_GLSL,
   TEXTURE_GLSL,
 } from "./shaders";
 
@@ -75,6 +79,10 @@ export class Renderer {
   private yarnProg: Program | null = null;
   private sequinProg: Program | null = null;
   private quiltProg: Program | null = null;
+  private corkProg: Program | null = null;
+  private ginghamProg: Program | null = null;
+  private sprinkleProg: Program | null = null;
+  private velvetProg: Program | null = null;
   private textureProg: Program | null = null;
   private black: WebGLTexture | null = null;
   lastError: string | null = null;
@@ -169,6 +177,22 @@ export class Renderer {
     if (mode === 19) {
       this.quiltProg ??= new Program(this.gl, QUILT_GENERATOR_GLSL);
       return this.quiltProg;
+    }
+    if (mode === 20) {
+      this.corkProg ??= new Program(this.gl, CORK_GENERATOR_GLSL);
+      return this.corkProg;
+    }
+    if (mode === 21) {
+      this.ginghamProg ??= new Program(this.gl, GINGHAM_GENERATOR_GLSL);
+      return this.ginghamProg;
+    }
+    if (mode === 22) {
+      this.sprinkleProg ??= new Program(this.gl, SPRINKLE_GENERATOR_GLSL);
+      return this.sprinkleProg;
+    }
+    if (mode === 23) {
+      this.velvetProg ??= new Program(this.gl, VELVET_GENERATOR_GLSL);
+      return this.velvetProg;
     }
     this.generatorFull ??= new Program(this.gl, GENERATOR_GLSL);
     return this.generatorFull;

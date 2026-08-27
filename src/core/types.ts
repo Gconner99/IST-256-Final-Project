@@ -20,7 +20,11 @@ export type GeneratorType =
   | "plush"
   | "yarn"
   | "sequin"
-  | "quilt";
+  | "quilt"
+  | "cork"
+  | "gingham"
+  | "sprinkle"
+  | "velvet";
 export type BlendMode =
   | "normal"
   | "add"

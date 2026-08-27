@@ -78,6 +78,10 @@ const LOOKS: Look[] = [
   { name: "yarn garden", mood: "lush", wacky: true, stack: ["grade", "bloom", "dancer"], blend: "normal" },
   { name: "sequin wrap", mood: "mix", wacky: true, stack: ["duotone", "bloom", "grain", "critters"], blend: "screen" },
   { name: "quilt recital", mood: "mix", wacky: true, stack: ["grade", "grain", "dancer"], blend: "normal" },
+  { name: "cork garden", mood: "mix", wacky: true, stack: ["grade", "bloom", "dancer"], blend: "normal" },
+  { name: "picnic wrap", mood: "lush", wacky: true, stack: ["duotone", "bloom", "grain", "critters"], blend: "screen" },
+  { name: "sprinkle recital", mood: "mix", wacky: true, stack: ["grade", "bloom", "dancer"], blend: "normal" },
+  { name: "velvet lounge", mood: "lush", wacky: true, stack: ["grade", "grain", "dancer"], blend: "normal" },
 ];
 
 function randForParam(rng: () => number, def: ParamDef, current: number | string | boolean, amount: number) {
@@ -291,7 +295,7 @@ function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false)
   const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
   const stack = look.stack.filter((id) => getEffect(id)).slice(0, 5);
   const effects = stack.map((id, i) => applyMood(makeFx(id, seed + i * 997, amount), look.mood, palette, rng));
-  if (look.name === "toy pop" || look.name === "candy idol" || look.name === "flower drift" || look.name === "chapel idol" || look.name === "cream garden" || look.name === "charm lamp" || look.name === "toy recital" || look.name === "candy keys" || look.name === "boombox garden" || look.name === "sticker book" || look.name === "sketch idol" || look.name === "pencil garden" || look.name === "felt garden" || look.name === "foil wrap" || look.name === "plush recital" || look.name === "yarn garden" || look.name === "sequin wrap" || look.name === "quilt recital") {
+  if (look.name === "toy pop" || look.name === "candy idol" || look.name === "flower drift" || look.name === "chapel idol" || look.name === "cream garden" || look.name === "charm lamp" || look.name === "toy recital" || look.name === "candy keys" || look.name === "boombox garden" || look.name === "sticker book" || look.name === "sketch idol" || look.name === "pencil garden" || look.name === "felt garden" || look.name === "foil wrap" || look.name === "plush recital" || look.name === "yarn garden" || look.name === "sequin wrap" || look.name === "quilt recital" || look.name === "cork garden" || look.name === "picnic wrap" || look.name === "sprinkle recital" || look.name === "velvet lounge") {
     for (const fx of effects) {
       if (fx.typeId === "critters") {
         if (look.name === "candy idol") fx.params.kit = "mix";
@@ -333,6 +337,18 @@ function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false)
         if (look.name === "quilt recital") {
           fx.params.grow = "skirt";
           fx.params.coat = "moss";
+        }
+        if (look.name === "cork garden") {
+          fx.params.grow = "crystal";
+          fx.params.coat = "cream";
+        }
+        if (look.name === "sprinkle recital") {
+          fx.params.grow = "puff";
+          fx.params.coat = "jelly";
+        }
+        if (look.name === "velvet lounge") {
+          fx.params.grow = "halo";
+          fx.params.coat = "grape";
         }
       }
     }
@@ -384,8 +400,8 @@ export function randomizeProject(
   });
 
   const places = wacky
-    ? (["marsh", "oil", "paper", "stars", "cave", "stage", "sketch", "felt", "foil", "plush", "yarn", "sequin", "quilt"] as const)
-    : (["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave", "stage", "sketch", "felt", "foil", "plush", "yarn", "sequin", "quilt"] as const);
+    ? (["marsh", "oil", "paper", "stars", "cave", "stage", "sketch", "felt", "foil", "plush", "yarn", "sequin", "quilt", "cork", "gingham", "sprinkle", "velvet"] as const)
+    : (["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave", "stage", "sketch", "felt", "foil", "plush", "yarn", "sequin", "quilt", "cork", "gingham", "sprinkle", "velvet"] as const);
   const lookRng = mulberry32((seed + 0 * 7919) >>> 0);
   const lookPool = wacky ? LOOKS.filter((l) => l.wacky) : LOOKS;
   const look = lookPool[Math.floor(lookRng() * lookPool.length)] ?? LOOKS[0];
@@ -402,6 +418,10 @@ export function randomizeProject(
     "yarn garden": { generator: "yarn", a: "#f4b8d0", b: "#7ed8c4" },
     "sequin wrap": { generator: "sequin", a: "#ff6ad8", b: "#7ae8ff" },
     "quilt recital": { generator: "quilt", a: "#f2c48a", b: "#8a6ad8" },
+    "cork garden": { generator: "cork", a: "#c48a5a", b: "#e87890" },
+    "picnic wrap": { generator: "gingham", a: "#f4e6e4", b: "#d44c66" },
+    "sprinkle recital": { generator: "sprinkle", a: "#ffd6e8", b: "#7ad8ff" },
+    "velvet lounge": { generator: "velvet", a: "#6a2048", b: "#e878a0" },
   };
   const pinned = forcedPlace[look.name];
   const sources = project.sources.map((src, i) => {
@@ -442,8 +462,8 @@ export function chaosStamp(project: Project): Project {
   const seed = (project.seed + 7919) >>> 0;
   const rng = mulberry32(seed ^ 0x85ebca6b);
   const kits = ["shapes", "toy pop", "votives", "moths", "charms"] as const;
-  const grows = ["wild", "petals", "halo", "antenna", "skirt", "wings", "horns", "quiet"] as const;
-  const coats = ["wild", "cream", "moss", "sodium", "night", "candy"] as const;
+  const grows = ["wild", "petals", "halo", "antenna", "skirt", "wings", "horns", "crystal", "puff", "quiet"] as const;
+  const coats = ["wild", "cream", "moss", "sodium", "night", "candy", "jelly", "grape", "ice", "lava"] as const;
   let next: Project = {
     ...project,
     seed,

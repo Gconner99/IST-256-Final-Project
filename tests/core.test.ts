@@ -11,7 +11,7 @@ import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
-import { BOOT_GENERATOR_GLSL, FELT_GENERATOR_GLSL, FOIL_GENERATOR_GLSL, GENERATOR_GLSL, PLUSH_GENERATOR_GLSL, QUILT_GENERATOR_GLSL, SEQUIN_GENERATOR_GLSL, SKETCH_GENERATOR_GLSL, STAGE_GENERATOR_GLSL, YARN_GENERATOR_GLSL } from "../src/engine/shaders";
+import { BOOT_GENERATOR_GLSL, CORK_GENERATOR_GLSL, FELT_GENERATOR_GLSL, FOIL_GENERATOR_GLSL, GENERATOR_GLSL, GINGHAM_GENERATOR_GLSL, PLUSH_GENERATOR_GLSL, QUILT_GENERATOR_GLSL, SEQUIN_GENERATOR_GLSL, SKETCH_GENERATOR_GLSL, SPRINKLE_GENERATOR_GLSL, STAGE_GENERATOR_GLSL, VELVET_GENERATOR_GLSL, YARN_GENERATOR_GLSL } from "../src/engine/shaders";
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
@@ -196,6 +196,18 @@ describe("place buttons", () => {
     const quilt = defaultGeneratorSource("quilt");
     addSource(quilt, true);
     expect(quilt.name).toBe("QUILT");
+    const cork = defaultGeneratorSource("cork");
+    addSource(cork, true);
+    expect(cork.name).toBe("CORK");
+    const gingham = defaultGeneratorSource("gingham");
+    addSource(gingham, true);
+    expect(gingham.generator).toBe("gingham");
+    const sprinkle = defaultGeneratorSource("sprinkle");
+    addSource(sprinkle, true);
+    expect(sprinkle.name).toBe("SPRINKLE");
+    const velvet = defaultGeneratorSource("velvet");
+    addSource(velvet, true);
+    expect(velvet.name).toBe("VELVET");
   });
 });
 
@@ -277,9 +289,23 @@ describe("effects registry", () => {
       "skirt",
       "wings",
       "horns",
+      "crystal",
+      "puff",
       "quiet",
     ]);
     expect(idol.params.find((p) => p.id === "coat")?.default).toBe("wild");
+    expect(idol.params.find((p) => p.id === "coat")?.options?.map((o) => o.value)).toEqual([
+      "wild",
+      "cream",
+      "moss",
+      "sodium",
+      "night",
+      "candy",
+      "jelly",
+      "grape",
+      "ice",
+      "lava",
+    ]);
     expect(idol.params.find((p) => p.id === "form")).toBeUndefined();
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
     const idolSrc = compileEffectSource(idol);
@@ -312,9 +338,11 @@ describe("effects registry", () => {
     expect(idolSrc.includes("f.halo")).toBe(true);
     expect(idolSrc.includes("f.blush")).toBe(true);
     expect(idolSrc.includes("f.crest")).toBe(true);
+    expect(idolSrc.includes("f.crystal")).toBe(true);
+    expect(idolSrc.includes("f.puff")).toBe(true);
     expect(idolSrc.includes("figFacet")).toBe(true);
     expect(idolSrc.includes("f.facing = 0.0")).toBe(true);
-    expect(idolSrc.includes("f.eyeZ = -f.hs")).toBe(true);
+    expect(idolSrc.includes("f.eyeZ = f.hs")).toBe(true);
     expect(idolSrc.includes("u_audio")).toBe(true);
     expect(idolSrc.includes("u_bass")).toBe(true);
     const miniSrc = compileEffectSource(dancerForCompile(true));
@@ -339,6 +367,10 @@ describe("effects registry", () => {
     expect(GEN_INDEX.yarn).toBe(17);
     expect(GEN_INDEX.sequin).toBe(18);
     expect(GEN_INDEX.quilt).toBe(19);
+    expect(GEN_INDEX.cork).toBe(20);
+    expect(GEN_INDEX.gingham).toBe(21);
+    expect(GEN_INDEX.sprinkle).toBe(22);
+    expect(GEN_INDEX.velvet).toBe(23);
     expect(GEN_INDEX.lot).toBeUndefined();
     expect(GEN_INDEX.chapel).toBeUndefined();
     expect(GENERATOR_GLSL).toContain("genStars");
@@ -359,8 +391,13 @@ describe("effects registry", () => {
     expect(YARN_GENERATOR_GLSL).toContain("knit");
     expect(SEQUIN_GENERATOR_GLSL).toContain("sequin");
     expect(QUILT_GENERATOR_GLSL).toContain("quilt");
+    expect(CORK_GENERATOR_GLSL).toContain("pore");
+    expect(GINGHAM_GENERATOR_GLSL).toContain("gingham");
+    expect(SPRINKLE_GENERATOR_GLSL).toContain("sprinkle");
+    expect(VELVET_GENERATOR_GLSL).toContain("crush");
     expect(GENERATOR_GLSL).not.toContain("genSketch");
     expect(GENERATOR_GLSL).not.toContain("genYarn");
+    expect(GENERATOR_GLSL).not.toContain("genCork");
     expect(BOOT_GENERATOR_GLSL).not.toContain("fiber");
     expect(BOOT_GENERATOR_GLSL).not.toContain("wool");
     expect(BOOT_GENERATOR_GLSL).not.toContain("crinkle");
@@ -368,6 +405,10 @@ describe("effects registry", () => {
     expect(BOOT_GENERATOR_GLSL).not.toContain("knit");
     expect(BOOT_GENERATOR_GLSL).not.toContain("sequin");
     expect(BOOT_GENERATOR_GLSL).not.toContain("quilt");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("pore");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("gingham");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("sprinkle");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("crush");
     expect(GENERATOR_GLSL).toContain("musicPiano");
     expect(GENERATOR_GLSL).toContain("starLayer");
     expect(GENERATOR_GLSL).toContain("reed");
