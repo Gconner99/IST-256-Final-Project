@@ -877,16 +877,12 @@ float figCap(vec3 p, vec3 a, vec3 b, float r) {
 }
 vec2 figMin(vec2 a, vec2 b) { return a.x < b.x ? a : b; }
 float figDanceStyle(float seed) {
-  return floor(figH(seed + 0.11) * 12.0);
+  return floor(figH(seed + 0.11) * 8.0);
 }
 float figDanceT(float seed, float t) {
   float style = figDanceStyle(seed);
   if (style > 5.5 && style < 6.5) {
     float fps = mix(8.0, 14.0, figH(seed + 0.19));
-    return floor(t * fps) / fps;
-  }
-  if (style > 10.5) {
-    float fps = mix(6.0, 10.0, figH(seed + 0.19));
     return floor(t * fps) / fps;
   }
   if (figH(seed + 0.17) > 0.82) {
@@ -917,47 +913,31 @@ Fig figRoll(float seed, float time) {
   f.slide = 0.0;
   f.peck = 0.0;
   if (f.style < 0.5) {
-    f.sway = sin(f.t * 3.4) * mix(0.08, 0.22, figH(seed + 0.31));
+    f.sway = sin(f.t * 3.4) * mix(0.06, 0.16, figH(seed + 0.31));
   } else if (f.style < 1.5) {
-    f.bob = abs(sin(f.t * 9.4)) * 0.05;
+    f.bob = abs(sin(f.t * 9.4)) * 0.045;
     f.sway = sin(f.t * 8.2) * 0.08;
-    f.peck = 0.34 * max(0.0, sin(f.t * 10.5));
+    f.peck = 0.95 * max(0.0, sin(f.t * 10.5));
   } else if (f.style < 2.5) {
-    f.spin = sin(f.t * mix(2.2, 3.8, figH(seed + 0.44))) * mix(0.22, 0.48, figH(seed + 0.45));
-    f.sway = sin(f.t * 2.4) * 0.12;
-    f.bob = abs(sin(f.t * 4.6)) * 0.06;
+    f.spin = f.t * mix(1.2, 2.4, figH(seed + 0.44));
+    f.sway = sin(f.t * 1.15) * 0.22;
+    f.bob = abs(sin(f.t * 3.1)) * 0.07;
   } else if (f.style < 3.5) {
-    f.lean = 0.18 + 0.12 * sin(f.t * 2.4);
-    f.bob = -0.06 + 0.05 * sin(f.t * 1.6);
+    f.lean = 1.05 + 0.18 * sin(f.t * 2.4);
+    f.bob = -0.22 + 0.06 * sin(f.t * 1.6);
   } else if (f.style < 4.5) {
-    f.bob = 0.36 * max(0.0, sin(f.t * 5.9));
-    f.sway = sin(f.t * 5.9) * 0.1;
+    f.bob = 0.32 * max(0.0, sin(f.t * 5.9));
+    f.sway = sin(f.t * 5.9) * 0.08;
   } else if (f.style < 5.5) {
-    f.slide = sin(f.t * 1.85) * 0.62;
-    f.sway = -0.22 * sign(cos(f.t * 1.85) + 0.0001);
-    f.bob = abs(sin(f.t * 8.4)) * 0.05;
+    f.slide = sin(f.t * 1.85) * 0.55;
+    f.sway = -0.2 * sign(cos(f.t * 1.85) + 0.0001);
+    f.bob = abs(sin(f.t * 8.4)) * 0.04;
   } else if (f.style < 6.5) {
-    f.bob = abs(sin(f.t * 12.5)) * 0.08;
-    f.sway = sin(f.t * 25.0) * 0.07;
-  } else if (f.style < 7.5) {
-    f.bob = abs(sin(f.t * 7.2)) * 0.22;
-    f.sway = sin(f.t * 7.2) * 0.1;
-  } else if (f.style < 8.5) {
-    f.sway = sin(f.t * 14.0) * 0.22;
-    f.lean = sin(f.t * 14.0) * 0.16;
-    f.bob = abs(sin(f.t * 28.0)) * 0.03;
-  } else if (f.style < 9.5) {
-    f.bob = abs(sin(f.t * 7.4)) * 0.08;
-    f.sway = sin(f.t * 2.1) * 0.06;
-  } else if (f.style < 10.5) {
-    f.sway = sin(f.t * 9.4) * 0.18;
-    f.peck = 0.22 * sin(f.t * 8.1);
-    f.spin = sin(f.t * 6.4) * 0.28;
-    f.bob = sin(f.t * 4.8) * 0.07;
+    f.bob = abs(sin(f.t * 12.5)) * 0.07;
+    f.sway = sin(f.t * 25.0) * 0.06;
   } else {
-    f.bob = -0.12 + 0.16 * max(0.0, sin(f.t * 5.2));
-    f.lean = sin(f.t * 5.2) * 0.12;
-    f.sway = sin(f.t * 2.6) * 0.08;
+    f.sway = sin(f.t * 5.6) * 0.38;
+    f.bob = sin(f.t * 8.3) * 0.14;
   }
   f.sx = mix(0.48, 1.72, figH(seed + 1.22));
   f.sz = mix(0.55, 1.55, figH(seed + 1.26));
@@ -978,10 +958,6 @@ Fig figRoll(float seed, float time) {
   if (f.style > 2.5 && f.style < 3.5) { f.kickHz = mix(0.9, 2.0, figH(seed + 3.1)); f.kickAmt = mix(0.55, 0.95, figH(seed + 3.2)); }
   if (f.style > 5.5 && f.style < 6.5) { f.kickHz = mix(9.0, 14.0, figH(seed + 3.1)); f.kickAmt = mix(0.15, 0.4, figH(seed + 3.2)); }
   if (f.style > 4.5 && f.style < 5.5) f.kickAmt *= 0.35;
-  if (f.style > 6.5 && f.style < 7.5) { f.kickHz = mix(5.5, 8.0, figH(seed + 3.1)); f.kickAmt = mix(0.55, 0.95, figH(seed + 3.2)); }
-  if (f.style > 7.5 && f.style < 8.5) f.kickAmt *= 0.45;
-  if (f.style > 8.5 && f.style < 9.5) { f.kickHz = mix(6.5, 9.5, figH(seed + 3.1)); f.kickAmt = mix(0.7, 1.05, figH(seed + 3.2)); }
-  if (f.style > 10.5) { f.kickHz = mix(4.8, 6.6, figH(seed + 3.1)); f.kickAmt = mix(0.2, 0.45, figH(seed + 3.2)); }
   f.extraLeg = step(0.86, figH(seed + 3.7));
   f.arms = figH(seed + 4.0) > 0.78 ? 4.0 : 2.0;
   if (f.style > 1.5 && f.style < 2.5) f.arms = 4.0;
@@ -1130,11 +1106,10 @@ vec2 figureFace(vec3 hp, float seed, float hs) {
   return figureFaceF(hp, f);
 }
 vec2 figureHit(vec3 p, Fig f, float seed) {
-  if (f.style > 10.5) p = figRotX(p, sin(f.t * 5.2) * 0.1);
+  if (f.style > 6.5) p = figRotX(p, sin(f.t * 6.1) * 0.22);
   p.x += f.slide;
-  p = figRotY(p, f.facing + f.spin * 0.16);
-  p = figRotX(p, -0.16);
-  p = figRotZ(p, f.lean * 0.7 + f.sway);
+  p = figRotY(p, f.facing + f.spin + f.sway);
+  p = figRotZ(p, f.lean);
   p.y -= f.bob;
   p.x *= f.sx;
   p.z *= f.sz;
@@ -1191,10 +1166,9 @@ vec2 figureHit(vec3 p, Fig f, float seed) {
     float row = float(i) < 2.0 ? 0.0 : 1.0;
     float wave = sin(f.t * mix(3.6, 7.0, figH(seed + 4.1)) + float(i) * 1.7);
     vec3 ap = p - vec3(side * f.ts.x * 0.85, f.ts.y * mix(0.15, 0.55, row), 0.0);
-    ap = figRotZ(ap, side * (0.4 + wave * 0.75 + f.spin * 0.85));
+    ap = figRotZ(ap, side * (0.4 + wave * 0.75));
     vec3 tip = vec3(side * 0.4, 0.08, 0.0);
     if (f.style > 2.5 && f.style < 3.5) tip.y += 0.28;
-    if (f.style > 8.5 && f.style < 9.5) tip.y += 0.18;
     d = figMin(d, vec2(figCap(ap, vec3(0.0), tip, armR), 4.0));
     d = figMin(d, vec2(figOcta(ap - tip, 0.075), 4.0));
   }
@@ -1438,18 +1412,18 @@ Fig figSoften(Fig f, float move) {
 }
 vec3 figFacet(vec3 n) {
   n = normalize(n + 1e-5);
-  return normalize(floor(n * 4.4 + 0.5) / 4.4);
+  return normalize(floor(n * 3.2 + 0.5) / 3.2);
 }
 vec4 figureShade(vec3 p, vec3 rd, Fig f, float seed, float matId) {
   vec3 n = figFacet(figNormal(p, f, seed));
   vec3 l = normalize(vec3(0.35, 0.95, 0.55));
   float ndv = max(0.0, dot(n, -rd));
-  float dif = 0.58 + 0.42 * max(0.0, dot(n, l));
-  dif = floor(dif * 4.0 + 0.18) / 4.0;
-  float rim = pow(1.0 - ndv, 2.2) * 0.22;
-  float spec = pow(max(0.0, dot(n, normalize(l - rd))), 12.0) * 0.12;
+  float dif = 0.82 + 0.18 * max(0.0, dot(n, l));
+  dif = floor(dif * 5.0 + 0.12) / 5.0;
+  float rim = pow(1.0 - ndv, 2.4) * 0.32;
+  float spec = pow(max(0.0, dot(n, normalize(l - rd))), 14.0) * 0.1;
   vec3 albedo = figPal(seed, matId);
-  vec3 col = albedo * dif * 1.12 + albedo * rim + vec3(spec);
+  vec3 col = albedo * dif + albedo * rim + vec3(spec);
   vec3 punch = rgb2hsv(col);
   punch.y = min(1.0, punch.y * 1.14);
   punch.z = min(1.0, punch.z * 1.08);
@@ -1460,8 +1434,8 @@ vec4 figureShade(vec3 p, vec3 rd, Fig f, float seed, float matId) {
   if (u_coat > 10.5 && u_coat < 11.5) col += vec3(0.28, 0.22, 0.08) * (spec * 8.0 + rim);
   if (u_coat > 12.5 && u_coat < 13.5) col += vec3(0.06, 0.16, 0.2) * pow(1.0 - ndv, 1.5);
   if (u_coat > 16.5) col += vec3(0.08, 0.12, 0.28) * pow(1.0 - ndv, 1.5);
-  float ink = 1.0 - smoothstep(0.03, 0.16, ndv);
-  col = mix(col, vec3(0.05, 0.02, 0.07), ink * 0.82);
+  float ink = 1.0 - smoothstep(0.08, 0.36, ndv);
+  col = mix(col, vec3(0.03, 0.015, 0.05), ink * 0.94);
   return vec4(col, 1.0);
 }
 bool figRaySphere(vec3 ro, vec3 rd, vec3 c, float r, out float tEnter) {
