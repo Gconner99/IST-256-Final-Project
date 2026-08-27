@@ -663,11 +663,11 @@ float sdBox(vec2 p, vec2 b) {
 }
 void main() {
   vec2 uv = vUv;
-  float wool = vnoise(uv * 48.0) * 0.55 + vnoise(uv * 96.0 + 2.1) * 0.45;
+  float wool = vnoise(uv * 22.0) * 0.55 + vnoise(uv * 48.0 + 2.1) * 0.45;
   vec3 board = mix(vec3(0.93, 0.84, 0.76), uColorA, 0.18);
   board = mix(board, vec3(0.86, 0.62, 0.72), 0.12 + 0.08 * u_bass);
-  board *= 0.9 + 0.16 * wool;
-  float nap = abs(sin(uv.x * 90.0 + wool * 4.0)) * 0.04;
+  board *= 0.92 + 0.12 * wool;
+  float nap = abs(sin(uv.x * 42.0 + wool * 3.0)) * 0.025;
   board += nap * vec3(0.08, 0.04, 0.05);
   vec3 col = board;
   vec2 c0 = uv - vec2(0.14, 0.82);
@@ -727,12 +727,12 @@ void main() {
   vec3 gold = vec3(1.0, 0.84, 0.38);
   vec3 col = mix(a, b, smoothstep(0.15, 0.85, stripe));
   col = mix(col, gold, 0.18 * step(0.46, stripe) * step(stripe, 0.54));
-  float shine = pow(max(0.0, sin((w.x * 9.0 + w.y * 3.0) * 3.14159 + uTime * 1.4 + u_bass)), 8.0);
-  col += shine * vec3(0.55, 0.5, 0.45);
-  float fold = 1.0 - smoothstep(0.0, 0.012, abs(fract(w.y * 5.0 + crinkle * 2.0) - 0.5));
-  col = mix(col, col * 0.72, fold * 0.55);
-  float speckle = step(0.92, hash21(floor(w * 80.0)));
-  col = mix(col, vec3(1.0, 0.95, 0.8), speckle * 0.35);
+  float shine = pow(max(0.0, sin((w.x * 5.0 + w.y * 2.0) * 3.14159 + uTime * 0.8 + u_bass)), 10.0);
+  col += shine * vec3(0.28, 0.25, 0.22);
+  float fold = 1.0 - smoothstep(0.0, 0.018, abs(fract(w.y * 3.0 + crinkle * 2.0) - 0.5));
+  col = mix(col, col * 0.78, fold * 0.35);
+  float speckle = step(0.96, hash21(floor(w * 36.0)));
+  col = mix(col, vec3(1.0, 0.95, 0.8), speckle * 0.18);
   col = mix(col, gold, 0.08 + 0.1 * u_bass);
   fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
@@ -772,7 +772,7 @@ void main() {
   vec3 mint = mix(vec3(0.55, 0.86, 0.78), uColorB, 0.25);
   float band = step(0.5, fract(uv.y * 6.0));
   vec3 col = mix(pile, mint, band * 0.55);
-  vec2 tuft = uv * vec2(18.0, 14.0);
+  vec2 tuft = uv * vec2(8.0, 6.0);
   vec2 cell = floor(tuft);
   vec2 f = fract(tuft) - 0.5;
   float id = hash21(cell + uSeed);
@@ -819,14 +819,14 @@ float vnoise(vec2 p) {
 }
 void main() {
   vec2 uv = vUv;
-  vec2 g = uv * vec2(16.0, 22.0);
+  vec2 g = uv * vec2(8.0, 10.0);
   vec2 cell = floor(g);
   vec2 f = fract(g);
   float id = hash21(cell + uSeed);
-  float rib = 0.5 + 0.5 * sin(uv.x * 52.0);
+  float rib = 0.5 + 0.5 * sin(uv.x * 28.0);
   vec3 wool = mix(vec3(0.96, 0.78, 0.86), uColorA, 0.24);
   vec3 mint = mix(vec3(0.62, 0.88, 0.82), uColorB, 0.28);
-  float stripe = step(0.5, fract(uv.x * 5.5 + uSeed * 0.08));
+  float stripe = step(0.5, fract(uv.x * 3.2 + uSeed * 0.08));
   vec3 col = mix(wool, mint, stripe * 0.58);
   float knit = abs(f.x - 0.5 - 0.2 * sin(f.y * 6.28318 + id * 6.2));
   knit = 1.0 - smoothstep(0.07, 0.22, knit);
@@ -860,7 +860,7 @@ float hash21(vec2 p) {
 }
 void main() {
   vec2 uv = vUv;
-  vec2 g = uv * vec2(15.0, 13.0);
+  vec2 g = uv * vec2(8.0, 6.0);
   float row = floor(g.y);
   g.x += 0.5 * step(0.5, fract(row * 0.5));
   vec2 cell = floor(g);
@@ -910,18 +910,12 @@ void main() {
   vec3 c2 = vec3(1.0, 0.86, 0.42);
   vec3 c3 = vec3(0.55, 0.42, 0.78);
   vec3 quilt = mix(mix(c0, c1, step(0.25, id)), mix(c2, c3, step(0.75, id)), step(0.5, id));
-  float gingham = step(0.5, fract(f.x * 6.0)) * step(0.5, fract(f.y * 6.0));
-  float dots = step(0.7, hash21(floor(f * 8.0) + cell));
-  float stripes = step(0.5, fract(f.x * 5.0 + f.y * 0.35));
+  float gingham = step(0.5, fract(f.x * 3.0)) * step(0.5, fract(f.y * 3.0));
   float kind = fract(id * 7.13);
-  quilt = mix(quilt, quilt * 0.8, gingham * step(kind, 0.33));
-  quilt = mix(quilt, mix(quilt, vec3(1.0), 0.2), dots * step(0.33, kind) * step(kind, 0.66));
-  quilt = mix(quilt, quilt * mix(0.84, 1.12, stripes), step(0.66, kind));
+  quilt = mix(quilt, quilt * 0.88, gingham * step(kind, 0.4) * 0.55);
   float seam = min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y));
-  float stitch = step(0.5, fract((uv.x + uv.y) * 46.0));
-  vec3 col = mix(quilt, vec3(0.94, 0.9, 0.84), (1.0 - smoothstep(0.0, 0.038, seam)) * 0.72);
-  col = mix(col, vec3(0.58, 0.28, 0.42), (1.0 - smoothstep(0.0, 0.016, seam)) * stitch * 0.5);
-  col = mix(col, vec3(1.0, 0.9, 0.92), 0.05 + 0.08 * u_bass);
+  vec3 col = mix(quilt, vec3(0.94, 0.9, 0.84), (1.0 - smoothstep(0.0, 0.05, seam)) * 0.55);
+  col = mix(col, vec3(1.0, 0.9, 0.92), 0.04 + 0.06 * u_bass);
   fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
 `;
@@ -957,10 +951,10 @@ float vnoise(vec2 p) {
 void main() {
   vec2 uv = vUv;
   vec3 board = mix(vec3(0.72, 0.48, 0.28), uColorA, 0.22);
-  board = mix(board, vec3(0.58, 0.36, 0.2), vnoise(uv * 9.0) * 0.35);
-  float pore = vnoise(uv * 48.0 + uSeed) * 0.55 + vnoise(uv * 96.0) * 0.45;
-  board *= 0.86 + 0.22 * pore;
-  vec2 pin = uv * vec2(7.0, 5.0);
+  board = mix(board, vec3(0.58, 0.36, 0.2), vnoise(uv * 5.0) * 0.22);
+  float pore = vnoise(uv * 22.0 + uSeed) * 0.4 + vnoise(uv * 48.0) * 0.28;
+  board *= 0.9 + 0.14 * pore;
+  vec2 pin = uv * vec2(4.0, 3.0);
   vec2 cell = floor(pin);
   vec2 f = fract(pin) - 0.5;
   float id = hash21(cell + uSeed);
@@ -968,7 +962,7 @@ void main() {
   float head = length(f - jitter * 0.28);
   float pinM = 1.0 - smoothstep(0.07, 0.11, head);
   vec3 pinC = mix(mix(uColorB, vec3(0.95, 0.35, 0.48), 0.4), vec3(0.35, 0.7, 0.85), step(0.5, id));
-  vec3 col = mix(board, pinC, pinM * step(0.35, id));
+  vec3 col = mix(board, pinC, pinM * step(0.55, id));
   col = mix(col, vec3(0.95, 0.82, 0.62), 0.05 + 0.08 * u_bass);
   fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
@@ -990,8 +984,8 @@ uniform float u_bass;
 void main() {
   vec2 uv = vUv;
   float gingham = 0.0;
-  float cx = step(0.5, fract(uv.x * 10.0 + uSeed * 0.05));
-  float cy = step(0.5, fract(uv.y * 10.0));
+  float cx = step(0.5, fract(uv.x * 6.0 + uSeed * 0.05));
+  float cy = step(0.5, fract(uv.y * 6.0));
   gingham = cx * 0.45 + cy * 0.45;
   vec3 a = mix(vec3(0.98, 0.92, 0.9), uColorA, 0.2);
   vec3 b = mix(vec3(0.86, 0.28, 0.42), uColorB, 0.28);
@@ -1037,14 +1031,14 @@ void main() {
   vec3 icing = mix(vec3(1.0, 0.86, 0.92), uColorA, 0.22);
   icing = mix(icing, vec3(0.75, 0.95, 0.9), 0.18 * vnoise(uv * 3.0));
   icing *= 0.92 + 0.1 * vnoise(uv * 14.0);
-  vec2 g = uv * vec2(22.0, 16.0);
+  vec2 g = uv * vec2(8.0, 6.0);
   vec2 cell = floor(g);
   vec2 f = fract(g) - 0.5;
   float id = hash21(cell + uSeed);
   float ang = id * 6.28318;
   vec2 dir = vec2(cos(ang), sin(ang));
   float sprinkle = 1.0 - smoothstep(0.08, 0.16, abs(dot(f, vec2(-dir.y, dir.x))) * 4.2 + length(f * dir) * 0.7);
-  sprinkle *= step(0.28, id);
+  sprinkle *= step(0.55, id);
   vec3 sc = mix(mix(uColorB, vec3(1.0, 0.45, 0.62), 0.4), vec3(0.45, 0.85, 1.0), fract(id * 5.1));
   sc = mix(sc, vec3(1.0, 0.86, 0.28), step(0.8, fract(id * 3.7)));
   vec3 col = mix(icing, sc, sprinkle);
@@ -1083,7 +1077,7 @@ float vnoise(vec2 p) {
 }
 void main() {
   vec2 uv = vUv;
-  float crush = vnoise(uv * 7.0 + uSeed) * 0.65 + vnoise(uv * 22.0 - uTime * 0.03) * 0.35;
+  float crush = vnoise(uv * 4.0 + uSeed) * 0.7 + vnoise(uv * 11.0 - uTime * 0.02) * 0.3;
   vec3 pile = mix(vec3(0.42, 0.12, 0.28), uColorA, 0.28);
   vec3 nap = mix(vec3(0.72, 0.28, 0.48), uColorB, 0.25);
   vec3 col = mix(pile, nap, smoothstep(0.28, 0.72, crush));
@@ -1117,7 +1111,7 @@ float hash21(vec2 p) {
 void main() {
   vec2 uv = vUv;
   vec3 paper = mix(vec3(0.98, 0.92, 0.88), uColorA, 0.12);
-  vec2 g = uv * vec2(14.0, 10.0);
+  vec2 g = uv * vec2(6.0, 4.5);
   vec2 cell = floor(g);
   vec2 f = fract(g) - 0.5;
   float id = hash21(cell + uSeed);
@@ -1126,7 +1120,7 @@ void main() {
   vec2 q = vec2(cs * f.x + sn * f.y, -sn * f.x + cs * f.y);
   q.x *= mix(1.4, 2.4, fract(id * 2.7));
   q.y *= mix(2.2, 3.6, fract(id * 5.3));
-  float confetti = (1.0 - step(0.46, max(abs(q.x), abs(q.y)))) * step(0.22, id);
+  float confetti = (1.0 - step(0.42, max(abs(q.x), abs(q.y)))) * step(0.48, id);
   vec3 a = mix(vec3(1.0, 0.42, 0.62), uColorA, 0.25);
   vec3 b = mix(vec3(0.35, 0.82, 1.0), uColorB, 0.28);
   vec3 c = vec3(1.0, 0.86, 0.28);
@@ -1158,7 +1152,7 @@ float hash21(vec2 p) {
 }
 void main() {
   vec2 uv = vUv;
-  vec2 g = uv * vec2(9.0, 7.0);
+  vec2 g = uv * vec2(5.0, 4.0);
   vec2 cell = floor(g);
   vec2 f = fract(g);
   float diamond = abs(f.x - 0.5) + abs(f.y - 0.5);
@@ -1169,7 +1163,7 @@ void main() {
   vec3 c = vec3(0.45, 0.85, 1.0);
   vec3 ink = mix(mix(a, b, step(0.55, id)), c, step(0.82, id));
   float flash = pow(max(0.0, 1.0 - length(f - vec2(0.32, 0.62)) * 2.1), 4.0);
-  flash *= 0.45 + 0.55 * sin(uTime * (3.0 + id * 4.0) + id * 12.0 + u_bass * 5.0);
+  flash *= 0.22 + 0.28 * sin(uTime * (1.4 + id * 2.0) + id * 12.0 + u_bass * 2.0);
   vec3 col = mix(a * 0.55, ink, mirrorTile);
   col += mirrorTile * flash * vec3(0.85, 0.78, 0.55);
   float grout = smoothstep(0.46, 0.5, diamond);
@@ -1199,7 +1193,7 @@ float hash21(vec2 p) {
 void main() {
   vec2 uv = vUv;
   vec3 grout = mix(vec3(0.9, 0.84, 0.78), uColorA, 0.18);
-  vec2 g = uv * vec2(18.0, 14.0);
+  vec2 g = uv * vec2(8.0, 6.0);
   vec2 cell = floor(g);
   vec2 f = fract(g) - 0.5;
   float id = hash21(cell + uSeed);
@@ -1208,7 +1202,7 @@ void main() {
   q.x *= mix(0.7, 1.6, fract(id * 2.4));
   q.y *= mix(0.8, 1.8, fract(id * 5.1));
   float chip = 1.0 - smoothstep(0.18, 0.28, length(q));
-  chip *= step(0.32, id);
+  chip *= step(0.52, id);
   vec3 a = mix(vec3(0.86, 0.32, 0.48), uColorB, 0.3);
   vec3 b = vec3(0.32, 0.62, 0.78);
   vec3 c = vec3(0.95, 0.82, 0.38);
@@ -1239,16 +1233,14 @@ void main() {
   vec3 paper = mix(vec3(1.0, 0.95, 0.62), uColorA, 0.22);
   vec3 ink = mix(vec3(0.16, 0.08, 0.08), uColorB, 0.18);
   vec3 burst = vec3(1.0, 0.28, 0.42);
-  vec2 g = uv * vec2(42.0, 32.0);
+  vec2 g = uv * vec2(12.0, 9.0);
   vec2 cell = floor(g);
   vec2 f = fract(g) - 0.5;
-  float field = 0.35 + 0.65 * sin(uv.x * 6.0 + uv.y * 4.0 + uSeed);
-  float rad = mix(0.12, 0.46, field);
-  float halftone = 1.0 - smoothstep(rad, rad + 0.04, length(f));
-  vec3 col = mix(paper, mix(ink, burst, step(0.72, field)), halftone);
-  float stripe = step(0.5, fract((uv.x + uv.y) * 18.0));
-  col = mix(col, col * 0.88, stripe * 0.12);
-  col = mix(col, burst, 0.04 + 0.1 * u_bass);
+  float field = 0.22 + 0.4 * sin(uv.x * 3.2 + uv.y * 2.4 + uSeed);
+  float rad = mix(0.1, 0.32, field);
+  float halftone = 1.0 - smoothstep(rad, rad + 0.05, length(f));
+  vec3 col = mix(paper, mix(ink, burst, step(0.8, field)), halftone * 0.72);
+  col = mix(col, burst, 0.03 + 0.05 * u_bass);
   fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
 `;

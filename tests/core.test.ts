@@ -367,6 +367,7 @@ describe("effects registry", () => {
     expect(idolSrc.includes("f.spikes")).toBe(true);
     expect(idolSrc.includes("f.sprout")).toBe(true);
     expect(idolSrc.includes("figFacet")).toBe(true);
+    expect(idolSrc.includes("floor(n * 4.4")).toBe(true);
     expect(idolSrc.includes("f.facing = 0.0")).toBe(true);
     expect(idolSrc.includes("f.eyeZ = f.hs")).toBe(true);
     expect(idolSrc.includes("u_audio")).toBe(true);
