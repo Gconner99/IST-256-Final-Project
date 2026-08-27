@@ -24,7 +24,11 @@ export type GeneratorType =
   | "cork"
   | "gingham"
   | "sprinkle"
-  | "velvet";
+  | "velvet"
+  | "confetti"
+  | "disco"
+  | "terrazzo"
+  | "comic";
 export type BlendMode =
   | "normal"
   | "add"

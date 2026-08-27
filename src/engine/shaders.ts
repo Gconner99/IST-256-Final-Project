@@ -1096,6 +1096,163 @@ void main() {
 }
 `;
 
+/** Paper confetti. Own program so boot/stars stay light. */
+export const CONFETTI_GENERATOR_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+void main() {
+  vec2 uv = vUv;
+  vec3 paper = mix(vec3(0.98, 0.92, 0.88), uColorA, 0.12);
+  vec2 g = uv * vec2(14.0, 10.0);
+  vec2 cell = floor(g);
+  vec2 f = fract(g) - 0.5;
+  float id = hash21(cell + uSeed);
+  float ang = id * 6.28318 + uTime * mix(0.2, 0.8, fract(id * 4.1));
+  float cs = cos(ang), sn = sin(ang);
+  vec2 q = vec2(cs * f.x + sn * f.y, -sn * f.x + cs * f.y);
+  q.x *= mix(1.4, 2.4, fract(id * 2.7));
+  q.y *= mix(2.2, 3.6, fract(id * 5.3));
+  float confetti = (1.0 - step(0.46, max(abs(q.x), abs(q.y)))) * step(0.22, id);
+  vec3 a = mix(vec3(1.0, 0.42, 0.62), uColorA, 0.25);
+  vec3 b = mix(vec3(0.35, 0.82, 1.0), uColorB, 0.28);
+  vec3 c = vec3(1.0, 0.86, 0.28);
+  vec3 d = vec3(0.55, 0.92, 0.48);
+  vec3 ink = mix(mix(a, b, step(0.5, fract(id * 3.1))), mix(c, d, step(0.5, fract(id * 7.2))), step(0.5, id));
+  vec3 col = mix(paper, ink, confetti);
+  col = mix(col, vec3(1.0, 0.9, 0.94), 0.05 + 0.1 * u_bass);
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
+/** Disco mirror tiles. Own program so boot/stars stay light. */
+export const DISCO_GENERATOR_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+void main() {
+  vec2 uv = vUv;
+  vec2 g = uv * vec2(9.0, 7.0);
+  vec2 cell = floor(g);
+  vec2 f = fract(g);
+  float diamond = abs(f.x - 0.5) + abs(f.y - 0.5);
+  float mirrorTile = 1.0 - smoothstep(0.42, 0.5, diamond);
+  float id = hash21(cell + uSeed);
+  vec3 a = mix(vec3(0.22, 0.08, 0.28), uColorA, 0.35);
+  vec3 b = mix(vec3(1.0, 0.82, 0.38), uColorB, 0.28);
+  vec3 c = vec3(0.45, 0.85, 1.0);
+  vec3 ink = mix(mix(a, b, step(0.55, id)), c, step(0.82, id));
+  float flash = pow(max(0.0, 1.0 - length(f - vec2(0.32, 0.62)) * 2.1), 4.0);
+  flash *= 0.45 + 0.55 * sin(uTime * (3.0 + id * 4.0) + id * 12.0 + u_bass * 5.0);
+  vec3 col = mix(a * 0.55, ink, mirrorTile);
+  col += mirrorTile * flash * vec3(0.85, 0.78, 0.55);
+  float grout = smoothstep(0.46, 0.5, diamond);
+  col = mix(col, vec3(0.08, 0.04, 0.1), grout * 0.85);
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
+/** Terrazzo chips. Own program so boot/stars stay light. */
+export const TERRAZZO_GENERATOR_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+void main() {
+  vec2 uv = vUv;
+  vec3 grout = mix(vec3(0.9, 0.84, 0.78), uColorA, 0.18);
+  vec2 g = uv * vec2(18.0, 14.0);
+  vec2 cell = floor(g);
+  vec2 f = fract(g) - 0.5;
+  float id = hash21(cell + uSeed);
+  vec2 jitter = vec2(id, hash21(cell + 3.7)) - 0.5;
+  vec2 q = f - jitter * 0.28;
+  q.x *= mix(0.7, 1.6, fract(id * 2.4));
+  q.y *= mix(0.8, 1.8, fract(id * 5.1));
+  float chip = 1.0 - smoothstep(0.18, 0.28, length(q));
+  chip *= step(0.32, id);
+  vec3 a = mix(vec3(0.86, 0.32, 0.48), uColorB, 0.3);
+  vec3 b = vec3(0.32, 0.62, 0.78);
+  vec3 c = vec3(0.95, 0.82, 0.38);
+  vec3 dcol = vec3(0.22, 0.18, 0.2);
+  vec3 ink = mix(mix(a, b, step(0.4, fract(id * 3.3))), mix(c, dcol, step(0.7, fract(id * 6.1))), step(0.55, id));
+  vec3 col = mix(grout, ink, chip);
+  col *= 0.94 + 0.08 * hash21(floor(uv * 64.0));
+  col = mix(col, vec3(1.0, 0.9, 0.88), 0.04 + 0.08 * u_bass);
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
+/** Comic halftone. Own program so boot/stars stay light. */
+export const COMIC_GENERATOR_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+void main() {
+  vec2 uv = vUv;
+  vec3 paper = mix(vec3(1.0, 0.95, 0.62), uColorA, 0.22);
+  vec3 ink = mix(vec3(0.16, 0.08, 0.08), uColorB, 0.18);
+  vec3 burst = vec3(1.0, 0.28, 0.42);
+  vec2 g = uv * vec2(42.0, 32.0);
+  vec2 cell = floor(g);
+  vec2 f = fract(g) - 0.5;
+  float field = 0.35 + 0.65 * sin(uv.x * 6.0 + uv.y * 4.0 + uSeed);
+  float rad = mix(0.12, 0.46, field);
+  float halftone = 1.0 - smoothstep(rad, rad + 0.04, length(f));
+  vec3 col = mix(paper, mix(ink, burst, step(0.72, field)), halftone);
+  float stripe = step(0.5, fract((uv.x + uv.y) * 18.0));
+  col = mix(col, col * 0.88, stripe * 0.12);
+  col = mix(col, burst, 0.04 + 0.1 * u_bass);
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
 export const COPY_GLSL = `#version 300 es
 precision highp float;
 in vec2 vUv;

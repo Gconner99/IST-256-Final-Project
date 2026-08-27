@@ -11,7 +11,7 @@ import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
-import { BOOT_GENERATOR_GLSL, CORK_GENERATOR_GLSL, FELT_GENERATOR_GLSL, FOIL_GENERATOR_GLSL, GENERATOR_GLSL, GINGHAM_GENERATOR_GLSL, PLUSH_GENERATOR_GLSL, QUILT_GENERATOR_GLSL, SEQUIN_GENERATOR_GLSL, SKETCH_GENERATOR_GLSL, SPRINKLE_GENERATOR_GLSL, STAGE_GENERATOR_GLSL, VELVET_GENERATOR_GLSL, YARN_GENERATOR_GLSL } from "../src/engine/shaders";
+import { BOOT_GENERATOR_GLSL, COMIC_GENERATOR_GLSL, CONFETTI_GENERATOR_GLSL, CORK_GENERATOR_GLSL, DISCO_GENERATOR_GLSL, FELT_GENERATOR_GLSL, FOIL_GENERATOR_GLSL, GENERATOR_GLSL, GINGHAM_GENERATOR_GLSL, PLUSH_GENERATOR_GLSL, QUILT_GENERATOR_GLSL, SEQUIN_GENERATOR_GLSL, SKETCH_GENERATOR_GLSL, SPRINKLE_GENERATOR_GLSL, STAGE_GENERATOR_GLSL, TERRAZZO_GENERATOR_GLSL, VELVET_GENERATOR_GLSL, YARN_GENERATOR_GLSL } from "../src/engine/shaders";
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
@@ -208,6 +208,18 @@ describe("place buttons", () => {
     const velvet = defaultGeneratorSource("velvet");
     addSource(velvet, true);
     expect(velvet.name).toBe("VELVET");
+    const confetti = defaultGeneratorSource("confetti");
+    addSource(confetti, true);
+    expect(confetti.name).toBe("CONFETTI");
+    const disco = defaultGeneratorSource("disco");
+    addSource(disco, true);
+    expect(disco.generator).toBe("disco");
+    const terrazzo = defaultGeneratorSource("terrazzo");
+    addSource(terrazzo, true);
+    expect(terrazzo.name).toBe("TERRAZZO");
+    const comic = defaultGeneratorSource("comic");
+    addSource(comic, true);
+    expect(comic.generator).toBe("comic");
   });
 });
 
@@ -291,6 +303,8 @@ describe("effects registry", () => {
       "horns",
       "crystal",
       "puff",
+      "spikes",
+      "sprout",
       "quiet",
     ]);
     expect(idol.params.find((p) => p.id === "coat")?.default).toBe("wild");
@@ -305,6 +319,9 @@ describe("effects registry", () => {
       "grape",
       "ice",
       "lava",
+      "slime",
+      "gold",
+      "ink",
     ]);
     expect(idol.params.find((p) => p.id === "form")).toBeUndefined();
     expect(Number(idol.params.find((p) => p.id === "echo")?.default)).toBeGreaterThan(0.3);
@@ -340,6 +357,8 @@ describe("effects registry", () => {
     expect(idolSrc.includes("f.crest")).toBe(true);
     expect(idolSrc.includes("f.crystal")).toBe(true);
     expect(idolSrc.includes("f.puff")).toBe(true);
+    expect(idolSrc.includes("f.spikes")).toBe(true);
+    expect(idolSrc.includes("f.sprout")).toBe(true);
     expect(idolSrc.includes("figFacet")).toBe(true);
     expect(idolSrc.includes("f.facing = 0.0")).toBe(true);
     expect(idolSrc.includes("f.eyeZ = f.hs")).toBe(true);
@@ -371,6 +390,10 @@ describe("effects registry", () => {
     expect(GEN_INDEX.gingham).toBe(21);
     expect(GEN_INDEX.sprinkle).toBe(22);
     expect(GEN_INDEX.velvet).toBe(23);
+    expect(GEN_INDEX.confetti).toBe(24);
+    expect(GEN_INDEX.disco).toBe(25);
+    expect(GEN_INDEX.terrazzo).toBe(26);
+    expect(GEN_INDEX.comic).toBe(27);
     expect(GEN_INDEX.lot).toBeUndefined();
     expect(GEN_INDEX.chapel).toBeUndefined();
     expect(GENERATOR_GLSL).toContain("genStars");
@@ -395,9 +418,14 @@ describe("effects registry", () => {
     expect(GINGHAM_GENERATOR_GLSL).toContain("gingham");
     expect(SPRINKLE_GENERATOR_GLSL).toContain("sprinkle");
     expect(VELVET_GENERATOR_GLSL).toContain("crush");
+    expect(CONFETTI_GENERATOR_GLSL).toContain("confetti");
+    expect(DISCO_GENERATOR_GLSL).toContain("mirrorTile");
+    expect(TERRAZZO_GENERATOR_GLSL).toContain("chip");
+    expect(COMIC_GENERATOR_GLSL).toContain("halftone");
     expect(GENERATOR_GLSL).not.toContain("genSketch");
     expect(GENERATOR_GLSL).not.toContain("genYarn");
     expect(GENERATOR_GLSL).not.toContain("genCork");
+    expect(GENERATOR_GLSL).not.toContain("genConfetti");
     expect(BOOT_GENERATOR_GLSL).not.toContain("fiber");
     expect(BOOT_GENERATOR_GLSL).not.toContain("wool");
     expect(BOOT_GENERATOR_GLSL).not.toContain("crinkle");
@@ -409,6 +437,9 @@ describe("effects registry", () => {
     expect(BOOT_GENERATOR_GLSL).not.toContain("gingham");
     expect(BOOT_GENERATOR_GLSL).not.toContain("sprinkle");
     expect(BOOT_GENERATOR_GLSL).not.toContain("crush");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("confetti");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("mirrorTile");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("halftone");
     expect(GENERATOR_GLSL).toContain("musicPiano");
     expect(GENERATOR_GLSL).toContain("starLayer");
     expect(GENERATOR_GLSL).toContain("reed");

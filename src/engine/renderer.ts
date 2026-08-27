@@ -35,6 +35,10 @@ import {
   GINGHAM_GENERATOR_GLSL,
   SPRINKLE_GENERATOR_GLSL,
   VELVET_GENERATOR_GLSL,
+  CONFETTI_GENERATOR_GLSL,
+  DISCO_GENERATOR_GLSL,
+  TERRAZZO_GENERATOR_GLSL,
+  COMIC_GENERATOR_GLSL,
   TEXTURE_GLSL,
 } from "./shaders";
 
@@ -83,6 +87,10 @@ export class Renderer {
   private ginghamProg: Program | null = null;
   private sprinkleProg: Program | null = null;
   private velvetProg: Program | null = null;
+  private confettiProg: Program | null = null;
+  private discoProg: Program | null = null;
+  private terrazzoProg: Program | null = null;
+  private comicProg: Program | null = null;
   private textureProg: Program | null = null;
   private black: WebGLTexture | null = null;
   lastError: string | null = null;
@@ -193,6 +201,22 @@ export class Renderer {
     if (mode === 23) {
       this.velvetProg ??= new Program(this.gl, VELVET_GENERATOR_GLSL);
       return this.velvetProg;
+    }
+    if (mode === 24) {
+      this.confettiProg ??= new Program(this.gl, CONFETTI_GENERATOR_GLSL);
+      return this.confettiProg;
+    }
+    if (mode === 25) {
+      this.discoProg ??= new Program(this.gl, DISCO_GENERATOR_GLSL);
+      return this.discoProg;
+    }
+    if (mode === 26) {
+      this.terrazzoProg ??= new Program(this.gl, TERRAZZO_GENERATOR_GLSL);
+      return this.terrazzoProg;
+    }
+    if (mode === 27) {
+      this.comicProg ??= new Program(this.gl, COMIC_GENERATOR_GLSL);
+      return this.comicProg;
     }
     this.generatorFull ??= new Program(this.gl, GENERATOR_GLSL);
     return this.generatorFull;

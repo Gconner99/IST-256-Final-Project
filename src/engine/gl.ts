@@ -212,4 +212,8 @@ export const GEN_INDEX: Record<string, number> = {
   gingham: 21,
   sprinkle: 22,
   velvet: 23,
+  confetti: 24,
+  disco: 25,
+  terrazzo: 26,
+  comic: 27,
 };
