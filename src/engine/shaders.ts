@@ -1245,6 +1245,107 @@ void main() {
 }
 `;
 
+/** Sato rooms: void / tile / corridor / moon / TV snow. Own program so boot and fabric places stay light. */
+export const SATO_ROOMS_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+vec3 voidFog(vec2 uv) {
+  float t = uTime * 0.12;
+  float h = uv.y + 0.04 * sin(uv.x * 3.0 + t);
+  vec3 col = mix(uColorA, uColorB, smoothstep(0.18, 0.92, h));
+  float fog = smoothstep(0.35, 0.78, h);
+  col = mix(col, uColorB * 0.55, fog * 0.45);
+  float horizon = 1.0 - smoothstep(0.0, 0.012, abs(h - 0.42));
+  col = mix(col, mix(uColorA, uColorB, 0.5), horizon * 0.55);
+  float blob = length(uv - vec2(0.72 + 0.02 * sin(t), 0.62)) - 0.08;
+  col = mix(col, uColorB * 0.35, 1.0 - smoothstep(0.0, 0.04, blob));
+  col += (hash21(uv * 8.0 + t) - 0.5) * 0.03;
+  col += u_bass * 0.04 * uColorB;
+  return col;
+}
+vec3 tileFloor(vec2 uv) {
+  float t = uTime * 0.08;
+  vec2 p = uv - vec2(0.5, 0.18);
+  p.y = max(p.y, 0.02);
+  vec2 fl = vec2(p.x / p.y, 0.28 / p.y);
+  fl.y += t;
+  vec2 cell = floor(fl * 6.0);
+  float checker = mod(cell.x + cell.y, 2.0);
+  vec3 a = mix(uColorA, vec3(0.12, 0.08, 0.16), 0.35);
+  vec3 b = mix(uColorB, vec3(0.9, 0.82, 0.7), 0.2);
+  vec3 col = mix(a, b, checker);
+  float grout = max(abs(fract(fl.x * 6.0) - 0.5), abs(fract(fl.y * 6.0) - 0.5));
+  col = mix(col, uColorA * 0.4, 1.0 - smoothstep(0.44, 0.48, grout));
+  float fog = smoothstep(0.22, 0.02, uv.y);
+  vec3 sky = mix(uColorB, uColorA, uv.y);
+  col = mix(sky, col, 1.0 - fog);
+  col += u_audio * 0.03;
+  return col;
+}
+vec3 corridor(vec2 uv) {
+  vec2 p = uv - 0.5;
+  float z = 0.22 / max(abs(p.x) * 1.15 + 0.12, 0.04);
+  float t = uTime * 0.15 + u_bass * 0.2;
+  float stripes = abs(fract(z * 3.4 + t) - 0.5);
+  vec3 wall = mix(uColorA, uColorB, smoothstep(0.1, 0.9, uv.y));
+  wall = mix(wall, uColorB * 0.25, 1.0 - smoothstep(0.0, 0.12, stripes));
+  float floorBand = step(uv.y, 0.38);
+  vec3 fl = mix(uColorA * 0.5, uColorB * 0.35, floorBand);
+  float vanish = 1.0 - smoothstep(0.0, 0.18, length(p * vec2(1.4, 1.0)));
+  vec3 col = mix(wall, fl, floorBand * (1.0 - vanish * 0.4));
+  col = mix(col, uColorB, vanish * 0.22);
+  return col;
+}
+vec3 moonDisk(vec2 uv) {
+  vec3 col = mix(uColorA, uColorB * 0.15, smoothstep(0.2, 1.0, uv.y));
+  vec2 m = uv - vec2(0.62, 0.68);
+  float d = length(m * vec2(1.0, 1.08));
+  float moon = 1.0 - smoothstep(0.16, 0.175, d);
+  vec3 disk = mix(uColorB, vec3(1.0, 0.92, 0.78), 0.35);
+  col = mix(col, disk, moon);
+  float ground = 1.0 - smoothstep(0.0, 0.08, uv.y - 0.18);
+  col = mix(col, uColorA * 0.55, ground * 0.85);
+  float star = step(0.992, hash21(floor(uv * 28.0) + uSeed));
+  col += star * (0.35 + 0.2 * u_audio) * (1.0 - moon);
+  return col;
+}
+vec3 tvSnow(vec2 uv) {
+  float t = floor(uTime * 18.0);
+  float n = hash21(uv * uScale * 90.0 + t + uSeed);
+  float band = hash21(vec2(floor(uv.y * 48.0), t));
+  vec3 col = mix(uColorA, uColorB, n);
+  col = mix(col, vec3(n), 0.55);
+  col = mix(col, uColorB, step(0.92, band) * 0.35);
+  float roll = fract(uv.y + uTime * 0.07);
+  col *= 0.85 + 0.15 * sin(roll * 40.0);
+  col += u_bass * 0.08 * uColorB;
+  return col;
+}
+void main() {
+  vec3 col;
+  if (uMode == 28) col = voidFog(vUv);
+  else if (uMode == 29) col = tileFloor(vUv);
+  else if (uMode == 30) col = corridor(vUv);
+  else if (uMode == 31) col = moonDisk(vUv);
+  else col = tvSnow(vUv);
+  fragColor = vec4(col, 1.0);
+}
+`;
+
 export const COPY_GLSL = `#version 300 es
 precision highp float;
 in vec2 vUv;

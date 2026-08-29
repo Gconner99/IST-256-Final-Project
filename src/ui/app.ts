@@ -34,6 +34,7 @@ import {
   stampChaos,
   stampCritters,
   stampIdol,
+  channelFlip,
   toggleEffect,
 } from "./actions";
 import { resumeAudio } from "../media/audio";
@@ -65,7 +66,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="status">RND</label>
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
-      <button class="btn tiny hot" data-act="rand-wacky" title="Outsider looks, idols, floaters, a new place">Rand wacky</button>
+      <button class="btn tiny hot" data-act="rand-wacky" title="Next tape: a Sato room, analog wrap, and a dancing idol">Next tape</button>
       <label class="check" title="Drop drifting colored shapes onto every layer when you hit Rand all">
         <input type="checkbox" id="inc-critters" /> floaters
       </label>
@@ -103,10 +104,10 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
-          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place.</li>
-          <li><strong>Idol</strong> is a small low-poly creature facing the camera. Grow picks petals, a halo, antennae, a skirt, wings, horns, crystals, puff, spikes, a sprout, or a quieter body. Coat tints the paint (cream, moss, sodium, night, candy, jelly, grape, ice, lava, slime, gold, ink, soda, banana, berry, mint, cobalt). Stamp it for a new seed — each stamp grows a different silhouette and dance. Crowd → Mini army.</li>
-          <li><strong>Stamp chaos</strong> rerolls floater + idol seeds and their kit/grow/coat — keeps the backdrop. <strong>Print frame</strong> turns the live picture into a still.</li>
-          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, Cave, Stage, Sketch, Felt, Foil, Plush, Yarn, Sequins, Quilt, Cork, Gingham, Sprinkle, Velvet, Confetti, Disco, Terrazzo, and Comic. Stage is a candy toy-pop room. Sketch is a composition-notebook sticker album. The rest are textured toy-pop places — wool, wrapper, pile, knit, sparkle, patchwork, pin-board, picnic, frosting, crush pile, paper bits, mirror tiles, stone chips, pop dots. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom/keys breathe with the mix.</li>
+          <li><strong>Rand all</strong> picks a new look. <strong>Next tape</strong> is the Sato machine: one dancing idol, cassette wrap, a room (void / tile / corridor / moon / snow). <strong>Channel</strong> flips the room and keeps the idol.</li>
+          <li><strong>Idol</strong> is a graphic totem. Wild stays a simple body. Grow can still add petals, a halo, antennae, a skirt, wings, horns, crystals, puff, spikes, a sprout, or a quieter body. Coat tints the paint. Stamp it for a new seed. Crowd → Mini army.</li>
+          <li><strong>Stamp chaos</strong> rerolls overlays, not the room. <strong>Print frame</strong> turns the live picture into a still.</li>
+          <li><strong>Rooms</strong> — Void, Tile, Corridor, Moon, Snow are the tape sets. Stage, Sketch, and the toy-pop fabrics are still on the rail. Click one to put that place on the picture. Drop an MP3 and the mix moves idols and rooms.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
@@ -154,6 +155,7 @@ function bind(root: HTMLElement) {
     if (act === "seed+") bumpSeed(1);
     if (act === "rand-all") randomize("all");
     if (act === "rand-wacky") randomize("all", true);
+    if (act === "channel") channelFlip();
     if (act === "stamp-chaos") stampChaos();
     if (act === "reprint") {
       if (rendererRef) void reprintFrame(rendererRef);
@@ -477,6 +479,11 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="oil">Oil</button>
       <button class="btn tiny acid" data-act="gen" data-kind="paper">Paper</button>
       <button class="btn tiny acid" data-act="gen" data-kind="cave">Cave</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="void">Void</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="tile">Tile</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="corridor">Corridor</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="moon">Moon</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="snow">Snow</button>
       <button class="btn tiny acid" data-act="gen" data-kind="stage">Stage</button>
       <button class="btn tiny acid" data-act="gen" data-kind="sketch">Sketch</button>
       <button class="btn tiny acid" data-act="gen" data-kind="felt">Felt</button>
@@ -500,12 +507,14 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="stamp-idol">Stamp idol</button>
     </div>
     <div class="row">
+      <button class="btn tiny hot" data-act="channel">Channel</button>
+      <button class="btn tiny hot" data-act="rand-wacky">Next tape</button>
       <button class="btn tiny hot" data-act="stamp-chaos">Stamp chaos</button>
       <button class="btn tiny" data-act="reprint">Print frame</button>
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
     <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop. Idol Grow: petals, halo, antenna, skirt, wings, horns, crystal, puff, spikes, sprout, quiet. Coat: candy, jelly, grape, ice, lava, slime, gold, ink, soda, banana, berry, mint, cobalt. Places: Stage, Sketch, Felt, Foil, Plush, Yarn, Sequins, Quilt, Cork, Gingham, Sprinkle, Velvet, Confetti, Disco, Terrazzo, Comic. Stamp chaos rerolls overlays, not the backdrop.</div>
+    <div class="status" style="margin-top:4px">Tape rooms: Void, Tile, Corridor, Moon, Snow. Channel flips the room and keeps the idol. Next tape rolls a new scene + analog wrap. Idol Wild is a simple totem — Grow still adds extras if you pick them. Stamp chaos rerolls overlays, not the room.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"

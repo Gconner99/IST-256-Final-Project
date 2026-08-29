@@ -28,7 +28,12 @@ export type GeneratorType =
   | "confetti"
   | "disco"
   | "terrazzo"
-  | "comic";
+  | "comic"
+  | "void"
+  | "tile"
+  | "corridor"
+  | "moon"
+  | "snow";
 export type BlendMode =
   | "normal"
   | "add"

@@ -60,7 +60,7 @@ export function defaultExportSettings(): ExportSettings {
     width: 960,
     height: 540,
     fps: 24,
-    duration: 4,
+    duration: 8,
     format: "png",
     quality: 0.92,
     bitrate: 8,
@@ -91,6 +91,11 @@ const GEN_INK: Record<string, { a: string; b: string }> = {
   disco: { a: "#2a1038", b: "#ffd86a" },
   terrazzo: { a: "#e8d8cc", b: "#d45c78" },
   comic: { a: "#fff4a8", b: "#2a1810" },
+  void: { a: "#120814", b: "#c9a06a" },
+  tile: { a: "#1a1024", b: "#e8d2a8" },
+  corridor: { a: "#081018", b: "#7aa2ff" },
+  moon: { a: "#060814", b: "#f0e0c0" },
+  snow: { a: "#0a0a0c", b: "#d8d0c4" },
 };
 
 export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"): MediaSource {
@@ -133,12 +138,19 @@ export function defaultLayer(name: string, sourceId: string | null, effects: str
 
 export function createDefaultProject(): Project {
   const plasma = defaultGeneratorSource("plasma");
-  const layer = defaultLayer("SIGNAL", plasma.id, ["grade", "bloom", "grain"]);
+  const layer = defaultLayer("SIGNAL", plasma.id, ["grade", "analog", "bloom", "grain"]);
   layer.effects.forEach((fx) => {
     if (fx.typeId === "grade") {
       fx.params.saturation = 0.22;
       fx.params.contrast = 0.12;
       fx.params.gamma = 0.92;
+    }
+    if (fx.typeId === "analog") {
+      fx.params.mixScan = 0.22;
+      fx.params.chroma = 0.16;
+      fx.params.ghost = 0.12;
+      fx.params.tracking = 0.08;
+      fx.params.noise = 0.08;
     }
     if (fx.typeId === "bloom") {
       fx.params.amount = 0.42;

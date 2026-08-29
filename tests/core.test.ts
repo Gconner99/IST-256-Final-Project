@@ -4,14 +4,14 @@ import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../s
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, flipChannel, SATO_ROOMS } from "../src/core/randomize";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
-import { BOOT_GENERATOR_GLSL, COMIC_GENERATOR_GLSL, CONFETTI_GENERATOR_GLSL, CORK_GENERATOR_GLSL, DISCO_GENERATOR_GLSL, FELT_GENERATOR_GLSL, FOIL_GENERATOR_GLSL, GENERATOR_GLSL, GINGHAM_GENERATOR_GLSL, PLUSH_GENERATOR_GLSL, QUILT_GENERATOR_GLSL, SEQUIN_GENERATOR_GLSL, SKETCH_GENERATOR_GLSL, SPRINKLE_GENERATOR_GLSL, STAGE_GENERATOR_GLSL, TERRAZZO_GENERATOR_GLSL, VELVET_GENERATOR_GLSL, YARN_GENERATOR_GLSL } from "../src/engine/shaders";
+import { BOOT_GENERATOR_GLSL, COMIC_GENERATOR_GLSL, CONFETTI_GENERATOR_GLSL, CORK_GENERATOR_GLSL, DISCO_GENERATOR_GLSL, FELT_GENERATOR_GLSL, FOIL_GENERATOR_GLSL, GENERATOR_GLSL, GINGHAM_GENERATOR_GLSL, PLUSH_GENERATOR_GLSL, QUILT_GENERATOR_GLSL, SATO_ROOMS_GLSL, SEQUIN_GENERATOR_GLSL, SKETCH_GENERATOR_GLSL, SPRINKLE_GENERATOR_GLSL, STAGE_GENERATOR_GLSL, TERRAZZO_GENERATOR_GLSL, VELVET_GENERATOR_GLSL, YARN_GENERATOR_GLSL } from "../src/engine/shaders";
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
@@ -371,6 +371,7 @@ describe("effects registry", () => {
     expect(idolSrc.includes("f.puff")).toBe(true);
     expect(idolSrc.includes("f.spikes")).toBe(true);
     expect(idolSrc.includes("f.sprout")).toBe(true);
+    expect(idolSrc.includes("if (u_grow < 0.5)")).toBe(true);
     expect(idolSrc.includes("figFacet")).toBe(true);
     expect(idolSrc.includes("floor(n * 3.2")).toBe(true);
     expect(idolSrc.includes("u_audio")).toBe(true);
@@ -405,6 +406,11 @@ describe("effects registry", () => {
     expect(GEN_INDEX.disco).toBe(25);
     expect(GEN_INDEX.terrazzo).toBe(26);
     expect(GEN_INDEX.comic).toBe(27);
+    expect(GEN_INDEX.void).toBe(28);
+    expect(GEN_INDEX.tile).toBe(29);
+    expect(GEN_INDEX.corridor).toBe(30);
+    expect(GEN_INDEX.moon).toBe(31);
+    expect(GEN_INDEX.snow).toBe(32);
     expect(GEN_INDEX.lot).toBeUndefined();
     expect(GEN_INDEX.chapel).toBeUndefined();
     expect(GENERATOR_GLSL).toContain("genStars");
@@ -433,6 +439,14 @@ describe("effects registry", () => {
     expect(DISCO_GENERATOR_GLSL).toContain("mirrorTile");
     expect(TERRAZZO_GENERATOR_GLSL).toContain("chip");
     expect(COMIC_GENERATOR_GLSL).toContain("halftone");
+    expect(SATO_ROOMS_GLSL).toContain("voidFog");
+    expect(SATO_ROOMS_GLSL).toContain("tileFloor");
+    expect(SATO_ROOMS_GLSL).toContain("corridor");
+    expect(SATO_ROOMS_GLSL).toContain("moonDisk");
+    expect(SATO_ROOMS_GLSL).toContain("tvSnow");
+    expect(GENERATOR_GLSL).not.toContain("voidFog");
+    expect(GENERATOR_GLSL).not.toContain("tileFloor");
+    expect(GENERATOR_GLSL).not.toContain("tvSnow");
     expect(GENERATOR_GLSL).not.toContain("genSketch");
     expect(GENERATOR_GLSL).not.toContain("genYarn");
     expect(GENERATOR_GLSL).not.toContain("genCork");
@@ -451,6 +465,9 @@ describe("effects registry", () => {
     expect(BOOT_GENERATOR_GLSL).not.toContain("confetti");
     expect(BOOT_GENERATOR_GLSL).not.toContain("mirrorTile");
     expect(BOOT_GENERATOR_GLSL).not.toContain("halftone");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("voidFog");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("tileFloor");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("tvSnow");
     expect(GENERATOR_GLSL).toContain("musicPiano");
     expect(GENERATOR_GLSL).toContain("starLayer");
     expect(GENERATOR_GLSL).toContain("reed");
@@ -523,15 +540,28 @@ describe("randomize + presets", () => {
     expect(idol.params.form).toBeUndefined();
   });
 
-  it("wacky rand keeps a short stack and plants overlays", () => {
+  it("wacky rand keeps a short stack and plants an idol", () => {
     for (const seed of [1, 7, 99, 256, 90210]) {
       let p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null, true);
-      p = ensureCritters(ensureIdol(p));
+      p = ensureIdol(p);
       const types = p.layers[0].effects.map((e) => e.typeId);
       expect(types.length).toBeLessThanOrEqual(5);
-      expect(types.some((t) => t === "dancer")).toBe(true);
-      expect(types.some((t) => t === "critters")).toBe(true);
+      expect(types).toContain("dancer");
+      expect(types).toContain("analog");
+      expect(types).not.toContain("critters");
+      expect(SATO_ROOMS).toContain(p.sources[0].generator);
     }
+  });
+
+  it("channel flip cycles Sato rooms and keeps the idol", () => {
+    const base = ensureIdol(createDefaultProject());
+    const a = flipChannel(base);
+    const b = flipChannel(a);
+    expect(SATO_ROOMS).toContain(a.sources[0].generator);
+    expect(a.sources[0].generator).not.toBe(base.sources[0].generator);
+    expect(b.sources[0].generator).not.toBe(a.sources[0].generator);
+    const idolSeed = (p: typeof base) => p.layers[0].effects.find((e) => e.typeId === "dancer")?.params.seed;
+    expect(idolSeed(a)).toEqual(idolSeed(base));
   });
 
   it("chaos stamp rerolls overlay seeds", () => {
@@ -550,6 +580,8 @@ describe("randomize + presets", () => {
     const analog = compileEffectSource(getEffect("analog")!);
     expect(analog).toContain("u_audio");
     expect(analog).toContain("u_bass");
+    expect(analog).toContain("u_chroma");
+    expect(analog).toContain("u_ghost");
   });
 });
 

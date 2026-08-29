@@ -127,8 +127,8 @@ Fig figRoll(float seed, float time) {
   f.eyeR = f.hs * mix(0.2, 0.55, figH(seed + 6.5));
   f.eyeSq = mix(0.4, 1.7, figH(seed + 6.55));
   f.mouth = figH(seed + 7.0);
-  f.ears = step(0.06, figH(seed + 8.3));
-  f.tusks = step(0.42, figH(seed + 9.1));
+  f.ears = step(0.62, figH(seed + 8.3));
+  f.tusks = step(0.72, figH(seed + 9.1));
   f.petals = step(0.7, figH(seed + 0.52));
   f.skirt = step(0.68, figH(seed + 0.58));
   f.antenna = step(0.74, figH(seed + 0.64));
@@ -144,7 +144,12 @@ Fig figRoll(float seed, float time) {
   f.spikes = step(0.86, figH(seed + 0.99));
   f.sprout = step(0.88, figH(seed + 1.01));
   if (f.petals > 0.5) f.halo = 0.0;
-  if (u_grow > 0.5 && u_grow < 1.5) { f.petals = 1.0; f.halo = 0.0; f.antenna = 0.0; f.crystal = 0.0; f.puff = 0.0; f.spikes = 0.0; f.sprout = 0.0; }
+  if (u_grow < 0.5) {
+    f.petals = 0.0; f.skirt = 0.0; f.antenna = 0.0; f.halo = 0.0;
+    f.wings = 0.0; f.bow = 0.0; f.pack = 0.0; f.orb = 0.0;
+    f.collar = 0.0; f.crest = 0.0; f.extraLeg = 0.0; f.arms = 2.0;
+    f.crystal = 0.0; f.puff = 0.0; f.spikes = 0.0; f.sprout = 0.0;
+  } else if (u_grow > 0.5 && u_grow < 1.5) { f.petals = 1.0; f.halo = 0.0; f.antenna = 0.0; f.crystal = 0.0; f.puff = 0.0; f.spikes = 0.0; f.sprout = 0.0; }
   else if (u_grow > 1.5 && u_grow < 2.5) { f.halo = 1.0; f.petals = 0.0; f.crystal = 0.0; f.puff = 0.0; f.spikes = 0.0; f.sprout = 0.0; }
   else if (u_grow > 2.5 && u_grow < 3.5) { f.antenna = 1.0; f.halo = 0.0; f.crystal = 0.0; f.puff = 0.0; f.spikes = 0.0; f.sprout = 0.0; }
   else if (u_grow > 3.5 && u_grow < 4.5) { f.skirt = 1.0; f.crystal = 0.0; f.puff = 0.0; f.spikes = 0.0; f.sprout = 0.0; }
