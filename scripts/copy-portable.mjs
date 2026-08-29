@@ -1,18 +1,48 @@
-<!DOCTYPE html>
+import { copyFileSync, existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { extname, resolve } from "node:path";
+
+const dist = resolve("dist-portable");
+const jsSrc = resolve(dist, "phosphene.js");
+if (!existsSync(jsSrc)) {
+  console.error("dist-portable/phosphene.js missing — run vite build --config vite.portable.ts first");
+  process.exit(1);
+}
+
+const root = resolve(".");
+for (const name of readdirSync(dist)) {
+  const ext = extname(name).toLowerCase();
+  if (ext !== ".js" && ext !== ".css") continue;
+  copyFileSync(resolve(dist, name), resolve(root, name));
+  console.log(`copied ${name}`);
+}
+
+let js = readFileSync(resolve(root, "phosphene.js"), "utf8");
+js = js.replace(/\s*\/\/# sourceMappingURL=[^\s]+/g, "");
+if (js.includes("import.meta") || /^\s*import\s/m.test(js)) {
+  console.error("phosphene.js is still an ES module — Chrome cannot load it from a double-clicked html file");
+  process.exit(1);
+}
+writeFileSync(resolve(root, "phosphene.js"), js);
+
+const cssLink = existsSync(resolve(root, "phosphene.css"))
+  ? '    <link rel="stylesheet" href="./phosphene.css" />\n'
+  : "";
+
+const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
     <title>PHOSPHENE</title>
-    <script>
+${cssLink}    <script>
       window.__phospheneMark = false;
       setTimeout(function () {
         if (window.__phospheneMark) return;
         var n = document.getElementById("app");
         if (!n) return;
         n.textContent =
-          "PHOSPHENE did not start.\n\nOn Windows: close this tab. In File Explorer, double-click Start Phosphene.bat.\n\nUnzip the WHOLE folder (html + phosphene.js together). Delete old Downloads folders named like (25).";
+          "PHOSPHENE did not start.\\n\\nOn Windows: close this tab. In File Explorer, double-click Start Phosphene.bat.\\n\\nUnzip the WHOLE folder (html + phosphene.js together). Delete old Downloads folders named like (25).";
         n.style.cssText =
           "font:16px ui-monospace,monospace;color:#d6ff3d;padding:24px;white-space:pre-wrap;max-width:40em";
       }, 8000);
@@ -61,8 +91,24 @@
           requestAnimationFrame(tick);
         }
         requestAnimationFrame(tick);
+        setTimeout(function () {
+          var s = document.createElement("script");
+          s.src = "./phosphene.js";
+          s.onerror = function () {
+            var note = document.getElementById("boot-note");
+            if (note) note.textContent = "PHOSPHENE · missing phosphene.js — unzip the WHOLE folder";
+          };
+          document.body.appendChild(s);
+        }, 400);
       })();
     </script>
-    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
+`;
+
+if (html.length > 12000) {
+  console.error("PHOSPHENE.html is too big — refusing to inline the engine");
+  process.exit(1);
+}
+writeFileSync(resolve(root, "PHOSPHENE.html"), html);
+console.log(`Wrote PHOSPHENE.html (${html.length} bytes)`);

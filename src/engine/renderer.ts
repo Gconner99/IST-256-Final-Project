@@ -1,6 +1,8 @@
 import type { EffectInstance, Layer, MediaSource, Project, QualityMode } from "../core/types";
 import { resolvedLayerParams } from "../core/timeline";
+import { dancerForCompile } from "../effects/dancer";
 import { getEffect } from "../effects/registry";
+import { getSoundtrack, sampleAudio } from "../media/audio";
 import {
   BLEND_INDEX,
   bindTex,
@@ -16,14 +18,35 @@ import {
 import { compileEffectProgram, hexToRgb } from "./compile";
 import {
   BLIT_GLSL,
+  BOOT_GENERATOR_GLSL,
   COMPOSITE_GLSL,
   COPY_GLSL,
   FEEDBACK_GLSL,
   GENERATOR_GLSL,
+  SKETCH_GENERATOR_GLSL,
+  STAGE_GENERATOR_GLSL,
+  FELT_GENERATOR_GLSL,
+  FOIL_GENERATOR_GLSL,
+  PLUSH_GENERATOR_GLSL,
+  YARN_GENERATOR_GLSL,
+  SEQUIN_GENERATOR_GLSL,
+  QUILT_GENERATOR_GLSL,
+  CORK_GENERATOR_GLSL,
+  GINGHAM_GENERATOR_GLSL,
+  SPRINKLE_GENERATOR_GLSL,
+  VELVET_GENERATOR_GLSL,
+  CONFETTI_GENERATOR_GLSL,
+  DISCO_GENERATOR_GLSL,
+  TERRAZZO_GENERATOR_GLSL,
+  COMIC_GENERATOR_GLSL,
   TEXTURE_GLSL,
 } from "./shaders";
 
-const RING = 16;
+const RING = 8;
+
+function imageData(pixels: Uint8ClampedArray, width: number, height: number) {
+  return new ImageData(pixels as unknown as ImageDataArray, width, height);
+}
 
 function enumIndex(fxTypeParams: { id: string; options?: { value: string }[] }[], id: string, value: unknown): number {
   const def = fxTypeParams.find((p) => p.id === id);
@@ -35,22 +58,41 @@ function enumIndex(fxTypeParams: { id: string; options?: { value: string }[] }[]
 export class Renderer {
   readonly gl: WebGL2RenderingContext;
   readonly canvas: HTMLCanvasElement;
-  private ping: FBO;
-  private pong: FBO;
-  private composite: FBO;
-  private post: FBO;
+  private ping: FBO | null = null;
+  private pong: FBO | null = null;
+  private composite: FBO | null = null;
+  private post: FBO | null = null;
   private ring: FBO[] = [];
   private ringIndex = 0;
   private layerHist = new Map<string, FBO>();
   private sourceTex = new Map<string, WebGLTexture>();
+  private audioEnergy = 0;
+  private audioBass = 0;
   private effectProg = new Map<string, Program>();
-  private copy: Program;
-  private blit: Program;
-  private compositeProg: Program;
-  private feedbackProg: Program;
+  private copy: Program | null = null;
+  private blit: Program | null = null;
+  private compositeProg: Program | null = null;
+  private feedbackProg: Program | null = null;
   private generatorProg: Program;
-  private textureProg: Program;
-  private black: WebGLTexture;
+  private generatorFull: Program | null = null;
+  private stageProg: Program | null = null;
+  private sketchProg: Program | null = null;
+  private feltProg: Program | null = null;
+  private foilProg: Program | null = null;
+  private plushProg: Program | null = null;
+  private yarnProg: Program | null = null;
+  private sequinProg: Program | null = null;
+  private quiltProg: Program | null = null;
+  private corkProg: Program | null = null;
+  private ginghamProg: Program | null = null;
+  private sprinkleProg: Program | null = null;
+  private velvetProg: Program | null = null;
+  private confettiProg: Program | null = null;
+  private discoProg: Program | null = null;
+  private terrazzoProg: Program | null = null;
+  private comicProg: Program | null = null;
+  private textureProg: Program | null = null;
+  private black: WebGLTexture | null = null;
   lastError: string | null = null;
   width = 1;
   height = 1;
@@ -58,46 +100,168 @@ export class Renderer {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.gl = createGL(canvas);
-    const gl = this.gl;
-    this.ping = new FBO(gl);
-    this.pong = new FBO(gl);
-    this.composite = new FBO(gl);
-    this.post = new FBO(gl);
-    for (let i = 0; i < RING; i++) this.ring.push(new FBO(gl));
-    this.copy = new Program(gl, COPY_GLSL);
-    this.blit = new Program(gl, BLIT_GLSL);
-    this.compositeProg = new Program(gl, COMPOSITE_GLSL);
-    this.feedbackProg = new Program(gl, FEEDBACK_GLSL);
-    this.generatorProg = new Program(gl, GENERATOR_GLSL);
-    this.textureProg = new Program(gl, TEXTURE_GLSL);
-    this.black = createTexture(gl);
-    gl.bindTexture(gl.TEXTURE_2D, this.black);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+    this.generatorProg = new Program(this.gl, BOOT_GENERATOR_GLSL);
   }
 
-  private progFor(typeId: string): Program | null {
-    const cached = this.effectProg.get(typeId);
+  private pipelineReady(): boolean {
+    return !!(
+      this.ping &&
+      this.pong &&
+      this.composite &&
+      this.post &&
+      this.ring.length >= RING &&
+      this.copy &&
+      this.blit &&
+      this.compositeProg &&
+      this.feedbackProg &&
+      this.textureProg &&
+      this.black
+    );
+  }
+
+  private ensurePipeline() {
+    if (this.pipelineReady()) return;
+    const gl = this.gl;
+    this.ping ??= new FBO(gl);
+    this.pong ??= new FBO(gl);
+    this.composite ??= new FBO(gl);
+    this.post ??= new FBO(gl);
+    while (this.ring.length < RING) this.ring.push(new FBO(gl));
+    this.copy ??= new Program(gl, COPY_GLSL);
+    this.blit ??= new Program(gl, BLIT_GLSL);
+    this.compositeProg ??= new Program(gl, COMPOSITE_GLSL);
+    this.feedbackProg ??= new Program(gl, FEEDBACK_GLSL);
+    this.textureProg ??= new Program(gl, TEXTURE_GLSL);
+    if (!this.black) {
+      this.black = createTexture(gl);
+      gl.bindTexture(gl.TEXTURE_2D, this.black);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+    }
+    if (this.width > 1) this.ensureSize(this.width, this.height);
+  }
+
+  private needsPipeline(project: Project): boolean {
+    if (project.globalFeedback.amount > 0.001) return true;
+    const live = project.layers.filter((l) => l.enabled);
+    if (live.length !== 1) return true;
+    const layer = live[0];
+    if (layer.feedback.amount > 0.001) return true;
+    if (layer.effects.some((fx) => fx.enabled)) return true;
+    const src = project.sources.find((s) => s.id === layer.sourceId);
+    if (src && src.kind !== "generator" && src.kind !== "audio") return true;
+    return false;
+  }
+
+  private genProg(mode: number): Program {
+    if (mode < 6) return this.generatorProg;
+    if (mode === 12) {
+      this.stageProg ??= new Program(this.gl, STAGE_GENERATOR_GLSL);
+      return this.stageProg;
+    }
+    if (mode === 13) {
+      this.sketchProg ??= new Program(this.gl, SKETCH_GENERATOR_GLSL);
+      return this.sketchProg;
+    }
+    if (mode === 14) {
+      this.feltProg ??= new Program(this.gl, FELT_GENERATOR_GLSL);
+      return this.feltProg;
+    }
+    if (mode === 15) {
+      this.foilProg ??= new Program(this.gl, FOIL_GENERATOR_GLSL);
+      return this.foilProg;
+    }
+    if (mode === 16) {
+      this.plushProg ??= new Program(this.gl, PLUSH_GENERATOR_GLSL);
+      return this.plushProg;
+    }
+    if (mode === 17) {
+      this.yarnProg ??= new Program(this.gl, YARN_GENERATOR_GLSL);
+      return this.yarnProg;
+    }
+    if (mode === 18) {
+      this.sequinProg ??= new Program(this.gl, SEQUIN_GENERATOR_GLSL);
+      return this.sequinProg;
+    }
+    if (mode === 19) {
+      this.quiltProg ??= new Program(this.gl, QUILT_GENERATOR_GLSL);
+      return this.quiltProg;
+    }
+    if (mode === 20) {
+      this.corkProg ??= new Program(this.gl, CORK_GENERATOR_GLSL);
+      return this.corkProg;
+    }
+    if (mode === 21) {
+      this.ginghamProg ??= new Program(this.gl, GINGHAM_GENERATOR_GLSL);
+      return this.ginghamProg;
+    }
+    if (mode === 22) {
+      this.sprinkleProg ??= new Program(this.gl, SPRINKLE_GENERATOR_GLSL);
+      return this.sprinkleProg;
+    }
+    if (mode === 23) {
+      this.velvetProg ??= new Program(this.gl, VELVET_GENERATOR_GLSL);
+      return this.velvetProg;
+    }
+    if (mode === 24) {
+      this.confettiProg ??= new Program(this.gl, CONFETTI_GENERATOR_GLSL);
+      return this.confettiProg;
+    }
+    if (mode === 25) {
+      this.discoProg ??= new Program(this.gl, DISCO_GENERATOR_GLSL);
+      return this.discoProg;
+    }
+    if (mode === 26) {
+      this.terrazzoProg ??= new Program(this.gl, TERRAZZO_GENERATOR_GLSL);
+      return this.terrazzoProg;
+    }
+    if (mode === 27) {
+      this.comicProg ??= new Program(this.gl, COMIC_GENERATOR_GLSL);
+      return this.comicProg;
+    }
+    this.generatorFull ??= new Program(this.gl, GENERATOR_GLSL);
+    return this.generatorFull;
+  }
+
+  private compileType(typeId: string, mini = false): Program | null {
+    const key = typeId !== "dancer" ? typeId : mini ? "dancer:mini" : "dancer";
+    const cached = this.effectProg.get(key);
     if (cached) return cached;
-    const def = getEffect(typeId);
+    const def = typeId === "dancer" ? dancerForCompile(mini) : getEffect(typeId);
     if (!def) return null;
     try {
       const p = compileEffectProgram(this.gl, def);
-      this.effectProg.set(typeId, p);
+      this.effectProg.set(key, p);
       return p;
     } catch (err) {
-      this.lastError = `${typeId}: ${err instanceof Error ? err.message : String(err)}`;
+      this.lastError = `${key}: ${err instanceof Error ? err.message : String(err)}`;
       console.warn(this.lastError);
       return null;
     }
+  }
+
+  private progFor(fx: EffectInstance): Program | null {
+    if (fx.typeId !== "dancer") return this.compileType(fx.typeId);
+    return this.compileType("dancer", fx.params.crowd === "mini");
+  }
+
+  resetTemporal() {
+    const gl = this.gl;
+    for (const f of [...this.ring, ...this.layerHist.values()]) {
+      f.bind();
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+    this.ringIndex = 0;
   }
 
   private ensureSize(w: number, h: number) {
     if (w === this.width && h === this.height) return;
     this.width = w;
     this.height = h;
-    for (const f of [this.ping, this.pong, this.composite, this.post, ...this.ring, ...this.layerHist.values()]) {
-      f.resize(w, h);
-    }
+    const bufs = [this.ping, this.pong, this.composite, this.post, ...this.ring, ...this.layerHist.values()].filter(
+      (f): f is FBO => !!f,
+    );
+    for (const f of bufs) f.resize(w, h);
   }
 
   private histFor(id: string): FBO {
@@ -123,37 +287,48 @@ export class Renderer {
 
   private blitTo(target: FBO, tex: WebGLTexture) {
     const gl = this.gl;
+    const copy = this.copy;
+    if (!copy) return;
     target.bind();
-    this.copy.use();
+    copy.use();
     bindTex(gl, 0, tex);
-    this.copy.i("uTex", 0);
+    copy.i("uTex", 0);
     drawTri(gl);
   }
 
-  private drawGenerator(target: FBO, src: MediaSource, time: number) {
+  private drawGenerator(target: FBO, src: MediaSource, time: number, seed = 77) {
     const gl = this.gl;
+    const mode = GEN_INDEX[src.generator ?? "plasma"] ?? 0;
+    const prog = this.genProg(mode);
     target.bind();
-    this.generatorProg.use();
-    this.generatorProg.i("uMode", GEN_INDEX[src.generator ?? "plasma"] ?? 0);
-    this.generatorProg.f("uTime", time);
-    this.generatorProg.v3("uColorA", 0.05, 0.02, 0.12);
-    this.generatorProg.v3("uColorB", 0.85, 0.95, 0.2);
-    this.generatorProg.f("uScale", 6);
+    prog.use();
+    prog.i("uMode", mode);
+    prog.f("uTime", time);
+    const a = src.colorA ? hexToRgb(src.colorA) : ([0.07, 0.04, 0.1] as const);
+    const b = src.colorB ? hexToRgb(src.colorB) : ([0.92, 0.78, 0.55] as const);
+    prog.v3("uColorA", a[0], a[1], a[2]);
+    prog.v3("uColorB", b[0], b[1], b[2]);
+    prog.f("uScale", 6);
+    prog.f("uSeed", seed);
+    prog.f("u_audio", this.audioEnergy);
+    prog.f("u_bass", this.audioBass);
     drawTri(gl);
   }
 
   private drawTexture(target: FBO, tex: WebGLTexture, layer: Layer) {
     const gl = this.gl;
+    const textureProg = this.textureProg;
+    if (!textureProg) return;
     target.bind();
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
-    this.textureProg.use();
+    textureProg.use();
     bindTex(gl, 0, tex);
-    this.textureProg.i("uTex", 0);
-    this.textureProg.v2("uTranslate", layer.transform.x, layer.transform.y);
-    this.textureProg.f("uScale", layer.transform.scale);
-    this.textureProg.f("uRotation", layer.transform.rotation);
-    this.textureProg.v2("uFit", 1, 1);
+    textureProg.i("uTex", 0);
+    textureProg.v2("uTranslate", layer.transform.x, layer.transform.y);
+    textureProg.f("uScale", layer.transform.scale);
+    textureProg.f("uRotation", layer.transform.rotation);
+    textureProg.v2("uFit", 1, 1);
     drawTri(gl);
   }
 
@@ -169,7 +344,7 @@ export class Renderer {
     historyTex: WebGLTexture,
   ) {
     const def = getEffect(fx.typeId);
-    const prog = this.progFor(fx.typeId);
+    const prog = this.progFor(fx);
     if (!def || !prog) {
       this.blitTo(dest, srcTex);
       return;
@@ -189,6 +364,8 @@ export class Renderer {
     prog.f("uTime", time);
     prog.f("uFrame", frame);
     prog.f("uQuality", quality === "draft" ? 0 : quality === "preview" ? 1 : 2);
+    prog.f("u_audio", this.audioEnergy);
+    prog.f("u_bass", this.audioBass);
     prog.v2("u_translate", layer.transform.x, layer.transform.y);
     prog.f("u_scale", layer.transform.scale);
     prog.f("u_rotation", layer.transform.rotation);
@@ -222,15 +399,55 @@ export class Renderer {
     drawTri(gl);
   }
 
+  private drawLite(project: Project, time: number) {
+    const gl = this.gl;
+    const layer = project.layers.find((l) => l.enabled) ?? project.layers[0];
+    const src = layer ? project.sources.find((s) => s.id === layer.sourceId) : null;
+    const gen = src && src.kind !== "audio" ? src : ({ generator: "plasma" } as MediaSource);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    const mode = GEN_INDEX[gen.generator ?? "plasma"] ?? 0;
+    const prog = this.genProg(mode);
+    prog.use();
+    prog.i("uMode", mode);
+    prog.f("uTime", time);
+    const a = gen.colorA ? hexToRgb(gen.colorA) : ([0.07, 0.04, 0.1] as const);
+    const b = gen.colorB ? hexToRgb(gen.colorB) : ([0.92, 0.78, 0.55] as const);
+    prog.v3("uColorA", a[0], a[1], a[2]);
+    prog.v3("uColorB", b[0], b[1], b[2]);
+    prog.f("uScale", 6);
+    prog.f("uSeed", project.seed);
+    prog.f("u_audio", this.audioEnergy);
+    prog.f("u_bass", this.audioBass);
+    drawTri(gl);
+  }
+
   render(project: Project, time: number, opts?: { width?: number; height?: number; quality?: QualityMode; vignette?: number }) {
     const gl = this.gl;
     const quality = opts?.quality ?? project.quality;
+    const mix = sampleAudio(getSoundtrack(project), time);
+    this.audioEnergy = mix.energy;
+    this.audioBass = mix.bass;
+
+    if (quality !== "export" && !this.needsPipeline(project)) {
+      this.drawLite(project, time);
+      return;
+    }
+    this.ensurePipeline();
+    const ping = this.ping!;
+    const pong = this.pong!;
+    const composite = this.composite!;
+    const post = this.post!;
+    const blit = this.blit!;
+    const compositeProg = this.compositeProg!;
+    const feedbackProg = this.feedbackProg!;
+
     const scale = quality === "draft" ? 0.5 : 1;
     const w = Math.max(16, Math.floor((opts?.width ?? this.canvas.width) * scale));
     const h = Math.max(16, Math.floor((opts?.height ?? this.canvas.height) * scale));
     this.ensureSize(w, h);
 
-    this.composite.bind();
+    composite.bind();
     gl.clearColor(0.02, 0.02, 0.03, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -244,15 +461,16 @@ export class Renderer {
       if (!rawLayer.enabled) continue;
       const layer = resolvedLayerParams(project, rawLayer, time);
       const src = project.sources.find((s) => s.id === layer.sourceId) ?? null;
-      if (!src || src.kind === "generator") {
-        this.drawGenerator(this.ping, src ?? { generator: "plasma" } as MediaSource, time);
+      if (!src || src.kind === "generator" || src.kind === "audio") {
+        const gen = src && src.kind !== "audio" ? src : ({ generator: "plasma" } as MediaSource);
+        this.drawGenerator(ping, gen, time, project.seed);
       } else {
         const tex = this.uploadSource(src);
-        this.drawTexture(this.ping, tex, layer);
+        this.drawTexture(ping, tex, layer);
       }
 
-      let read = this.ping;
-      let write = this.pong;
+      let read = ping;
+      let write = pong;
       const hist = this.histFor(layer.id);
       for (const fx of layer.effects) {
         if (!fx.enabled) continue;
@@ -264,78 +482,72 @@ export class Renderer {
 
       if (layer.feedback.amount > 0.001) {
         write.bind();
-        this.feedbackProg.use();
+        feedbackProg.use();
         bindTex(gl, 0, read.tex);
         bindTex(gl, 1, hist.tex);
-        this.feedbackProg.i("uTex", 0);
-        this.feedbackProg.i("uFeedback", 1);
-        this.feedbackProg.f("uAmount", layer.feedback.amount);
-        this.feedbackProg.f("uOpacity", layer.feedback.opacity);
-        this.feedbackProg.f("uScale", layer.feedback.scale);
-        this.feedbackProg.f("uRotation", layer.feedback.rotation);
-        this.feedbackProg.f("uDistortion", layer.feedback.distortion);
-        this.feedbackProg.f("uTime", time);
+        feedbackProg.i("uTex", 0);
+        feedbackProg.i("uFeedback", 1);
+        feedbackProg.f("uAmount", layer.feedback.amount);
+        feedbackProg.f("uOpacity", layer.feedback.opacity);
+        feedbackProg.f("uScale", layer.feedback.scale);
+        feedbackProg.f("uRotation", layer.feedback.rotation);
+        feedbackProg.f("uDistortion", layer.feedback.distortion);
+        feedbackProg.f("uTime", time);
         drawTri(gl);
         const tmp = read;
         read = write;
         write = tmp;
       }
 
-      this.blitTo(this.post, this.composite.tex);
-      this.composite.bind();
-      this.compositeProg.use();
-      bindTex(gl, 0, this.post.tex);
+      this.blitTo(post, composite.tex);
+      composite.bind();
+      compositeProg.use();
+      bindTex(gl, 0, post.tex);
       bindTex(gl, 1, read.tex);
-      this.compositeProg.i("uBase", 0);
-      this.compositeProg.i("uLayer", 1);
-      this.compositeProg.f("uOpacity", layer.opacity);
-      this.compositeProg.i("uBlend", BLEND_INDEX[layer.blendMode] ?? 0);
-      this.compositeProg.v2("uResolution", w, h);
+      compositeProg.i("uBase", 0);
+      compositeProg.i("uLayer", 1);
+      compositeProg.f("uOpacity", layer.opacity);
+      compositeProg.i("uBlend", BLEND_INDEX[layer.blendMode] ?? 0);
+      compositeProg.v2("uResolution", w, h);
       drawTri(gl);
 
       this.blitTo(hist, read.tex);
     }
 
     if (fb.amount > 0.001) {
-      this.post.bind();
-      this.feedbackProg.use();
-      bindTex(gl, 0, this.composite.tex);
+      post.bind();
+      feedbackProg.use();
+      bindTex(gl, 0, composite.tex);
       bindTex(gl, 1, feedbackTex);
-      this.feedbackProg.i("uTex", 0);
-      this.feedbackProg.i("uFeedback", 1);
-      this.feedbackProg.f("uAmount", fb.amount);
-      this.feedbackProg.f("uOpacity", fb.opacity);
-      this.feedbackProg.f("uScale", fb.scale);
-      this.feedbackProg.f("uRotation", fb.rotation);
-      this.feedbackProg.f("uDistortion", fb.distortion);
-      this.feedbackProg.f("uTime", time);
+      feedbackProg.i("uTex", 0);
+      feedbackProg.i("uFeedback", 1);
+      feedbackProg.f("uAmount", fb.amount);
+      feedbackProg.f("uOpacity", fb.opacity);
+      feedbackProg.f("uScale", fb.scale);
+      feedbackProg.f("uRotation", fb.rotation);
+      feedbackProg.f("uDistortion", fb.distortion);
+      feedbackProg.f("uTime", time);
       drawTri(gl);
-      this.blitTo(this.composite, this.post.tex);
+      this.blitTo(composite, post.tex);
     }
 
-    this.blitTo(this.ring[this.ringIndex], this.composite.tex);
+    this.blitTo(this.ring[this.ringIndex], composite.tex);
     this.ringIndex = (this.ringIndex + 1) % RING;
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    this.blit.use();
-    bindTex(gl, 0, this.composite.tex);
-    this.blit.i("uTex", 0);
-    this.blit.f("uVignette", opts?.vignette ?? 0.25);
+    blit.use();
+    bindTex(gl, 0, composite.tex);
+    blit.i("uTex", 0);
+    blit.f("uVignette", opts?.vignette ?? 0.25);
     drawTri(gl);
   }
 
   capture(project: Project, time: number, width: number, height: number, mime = "image/png", quality = 0.92): Promise<Blob> {
-    const prevW = this.canvas.width;
-    const prevH = this.canvas.height;
-    this.canvas.width = width;
-    this.canvas.height = height;
-    this.render(project, time, { width, height, quality: "export", vignette: 0 });
+    const canvas = this.paintFrame(project, time, width, height);
     return new Promise((resolve, reject) => {
-      this.canvas.toBlob(
+      canvas.toBlob(
         (blob) => {
-          this.canvas.width = prevW;
-          this.canvas.height = prevH;
           if (!blob) reject(new Error("Export failed"));
           else resolve(blob);
         },
@@ -345,13 +557,35 @@ export class Renderer {
     });
   }
 
+  /** Render at export size into a 2D canvas. Does not resize the live WebGL canvas. */
+  paintFrame(project: Project, time: number, width: number, height: number, target?: HTMLCanvasElement): HTMLCanvasElement {
+    const canvas = target ?? document.createElement("canvas");
+    if (canvas.width !== width) canvas.width = width;
+    if (canvas.height !== height) canvas.height = height;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) throw new Error("No 2d context");
+    this.render(project, time, { width, height, quality: "export", vignette: 0 });
+    this.gl.finish();
+    const pixels = this.readPixels(this.width, this.height);
+    if (this.width === width && this.height === height) {
+      ctx.putImageData(imageData(pixels, width, height), 0, 0);
+    } else {
+      const tmp = document.createElement("canvas");
+      tmp.width = this.width;
+      tmp.height = this.height;
+      tmp.getContext("2d")?.putImageData(imageData(pixels, this.width, this.height), 0, 0);
+      ctx.drawImage(tmp, 0, 0, width, height);
+    }
+    return canvas;
+  }
+
   readPixels(width: number, height: number): Uint8ClampedArray {
     const gl = this.gl;
     const pixels = new Uint8Array(width * height * 4);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.composite.fbo);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.composite!.fbo);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    const flipped = new Uint8ClampedArray(pixels.length);
+    const flipped = new Uint8ClampedArray(new ArrayBuffer(pixels.length));
     const stride = width * 4;
     for (let y = 0; y < height; y++) {
       flipped.set(pixels.subarray((height - 1 - y) * stride, (height - y) * stride), y * stride);

@@ -13,6 +13,12 @@ function defaultUi(project: Project): AppUi {
     helpOpen: false,
     status: "ready",
     fps: 0,
+    prompt: "",
+    useSourceForGen: true,
+    generating: false,
+    includeCritters: true,
+    includeIdol: true,
+    exporting: false,
   };
 }
 

@@ -4,11 +4,17 @@ A personal **visual instrument / digital darkroom** for experimental video art a
 
 Not a Premiere or Photoshop clone. Phosphene is a GPU effect pipeline with a tactile, slightly weird control surface: drop in images or video, stack modular GLSL effects, randomize, feed the output back into itself, and export stills or frame-by-frame video.
 
-## Run
+## If you don’t write code
 
-**Repo:** [Gconner99/IST-256-Final-Project](https://github.com/Gconner99/IST-256-Final-Project)
+Do **not** open the files inside Cursor.
 
-Open that folder in Cursor — the repo root is the directory that contains `package.json`.
+On Windows, open the folder in **File Explorer** and double-click **`Start Phosphene.bat`**. That opens a **private** Chrome or Edge window (not a tab in a Chrome you already had open). Unzip the whole folder: `PHOSPHENE.html` plus `phosphene.js`. If Chrome crashes, use **`Start Phosphene Safe.bat`** instead.
+
+Read `START HERE.txt` if you get stuck.
+
+## Run (developers)
+
+Open the folder that contains `package.json`.
 
 ### In Cursor (click Run)
 
@@ -34,17 +40,22 @@ Requires a browser (or Electron) with **WebGL2**.
 ## MVP
 
 - Image + video import (drag/drop, replace, freeze a video frame as a still)
-- Procedural generators (plasma, noise, bars, gradient, checker) so it makes pictures with no files
+- **Soundtrack**: drop an MP3 / wav / ogg / m4a. Playback follows the song; idols and floaters move with the mix. Exported clips are visual-only for now.
+- Procedural generators (plasma, noise, bars, gradient, checker, **floaters**) so it makes pictures with no files
 - Real-time WebGL2 preview (draft / preview / full quality)
 - Layers: opacity, blend modes, transform, enable, duplicate
 - Modular effects stack (bypass, reorder, per-effect mix + mask)
-- ~17 effects: grade, posterize, threshold, duotone, solarize, channels, warp, aberration, displace, lens, pixel-sort, cathode, emulsion, bloom, kaleidoscope, mirror/tile, transform, echo, slit-scan, stutter
+- Floaters kits: lumpy shapes, toy-pop icons (notes, piano, guitar, trumpet, drums, sax, boombox), votives, moths, charms
+- Idol Grow (petals / halo / antenna / skirt / wings / horns / crystal / puff / quiet) and Coat (cream / moss / sodium / night / candy / jelly / grape / ice / lava)
+- Procedural backgrounds: plasma, noise, bars, plus **Stars**, **Marsh**, **Oil**, **Paper**, **Cave**, **Stage** (toy-pop piano / notes / instruments), **Sketch** (sticker-notebook paper), **Felt**, **Foil**, **Plush**, **Yarn**, **Sequins**, **Quilt**, **Cork**, **Gingham**, **Sprinkle**, and **Velvet**
+- ~20 effects including **Floaters**, **Idol**, **Luma key**, and **Dropout**
+- Seeded randomization (all / selected / param) plus **Rand wacky** (outsider looks, short stacks)
+- **Stamp chaos** rerolls overlay seeds and generator inks; **Print frame** captures the live picture as a still
 - Global + per-layer **feedback bus** (amount, delay, opacity, scale, rotation, distortion)
 - Basic masks (rect, circle, gradient, noise)
-- Seeded randomization (all / selected / single param + amount)
 - Simple keyframe automation
 - JSON project files (`.phos.json`) and source-independent presets
-- Export: PNG, JPG, WebM (frame-by-frame), PNG image sequence (zip)
+- Export: PNG, JPG, **short MP4 clips** (optional close-loop fade), WebM, PNG image sequence (zip)
 
 ## Architecture
 
@@ -53,8 +64,8 @@ src/
   core/        project state, timeline, presets, RNG, JSON
   engine/      WebGL2 renderer, FBOs, shader compiler
   effects/     one EffectType per look — add files, don't rewrite the app
-  media/       image/video loaders
-  export/      still / sequence / webm
+  media/       image/video/audio loaders
+  export/      still / sequence / webm / mp4 clips
   ui/          instrument chrome
 electron/      desktop window
 ```

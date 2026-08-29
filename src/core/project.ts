@@ -1,6 +1,20 @@
-import type { MediaSource, Project } from "./types";
+import type { EffectInstance, GeneratorType, MediaSource, Project } from "./types";
 
-const RUNTIME_KEYS = new Set(["bitmap", "video", "objectUrl", "frozenFrame"]);
+const PLACE_FALLBACK: Record<string, GeneratorType> = {
+  lot: "marsh",
+  xerox: "paper",
+  tank: "oil",
+  chapel: "cave",
+  lamp: "stars",
+};
+
+const RETIRED_EFFECTS = new Set(["window", "buddy"]);
+
+function keepEffect(fx: EffectInstance): boolean {
+  return !RETIRED_EFFECTS.has(fx.typeId);
+}
+
+const RUNTIME_KEYS = new Set(["bitmap", "video", "audio", "pcm", "objectUrl", "frozenFrame"]);
 
 export function serializeProject(project: Project): string {
   const clean: Project = JSON.parse(
@@ -21,6 +35,29 @@ export function parseProject(json: string): Project {
   data.layers = data.layers ?? [];
   data.keyframes = data.keyframes ?? [];
   data.presets = data.presets ?? [];
+  if (data.exportSettings && data.exportSettings.loopClose === undefined) {
+    data.exportSettings.loopClose = true;
+  }
+  data.sources = data.sources.map((s) => {
+    const next = PLACE_FALLBACK[s.generator ?? ""];
+    return next ? { ...s, generator: next } : s;
+  });
+  data.layers = data.layers.map((layer) => ({
+    ...layer,
+    effects: (layer.effects ?? []).filter(keepEffect),
+  }));
+  data.presets = data.presets.map((preset) => ({
+    ...preset,
+    data: preset.data
+      ? {
+          ...preset.data,
+          layers: (preset.data.layers ?? []).map((layer) => ({
+            ...layer,
+            effects: (layer.effects ?? []).filter(keepEffect),
+          })),
+        }
+      : preset.data,
+  }));
   return data;
 }
 
@@ -29,6 +66,8 @@ export function stripRuntime(source: MediaSource): MediaSource {
     ...source,
     bitmap: null,
     video: null,
+    audio: null,
+    pcm: null,
     objectUrl: null,
     frozenFrame: null,
   };

@@ -57,23 +57,51 @@ export function defaultPlayback(): PlaybackState {
 
 export function defaultExportSettings(): ExportSettings {
   return {
-    width: 1280,
-    height: 720,
-    fps: 30,
-    duration: 8,
+    width: 960,
+    height: 540,
+    fps: 24,
+    duration: 4,
     format: "png",
     quality: 0.92,
-    bitrate: 12,
+    bitrate: 8,
     filename: "phosphene",
+    loopClose: true,
   };
 }
 
+const GEN_INK: Record<string, { a: string; b: string }> = {
+  stars: { a: "#060814", b: "#c8d4ff" },
+  marsh: { a: "#0c1410", b: "#ffb44a" },
+  oil: { a: "#12081c", b: "#3dffd0" },
+  paper: { a: "#e8dcc8", b: "#2a1810" },
+  cave: { a: "#08060c", b: "#7aa2ff" },
+  stage: { a: "#ff8ab8", b: "#7ad8ff" },
+  sketch: { a: "#efe4c8", b: "#c45c66" },
+  felt: { a: "#f0d4c4", b: "#7ec9c0" },
+  foil: { a: "#ff7ad2", b: "#7ae8ff" },
+  plush: { a: "#f09ab8", b: "#7ed8c4" },
+  yarn: { a: "#f4b8d0", b: "#7ed8c4" },
+  sequin: { a: "#ff6ad8", b: "#7ae8ff" },
+  quilt: { a: "#f2c48a", b: "#8a6ad8" },
+  cork: { a: "#c48a5a", b: "#e87890" },
+  gingham: { a: "#f4e6e4", b: "#d44c66" },
+  sprinkle: { a: "#ffd6e8", b: "#7ad8ff" },
+  velvet: { a: "#6a2048", b: "#e878a0" },
+  confetti: { a: "#ff7ab8", b: "#7ae8ff" },
+  disco: { a: "#2a1038", b: "#ffd86a" },
+  terrazzo: { a: "#e8d8cc", b: "#d45c78" },
+  comic: { a: "#fff4a8", b: "#2a1810" },
+};
+
 export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"): MediaSource {
+  const ink = GEN_INK[kind ?? "plasma"] ?? { a: "#140c10", b: "#f0d2b0" };
   return {
     id: uid("src"),
-    name: kind ? kind.toUpperCase() : "SIGNAL",
+    name: kind === "critters" ? "FLOATERS" : kind === "stage" ? "STAGE" : kind === "sketch" ? "SKETCH" : kind ? kind.toUpperCase() : "SIGNAL",
     kind: "generator",
     generator: kind ?? "plasma",
+    colorA: ink.a,
+    colorB: ink.b,
     width: 1280,
     height: 720,
     duration: 0,
@@ -105,17 +133,20 @@ export function defaultLayer(name: string, sourceId: string | null, effects: str
 
 export function createDefaultProject(): Project {
   const plasma = defaultGeneratorSource("plasma");
-  const layer = defaultLayer("SIGNAL", plasma.id, ["grade", "warp", "chroma", "analog"]);
+  const layer = defaultLayer("SIGNAL", plasma.id, ["grade", "bloom", "grain"]);
   layer.effects.forEach((fx) => {
-    if (fx.typeId === "warp") {
-      fx.params.amount = 0.06;
-      fx.params.freq = 6;
+    if (fx.typeId === "grade") {
+      fx.params.saturation = 0.22;
+      fx.params.contrast = 0.12;
+      fx.params.gamma = 0.92;
     }
-    if (fx.typeId === "analog") {
-      fx.params.mixScan = 0.25;
+    if (fx.typeId === "bloom") {
+      fx.params.amount = 0.42;
+      fx.params.halation = 0.28;
     }
-    if (fx.typeId === "chroma") {
-      fx.params.amount = 0.004;
+    if (fx.typeId === "grain") {
+      fx.params.grain = 0.16;
+      fx.params.leak = 0.2;
     }
   });
   const project: Project = {
@@ -123,7 +154,7 @@ export function createDefaultProject(): Project {
     app: "phosphene",
     name: "untitled",
     seed: 256,
-    randomAmount: 0.55,
+    randomAmount: 0.82,
     quality: "preview",
     duration: 8,
     fps: 30,

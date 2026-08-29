@@ -2,16 +2,19 @@ import type { Renderer } from "../engine/renderer";
 import { store } from "../core/store";
 import { BLEND_MODES, type GeneratorType, type Layer, type ParamDef } from "../core/types";
 import { runExport } from "../export/export";
+import { EXPORT_ASPECTS, matchAspectId, sizeForAspect, sizeFromSource } from "../core/exportSize";
 import {
   addEffect,
   addKeyframe,
   addLayer,
+  addSource,
   bumpSeed,
   clearKeyframes,
   delPreset,
   dupPreset,
   duplicateLayer,
   freezeSelected,
+  generateFromPrompt,
   importFiles,
   loadPreset,
   loadProjectFile,
@@ -26,9 +29,15 @@ import {
   selectedEffect,
   selectedLayer,
   setParam,
+  startFromScratch,
+  reprintFrame,
+  stampChaos,
+  stampCritters,
+  stampIdol,
   toggleEffect,
 } from "./actions";
-import { effectsByCategory, getEffect } from "../effects/registry";
+import { resumeAudio } from "../media/audio";
+import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
 import { defaultGeneratorSource } from "../core/defaults";
 
 let liveScrub = false;
@@ -45,6 +54,8 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <input type="text" id="proj-name" style="width:140px" />
       <button class="btn tiny" data-act="save">Save</button>
       <button class="btn tiny" data-act="load">Load</button>
+      <button class="btn tiny hot" data-act="scratch">New</button>
+      <button class="btn tiny acid" data-act="export" id="top-export">Export</button>
       <input type="file" id="proj-file" accept=".json,.phos.json" hidden />
       <div class="sp"></div>
       <label class="status">SEED</label>
@@ -54,6 +65,13 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="status">RND</label>
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
+      <button class="btn tiny hot" data-act="rand-wacky" title="Outsider looks, idols, floaters, a new place">Rand wacky</button>
+      <label class="check" title="Drop drifting colored shapes onto every layer when you hit Rand all">
+        <input type="checkbox" id="inc-critters" /> floaters
+      </label>
+      <label class="check" title="Drop a dancing 3D figure in the middle when you hit Rand all">
+        <input type="checkbox" id="inc-idol" /> idol
+      </label>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
       <select id="quality">
@@ -68,7 +86,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <section class="stage">
         <div class="viewport" id="view">
           <div class="hud" id="hud"></div>
-          <div class="dropveil" id="veil">DROP IMAGE / VIDEO</div>
+          <div class="dropveil" id="veil">DROP IMAGE / VIDEO / AUDIO</div>
         </div>
       </section>
       <aside class="stack" id="stack"></aside>
@@ -80,10 +98,17 @@ export function mount(root: HTMLElement, renderer: Renderer) {
         <p>A digital darkroom / video synth. Drop media, stack effects, randomize, feed the output back into itself.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
-          <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> randomize all</li>
+          <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
           <li><kbd>K</kbd> keyframe selected parameter</li>
-          <li><kbd>I</kbd> import &nbsp; <kbd>S</kbd> save project</li>
+          <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
+          <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
+          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place.</li>
+          <li><strong>Idol</strong> is a small low-poly creature facing the camera. Grow picks petals, a halo, antennae, a skirt, wings, horns, crystals, puff, spikes, a sprout, or a quieter body. Coat tints the paint (cream, moss, sodium, night, candy, jelly, grape, ice, lava, slime, gold, ink, soda, banana, berry, mint, cobalt). Stamp it for a new seed — each stamp grows a different silhouette and dance. Crowd → Mini army.</li>
+          <li><strong>Stamp chaos</strong> rerolls floater + idol seeds and their kit/grow/coat — keeps the backdrop. <strong>Print frame</strong> turns the live picture into a still.</li>
+          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, Cave, Stage, Sketch, Felt, Foil, Plush, Yarn, Sequins, Quilt, Cork, Gingham, Sprinkle, Velvet, Confetti, Disco, Terrazzo, and Comic. Stage is a candy toy-pop room. Sketch is a composition-notebook sticker album. The rest are textured toy-pop places — wool, wrapper, pile, knit, sparkle, patchwork, pin-board, picnic, frosting, crush pile, paper bits, mirror tiles, stone chips, pop dots. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom/keys breathe with the mix.</li>
+          <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
+          <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
         <button class="btn acid" data-act="help">close</button>
@@ -100,6 +125,21 @@ export function mount(root: HTMLElement, renderer: Renderer) {
   paint(root);
 }
 
+async function runCurrentExport(clip = false) {
+  if (!rendererRef) return;
+  if (store.state.ui.exporting) return;
+  store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: false } }));
+  store.patchUi({ exporting: true, status: "exporting clip…" });
+  try {
+    const note = await runExport(rendererRef, store.project, store.project.playback.time, (i, n) => {
+      store.patchUi({ status: `export ${i + 1}/${n}`, exporting: true }, false);
+    }, clip);
+    store.patchUi({ exporting: false, status: typeof note === "string" && note ? note : "export done" });
+  } catch (err) {
+    store.patchUi({ exporting: false, status: err instanceof Error ? err.message : "export failed" });
+  }
+}
+
 function bind(root: HTMLElement) {
   root.addEventListener("click", async (e) => {
     const t = (e.target as HTMLElement).closest("[data-act]") as HTMLElement | null;
@@ -108,9 +148,16 @@ function bind(root: HTMLElement) {
     const id = t.dataset.id;
     if (act === "save") saveProject();
     if (act === "load") root.querySelector<HTMLInputElement>("#proj-file")?.click();
+    if (act === "scratch") startFromScratch();
+    if (act === "imagine") void generateFromPrompt();
     if (act === "seed-") bumpSeed(-1);
     if (act === "seed+") bumpSeed(1);
     if (act === "rand-all") randomize("all");
+    if (act === "rand-wacky") randomize("all", true);
+    if (act === "stamp-chaos") stampChaos();
+    if (act === "reprint") {
+      if (rendererRef) void reprintFrame(rendererRef);
+    }
     if (act === "rand-sel") randomize("selected");
     if (act === "rand-param") {
       const paramId = t.dataset.paramId;
@@ -130,8 +177,14 @@ function bind(root: HTMLElement) {
     if (act === "freeze") void freezeSelected();
     if (act === "gen") {
       const kind = (t.dataset.kind ?? "plasma") as GeneratorType;
-      store.setProject((p) => ({ ...p, sources: [...p.sources, defaultGeneratorSource(kind)] }));
+      const src = defaultGeneratorSource(kind);
+      addSource(src, true);
+      store.patchUi({
+        status: kind === "critters" ? "floaters on this layer" : `place · ${kind}`,
+      });
     }
+    if (act === "stamp-critters") stampCritters();
+    if (act === "stamp-idol") stampIdol();
     if (act === "add-layer") addLayer();
     if (act === "dup-layer" && id) duplicateLayer(id);
     if (act === "del-layer" && id) removeLayer(id);
@@ -161,22 +214,52 @@ function bind(root: HTMLElement) {
     if (act === "pst-load" && id) loadPreset(id);
     if (act === "pst-dup" && id) dupPreset(id);
     if (act === "pst-del" && id) delPreset(id);
-    if (act === "export") {
-      if (!rendererRef) return;
-      store.patchUi({ status: "exporting…" });
-      try {
-        await runExport(rendererRef, store.project, store.project.playback.time, (i, n) => {
-          store.patchUi({ status: `export ${i + 1}/${n}` }, false);
-        });
-        store.patchUi({ status: "export done" });
-      } catch (err) {
-        store.patchUi({ status: err instanceof Error ? err.message : "export failed" });
+    if (act === "export") void runCurrentExport();
+    if (act === "clip") {
+      const secs = Math.max(1, Number(t.dataset.secs || 4));
+      store.setProject((p) => ({
+        ...p,
+        duration: Math.max(p.duration, secs),
+        exportSettings: {
+          ...p.exportSettings,
+          duration: secs,
+          format: "mp4",
+          fps: 24,
+          bitrate: Math.min(p.exportSettings.bitrate, 8),
+        },
+      }));
+      store.patchUi({ status: `${secs}s clip ready — hit Export` });
+    }
+    if (act === "exp-aspect" && id) {
+      const aspect = EXPORT_ASPECTS.find((a) => a.id === id);
+      if (aspect) {
+        const size = sizeForAspect(aspect.rw, aspect.rh, 1280);
+        store.setProject((p) => ({
+          ...p,
+          exportSettings: { ...p.exportSettings, width: size.width, height: size.height },
+        }));
       }
     }
+    if (act === "exp-aspect-src") {
+      const p = store.project;
+      const layer = selectedLayer(p);
+      const src = p.sources.find((s) => s.id === (layer?.sourceId ?? p.sources[0]?.id));
+      const pic = src?.kind === "audio"
+        ? p.sources.find((s) => s.kind !== "audio")
+        : src;
+      const size = sizeFromSource(pic?.width ?? 1280, pic?.height ?? 720, 1280);
+      store.setProject((pr) => ({
+        ...pr,
+        exportSettings: { ...pr.exportSettings, width: size.width, height: size.height },
+      }));
+    }
     if (act === "play") {
+      void resumeAudio();
       store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: !p.playback.playing } }));
     }
     if (act === "use-src" && id) {
+      const picked = store.project.sources.find((s) => s.id === id);
+      if (picked?.kind === "audio") return;
       const lyr = selectedLayer(store.project);
       if (lyr) patchLayer(lyr.id, (l) => ({ ...l, sourceId: id }));
     }
@@ -212,16 +295,30 @@ function bind(root: HTMLElement) {
     if (t.id === "preset-sel" && t.value) loadPreset(t.value);
     if (t.id === "exp-format") store.setProject((p) => ({ ...p, exportSettings: { ...p.exportSettings, format: t.value as typeof p.exportSettings.format } }));
     if (t.id === "play-mode") store.setProject((p) => ({ ...p, playback: { ...p.playback, mode: t.value as typeof p.playback.mode } }));
+    if (t.id === "inc-critters" || t.id === "inc-critters-rail") {
+      store.patchUi({ includeCritters: (t as HTMLInputElement).checked });
+    }
+    if (t.id === "inc-idol" || t.id === "inc-idol-rail") {
+      store.patchUi({ includeIdol: (t as HTMLInputElement).checked });
+    }
   });
 
   root.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
     const p = store.project;
-    if (t.id === "proj-name") store.setProject((pr) => ({ ...pr, name: t.value }), false);
+    if (t.id === "gen-prompt") store.patchUi({ prompt: t.value }, false);
+    if (t.id === "gen-src") store.patchUi({ useSourceForGen: (t as HTMLInputElement).checked }, false);
+    if (t.id === "inc-critters" || t.id === "inc-critters-rail") {
+      store.patchUi({ includeCritters: (t as HTMLInputElement).checked });
+    }
+    if (t.id === "inc-idol" || t.id === "inc-idol-rail") {
+      store.patchUi({ includeIdol: (t as HTMLInputElement).checked });
+    }
     if (t.id === "seed") store.setProject((pr) => ({ ...pr, seed: Number(t.value) || 0 }), false);
     if (t.id === "rnd-amt") store.setProject((pr) => ({ ...pr, randomAmount: Number(t.value) }), false);
     if (t.id === "speed") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, speed: Number(t.value) } }), false);
     if (t.id === "loop") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, loop: t.checked } }), false);
+    if (t.id === "loop-close") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, loopClose: t.checked } }), false);
     if (t.id === "freeze") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, freeze: t.checked } }), false);
     if (t.id === "time") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, time: Number(t.value) } }), false);
     if (t.id === "opacity") {
@@ -290,10 +387,16 @@ function bind(root: HTMLElement) {
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
     if (e.code === "Space") {
       e.preventDefault();
+      void resumeAudio();
       store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: !p.playback.playing } }));
     }
     if (e.key === "r" || e.key === "R") randomize(e.shiftKey ? "all" : "selected");
+    if ((e.key === "w" || e.key === "W") && e.shiftKey) randomize("all", true);
     if (e.key === "k" || e.key === "K") addKeyframe();
+    if (e.key === "n" || e.key === "N") {
+      e.preventDefault();
+      startFromScratch();
+    }
     if (e.key === "?") store.patchUi({ helpOpen: !store.state.ui.helpOpen });
     if ((e.key === "s" || e.key === "S") && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
@@ -326,6 +429,12 @@ function paint(root: HTMLElement) {
   if (seed && document.activeElement !== seed) seed.value = String(p.seed);
   if (rnd) rnd.value = String(p.randomAmount);
   if (quality) quality.value = p.quality;
+  const topExp = root.querySelector<HTMLButtonElement>("#top-export");
+  if (topExp) topExp.disabled = ui.exporting;
+  const crit = root.querySelector<HTMLInputElement>("#inc-critters");
+  if (crit) crit.checked = ui.includeCritters;
+  const idol = root.querySelector<HTMLInputElement>("#inc-idol");
+  if (idol) idol.checked = ui.includeIdol;
   root.querySelector("#help")?.classList.toggle("on", ui.helpOpen);
   root.querySelector("#veil")?.classList.toggle("on", ui.dropActive);
   root.querySelector("#led")?.classList.toggle("hot", p.playback.playing);
@@ -344,9 +453,17 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="import">Import</button>
       <button class="btn tiny" data-act="replace">Replace</button>
       <button class="btn tiny" data-act="freeze">Still frame</button>
-      <input id="media-file" type="file" accept="image/*,video/*,.tif,.tiff,.mov,.webm,.mp4,.gif" multiple hidden />
-      <input id="replace-file" type="file" accept="image/*,video/*,.tif,.tiff,.mov,.webm,.mp4,.gif" hidden />
+      <button class="btn tiny" data-act="reprint">Print frame</button>
+      <input id="media-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" multiple hidden />
+      <input id="replace-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden />
     </div>
+    <hr class="div" />
+    <div class="sec">Generate new image</div>
+    <textarea id="gen-prompt" class="prompt" placeholder="describe a new image… e.g. grainy night photo of a flooded parking lot, sodium lights">${esc(ui.prompt)}</textarea>
+    <label class="check"><input type="checkbox" id="gen-src" ${ui.useSourceForGen ? "checked" : ""}/> use selected source as reference</label>
+    <button class="btn tiny acid" data-act="imagine" ${ui.generating ? "disabled" : ""}>${ui.generating ? "working…" : "Generate"}</button>
+    <button class="btn tiny" data-act="imagine" ${ui.generating || !ui.prompt.trim() ? "disabled" : ""}>Again</button>
+    <div class="status" style="margin-top:4px">Usually a few seconds. Again rolls a new seed. Does not overwrite the upload.</div>
     <div class="row" style="margin-top:6px">
       <button class="btn tiny" data-act="gen" data-kind="plasma">Plasma</button>
       <button class="btn tiny" data-act="gen" data-kind="noise">Noise</button>
@@ -354,13 +471,56 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny" data-act="gen" data-kind="gradient">Grad</button>
       <button class="btn tiny" data-act="gen" data-kind="checker">Check</button>
     </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="stars">Stars</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="marsh">Marsh</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="oil">Oil</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="paper">Paper</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="cave">Cave</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="stage">Stage</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="sketch">Sketch</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="felt">Felt</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="foil">Foil</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="plush">Plush</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="yarn">Yarn</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="sequin">Sequins</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="quilt">Quilt</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="cork">Cork</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="gingham">Gingham</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="sprinkle">Sprinkle</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="velvet">Velvet</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="confetti">Confetti</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="disco">Disco</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="terrazzo">Terrazzo</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="comic">Comic</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="critters">Floaters</button>
+      <button class="btn tiny acid" data-act="stamp-critters">Stamp floaters</button>
+      <button class="btn tiny acid" data-act="stamp-idol">Stamp idol</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny hot" data-act="stamp-chaos">Stamp chaos</button>
+      <button class="btn tiny" data-act="reprint">Print frame</button>
+    </div>
+    <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
+    <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
+    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop. Idol Grow: petals, halo, antenna, skirt, wings, horns, crystal, puff, spikes, sprout, quiet. Coat: candy, jelly, grape, ice, lava, slime, gold, ink, soda, banana, berry, mint, cobalt. Places: Stage, Sketch, Felt, Foil, Plush, Yarn, Sequins, Quilt, Cork, Gingham, Sprinkle, Velvet, Confetti, Disco, Terrazzo, Comic. Stamp chaos rerolls overlays, not the backdrop.</div>
     <div style="margin-top:8px">
-      ${p.sources.map((s) => `
+      ${p.sources.map((s) => {
+        const meta = s.kind === "audio"
+          ? `soundtrack · ${fmtTime(s.duration || 0)}`
+          : `${s.kind} ${s.width}×${s.height}`;
+        const useBtn = s.kind === "audio"
+          ? `<span class="status">mix</span>`
+          : `<button class="btn tiny" data-act="use-src" data-id="${s.id}">use</button>`;
+        return `
         <div class="thumb ${s.id === ui.selectedSourceId ? "on" : ""}" data-act="sel-src" data-id="${s.id}">
           <div class="sw" style="background:linear-gradient(135deg,#2a1830,#c8ff3d33)"></div>
-          <div class="meta"><b>${esc(s.name)}</b><span>${s.kind} ${s.width}×${s.height}</span></div>
-          <button class="btn tiny" data-act="use-src" data-id="${s.id}">use</button>
-        </div>`).join("")}
+          <div class="meta"><b>${esc(s.name)}</b><span>${meta}</span></div>
+          ${useBtn}
+        </div>`;
+      }).join("")}
     </div>
     <hr class="div" />
     <div class="sec">Feedback bus</div>
@@ -445,8 +605,17 @@ function paintStack(n: HTMLElement) {
         </div>`).join("")}
       <select id="add-fx" class="addfx">
         <option value="">+ add effect</option>
-        ${Object.entries(groups).map(([cat, list]) => `<optgroup label="${cat}">${list.map((e) => `<option value="${e.id}">${e.name}</option>`).join("")}</optgroup>`).join("")}
+        ${EFFECT_CATEGORIES.map((cat) => {
+          const list = groups[cat.id] ?? [];
+          if (!list.length) return "";
+          return `<optgroup label="${cat.label}">${list.map((e) => `<option value="${e.id}">${e.name}</option>`).join("")}</optgroup>`;
+        }).join("")}
       </select>
+      <div class="row" style="margin-top:4px">
+        <button class="btn tiny acid" data-act="stamp-critters">stamp floaters</button>
+        <button class="btn tiny acid" data-act="stamp-idol">stamp idol</button>
+        <button class="btn tiny hot" data-act="stamp-chaos">stamp chaos</button>
+      </div>
       ${fx ? `
         <hr class="div" />
         <div class="sec">${esc(getEffect(fx.typeId)?.name ?? "params")} · ${esc(getEffect(fx.typeId)?.description ?? "")}</div>
@@ -502,6 +671,7 @@ function paintTransport(n: HTMLElement) {
   const p = store.project;
   const pb = p.playback;
   const exp = p.exportSettings;
+  const busy = store.state.ui.exporting;
   const dur = Math.max(p.duration, 0.1);
   const pct = (pb.time / dur) * 100;
   n.innerHTML = `
@@ -536,18 +706,30 @@ function paintTransport(n: HTMLElement) {
     <div class="t-right">
       <div class="sec">Export</div>
       <div class="row">
-        <input id="exp-w" type="number" style="width:70px" value="${exp.width}" />
-        <span>×</span>
-        <input id="exp-h" type="number" style="width:70px" value="${exp.height}" />
-        <select id="exp-format">
-          ${["png","jpg","webm","sequence"].map((f) => `<option ${exp.format===f?"selected":""} value="${f}">${f}</option>`).join("")}
-        </select>
+        <span class="status">shape</span>
+        ${EXPORT_ASPECTS.map((a) => {
+          const on = matchAspectId(exp.width, exp.height) === a.id;
+          return `<button class="btn tiny ${on ? "acid" : ""}" data-act="exp-aspect" data-id="${a.id}">${a.label}</button>`;
+        }).join("")}
+        <button class="btn tiny" data-act="exp-aspect-src">match src</button>
       </div>
       <div class="row" style="margin-top:4px">
-        <input id="exp-fps" type="number" style="width:54px" value="${exp.fps}" title="fps" />
-        <input id="exp-dur" type="number" style="width:54px" value="${exp.duration}" title="seconds" />
-        <input id="exp-name" type="text" style="width:90px" value="${esc(exp.filename)}" />
-        <button class="btn tiny acid" data-act="export">Export</button>
+        <span class="status">size</span>
+        <input id="exp-w" type="number" style="width:64px" value="${exp.width}" title="width" />
+        <span>×</span>
+        <input id="exp-h" type="number" style="width:64px" value="${exp.height}" title="height" />
+        <select id="exp-format">
+          ${["png","jpg","webm","mp4","sequence"].map((f) => `<option ${exp.format===f?"selected":""} value="${f}">${f}</option>`).join("")}
+        </select>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <span class="status">length</span>
+        ${[2, 4, 6, 8].map((s) => `<button class="btn tiny ${Number(exp.duration) === s ? "acid" : ""}" data-act="clip" data-secs="${s}" ${busy ? "disabled" : ""}>${s}s</button>`).join("")}
+        <span class="status">sec</span>
+        <input id="exp-dur" type="number" min="1" max="8" step="1" style="width:48px" value="${exp.duration}" title="seconds" />
+        <label class="check"><input type="checkbox" id="loop-close" ${exp.loopClose !== false ? "checked" : ""}/> close loop</label>
+        <span class="sp"></span>
+        <button class="btn acid export" data-act="export" ${busy ? "disabled" : ""}>${busy ? "exporting…" : "Export"}</button>
       </div>
     </div>
   `;
@@ -576,7 +758,8 @@ function fmtTime(t: number) {
 }
 
 export function resizeCanvas(canvas: HTMLCanvasElement, host: HTMLElement) {
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (store.state.ui.exporting) return;
+  const dpr = 1;
   const r = host.getBoundingClientRect();
   const w = Math.max(16, Math.floor(r.width * dpr));
   const h = Math.max(16, Math.floor(r.height * dpr));

@@ -1,11 +1,15 @@
 import { uid } from "../core/ids";
 import { store } from "../core/store";
-import { defaultLayer, makeEffectInstance } from "../core/defaults";
+import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
-import { randomizeProject } from "../core/randomize";
+import { chaosStamp, ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
-import { freezeVideoFrame, loadMediaFile } from "../media/sources";
+import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
+import { resumeAudio } from "../media/audio";
+import { buildPrompt, generateStill, samplePalette } from "../generate/imagine";
+import { fitEven } from "../core/random";
+import type { Renderer } from "../engine/renderer";
 
 export function selectedLayer(p: Project): Layer | undefined {
   const id = store.state.ui.selectedLayerId;
@@ -35,10 +39,42 @@ export function addSource(source: MediaSource, assignToSelected = true) {
   store.patchUi({ selectedSourceId: source.id, status: `loaded ${source.name}` });
 }
 
+export function setSoundtrack(source: MediaSource) {
+  const old = store.project.sources.filter((s) => s.kind === "audio");
+  for (const o of old) disposeSource(o);
+  store.setProject((p) => {
+    const keep = p.sources.filter((s) => s.kind !== "audio");
+    const layers = p.layers.map((l) =>
+      old.some((o) => o.id === l.sourceId) ? { ...l, sourceId: keep.find((s) => s.kind !== "audio")?.id ?? null } : l,
+    );
+    const duration = Math.max(p.duration, source.duration || 0);
+    return { ...p, sources: [...keep, source], layers, duration };
+  });
+  void resumeAudio();
+  if (store.project.playback.playing && source.audio) {
+    try {
+      const dur = source.duration || source.audio.duration || 1;
+      source.audio.currentTime = store.project.playback.time % Math.max(dur, 0.001);
+    } catch {
+      /* metadata may still be settling */
+    }
+    void source.audio.play().catch(() => undefined);
+  }
+  const secs = source.duration ? `${Math.floor(source.duration / 60)}:${String(Math.floor(source.duration % 60)).padStart(2, "0")}` : "";
+  store.patchUi({
+    selectedSourceId: source.id,
+    status: `soundtrack ${source.name}${secs ? ` · ${secs}` : ""} — hit Play; the mix moves idols, floaters, and places`,
+  });
+}
+
 export async function importFiles(files: FileList | File[], replace = false) {
   for (const file of Array.from(files)) {
     try {
       const src = await loadMediaFile(file);
+      if (src.kind === "audio") {
+        setSoundtrack(src);
+        continue;
+      }
       if (replace) {
         const sel = store.state.ui.selectedSourceId;
         store.setProject((p) => ({
@@ -57,7 +93,7 @@ export async function importFiles(files: FileList | File[], replace = false) {
 
 export function addLayer() {
   store.setProject((p) => {
-    const src = p.sources[0]?.id ?? null;
+    const src = p.sources.find((s) => s.kind !== "audio")?.id ?? null;
     const layer = defaultLayer(`L${p.layers.length + 1}`, src, ["grade"]);
     return { ...p, layers: [...p.layers, layer] };
   });
@@ -128,10 +164,72 @@ export function setParam(layerId: string, fxId: string, paramId: string, value: 
   );
 }
 
-export function randomize(mode: "all" | "selected" | "param") {
+export function randomize(mode: "all" | "selected" | "param", wacky = false) {
   const ui = store.state.ui;
-  store.setProject((p) => randomizeProject(p, mode, ui.selectedLayerId, ui.selectedEffectId, ui.selectedParam?.paramId ?? null));
-  store.patchUi({ status: `randomized (${mode}) seed ${store.project.seed}` });
+  if (mode === "all" || mode === "selected") {
+    store.setProject((p) => ({ ...p, seed: (p.seed + 1 + (Date.now() & 255)) >>> 0 }), false);
+  }
+  store.setProject((p) => {
+    const next = randomizeProject(p, mode, ui.selectedLayerId, ui.selectedEffectId, ui.selectedParam?.paramId ?? null, wacky);
+    let out = next;
+    if (mode === "all" && (ui.includeCritters || wacky)) out = ensureCritters(out);
+    if (mode === "all" && (ui.includeIdol || wacky)) out = ensureIdol(out);
+    return out;
+  });
+  const names = store.project.layers[0]?.effects.map((e) => e.typeId).join(" · ");
+  store.patchUi({ status: `${wacky ? "wacky look" : "look"} · ${names || mode} · seed ${store.project.seed}` });
+}
+
+export function stampCritters() {
+  const layer = selectedLayer(store.project);
+  if (!layer) return;
+  const existing = layer.effects.find((e) => e.typeId === "critters");
+  const seed = 1 + ((store.project.seed + Date.now()) % 9998);
+  if (existing) {
+    setParam(layer.id, existing.id, "seed", seed);
+    store.patchUi({ selectedEffectId: existing.id, status: "rerolled floaters" });
+    return;
+  }
+  addEffect("critters");
+  const nextLayer = selectedLayer(store.project);
+  const fx = selectedEffect(nextLayer);
+  if (nextLayer && fx?.typeId === "critters") setParam(nextLayer.id, fx.id, "seed", seed);
+  store.patchUi({ status: "stamped floaters" });
+}
+
+export function stampIdol() {
+  const layer = selectedLayer(store.project);
+  if (!layer) return;
+  const existing = layer.effects.find((e) => e.typeId === "dancer");
+  const seed = 1 + ((store.project.seed + Date.now() + 17) % 9998);
+  if (existing) {
+    setParam(layer.id, existing.id, "seed", seed);
+    store.patchUi({ selectedEffectId: existing.id, status: "rerolled idol" });
+    return;
+  }
+  addEffect("dancer");
+  const nextLayer = selectedLayer(store.project);
+  const fx = selectedEffect(nextLayer);
+  if (nextLayer && fx?.typeId === "dancer") setParam(nextLayer.id, fx.id, "seed", seed);
+  store.patchUi({ status: "stamped idol" });
+}
+
+export function stampChaos() {
+  store.setProject((p) => chaosStamp({ ...p, seed: (p.seed + 1 + (Date.now() & 255)) >>> 0 }));
+  store.patchUi({ status: "new floater and idol seeds" });
+}
+
+export async function reprintFrame(renderer: Renderer) {
+  const p = store.project;
+  const { width, height } = fitEven(p.exportSettings.width || 960, p.exportSettings.height || 540, 1280, 1280);
+  try {
+    const blob = await renderer.capture(p, p.playback.time, width, height, "image/png", 0.92);
+    const image = await loadImageFromBlob(blob, `print_${Date.now()}.png`);
+    addSource(image, true);
+    store.patchUi({ status: "printed the live frame as a new still" });
+  } catch (err) {
+    store.patchUi({ status: err instanceof Error ? err.message : "print failed" });
+  }
 }
 
 export function bumpSeed(n: number) {
@@ -220,4 +318,46 @@ export async function freezeSelected() {
   if (!src) return;
   const still = await freezeVideoFrame(src);
   if (still) addSource(still, true);
+}
+
+export function startFromScratch() {
+  const ok = confirm("Start from scratch? This clears the canvas, sources, effects, and keyframes.");
+  if (!ok) return;
+  for (const src of store.project.sources) disposeSource(src);
+  store.replace(createDefaultProject());
+  store.patchUi({ status: "new piece", prompt: "", generating: false });
+}
+
+export async function generateFromPrompt() {
+  if (store.state.ui.generating) return;
+  const prompt = store.state.ui.prompt.trim();
+  if (!prompt) {
+    store.patchUi({ status: "type a prompt first" });
+    return;
+  }
+  store.patchUi({ generating: true, status: "generating new image…" });
+  try {
+    const src = store.project.sources.find((s) => s.id === store.state.ui.selectedSourceId);
+    const useSource = store.state.ui.useSourceForGen;
+    let palette: string[] = [];
+    const drawable = src?.frozenFrame || src?.bitmap || src?.video || null;
+    if (useSource && drawable) palette = samplePalette(drawable);
+    const full = buildPrompt(prompt, palette, useSource && palette.length > 0);
+    const seed = (store.project.seed + Date.now()) >>> 0;
+    const blob = await generateStill({
+      prompt: full,
+      seed,
+      width: store.project.exportSettings.width,
+      height: store.project.exportSettings.height,
+      onStatus: (msg) => store.patchUi({ generating: true, status: msg }, false),
+    });
+    const image = await loadImageFromBlob(blob, `gen_${seed}.jpg`);
+    addSource(image, true);
+    store.patchUi({ generating: false, status: useSource && palette.length ? "new image from prompt + source" : "new image from prompt" });
+  } catch (err) {
+    store.patchUi({
+      generating: false,
+      status: err instanceof Error ? err.message : "generation failed",
+    });
+  }
 }
