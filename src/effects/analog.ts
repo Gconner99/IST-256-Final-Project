@@ -4,15 +4,13 @@ export const analog: EffectType = {
   id: "analog",
   name: "Cathode",
   category: "analog",
-  description: "Cassette wrap: scanlines, tracking, chroma crawl, ghost",
+  description: "Scanlines, tracking, VHS jitter, flicker",
   params: [
     { id: "mixScan", label: "Scanlines", kind: "float", min: 0, max: 1, step: 0.01, default: 0.4 },
     { id: "tracking", label: "Tracking", kind: "float", min: 0, max: 1, step: 0.01, default: 0.15 },
     { id: "noise", label: "Tape noise", kind: "float", min: 0, max: 1, step: 0.01, default: 0.12 },
     { id: "flicker", label: "Flicker", kind: "float", min: 0, max: 1, step: 0.01, default: 0.08 },
     { id: "weave", label: "Gate weave", kind: "float", min: 0, max: 1, step: 0.01, default: 0.1 },
-    { id: "chroma", label: "Chroma crawl", kind: "float", min: 0, max: 1, step: 0.01, default: 0.22 },
-    { id: "ghost", label: "Ghost", kind: "float", min: 0, max: 1, step: 0.01, default: 0.18 },
     { id: "mix", label: "Mix", kind: "float", min: 0, max: 1, step: 0.01, default: 1, randomizable: false },
   ],
   extraUniforms: `
@@ -21,8 +19,6 @@ uniform float u_tracking;
 uniform float u_noise;
 uniform float u_flicker;
 uniform float u_weave;
-uniform float u_chroma;
-uniform float u_ghost;
 `,
   applyGlsl: `
 vec4 apply(vec2 uv) {
@@ -30,13 +26,7 @@ vec4 apply(vec2 uv) {
   p.x += sin(uv.y * 40.0 + uTime * 8.0) * u_weave * (0.01 + u_bass * 0.008);
   float band = step(0.97 - u_bass * 0.08, hash21(vec2(floor(uTime * 9.0), 3.2)));
   p.x += band * (hash21(vec2(uv.y * 80.0, uTime)) - 0.5) * u_tracking * 0.12;
-  float crawl = u_chroma * (0.004 + 0.004 * sin(uv.y * 72.0 + uTime * 2.4));
-  float r = sampleSrc(p + vec2(crawl, 0.0)).r;
-  float g = sampleSrc(p).g;
-  float b = sampleSrc(p - vec2(crawl, 0.0)).b;
-  vec3 c = vec3(r, g, b);
-  vec3 ghost = sampleSrc(p - vec2(0.01 + u_ghost * 0.018, 0.0)).rgb;
-  c = mix(c, c + ghost * 0.45, u_ghost * 0.35);
+  vec3 c = sampleSrc(p).rgb;
   float scan = sin(uv.y * uResolution.y * 3.14159);
   c *= 1.0 - u_mixScan * 0.35 * (0.5 + 0.5 * scan);
   float n = hash21(uv * uResolution + uTime * 12.0);

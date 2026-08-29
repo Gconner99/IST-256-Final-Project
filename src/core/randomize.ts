@@ -37,11 +37,6 @@ const PALETTES: Palette[] = [
 ];
 
 const LOOKS: Look[] = [
-  { name: "void tape", mood: "lush", wacky: true, stack: ["grade", "analog", "bloom", "dancer"], blend: "normal" },
-  { name: "tile tape", mood: "mix", wacky: true, stack: ["grade", "analog", "grain", "dancer"], blend: "normal" },
-  { name: "corridor tape", mood: "outsider", wacky: true, stack: ["grade", "analog", "bloom", "dancer"], blend: "normal" },
-  { name: "moon tape", mood: "lush", wacky: true, stack: ["grade", "analog", "bloom", "dancer"], blend: "normal" },
-  { name: "snow tape", mood: "outsider", wacky: true, stack: ["analog", "posterize", "grain", "dancer"], blend: "normal" },
   { name: "silk garden", mood: "lush", stack: ["grade", "bloom", "grain", "warp"], blend: "normal" },
   { name: "honey dusk", mood: "lush", stack: ["grade", "duotone", "bloom", "lens"], blend: "normal" },
   { name: "lagoon", mood: "lush", stack: ["grade", "channels", "bloom", "chroma"], blend: "screen" },
@@ -200,11 +195,8 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.amount = mood === "lush" ? 0.002 + rng() * 0.006 : 0.006 + rng() * 0.02;
   }
   if (fx.typeId === "analog") {
-    p.mixScan = mood === "lush" ? rng() * 0.22 : 0.22 + rng() * 0.4;
-    p.noise = mood === "lush" ? rng() * 0.1 : 0.12 + rng() * 0.28;
-    p.chroma = mood === "lush" ? 0.1 + rng() * 0.18 : 0.18 + rng() * 0.32;
-    p.ghost = mood === "lush" ? 0.08 + rng() * 0.16 : 0.14 + rng() * 0.28;
-    p.tracking = mood === "outsider" ? 0.12 + rng() * 0.3 : rng() * 0.16;
+    p.mixScan = mood === "lush" ? rng() * 0.2 : 0.25 + rng() * 0.5;
+    p.noise = mood === "lush" ? rng() * 0.1 : 0.12 + rng() * 0.35;
   }
   if (fx.typeId === "posterize") {
     p.levels = 3 + Math.floor(rng() * 6);
@@ -226,18 +218,22 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     else p.kit = roll > 0.55 ? "toy pop" : roll > 0.28 ? "mix" : "shapes";
   }
   if (fx.typeId === "dancer") {
-    p.size = 0.12 + rng() * 0.06;
+    p.size = 0.12 + rng() * 0.05;
     p.count = 1;
     p.crowd = "normal";
     p.place = "center";
     const mv = rng();
-    p.move = mv > 0.86 ? "drift" : "dance";
-    p.echo = 0.28 + rng() * 0.4;
+    if (mood === "lush") p.move = mv > 0.38 ? "float" : mv > 0.18 ? "drift" : "dance";
+    else if (mood === "mix") p.move = mv > 0.52 ? "float" : mv > 0.3 ? "drift" : mv > 0.16 ? "orbit" : "dance";
+    else p.move = mv > 0.78 ? "drift" : "dance";
+    p.echo = 0.35 + rng() * 0.5;
     p.amount = 1;
-    p.speed = p.move === "dance" ? 0.7 + rng() * 1.1 : 0.32 + rng() * 0.55;
+    p.speed = p.move === "dance" ? 0.55 + rng() * 1.5 : 0.32 + rng() * 0.7;
     p.seed = 1 + Math.floor(rng() * 9998);
     const g = rng();
-    p.grow = g > 0.84 ? "quiet" : g > 0.7 ? "horns" : "wild";
+    if (mood === "lush") p.grow = g > 0.62 ? "petals" : g > 0.42 ? "halo" : g > 0.26 ? "wings" : g > 0.12 ? "quiet" : "wild";
+    else if (mood === "mix") p.grow = g > 0.7 ? "skirt" : g > 0.52 ? "antenna" : g > 0.36 ? "horns" : g > 0.2 ? "petals" : "wild";
+    else p.grow = g > 0.62 ? "quiet" : g > 0.4 ? "horns" : "wild";
     const c = rng();
     if (mood === "lush") p.coat = c > 0.48 ? "cream" : c > 0.24 ? "moss" : "wild";
     else if (mood === "mix") p.coat = c > 0.5 ? "sodium" : c > 0.26 ? "cream" : "wild";
@@ -296,19 +292,12 @@ export function ensureCritters(project: Project): Project {
   };
 }
 
-function tapeLooks(): Look[] {
-  return LOOKS.filter((l) => l.wacky && l.name.endsWith(" tape"));
-}
-
 function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false): Layer {
   const rng = mulberry32(seed >>> 0);
-  const pool = wacky ? tapeLooks() : LOOKS;
+  const pool = wacky ? LOOKS.filter((l) => l.wacky) : LOOKS;
   const look = pool[Math.floor(rng() * pool.length)] ?? LOOKS[0];
   const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
-  let stack = look.stack.filter((id) => getEffect(id));
-  if (wacky && !stack.includes("analog")) stack = ["analog", ...stack];
-  if (wacky && !stack.includes("dancer")) stack = [...stack, "dancer"];
-  stack = stack.filter((id, i) => stack.indexOf(id) === i).slice(0, 5);
+  const stack = look.stack.filter((id) => getEffect(id)).slice(0, 5);
   const effects = stack.map((id, i) => applyMood(makeFx(id, seed + i * 997, amount), look.mood, palette, rng));
   if (look.name === "toy pop" || look.name === "candy idol" || look.name === "flower drift" || look.name === "chapel idol" || look.name === "cream garden" || look.name === "charm lamp" || look.name === "toy recital" || look.name === "candy keys" || look.name === "boombox garden" || look.name === "sticker book" || look.name === "sketch idol" || look.name === "pencil garden" || look.name === "felt garden" || look.name === "foil wrap" || look.name === "plush recital" || look.name === "yarn garden" || look.name === "sequin wrap" || look.name === "quilt recital" || look.name === "cork garden" || look.name === "picnic wrap" || look.name === "sprinkle recital" || look.name === "velvet lounge" || look.name === "confetti parade" || look.name === "disco idol" || look.name === "terrazzo garden" || look.name === "comic wrap") {
     for (const fx of effects) {
@@ -384,16 +373,7 @@ function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false)
       }
     }
   }
-  if (look.name.endsWith(" tape")) {
-    for (const fx of effects) {
-      if (fx.typeId === "dancer") {
-        fx.params.move = "dance";
-        fx.params.grow = "wild";
-        fx.params.speed = 0.7 + rng() * 0.9;
-      }
-    }
-  }
-  const feedbackAmt = wacky || look.mood === "lush" ? 0.08 + rng() * 0.16 : 0.04 + rng() * 0.22;
+  const feedbackAmt = wacky || look.mood === "lush" ? 0.05 + rng() * 0.14 : 0.04 + rng() * 0.22;
   return {
     ...layer,
     blendMode: look.blend ?? "normal",
@@ -440,17 +420,12 @@ export function randomizeProject(
   });
 
   const places = wacky
-    ? (["void", "tile", "corridor", "moon", "snow"] as const)
-    : (["plasma", "noise", "stars", "marsh", "cave", "void", "tile", "corridor", "moon", "snow", "stage", "sketch"] as const);
+    ? (["marsh", "oil", "paper", "stars", "cave", "stage", "sketch", "felt", "foil", "plush", "yarn", "sequin", "quilt", "cork", "gingham", "sprinkle", "velvet", "confetti", "disco", "terrazzo", "comic"] as const)
+    : (["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave", "stage", "sketch", "felt", "foil", "plush", "yarn", "sequin", "quilt", "cork", "gingham", "sprinkle", "velvet", "confetti", "disco", "terrazzo", "comic"] as const);
   const lookRng = mulberry32((seed + 0 * 7919) >>> 0);
-  const lookPool = wacky ? tapeLooks() : LOOKS;
+  const lookPool = wacky ? LOOKS.filter((l) => l.wacky) : LOOKS;
   const look = lookPool[Math.floor(lookRng() * lookPool.length)] ?? LOOKS[0];
   const forcedPlace: Partial<Record<string, { generator: GeneratorType; a: string; b: string }>> = {
-    "void tape": { generator: "void", a: "#120814", b: "#c9a06a" },
-    "tile tape": { generator: "tile", a: "#1a1024", b: "#e8d2a8" },
-    "corridor tape": { generator: "corridor", a: "#081018", b: "#7aa2ff" },
-    "moon tape": { generator: "moon", a: "#060814", b: "#f0e0c0" },
-    "snow tape": { generator: "snow", a: "#0a0a0c", b: "#d8d0c4" },
     "toy recital": { generator: "stage", a: "#ff8ab8", b: "#7ad8ff" },
     "candy keys": { generator: "stage", a: "#ff8ab8", b: "#7ad8ff" },
     "boombox garden": { generator: "stage", a: "#ff8ab8", b: "#7ad8ff" },
@@ -477,7 +452,7 @@ export function randomizeProject(
     if (mode !== "all" || src.kind !== "generator") return src;
     const prng = mulberry32(seed + i * 131);
     const pal = PALETTES[Math.floor(prng() * PALETTES.length)];
-    const keep = wacky ? prng() > 0.78 : prng() > 0.4;
+    const keep = wacky ? prng() > 0.45 : prng() > 0.35;
     const generator = pinned
       ? pinned.generator
       : keep
@@ -511,7 +486,7 @@ export function chaosStamp(project: Project): Project {
   const seed = (project.seed + 7919) >>> 0;
   const rng = mulberry32(seed ^ 0x85ebca6b);
   const kits = ["shapes", "toy pop", "votives", "moths", "charms"] as const;
-  const grows = ["wild", "wild", "wild", "quiet", "horns", "petals", "halo"] as const;
+  const grows = ["wild", "petals", "halo", "antenna", "skirt", "wings", "horns", "crystal", "puff", "spikes", "sprout", "quiet"] as const;
   const coats = ["wild", "cream", "moss", "sodium", "night", "candy", "jelly", "grape", "ice", "lava", "slime", "gold", "ink", "soda", "banana", "berry", "mint", "cobalt"] as const;
   let next: Project = {
     ...project,
@@ -547,36 +522,4 @@ export function chaosStamp(project: Project): Project {
   next = ensureCritters(next);
   next = ensureIdol(next);
   return next;
-}
-
-export const SATO_ROOMS: GeneratorType[] = ["void", "tile", "corridor", "moon", "snow"];
-
-const SATO_INK: Record<string, { a: string; b: string }> = {
-  void: { a: "#120814", b: "#c9a06a" },
-  tile: { a: "#1a1024", b: "#e8d2a8" },
-  corridor: { a: "#081018", b: "#7aa2ff" },
-  moon: { a: "#060814", b: "#f0e0c0" },
-  snow: { a: "#0a0a0c", b: "#d8d0c4" },
-};
-
-/** Same idol, next Sato room — like flipping a TV channel. */
-export function flipChannel(project: Project): Project {
-  return {
-    ...project,
-    seed: (project.seed + 1) >>> 0,
-    sources: project.sources.map((src) => {
-      if (src.kind !== "generator") return src;
-      const cur = src.generator ?? "void";
-      const i = SATO_ROOMS.indexOf(cur as GeneratorType);
-      const next = SATO_ROOMS[(i < 0 ? 0 : i + 1) % SATO_ROOMS.length];
-      const ink = SATO_INK[next] ?? SATO_INK.void;
-      return {
-        ...src,
-        generator: next,
-        name: next.toUpperCase(),
-        colorA: ink.a,
-        colorB: ink.b,
-      };
-    }),
-  };
 }

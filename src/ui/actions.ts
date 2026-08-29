@@ -3,7 +3,7 @@ import { store } from "../core/store";
 import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
-import { chaosStamp, ensureCritters, ensureIdol, flipChannel, randomizeProject } from "../core/randomize";
+import { chaosStamp, ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
 import { resumeAudio } from "../media/audio";
@@ -172,12 +172,12 @@ export function randomize(mode: "all" | "selected" | "param", wacky = false) {
   store.setProject((p) => {
     const next = randomizeProject(p, mode, ui.selectedLayerId, ui.selectedEffectId, ui.selectedParam?.paramId ?? null, wacky);
     let out = next;
-    if (mode === "all" && ui.includeCritters && !wacky) out = ensureCritters(out);
+    if (mode === "all" && (ui.includeCritters || wacky)) out = ensureCritters(out);
     if (mode === "all" && (ui.includeIdol || wacky)) out = ensureIdol(out);
     return out;
   });
   const names = store.project.layers[0]?.effects.map((e) => e.typeId).join(" · ");
-  store.patchUi({ status: `${wacky ? "next tape" : "look"} · ${names || mode} · seed ${store.project.seed}` });
+  store.patchUi({ status: `${wacky ? "wacky look" : "look"} · ${names || mode} · seed ${store.project.seed}` });
 }
 
 export function stampCritters() {
@@ -217,12 +217,6 @@ export function stampIdol() {
 export function stampChaos() {
   store.setProject((p) => chaosStamp({ ...p, seed: (p.seed + 1 + (Date.now() & 255)) >>> 0 }));
   store.patchUi({ status: "new floater and idol seeds" });
-}
-
-export function channelFlip() {
-  store.setProject((p) => flipChannel(p));
-  const kind = store.project.sources.find((s) => s.kind === "generator")?.generator ?? "void";
-  store.patchUi({ status: `channel · ${kind}` });
 }
 
 export async function reprintFrame(renderer: Renderer) {

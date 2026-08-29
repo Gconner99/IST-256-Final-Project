@@ -216,9 +216,4 @@ export const GEN_INDEX: Record<string, number> = {
   disco: 25,
   terrazzo: 26,
   comic: 27,
-  void: 28,
-  tile: 29,
-  corridor: 30,
-  moon: 31,
-  snow: 32,
 };
