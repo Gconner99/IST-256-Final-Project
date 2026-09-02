@@ -35,6 +35,27 @@
         "kind": "build",
         "isDefault": true
       }
+    },
+    {
+      "label": "derive: serve",
+      "type": "npm",
+      "script": "derive",
+      "isBackground": true,
+      "dependsOn": ["phosphene: install"],
+      "dependsOrder": "sequence",
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "(Local:|ready in)"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
     }
   ]
 }

@@ -8,6 +8,12 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: true,
     target: "es2022",
+    rollupOptions: {
+      input: {
+        main: "index.html",
+        derive: "derive.html",
+      },
+    },
   },
   server: {
     port: 5173,
