@@ -70,19 +70,29 @@ export function paintPaper(
   }
 
   if (paper.grain > 0.01 && !preview) {
-    const img = ctx.getImageData(0, 0, w, h);
-    const d = img.data;
-    const amount = paper.grain * 22;
-    for (let i = 0; i < d.length; i += 4) {
-      const n = (rng() - 0.5) * amount;
-      d[i] = clampByte((d[i] ?? 0) + n);
-      d[i + 1] = clampByte((d[i + 1] ?? 0) + n);
-      d[i + 2] = clampByte((d[i + 2] ?? 0) + n);
+    const gw = Math.max(80, Math.floor(w / 3));
+    const gh = Math.max(80, Math.floor(h / 3));
+    const grain = document.createElement("canvas");
+    grain.width = gw;
+    grain.height = gh;
+    const gctx = grain.getContext("2d");
+    if (gctx) {
+      const img = gctx.createImageData(gw, gh);
+      const d = img.data;
+      const amount = paper.grain * 48;
+      for (let i = 0; i < d.length; i += 4) {
+        const n = 128 + (rng() - 0.5) * amount;
+        d[i] = n;
+        d[i + 1] = n;
+        d[i + 2] = n;
+        d[i + 3] = 40 + paper.grain * 50;
+      }
+      gctx.putImageData(img, 0, 0);
+      ctx.save();
+      ctx.globalCompositeOperation = "multiply";
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(grain, 0, 0, w, h);
+      ctx.restore();
     }
-    ctx.putImageData(img, 0, 0);
   }
-}
-
-function clampByte(v: number): number {
-  return v < 0 ? 0 : v > 255 ? 255 : v;
 }
