@@ -87,21 +87,3 @@ Rendering is a ping-pong FBO chain per layer, then blend-mode composite, then a 
 ## Stack
 
 Vite + TypeScript + WebGL2 (custom GLSL, no Three.js). Electron is an optional wrapper. This is the stack that makes dropping in a new fragment shader the smallest possible change.
-
-## Dérive
-
-Companion still-image instrument at [`/derive.html`](./derive.html) — Situationist / psychogeographic maps. You don’t edit a photo; you perform a *dérive* through image-space.
-
-```bash
-npm run derive          # opens http://127.0.0.1:5173/derive.html
-```
-
-Or run **Dérive** from the VS Code / Cursor launch dropdown.
-
-- Drop maps and street photos, or generate street / contour / cadastral / terrain plates (works with zero files)
-- Fractures sources into *unités d’ambiance* and walks them by attraction, not distance
-- Debord-style vermillion arrows, détourned slogans, aged paper
-- Seeded and deterministic; export a high-res PNG/JPG still (not a screenshot)
-- Save / load `.derive.json` (media referenced by filename, never embedded)
-
-Phosphene stays at `/`. The two programs link to each other in the header.

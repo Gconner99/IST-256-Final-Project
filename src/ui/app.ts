@@ -41,7 +41,6 @@ export function mount(root: HTMLElement, renderer: Renderer) {
   root.innerHTML = `
     <header class="topbar">
       <div class="brand">PHOSPHENE<small>VISUAL INSTRUMENT</small></div>
-      <a class="xlink" href="./derive.html">DÉRIVE</a>
       <span class="led" id="led"></span>
       <input type="text" id="proj-name" style="width:140px" />
       <button class="btn tiny" data-act="save">Save</button>
@@ -87,7 +86,6 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>?</kbd> this card</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
-        <p>For still psychogeographic maps, open <a href="./derive.html">Dérive</a>.</p>
         <button class="btn acid" data-act="help">close</button>
       </div>
     </div>
