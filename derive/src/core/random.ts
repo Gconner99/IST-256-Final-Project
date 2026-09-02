@@ -26,7 +26,20 @@ export function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
-export function smoothstep(t: number): number {
-  const x = clamp(t, 0, 1);
-  return x * x * (3 - 2 * x);
+export function pickWeighted<T>(items: T[], weights: number[], rng: () => number): T {
+  let sum = 0;
+  for (const w of weights) sum += Math.max(0, w);
+  if (items.length === 0) throw new Error("pickWeighted: empty");
+  if (sum <= 0) return items[Math.floor(rng() * items.length)]!;
+  let x = rng() * sum;
+  for (let i = 0; i < items.length; i++) {
+    x -= Math.max(0, weights[i] ?? 0);
+    if (x <= 0) return items[i]!;
+  }
+  return items[items.length - 1]!;
+}
+
+export function pick<T>(items: readonly T[], rng: () => number): T {
+  if (items.length === 0) throw new Error("pick: empty");
+  return items[Math.floor(rng() * items.length)]!;
 }

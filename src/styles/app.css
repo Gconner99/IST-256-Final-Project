@@ -59,15 +59,6 @@ button { cursor: pointer; }
   color: var(--hot);
   margin-top: -2px;
 }
-.xlink {
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  color: var(--dim);
-  text-decoration: none;
-  border: 1px solid var(--line);
-  padding: 3px 7px;
-}
-.xlink:hover { color: var(--acid); border-color: var(--acid); }
 .topbar .sp { flex: 1; }
 .led {
   width: 7px; height: 7px; border-radius: 50%;

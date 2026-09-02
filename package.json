@@ -8,7 +8,6 @@
   "scripts": {
     "start": "vite",
     "dev": "vite",
-    "derive": "vite --open /derive.html",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",

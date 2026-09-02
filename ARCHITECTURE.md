@@ -62,29 +62,3 @@ No renderer changes. No UI widget code unless you invent a new param kind.
 ## Project file
 
 JSON, `version: 1`, `app: "phosphene"`. Media is referenced by filename, not embedded. Re-drop files after load in the browser. Electron can later collect a `media/` folder beside the JSON without changing the schema.
-
-## Dérive
-
-Canvas 2D companion at `derive.html`. Same Vite/TS repo; no WebGL.
-
-```
-sources (image | procedural map)
-  → torn unités d'ambiance
-  → non-Cartesian layout
-  → seeded psychogeographic walk
-  → paper + collage + vermillion arrows + détournement type
-  → preview blit  or  high-res still export
-```
-
-| Module | Responsibility |
-| --- | --- |
-| `src/derive/core/types.ts` | Project / unit / passage schema |
-| `src/derive/core/ambiances.ts` | Affinity matrix + visual grades |
-| `src/derive/core/derive.ts` | Seeded walk |
-| `src/derive/core/units.ts` / `layout.ts` | Fragments + placement |
-| `src/derive/core/maps.ts` | Procedural cadastral / street / contour / terrain |
-| `src/derive/core/project.ts` | `.derive.json` (runtime bitmaps stripped) |
-| `src/derive/render/*` | Paper, collage, arrows, type, export |
-| `src/derive/ui/app.ts` | Instrument chrome |
-
-Reuses `src/core/random.ts` and `src/core/ids.ts`. Composition is fully seeded: same seed + settings + sources → same print.
