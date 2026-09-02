@@ -1,4 +1,3 @@
-import { recompose } from "./compose";
 import { createDefaultProject } from "./defaults";
 import type { AppState, AppUi, Project } from "./types";
 
@@ -6,18 +5,16 @@ type Listener = () => void;
 
 function defaultUi(): AppUi {
   return {
-    selectedUnitId: null,
     selectedSourceId: null,
     dropActive: false,
     helpOpen: false,
-    status: "drop references · or drift the generated maps",
-    draggingUnitId: null,
+    status: "upload a photo, or generate a plate from seed",
   };
 }
 
 class Store {
   state: AppState = {
-    project: recompose(createDefaultProject()),
+    project: createDefaultProject(),
     ui: defaultUi(),
   };
   private listeners = new Set<Listener>();
