@@ -6,21 +6,22 @@ export type Ambiance =
   | "spectacle"
   | "void";
 
-export type MapGenerator = "street" | "cadastral" | "contour" | "terrain" | "plaque";
-export type SourceKind = "image" | "generator";
-export type ArrowKind = "drift" | "possible";
-export type DetournementMode = "slogans" | "streets" | "coordinates" | "mix";
+export type MapKind = "street" | "contour" | "cadastral" | "terrain";
+export type SourceKind = "image" | "procedural";
+export type PassageKind = "drift" | "possible";
+export type MarkKind = "slogan" | "street" | "coordinate" | "stamp";
 
 export interface Point {
   x: number;
   y: number;
 }
 
-export interface MediaSource {
+export interface DeriveSource {
   id: string;
   name: string;
   kind: SourceKind;
-  generator?: MapGenerator;
+  mapKind?: MapKind;
+  mapSeed?: number;
   fileName?: string;
   mime?: string;
   width: number;
@@ -34,9 +35,12 @@ export interface Unit {
   id: string;
   sourceId: string;
   ambiance: Ambiance;
-  plaque: boolean;
-  crop: Point[];
-  cropCenter: Point;
+  hub: boolean;
+  polygon: Point[];
+  srcX: number;
+  srcY: number;
+  srcW: number;
+  srcH: number;
   x: number;
   y: number;
   scale: number;
@@ -45,34 +49,27 @@ export interface Unit {
   label: string;
 }
 
-export interface Arrow {
+export interface Passage {
   fromId: string;
   toId: string;
   weight: number;
-  kind: ArrowKind;
+  kind: PassageKind;
+  bend: number;
 }
 
-export interface DriftPath {
-  unitIds: string[];
-  arrows: Arrow[];
-}
-
-export interface PaperSettings {
-  ground: string;
-  ink: string;
-  stain: number;
-  fold: number;
-  grain: number;
-  gridGhost: number;
-  xerox: number;
+export interface DetournementMark {
+  kind: MarkKind;
+  text: string;
+  x: number;
+  y: number;
+  rotation: number;
+  size: number;
 }
 
 export interface DriftSettings {
   seed: number;
   steps: number;
-  chance: number;
   attraction: number;
-  loops: boolean;
 }
 
 export interface UnitSettings {
@@ -80,21 +77,40 @@ export interface UnitSettings {
   tear: number;
   rotation: number;
   scaleVariance: number;
-  minScale: number;
-  maxScale: number;
 }
 
 export interface ArrowSettings {
   density: number;
   thickness: number;
-  color: string;
-  dash: number;
+  curve: number;
 }
 
 export interface DetournementSettings {
   density: number;
-  mode: DetournementMode;
-  stamps: number;
+  slogans: boolean;
+  streets: boolean;
+  coordinates: boolean;
+}
+
+export interface PaperSettings {
+  ground: number;
+  stains: number;
+  fold: number;
+  gridGhost: number;
+}
+
+export interface AmbianceWeights {
+  attraction: number;
+  repulsion: number;
+  play: number;
+  boredom: number;
+  spectacle: number;
+  void: number;
+}
+
+export interface SpectacleSettings {
+  enabled: boolean;
+  amount: number;
 }
 
 export interface ExportSettings {
@@ -105,22 +121,26 @@ export interface ExportSettings {
   filename: string;
 }
 
-export interface Project {
+export interface DeriveProject {
   version: 1;
   app: "derive";
   name: string;
-  sources: MediaSource[];
+  seed: number;
+  sources: DeriveSource[];
   units: Unit[];
-  path: DriftPath;
-  paper: PaperSettings;
+  passages: Passage[];
+  marks: DetournementMark[];
   drift: DriftSettings;
-  unitSettings: UnitSettings;
+  unitsCfg: UnitSettings;
   arrows: ArrowSettings;
   detournement: DetournementSettings;
+  paper: PaperSettings;
+  ambiances: AmbianceWeights;
+  spectacle: SpectacleSettings;
   exportSettings: ExportSettings;
 }
 
-export interface AppUi {
+export interface DeriveUi {
   selectedUnitId: string | null;
   selectedSourceId: string | null;
   dropActive: boolean;
@@ -129,9 +149,9 @@ export interface AppUi {
   draggingUnitId: string | null;
 }
 
-export interface AppState {
-  project: Project;
-  ui: AppUi;
+export interface DeriveState {
+  project: DeriveProject;
+  ui: DeriveUi;
 }
 
 export const AMBIANCES: Ambiance[] = [
@@ -143,10 +163,9 @@ export const AMBIANCES: Ambiance[] = [
   "void",
 ];
 
-export const MAP_GENERATORS: { id: MapGenerator; label: string }[] = [
-  { id: "street", label: "Street" },
-  { id: "cadastral", label: "Cadastral" },
+export const MAP_KINDS: { id: MapKind; label: string }[] = [
+  { id: "street", label: "Street grid" },
   { id: "contour", label: "Contour" },
+  { id: "cadastral", label: "Cadastral" },
   { id: "terrain", label: "Terrain" },
-  { id: "plaque", label: "Plaque" },
 ];
