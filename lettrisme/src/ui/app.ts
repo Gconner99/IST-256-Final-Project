@@ -1,4 +1,5 @@
 import { downloadText, parseProject, serializeProject } from "../core/project";
+import { randomizeProject } from "../core/randomize";
 import { store } from "../core/store";
 import type { Plate, Project } from "../core/types";
 import { PLATES } from "../core/types";
@@ -27,7 +28,10 @@ export function mount(root: HTMLElement, field: HTMLCanvasElement, context: Canv
       <input type="number" id="seed" style="width:84px" />
       <button class="btn tiny" data-act="seed-">-</button>
       <button class="btn tiny" data-act="seed+">+</button>
-      <button class="btn tiny acid" data-act="redraw">Print</button>
+      <button class="btn tiny acid" data-act="randomize">Randomize</button>
+      <label class="status">WACK</label>
+      <input type="range" id="wack" min="0" max="1" step="0.01" style="width:72px" value="0.5" />
+      <button class="btn tiny" data-act="redraw">Print</button>
       <button class="btn tiny" data-act="help">?</button>
     </header>
     <div class="workspace">
@@ -52,7 +56,7 @@ export function mount(root: HTMLElement, field: HTMLCanvasElement, context: Canv
           <li><b>Masse</b> — blue bars and a central mass filled with micro-script, looped over with a pale gesture.</li>
         </ul>
         <p>Upload your own photos as the base or the density map. This program is not Phosphene and is not a dérive map-maker.</p>
-        <p><kbd>P</kbd> reprint &nbsp; <kbd>E</kbd> export &nbsp; <kbd>?</kbd> this card</p>
+        <p><kbd>R</kbd> randomize &nbsp; <kbd>P</kbd> reprint &nbsp; <kbd>E</kbd> export &nbsp; <kbd>?</kbd> this card</p>
         <button class="btn acid" data-act="help">close</button>
       </div>
     </div>
@@ -90,6 +94,11 @@ function bind(root: HTMLElement) {
     if (act === "load") root.querySelector<HTMLInputElement>("#proj-file")?.click();
     if (act === "seed-") store.setProject((p) => ({ ...p, seed: p.seed - 1 }));
     if (act === "seed+") store.setProject((p) => ({ ...p, seed: p.seed + 1 }));
+    if (act === "randomize") {
+      const wack = Number((document.getElementById("wack") as HTMLInputElement | null)?.value ?? 0.5);
+      store.replace(randomizeProject(store.project, wack));
+      store.patchUi({ status: `randomized · wack ${wack.toFixed(2)}` });
+    }
     if (act === "redraw") {
       store.patchUi({ status: "printed" });
       redraw();
@@ -189,6 +198,11 @@ function bind(root: HTMLElement) {
     const tag = (e.target as HTMLElement).tagName;
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
     if (e.key === "p" || e.key === "P") redraw();
+    if (e.key === "r" || e.key === "R") {
+      const wack = Number((document.getElementById("wack") as HTMLInputElement | null)?.value ?? 0.5);
+      store.replace(randomizeProject(store.project, wack));
+      store.patchUi({ status: `randomized · wack ${wack.toFixed(2)}` });
+    }
     if (e.key === "e" || e.key === "E") void exportStill(store.project);
     if (e.key === "?") store.patchUi({ helpOpen: !store.state.ui.helpOpen });
     if ((e.key === "s" || e.key === "S") && (e.metaKey || e.ctrlKey)) {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDefaultProject } from "../src/core/defaults";
+import { randomizeProject } from "../src/core/randomize";
 import { datedCaption, PHRASES, paragraph } from "../src/core/phrases";
 import { parseProject, serializeProject } from "../src/core/project";
 import { mulberry32 } from "../src/core/random";
@@ -55,6 +56,31 @@ describe("plates + phrases", () => {
 
   it("dates captions deterministically", () => {
     expect(datedCaption(mulberry32(1973))).toEqual(datedCaption(mulberry32(1973)));
+  });
+});
+
+describe("randomize", () => {
+  it("produces a valid project with a different seed each time", () => {
+    const a = randomizeProject(createDefaultProject(), 0.5);
+    const b = randomizeProject(createDefaultProject(), 0.5);
+    expect(a.app).toBe("hypergraphie");
+    expect(a.seed).not.toEqual(createDefaultProject().seed);
+    expect(a.seed).not.toEqual(b.seed);
+  });
+
+  it("high wack pushes ink values to extremes", () => {
+    const p = randomizeProject(createDefaultProject(), 1);
+    const vals = [p.ink.density, p.ink.chaos, p.ink.scale, p.ink.black];
+    const hasExtreme = vals.some((v) => v > 0.88 || v < 0.12);
+    expect(hasExtreme).toBe(true);
+  });
+
+  it("preserves sources and export settings", () => {
+    const base = createDefaultProject();
+    base.exportSettings.width = 3000;
+    const p = randomizeProject(base, 0.7);
+    expect(p.exportSettings.width).toBe(3000);
+    expect(p.sources).toBe(base.sources);
   });
 });
 
