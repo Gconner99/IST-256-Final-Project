@@ -16,17 +16,19 @@ Isou treated the letter as plastic matter. Hypergraphy (métagraphie) lets signs
 
 Upload a photo: it becomes the Scriptorium base and a density map for the ink.
 
-## Run
+2. In the dropdown at the top, pick **Hypergraphie** (not Phosphene).
+3. Hit the green play button (or `F5`).
+4. Your browser should open http://127.0.0.1:5174. If it does not, open that URL yourself.
 
-Same as Phosphene: open the **repo root** in Cursor, then Run and Debug → **Hypergraphie** (play / `F5` after picking it). That installs dependencies the first time and opens http://127.0.0.1:5174.
+You must have this branch open (the Hypergraphie PR). If **Hypergraphie** is not in the dropdown, you are on `master` — check out `cursor/derive-situationist-maps-f5ab` first.
+
+From a terminal in the repo root:
 
 ```bash
-npm run hypergraphie     # from the repo root
-# or
-cd lettrisme && npm install && npm run dev
-npm test
-npm run build
+npm run hypergraphie
 ```
+
+Then open http://127.0.0.1:5174.
 
 ## Stack
 

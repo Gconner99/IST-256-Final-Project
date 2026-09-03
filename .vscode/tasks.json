@@ -37,28 +37,10 @@
       }
     },
     {
-      "label": "hypergraphie: install",
-      "type": "shell",
-      "command": "npm install",
-      "options": {
-        "cwd": "${workspaceFolder}/lettrisme"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "silent",
-        "panel": "shared"
-      }
-    },
-    {
       "label": "hypergraphie: serve",
-      "type": "shell",
-      "command": "npm run dev",
-      "options": {
-        "cwd": "${workspaceFolder}/lettrisme"
-      },
+      "type": "npm",
+      "script": "hypergraphie",
       "isBackground": true,
-      "dependsOn": ["hypergraphie: install"],
-      "dependsOrder": "sequence",
       "problemMatcher": {
         "owner": "vite",
         "pattern": { "regexp": "^$" },

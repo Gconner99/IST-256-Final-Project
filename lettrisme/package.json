@@ -5,7 +5,7 @@
   "description": "Hypergraphie — a still-image instrument after Isidore Isou and Lettrism.",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5174 --strictPort",
+    "dev": "vite --port 5174 --host 127.0.0.1 --open",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --port 5174 --strictPort",
     "test": "vitest run",
