@@ -1,6 +1,5 @@
 import { mulberry32 } from "../core/random";
 import type { Project } from "../core/types";
-import { paintMargin } from "./margin";
 import { paintGround } from "./paper";
 import { paintAlphabet, paintMasse, paintReseau, paintScriptorium, paintTache } from "./plates";
 
@@ -12,7 +11,6 @@ export function paintField(ctx: CanvasRenderingContext2D, project: Project, w: n
   else if (project.plate === "reseau") paintReseau(ctx, project, w, h, rng);
   else if (project.plate === "tache") paintTache(ctx, project, w, h, rng);
   else paintMasse(ctx, project, w, h, rng);
-  paintMargin(ctx, project, w, h, rng);
 }
 
 export function resizeCanvas(canvas: HTMLCanvasElement, host: HTMLElement) {

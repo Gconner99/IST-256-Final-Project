@@ -18,12 +18,12 @@ Upload a photo: it becomes the Scriptorium base and a density map for the ink.
 
 ## Run
 
-This folder is its own program.
+Same as Phosphene: open the **repo root** in Cursor, then Run and Debug → **Hypergraphie** (play / `F5` after picking it). That installs dependencies the first time and opens http://127.0.0.1:5174.
 
 ```bash
-cd lettrisme
-npm install
-npm run dev          # http://127.0.0.1:5174
+npm run hypergraphie     # from the repo root
+# or
+cd lettrisme && npm install && npm run dev
 npm test
 npm run build
 ```

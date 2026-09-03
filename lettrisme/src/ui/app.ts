@@ -1,6 +1,6 @@
 import { downloadText, parseProject, serializeProject } from "../core/project";
 import { store } from "../core/store";
-import type { DateMode, Plate, Project } from "../core/types";
+import type { Plate, Project } from "../core/types";
 import { PLATES } from "../core/types";
 import { disposeSource, loadReference } from "../media/sources";
 import { exportStill } from "../render/export";
@@ -34,7 +34,6 @@ export function mount(root: HTMLElement, field: HTMLCanvasElement, context: Canv
       <aside class="rail" id="rail"></aside>
       <section class="stage">
         <div class="viewport" id="view">
-          <div class="hud" id="hud"></div>
           <div class="dropveil" id="veil">DROP A PHOTO / SCAN</div>
         </div>
       </section>
@@ -76,11 +75,6 @@ export function resize() {
 
 export function redraw() {
   paintField(ctx, store.project, canvas.width, canvas.height);
-  const hud = document.querySelector("#hud");
-  if (hud) {
-    const p = store.project;
-    hud.textContent = `HYPERGRAPHIE  ${p.plate.toUpperCase()}  SEED ${p.seed}`;
-  }
 }
 
 function bind(root: HTMLElement) {
@@ -141,9 +135,6 @@ function bind(root: HTMLElement) {
       void importFiles(el.files);
       el.value = "";
     }
-    if (el.id === "date-mode") {
-      store.setProject((p) => ({ ...p, caption: { ...p.caption, dateMode: el.value as DateMode } }));
-    }
     if (el.id === "exp-format") {
       store.setProject((p) => ({
         ...p,
@@ -165,14 +156,8 @@ function bind(root: HTMLElement) {
     patchNum(t, "black", (p, v) => ({ ...p, ink: { ...p.ink, black: v } }));
     patchNum(t, "blue", (p, v) => ({ ...p, ink: { ...p.ink, blue: v } }));
     patchNum(t, "red", (p, v) => ({ ...p, ink: { ...p.ink, red: v } }));
-    patchNum(t, "margin", (p, v) => ({ ...p, paper: { ...p.paper, margin: v } }));
     patchNum(t, "grain", (p, v) => ({ ...p, paper: { ...p.paper, grain: v } }));
     if (t.id === "ground") store.setProject((p) => ({ ...p, paper: { ...p.paper, ground: t.value } }), false);
-    if (t.id === "show-cap") store.setProject((p) => ({ ...p, caption: { ...p.caption, show: t.checked } }), false);
-    if (t.id === "sign") store.setProject((p) => ({ ...p, caption: { ...p.caption, sign: t.checked } }), false);
-    if (t.id === "custom-cap") store.setProject((p) => ({ ...p, caption: { ...p.caption, custom: t.value } }), false);
-    patchNum(t, "edition", (p, v) => ({ ...p, caption: { ...p.caption, edition: v } }));
-    patchNum(t, "editionOf", (p, v) => ({ ...p, caption: { ...p.caption, editionOf: v } }));
     patchNum(t, "exp-w", (p, v) => ({ ...p, exportSettings: { ...p.exportSettings, width: v } }));
     patchNum(t, "exp-h", (p, v) => ({ ...p, exportSettings: { ...p.exportSettings, height: v } }));
     if (t.id === "exp-name") store.setProject((p) => ({ ...p, exportSettings: { ...p.exportSettings, filename: t.value } }), false);
@@ -293,19 +278,7 @@ function paintStack(n: HTMLElement) {
     <hr class="div" />
     <div class="sec">Paper</div>
     <div class="param"><span>Ground</span><input id="ground" type="color" value="${esc(p.paper.ground)}" /><span></span></div>
-    ${num("margin", "Margin", p.paper.margin, 0.04, 0.22, 0.01)}
     ${num("grain", "Grain", p.paper.grain, 0, 1, 0.01)}
-    <hr class="div" />
-    <div class="sec">Caption</div>
-    <label class="check"><input type="checkbox" id="show-cap" ${p.caption.show ? "checked" : ""}/> show date</label>
-    <label class="check"><input type="checkbox" id="sign" ${p.caption.sign ? "checked" : ""}/> sign</label>
-    <div class="param"><span>Date</span>
-      <select id="date-mode">${["seed","now","custom"].map((m) => `<option value="${m}" ${p.caption.dateMode===m?"selected":""}>${m}</option>`).join("")}</select>
-      <span></span>
-    </div>
-    <div class="param"><span>Custom</span><input id="custom-cap" type="text" value="${esc(p.caption.custom)}" /><span></span></div>
-    ${num("edition", "No.", p.caption.edition, 1, 200, 1)}
-    ${num("editionOf", "Of", p.caption.editionOf, 1, 200, 1)}
   `;
 }
 

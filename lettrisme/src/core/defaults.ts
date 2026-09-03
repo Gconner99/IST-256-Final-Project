@@ -16,19 +16,19 @@ export function defaultInk(): InkSettings {
 export function defaultPaper(): PaperSettings {
   return {
     ground: "#f3ead8",
-    margin: 0.12,
+    margin: 0,
     grain: 0.28,
   };
 }
 
 export function defaultCaption(): CaptionSettings {
   return {
-    show: true,
+    show: false,
     dateMode: "seed",
     custom: "",
     edition: 1,
     editionOf: 20,
-    sign: true,
+    sign: false,
   };
 }
 

@@ -18,6 +18,8 @@ Open that folder in Cursor — the repo root is the directory that contains `pac
 
 Pick **Phosphene (desktop)** in the same dropdown if you want the Electron window.
 
+Pick **Hypergraphie** in that same dropdown for the Lettrist still-image instrument. It installs `lettrisme/` if needed, then opens http://127.0.0.1:5174. You can also use Terminal → Run Task → `hypergraphie: serve`, or `npm run hypergraphie` from the repo root.
+
 You can also use Terminal → Run Task → `phosphene: serve`.
 
 ### From a terminal

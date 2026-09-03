@@ -1,6 +1,6 @@
 import { paragraph } from "../core/phrases";
 import type { Project } from "../core/types";
-import { asemicRow, cursiveLine, microScriptFill, wobbleRect } from "./asemic";
+import { asemicRow, cursiveLine, microScriptFill } from "./asemic";
 import { activeBitmap, fromImage, radialField, sampleAt, type DensityField } from "./density";
 import { glyphRow, paintGlyph } from "./glyphs";
 import { plateRect } from "./paper";
@@ -46,11 +46,6 @@ export function paintScriptorium(
       });
     }
   }
-  ctx.save();
-  ctx.strokeStyle = "rgba(20,16,12,0.55)";
-  ctx.lineWidth = 0.8;
-  wobbleRect(ctx, r.x, r.y, r.w, r.h, rng);
-  ctx.restore();
 }
 
 export function paintAlphabet(
@@ -77,11 +72,6 @@ export function paintAlphabet(
     ctx.lineTo(r.x + r.w, y);
     ctx.stroke();
   }
-  ctx.restore();
-  ctx.save();
-  ctx.strokeStyle = "#1a1612";
-  ctx.lineWidth = 1.2;
-  wobbleRect(ctx, r.x, r.y, r.w, r.h, rng);
   ctx.restore();
   const rows = 8 + Math.round(project.ink.density * 3);
   const cols = 6 + Math.round(project.ink.scale * 3);

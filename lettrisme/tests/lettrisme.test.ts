@@ -25,6 +25,9 @@ describe("project files", () => {
     expect(loaded.sources[0]?.bitmap).toBeNull();
     expect(json).not.toContain("bitmap");
     expect(loaded.plate).toBe("scriptorium");
+    expect(loaded.caption.show).toBe(false);
+    expect(loaded.caption.sign).toBe(false);
+    expect(loaded.paper.margin).toBe(0);
   });
 
   it("rejects unknown files", () => {

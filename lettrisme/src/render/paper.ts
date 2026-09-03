@@ -36,6 +36,6 @@ export function paintGround(
 }
 
 export function plateRect(w: number, h: number, margin: number) {
-  const m = Math.min(w, h) * margin;
-  return { x: m, y: m * 0.85, w: w - m * 2, h: h - m * 2.15 };
+  const m = Math.min(w, h) * Math.max(0, margin);
+  return { x: m, y: m, w: Math.max(1, w - m * 2), h: Math.max(1, h - m * 2) };
 }

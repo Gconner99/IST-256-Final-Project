@@ -75,31 +75,6 @@ export function cursiveLine(
   ctx.restore();
 }
 
-export function wobbleRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  rng: () => number,
-) {
-  ctx.beginPath();
-  const pts = [
-    [x, y],
-    [x + w, y],
-    [x + w, y + h],
-    [x, y + h],
-  ];
-  pts.forEach((p, i) => {
-    const nx = (p[0] ?? 0) + (rng() - 0.5) * 1.4;
-    const ny = (p[1] ?? 0) + (rng() - 0.5) * 1.4;
-    if (i === 0) ctx.moveTo(nx, ny);
-    else ctx.lineTo(nx, ny);
-  });
-  ctx.closePath();
-  ctx.stroke();
-}
-
 export function jitter(rng: () => number, amt: number) {
   return (rng() - 0.5) * amt;
 }
