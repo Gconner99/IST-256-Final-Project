@@ -1,0 +1,31 @@
+name: Lettrisme
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "lettrisme/**"
+      - ".github/workflows/lettrisme.yml"
+  pull_request:
+    branches: [master, main]
+    paths:
+      - "lettrisme/**"
+      - ".github/workflows/lettrisme.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lettrisme
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: lettrisme/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npx tsc --noEmit
+      - run: npm run build

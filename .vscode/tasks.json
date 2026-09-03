@@ -35,6 +35,25 @@
         "kind": "build",
         "isDefault": true
       }
+    },
+    {
+      "label": "hypergraphie: serve",
+      "type": "npm",
+      "script": "hypergraphie",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "(Local:|ready in)"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
     }
   ]
 }

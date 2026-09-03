@@ -19,6 +19,22 @@
       }
     },
     {
+      "name": "Hypergraphie",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "hypergraphie"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"],
+      "serverReadyAction": {
+        "pattern": "Local:",
+        "uriFormat": "http://127.0.0.1:5174",
+        "action": "openExternally"
+      }
+    },
+    {
       "name": "Phosphene (desktop)",
       "type": "node",
       "request": "launch",

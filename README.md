@@ -18,6 +18,10 @@ Open that folder in Cursor — the repo root is the directory that contains `pac
 
 Pick **Phosphene (desktop)** in the same dropdown if you want the Electron window.
 
+Pick **Hypergraphie** in that same dropdown (not Phosphene) for the Lettrist still-image instrument, then press play. A terminal should start Vite and the browser should open http://127.0.0.1:5174. If the dropdown has no Hypergraphie item, this branch is not checked out.
+
+From a terminal in the repo root: `npm run hypergraphie`.
+
 You can also use Terminal → Run Task → `phosphene: serve`.
 
 ### From a terminal

@@ -1,0 +1,98 @@
+import { describe, expect, it } from "vitest";
+import { createDefaultProject } from "../src/core/defaults";
+import { randomizeProject } from "../src/core/randomize";
+import { datedCaption, PHRASES, paragraph } from "../src/core/phrases";
+import { parseProject, serializeProject } from "../src/core/project";
+import { mulberry32 } from "../src/core/random";
+import { PLATES } from "../src/core/types";
+import { emptyField, sampleAt } from "../src/render/density";
+
+describe("project files", () => {
+  it("round-trips without bitmaps", () => {
+    const p = createDefaultProject();
+    p.sources = [
+      {
+        id: "s1",
+        name: "ref.jpg",
+        kind: "image",
+        width: 100,
+        height: 80,
+        bitmap: {} as ImageBitmap,
+      },
+    ];
+    const json = serializeProject(p);
+    const loaded = parseProject(json);
+    expect(loaded.app).toBe("hypergraphie");
+    expect(loaded.sources[0]?.bitmap).toBeNull();
+    expect(json).not.toContain("bitmap");
+    expect(loaded.plate).toBe("scriptorium");
+    expect(loaded.caption.show).toBe(false);
+    expect(loaded.caption.sign).toBe(false);
+    expect(loaded.paper.margin).toBe(0);
+  });
+
+  it("rejects unknown files", () => {
+    expect(() => parseProject("{}")).toThrow(/Not a Hypergraphie/);
+    expect(() => parseProject('{"app":"phosphene"}')).toThrow(/Not a Hypergraphie/);
+    expect(() => parseProject('{"app":"derive"}')).toThrow(/Not a Hypergraphie/);
+  });
+});
+
+describe("plates + phrases", () => {
+  it("ships the five Isou plates", () => {
+    expect(PLATES.map((p) => p.id)).toEqual([
+      "scriptorium",
+      "alphabet",
+      "reseau",
+      "tache",
+      "masse",
+    ]);
+  });
+
+  it("has a lettrist phrase catalog", () => {
+    expect(PHRASES.length).toBeGreaterThan(5);
+    expect(paragraph(mulberry32(3), 4)).toHaveLength(4);
+  });
+
+  it("dates captions deterministically", () => {
+    expect(datedCaption(mulberry32(1973))).toEqual(datedCaption(mulberry32(1973)));
+  });
+});
+
+describe("randomize", () => {
+  it("produces a valid project with a different seed each time", () => {
+    const a = randomizeProject(createDefaultProject(), 0.5);
+    const b = randomizeProject(createDefaultProject(), 0.5);
+    expect(a.app).toBe("hypergraphie");
+    expect(a.seed).not.toEqual(createDefaultProject().seed);
+    expect(a.seed).not.toEqual(b.seed);
+  });
+
+  it("high wack pushes ink values to extremes", () => {
+    const p = randomizeProject(createDefaultProject(), 1);
+    const vals = [p.ink.density, p.ink.chaos, p.ink.scale, p.ink.black];
+    const hasExtreme = vals.some((v) => v > 0.88 || v < 0.12);
+    expect(hasExtreme).toBe(true);
+  });
+
+  it("preserves sources and export settings", () => {
+    const base = createDefaultProject();
+    base.exportSettings.width = 3000;
+    const p = randomizeProject(base, 0.7);
+    expect(p.exportSettings.width).toBe(3000);
+    expect(p.sources).toBe(base.sources);
+  });
+});
+
+describe("density field", () => {
+  it("samples bilinearly", () => {
+    const field = emptyField(2, 2, 0);
+    field.data[0] = 0;
+    field.data[1] = 1;
+    field.data[2] = 0;
+    field.data[3] = 1;
+    expect(sampleAt(field, 0, 0)).toBeCloseTo(0);
+    expect(sampleAt(field, 1, 0)).toBeCloseTo(1);
+    expect(sampleAt(field, 0.5, 0)).toBeCloseTo(0.5);
+  });
+});
