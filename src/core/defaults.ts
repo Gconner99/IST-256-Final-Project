@@ -96,13 +96,34 @@ const GEN_INK: Record<string, { a: string; b: string }> = {
   phase: { a: "#120814", b: "#3dffd0" },
   coil: { a: "#081018", b: "#ff6a3c" },
   prism: { a: "#201028", b: "#7ad8ff" },
+  heraldry: { a: "#ffffff", b: "#c41e3a" },
+  wallpaper: { a: "#ffffff", b: "#1c4db8" },
+  giants: { a: "#ffffff", b: "#c41e3a" },
+  shower: { a: "#ffffff", b: "#e84a8a" },
 };
 
 export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"): MediaSource {
   const ink = GEN_INK[kind ?? "plasma"] ?? { a: "#140c10", b: "#f0d2b0" };
   return {
     id: uid("src"),
-    name: kind === "critters" ? "FLOATERS" : kind === "stage" ? "STAGE" : kind === "sketch" ? "SKETCH" : kind ? kind.toUpperCase() : "SIGNAL",
+    name:
+      kind === "critters"
+        ? "FLOATERS"
+        : kind === "stage"
+          ? "STAGE"
+          : kind === "sketch"
+            ? "SKETCH"
+            : kind === "heraldry"
+              ? "TOUR"
+              : kind === "wallpaper"
+                ? "PAPER"
+                : kind === "giants"
+                  ? "GIANTS"
+                  : kind === "shower"
+                    ? "SHOWER"
+                    : kind
+                      ? kind.toUpperCase()
+                      : "SIGNAL",
     kind: "generator",
     generator: kind ?? "plasma",
     colorA: ink.a,
@@ -137,23 +158,8 @@ export function defaultLayer(name: string, sourceId: string | null, effects: str
 }
 
 export function createDefaultProject(): Project {
-  const field = defaultGeneratorSource("tessera");
-  const layer = defaultLayer("SIGNAL", field.id, ["grade", "bloom", "grain"]);
-  layer.effects.forEach((fx) => {
-    if (fx.typeId === "grade") {
-      fx.params.saturation = 0.48;
-      fx.params.contrast = 0.2;
-      fx.params.gamma = 0.88;
-    }
-    if (fx.typeId === "bloom") {
-      fx.params.amount = 0.42;
-      fx.params.halation = 0.28;
-    }
-    if (fx.typeId === "grain") {
-      fx.params.grain = 0.16;
-      fx.params.leak = 0.2;
-    }
-  });
+  const field = defaultGeneratorSource("heraldry");
+  const layer = defaultLayer("ARMS", field.id, []);
   const project: Project = {
     version: 1,
     app: "phosphene",
@@ -167,13 +173,13 @@ export function createDefaultProject(): Project {
     layers: [layer],
     keyframes: [],
     playback: defaultPlayback(),
-    globalFeedback: { ...defaultFeedback(), amount: 0.18, opacity: 0.55, scale: 1.01 },
+    globalFeedback: { ...defaultFeedback(), amount: 0, opacity: 0.4, scale: 1 },
     exportSettings: defaultExportSettings(),
     presets: [],
   };
   const scramble = randomizeProject({ ...project, seed: 90210, randomAmount: 1 }, "all", null, null, null);
   project.presets = [
-    extractPreset(project, "factory · signal"),
+    extractPreset(project, "factory · tour"),
     extractPreset(scramble, "factory · scramble"),
   ];
   return project;

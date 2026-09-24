@@ -5,6 +5,7 @@ import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
+import { buildField, isHeraldry, sceneAt, sceneFromGenerator, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -240,6 +241,14 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("phase").generator).toBe("phase");
     expect(defaultGeneratorSource("coil").generator).toBe("coil");
     expect(defaultGeneratorSource("prism").generator).toBe("prism");
+    const tour = defaultGeneratorSource("heraldry");
+    addSource(tour, true);
+    expect(tour.generator).toBe("heraldry");
+    expect(tour.name).toBe("TOUR");
+    expect(tour.colorA).toBe("#ffffff");
+    expect(defaultGeneratorSource("wallpaper").name).toBe("PAPER");
+    expect(defaultGeneratorSource("giants").name).toBe("GIANTS");
+    expect(defaultGeneratorSource("shower").name).toBe("SHOWER");
   });
 });
 
@@ -431,6 +440,10 @@ describe("effects registry", () => {
     expect(GEN_INDEX.phase).toBe(30);
     expect(GEN_INDEX.coil).toBe(31);
     expect(GEN_INDEX.prism).toBe(32);
+    expect(GEN_INDEX.heraldry).toBe(33);
+    expect(GEN_INDEX.wallpaper).toBe(34);
+    expect(GEN_INDEX.giants).toBe(35);
+    expect(GEN_INDEX.shower).toBe(36);
     expect(GEN_INDEX.lot).toBeUndefined();
     expect(GEN_INDEX.chapel).toBeUndefined();
     expect(GENERATOR_GLSL).toContain("genStars");
@@ -517,7 +530,10 @@ describe("randomize + presets", () => {
   it("same seed produces the same parameter set", () => {
     const a = randomizeProject(createDefaultProject(), "all", null, null, null);
     const b = randomizeProject(createDefaultProject(), "all", null, null, null);
-    expect(a.layers[0].effects[0].params).toEqual(b.layers[0].effects[0].params);
+    expect(a.sources[0].generator).toEqual(b.sources[0].generator);
+    expect(a.sources[0].colorA).toEqual(b.sources[0].colorA);
+    expect(a.sources[0].colorB).toEqual(b.sources[0].colorB);
+    expect(a.layers[0].effects).toEqual(b.layers[0].effects);
   });
 
   it("extract/apply preset restores effect params without requiring sources", () => {
@@ -526,7 +542,7 @@ describe("randomize + presets", () => {
     const blank = createDefaultProject();
     const applied = applyPreset(blank, preset);
     expect(applied.layers[0].effects.map((e) => e.typeId)).toEqual(p.layers[0].effects.map((e) => e.typeId));
-    expect(applied.layers[0].effects[0].params).toEqual(p.layers[0].effects[0].params);
+    expect(applied.layers[0].effects.map((e) => e.params)).toEqual(p.layers[0].effects.map((e) => e.params));
     expect(applied.globalFeedback.amount).toBe(p.globalFeedback.amount);
   });
 
@@ -534,7 +550,7 @@ describe("randomize + presets", () => {
     const a = randomizeProject({ ...createDefaultProject(), seed: 3, randomAmount: 1 }, "all", null, null, null);
     const b = randomizeProject({ ...createDefaultProject(), seed: 99, randomAmount: 1 }, "all", null, null, null);
     const sig = (p: ReturnType<typeof createDefaultProject>) =>
-      `${p.layers[0].effects.map((e) => e.typeId).join(",")}|${JSON.stringify(p.layers[0].effects.map((e) => e.params))}`;
+      `${p.sources[0].generator}|${p.sources[0].colorA}|${p.sources[0].colorB}|${p.layers[0].effects.map((e) => e.typeId).join(",")}`;
     expect(sig(a)).not.toEqual(sig(b));
   });
 
@@ -560,13 +576,15 @@ describe("randomize + presets", () => {
     expect(idol.params.form).toBeUndefined();
   });
 
-  it("wacky rand keeps a short stack and plants a field, not an idol", () => {
+  it("wacky rand keeps a short stack and plants a collage, not an idol", () => {
     for (const seed of [1, 7, 99, 256, 90210]) {
       const p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null, true);
       const types = p.layers[0].effects.map((e) => e.typeId);
       expect(types.length).toBeLessThanOrEqual(5);
       expect(types).not.toContain("dancer");
       expect(FIELD_ROOMS).toContain(p.sources[0].generator);
+      expect(HERALDRY_ROOMS).toContain(p.sources[0].generator);
+      expect(isHeraldry(p.sources[0].generator)).toBe(true);
     }
   });
 
@@ -701,6 +719,37 @@ describe("soundtrack", () => {
     expect(loud.energy).toBeGreaterThan(0.2);
     expect(loud.bass).toBeGreaterThan(0.1);
     expect(quiet.energy).toBeLessThan(0.05);
+  });
+});
+
+describe("heraldry collage", () => {
+  it("tours the four looks on a loop", () => {
+    expect(sceneFromGenerator("heraldry")).toBe("tour");
+    expect(sceneFromGenerator("wallpaper")).toBe("wallpaper");
+    expect(sceneAt(0.2, 8, "tour")).toBe("wallpaper");
+    expect(sceneAt(3.0, 8, "tour")).toBe("sparse");
+    expect(sceneAt(5.5, 8, "tour")).toBe("giants");
+    expect(sceneAt(7.2, 8, "tour")).toBe("shower");
+    expect(sceneAt(1, 8, "giants")).toBe("giants");
+  });
+
+  it("builds a seeded field of unique charges", () => {
+    const a = buildField(256, "#c41e3a");
+    const b = buildField(256, "#c41e3a");
+    const c = buildField(99, "#c41e3a");
+    expect(a.length).toBe(240);
+    expect(a).toEqual(b);
+    expect(a[0]).not.toEqual(c[0]);
+    expect(new Set(a.map((p) => p.charge.kind)).size).toBeGreaterThan(4);
+  });
+
+  it("starts on a white-paper tour", () => {
+    const p = createDefaultProject();
+    expect(p.sources[0].generator).toBe("heraldry");
+    expect(p.sources[0].colorA).toBe("#ffffff");
+    expect(p.layers[0].effects).toHaveLength(0);
+    expect(isHeraldry("heraldry")).toBe(true);
+    expect(isHeraldry("plasma")).toBe(false);
   });
 });
 

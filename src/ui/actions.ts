@@ -63,7 +63,7 @@ export function setSoundtrack(source: MediaSource) {
   const secs = source.duration ? `${Math.floor(source.duration / 60)}:${String(Math.floor(source.duration % 60)).padStart(2, "0")}` : "";
   store.patchUi({
     selectedSourceId: source.id,
-    status: `soundtrack ${source.name}${secs ? ` · ${secs}` : ""} — hit Play; the mix moves the fields`,
+    status: `soundtrack ${source.name}${secs ? ` · ${secs}` : ""} — hit Play; the mix moves the collage`,
   });
 }
 

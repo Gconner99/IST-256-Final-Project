@@ -16,6 +16,7 @@ import {
   texImage,
 } from "./gl";
 import { compileEffectProgram, hexToRgb } from "./compile";
+import { HeraldryField, isHeraldry } from "./heraldry";
 import {
   BLIT_GLSL,
   BOOT_GENERATOR_GLSL,
@@ -95,6 +96,8 @@ export class Renderer {
   private fieldsProg: Program | null = null;
   private textureProg: Program | null = null;
   private black: WebGLTexture | null = null;
+  private heraldry = new HeraldryField();
+  private heraldryTex: WebGLTexture | null = null;
   lastError: string | null = null;
   width = 1;
   height = 1;
@@ -302,7 +305,40 @@ export class Renderer {
     drawTri(gl);
   }
 
-  private drawGenerator(target: FBO, src: MediaSource, time: number, seed = 77) {
+  private drawHeraldry(target: FBO | null, src: MediaSource, time: number, seed: number, duration: number, width: number, height: number) {
+    const gl = this.gl;
+    this.copy ??= new Program(gl, COPY_GLSL);
+    this.heraldryTex ??= createTexture(gl);
+    const canvas = this.heraldry.paint({
+      width,
+      height,
+      time,
+      duration,
+      seed,
+      generator: src.generator,
+      paper: src.colorA ?? "#ffffff",
+      ink: src.colorB ?? "#c41e3a",
+      audio: this.audioEnergy,
+      bass: this.audioBass,
+    });
+    texImage(gl, this.heraldryTex, canvas);
+    if (target) {
+      this.blitTo(target, this.heraldryTex);
+      return;
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    this.copy.use();
+    bindTex(gl, 0, this.heraldryTex);
+    this.copy.i("uTex", 0);
+    drawTri(gl);
+  }
+
+  private drawGenerator(target: FBO, src: MediaSource, time: number, seed = 77, duration = 8) {
+    if (isHeraldry(src.generator)) {
+      this.drawHeraldry(target, src, time, seed, duration, target.w, target.h);
+      return;
+    }
     const gl = this.gl;
     const mode = GEN_INDEX[src.generator ?? "plasma"] ?? 0;
     const prog = this.genProg(mode);
@@ -410,6 +446,10 @@ export class Renderer {
     const layer = project.layers.find((l) => l.enabled) ?? project.layers[0];
     const src = layer ? project.sources.find((s) => s.id === layer.sourceId) : null;
     const gen = src && src.kind !== "audio" ? src : ({ generator: "plasma" } as MediaSource);
+    if (isHeraldry(gen.generator)) {
+      this.drawHeraldry(null, gen, time, project.seed, project.duration, this.canvas.width, this.canvas.height);
+      return;
+    }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     const mode = GEN_INDEX[gen.generator ?? "plasma"] ?? 0;
@@ -469,7 +509,7 @@ export class Renderer {
       const src = project.sources.find((s) => s.id === layer.sourceId) ?? null;
       if (!src || src.kind === "generator" || src.kind === "audio") {
         const gen = src && src.kind !== "audio" ? src : ({ generator: "plasma" } as MediaSource);
-        this.drawGenerator(ping, gen, time, project.seed);
+        this.drawGenerator(ping, gen, time, project.seed, project.duration);
       } else {
         const tex = this.uploadSource(src);
         this.drawTexture(ping, tex, layer);

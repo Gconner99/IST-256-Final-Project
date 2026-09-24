@@ -221,4 +221,8 @@ export const GEN_INDEX: Record<string, number> = {
   phase: 30,
   coil: 31,
   prism: 32,
+  heraldry: 33,
+  wallpaper: 34,
+  giants: 35,
+  shower: 36,
 };

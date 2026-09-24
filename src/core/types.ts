@@ -33,7 +33,11 @@ export type GeneratorType =
   | "tessera"
   | "phase"
   | "coil"
-  | "prism";
+  | "prism"
+  | "heraldry"
+  | "wallpaper"
+  | "giants"
+  | "shower";
 export type BlendMode =
   | "normal"
   | "add"

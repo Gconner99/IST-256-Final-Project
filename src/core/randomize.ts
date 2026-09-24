@@ -1,3 +1,4 @@
+import { HERALDRY_ROOMS, inkForSeed, isHeraldry, paperForSeed } from "../engine/heraldry";
 import { getEffect } from "../effects/registry";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
@@ -37,11 +38,16 @@ const PALETTES: Palette[] = [
 ];
 
 const LOOKS: Look[] = [
-  { name: "lattice field", mood: "lush", wacky: true, stack: ["grade", "bloom", "grain"], blend: "normal" },
-  { name: "tessera field", mood: "mix", wacky: true, stack: ["grade", "bloom", "chroma"], blend: "normal" },
-  { name: "phase field", mood: "lush", wacky: true, stack: ["grade", "bloom", "grain"], blend: "screen" },
-  { name: "coil field", mood: "outsider", wacky: true, stack: ["grade", "posterize", "bloom"], blend: "normal" },
-  { name: "prism field", mood: "mix", wacky: true, stack: ["duotone", "bloom", "grain"], blend: "normal" },
+  { name: "herald tour", mood: "mix", wacky: true, stack: [], blend: "normal" },
+  { name: "dense paper", mood: "mix", wacky: true, stack: [], blend: "normal" },
+  { name: "giant charges", mood: "mix", wacky: true, stack: [], blend: "normal" },
+  { name: "heart rain", mood: "mix", wacky: true, stack: [], blend: "normal" },
+  { name: "cream paper", mood: "lush", wacky: true, stack: [], blend: "normal" },
+  { name: "lattice field", mood: "lush", wacky: false, stack: ["grade", "bloom", "grain"], blend: "normal" },
+  { name: "tessera field", mood: "mix", wacky: false, stack: ["grade", "bloom", "chroma"], blend: "normal" },
+  { name: "phase field", mood: "lush", wacky: false, stack: ["grade", "bloom", "grain"], blend: "screen" },
+  { name: "coil field", mood: "outsider", wacky: false, stack: ["grade", "posterize", "bloom"], blend: "normal" },
+  { name: "prism field", mood: "mix", wacky: false, stack: ["duotone", "bloom", "grain"], blend: "normal" },
   { name: "silk garden", mood: "lush", stack: ["grade", "bloom", "grain", "warp"], blend: "normal" },
   { name: "honey dusk", mood: "lush", stack: ["grade", "duotone", "bloom", "lens"], blend: "normal" },
   { name: "lagoon", mood: "lush", stack: ["grade", "channels", "bloom", "chroma"], blend: "screen" },
@@ -298,104 +304,22 @@ export function ensureCritters(project: Project): Project {
 }
 
 function fieldLooks(): Look[] {
-  return LOOKS.filter((l) => l.wacky && l.name.endsWith(" field"));
+  return LOOKS.filter((l) =>
+    l.name === "herald tour" ||
+    l.name === "dense paper" ||
+    l.name === "giant charges" ||
+    l.name === "heart rain" ||
+    l.name === "cream paper",
+  );
 }
 
-function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false): Layer {
-  const rng = mulberry32(seed >>> 0);
-  const pool = wacky ? fieldLooks() : LOOKS;
-  const look = pool[Math.floor(rng() * pool.length)] ?? LOOKS[0];
-  const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
-  const stack = look.stack.filter((id) => getEffect(id) && id !== "dancer").slice(0, 5);
-  const effects = stack.map((id, i) => applyMood(makeFx(id, seed + i * 997, amount), look.mood, palette, rng));
-  if (look.name === "toy pop" || look.name === "candy idol" || look.name === "flower drift" || look.name === "chapel idol" || look.name === "cream garden" || look.name === "charm lamp" || look.name === "toy recital" || look.name === "candy keys" || look.name === "boombox garden" || look.name === "sticker book" || look.name === "sketch idol" || look.name === "pencil garden" || look.name === "felt garden" || look.name === "foil wrap" || look.name === "plush recital" || look.name === "yarn garden" || look.name === "sequin wrap" || look.name === "quilt recital" || look.name === "cork garden" || look.name === "picnic wrap" || look.name === "sprinkle recital" || look.name === "velvet lounge" || look.name === "confetti parade" || look.name === "disco idol" || look.name === "terrazzo garden" || look.name === "comic wrap") {
-    for (const fx of effects) {
-      if (fx.typeId === "critters") {
-        if (look.name === "candy idol") fx.params.kit = "mix";
-        else if (look.name === "cream garden" || look.name === "chapel idol") fx.params.kit = "votives";
-        else if (look.name === "charm lamp") fx.params.kit = "charms";
-        else fx.params.kit = "toy pop";
-      }
-      if (fx.typeId === "dancer") {
-        fx.params.move = "float";
-        fx.params.speed = 0.35 + rng() * 0.45;
-        if (look.name === "chapel idol" || look.name === "flower drift") {
-          fx.params.grow = look.name === "chapel idol" ? "halo" : "petals";
-          fx.params.coat = "cream";
-        }
-        if (look.name === "candy keys") {
-          fx.params.grow = "petals";
-          fx.params.coat = "candy";
-        }
-        if (look.name === "sticker book" || look.name === "pencil garden") {
-          fx.params.grow = look.name === "pencil garden" ? "quiet" : "wings";
-          fx.params.coat = "cream";
-        }
-        if (look.name === "sketch idol") {
-          fx.params.grow = "horns";
-          fx.params.coat = "moss";
-        }
-        if (look.name === "felt garden") {
-          fx.params.grow = "petals";
-          fx.params.coat = "cream";
-        }
-        if (look.name === "plush recital") {
-          fx.params.grow = "wings";
-          fx.params.coat = "candy";
-        }
-        if (look.name === "yarn garden") {
-          fx.params.grow = "petals";
-          fx.params.coat = "cream";
-        }
-        if (look.name === "quilt recital") {
-          fx.params.grow = "skirt";
-          fx.params.coat = "moss";
-        }
-        if (look.name === "cork garden") {
-          fx.params.grow = "crystal";
-          fx.params.coat = "cream";
-        }
-        if (look.name === "sprinkle recital") {
-          fx.params.grow = "puff";
-          fx.params.coat = "jelly";
-        }
-        if (look.name === "velvet lounge") {
-          fx.params.grow = "halo";
-          fx.params.coat = "grape";
-        }
-        if (look.name === "confetti parade") {
-          fx.params.grow = "spikes";
-          fx.params.coat = "candy";
-        }
-        if (look.name === "disco idol") {
-          fx.params.grow = "sprout";
-          fx.params.coat = "gold";
-        }
-        if (look.name === "terrazzo garden") {
-          fx.params.grow = "crystal";
-          fx.params.coat = "slime";
-        }
-        if (look.name === "comic wrap") {
-          fx.params.grow = "antenna";
-          fx.params.coat = "ink";
-        }
-      }
-    }
-  }
-  const feedbackAmt = wacky || look.mood === "lush" ? 0.05 + rng() * 0.14 : 0.04 + rng() * 0.22;
+function rebuildLayer(layer: Layer, _seed: number, _amount: number, _wacky = false): Layer {
   return {
     ...layer,
-    blendMode: look.blend ?? "normal",
-    opacity: 0.88 + rng() * 0.12,
-    effects,
-    feedback: {
-      ...layer.feedback,
-      amount: feedbackAmt,
-      opacity: 0.45 + rng() * 0.3,
-      scale: 1.005 + rng() * 0.03,
-      rotation: (rng() - 0.5) * 0.04,
-      distortion: look.mood === "outsider" ? rng() * 0.28 : rng() * 0.1,
-    },
+    blendMode: "normal",
+    opacity: 1,
+    effects: [],
+    feedback: { ...layer.feedback, amount: 0, opacity: 0.4, scale: 1, rotation: 0, distortion: 0 },
   };
 }
 
@@ -428,13 +352,16 @@ export function randomizeProject(
     return randomizeLayer(layer, seed + li * 7919, amount, true, selectedEffectId);
   });
 
-  const places = wacky
-    ? (["lattice", "tessera", "phase", "coil", "prism"] as const)
-    : (["lattice", "tessera", "phase", "coil", "prism", "plasma", "oil", "stars", "cave"] as const);
+  const places = HERALDRY_ROOMS;
   const lookRng = mulberry32((seed + 0 * 7919) >>> 0);
-  const lookPool = wacky ? fieldLooks() : LOOKS;
+  const lookPool = fieldLooks();
   const look = lookPool[Math.floor(lookRng() * lookPool.length)] ?? LOOKS[0];
   const forcedPlace: Partial<Record<string, { generator: GeneratorType; a: string; b: string }>> = {
+    "herald tour": { generator: "heraldry", a: paperForSeed(seed), b: inkForSeed(seed) },
+    "dense paper": { generator: "wallpaper", a: paperForSeed(seed + 3), b: inkForSeed(seed + 3, "#1c4db8") },
+    "giant charges": { generator: "giants", a: paperForSeed(seed + 5), b: inkForSeed(seed + 5) },
+    "heart rain": { generator: "shower", a: "#ffffff", b: inkForSeed(seed + 7, "#e84a8a") },
+    "cream paper": { generator: "heraldry", a: "#fff8ee", b: inkForSeed(seed + 9, "#c41e3a") },
     "lattice field": { generator: "lattice", a: "#1a0830", b: "#ffe14a" },
     "tessera field": { generator: "tessera", a: "#0a1a28", b: "#ff4ad2" },
     "phase field": { generator: "phase", a: "#120814", b: "#3dffd0" },
@@ -466,30 +393,34 @@ export function randomizeProject(
     if (mode !== "all" || src.kind !== "generator") return src;
     const prng = mulberry32(seed + i * 131);
     const pal = PALETTES[Math.floor(prng() * PALETTES.length)];
-    const keep = wacky ? prng() > 0.45 : prng() > 0.35;
+    const keep = wacky ? false : prng() > 0.35 && isHeraldry(src.generator);
     const generator = pinned
       ? pinned.generator
       : keep
         ? src.generator
         : places[Math.floor(prng() * places.length)];
+    const paper = isHeraldry(generator) ? paperForSeed(seed + i * 17) : pal.inkA;
+    const ink = isHeraldry(generator) ? inkForSeed(seed + i * 31, pal.leak) : pal.inkB;
     return {
       ...src,
       generator,
-      colorA: pinned ? pinned.a : pal.inkA,
-      colorB: pinned ? pinned.b : pal.inkB,
+      colorA: pinned ? pinned.a : paper,
+      colorB: pinned ? pinned.b : ink,
     };
   });
 
   const globalFeedback =
     mode === "all"
-      ? {
-          ...project.globalFeedback,
-          amount: 0.05 + rng() * 0.22,
-          opacity: 0.4 + rng() * 0.3,
-          scale: 1.004 + rng() * 0.02,
-          rotation: (rng() - 0.5) * 0.03,
-          distortion: rng() * 0.12,
-        }
+      ? wacky
+        ? { ...project.globalFeedback, amount: 0, opacity: 0.4, scale: 1, rotation: 0, distortion: 0 }
+        : {
+            ...project.globalFeedback,
+            amount: rng() > 0.72 ? 0.04 + rng() * 0.1 : 0,
+            opacity: 0.4 + rng() * 0.3,
+            scale: 1.004 + rng() * 0.02,
+            rotation: (rng() - 0.5) * 0.03,
+            distortion: rng() * 0.12,
+          }
       : project.globalFeedback;
 
   return { ...project, layers, sources, globalFeedback };
@@ -505,6 +436,11 @@ export function chaosStamp(project: Project): Project {
   let next: Project = {
     ...project,
     seed,
+    sources: project.sources.map((src, i) =>
+      isHeraldry(src.generator)
+        ? { ...src, colorA: paperForSeed(seed + i * 13), colorB: inkForSeed(seed + i * 29) }
+        : src,
+    ),
     layers: project.layers.map((layer) => ({
       ...layer,
       effects: layer.effects.map((fx) => {
@@ -537,4 +473,4 @@ export function chaosStamp(project: Project): Project {
   return next;
 }
 
-export const FIELD_ROOMS: GeneratorType[] = ["lattice", "tessera", "phase", "coil", "prism"];
+export const FIELD_ROOMS = HERALDRY_ROOMS;
