@@ -205,7 +205,7 @@ function fillPattern(ctx: CanvasRenderingContext2D, path: () => void, c: Charge,
   ctx.beginPath();
   path();
   ctx.lineJoin = "round";
-  ctx.lineWidth = Math.max(1.2, r * 0.045);
+  ctx.lineWidth = Math.max(1, r * 0.03);
   ctx.strokeStyle = "#111111";
   ctx.stroke();
   ctx.restore();
@@ -498,9 +498,9 @@ export class HeraldryField {
     let camY = t * 0.11 + Math.cos(t * 0.29) * 0.05;
     let camZ = t * 0.55;
     if (scene === "wallpaper") {
-      camX = t * (1.15 + audio * 0.8);
-      camY = t * 0.46 + Math.sin(t * 1.3) * 0.04;
-      camZ = t * (1.35 + audio * 0.6);
+      camX = t * (0.55 + audio * 0.45);
+      camY = t * 0.28 + Math.sin(t * 0.9) * 0.03;
+      camZ = 0;
     } else if (scene === "sparse") {
       camX = t * 0.28;
       camY = t * 0.12 + Math.sin(t * 0.4) * 0.03;
@@ -515,50 +515,65 @@ export class HeraldryField {
       camZ = 0;
     }
 
-    const minZ = scene === "wallpaper" ? 0.28 : 0.45;
-    const maxZ = scene === "wallpaper" ? 2.6 : 2.1;
+    const minZ = scene === "wallpaper" ? 0.62 : 0.7;
+    const maxZ = scene === "wallpaper" ? 2.4 : 2.0;
 
-    for (const p of this.particles) {
-      if (scene === "shower" && p.charge.kind === "helm") continue;
-      if (scene === "giants" && p.charge.kind === "mullet" && p.size < 0.7) continue;
+    for (let i = 0; i < this.particles.length; i++) {
+      const p = this.particles[i];
+      if (scene === "giants" && i % 5 !== 0) continue;
+      if (scene === "sparse" && i % 2 === 0) continue;
 
       let x: number;
       let y: number;
       let px: number;
-      if (scene === "wallpaper" || scene === "sparse") {
+      if (scene === "wallpaper") {
+        x = ((p.x - camX) % 1 + 1) % 1 - 0.5;
+        y = ((p.y - camY) % 1 + 1) % 1 - 0.5;
+        px = 0.062 + p.size * 0.028 + bass * 0.01;
+      } else if (scene === "sparse") {
         const z = ((p.z - camZ) % 1 + 1) % 1;
         const depth = minZ + z * (maxZ - minZ);
-        if (depth < 0.22 || depth > maxZ * 0.98) continue;
+        if (depth < 0.55 || depth > maxZ * 0.96) continue;
         x = ((p.x - camX) % 1 + 1) % 1 - 0.5;
         y = ((p.y - camY) % 1 + 1) % 1 - 0.5;
         x = x / depth;
         y = y / depth;
-        const base = scene === "wallpaper" ? 0.34 : 0.72;
-        px = (base * p.size * (0.85 + bass * 0.2)) / depth;
+        px = clamp((0.28 * p.size * (0.9 + bass * 0.12)) / depth, 0.05, 0.2);
       } else if (scene === "giants") {
-        x = ((p.x + p.vx * t * 0.15 - camX) % 1 + 1) % 1 - 0.5;
-        y = ((p.y + p.vy * t * 0.1 - camY) % 1 + 1) % 1 - 0.5;
-        if (Math.abs(x) > 0.72 || Math.abs(y) > 0.72) continue;
-        px = 0.42 * p.size * (1.15 + audio * 0.08);
+        x = ((p.x + p.vx * t * 0.12 - camX) % 1 + 1) % 1 - 0.5;
+        y = ((p.y + p.vy * t * 0.08 - camY) % 1 + 1) % 1 - 0.5;
+        if (Math.abs(x) > 0.55 || Math.abs(y) > 0.55) continue;
+        px = clamp(0.26 * p.size * (1.05 + audio * 0.06), 0.18, 0.34);
       } else {
         x = ((p.x + Math.sin(t * 0.4 + p.z * 9) * 0.02 - camX) % 1 + 1) % 1 - 0.5;
         y = ((p.y + t * (0.12 + p.vy * 0.4) - camY) % 1 + 1) % 1 - 0.5;
-        px = 0.07 * p.size * (0.7 + (p.charge.kind === "heart" ? 0.25 : 0));
+        px = 0.095 * p.size * (0.75 + (p.charge.kind === "heart" || p.charge.kind === "star" ? 0.2 : 0));
       }
 
-      const sx = (0.5 + x) * w;
-      const sy = (0.5 + y / aspect) * h;
+      if (
+        (scene === "wallpaper" || scene === "sparse") &&
+        (p.charge.kind === "figure" || p.charge.kind === "rider" || p.charge.kind === "horse" || p.charge.kind === "helm")
+      ) {
+        px *= 0.72;
+      }
+
       const dim = px * Math.min(w, h);
       if (dim < 4) continue;
-      if (sx < -dim || sy < -dim || sx > w + dim || sy > h + dim) continue;
-
       const rot = p.rot + p.vr * t * (scene === "giants" ? 0.35 : scene === "shower" ? 0.15 : 0.08);
       const stamp = this.stamp(p.charge);
-      ctx.save();
-      ctx.translate(sx, sy);
-      ctx.rotate(rot);
-      ctx.drawImage(stamp, -dim / 2, -dim / 2, dim, dim);
-      ctx.restore();
+      const wrap = scene === "wallpaper" || scene === "shower" ? [-1, 0, 1] : [0];
+      for (const ox of wrap) {
+        for (const oy of wrap) {
+          const sx = (0.5 + x + ox) * w;
+          const sy = (0.5 + (y + oy) / aspect) * h;
+          if (sx < -dim || sy < -dim || sx > w + dim || sy > h + dim) continue;
+          ctx.save();
+          ctx.translate(sx, sy);
+          ctx.rotate(rot);
+          ctx.drawImage(stamp, -dim / 2, -dim / 2, dim, dim);
+          ctx.restore();
+        }
+      }
     }
 
     return this.canvas;
