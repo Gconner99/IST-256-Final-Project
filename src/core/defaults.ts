@@ -137,13 +137,13 @@ export function defaultLayer(name: string, sourceId: string | null, effects: str
 }
 
 export function createDefaultProject(): Project {
-  const field = defaultGeneratorSource("lattice");
+  const field = defaultGeneratorSource("tessera");
   const layer = defaultLayer("SIGNAL", field.id, ["grade", "bloom", "grain"]);
   layer.effects.forEach((fx) => {
     if (fx.typeId === "grade") {
-      fx.params.saturation = 0.38;
-      fx.params.contrast = 0.16;
-      fx.params.gamma = 0.9;
+      fx.params.saturation = 0.48;
+      fx.params.contrast = 0.2;
+      fx.params.gamma = 0.88;
     }
     if (fx.typeId === "bloom") {
       fx.params.amount = 0.42;

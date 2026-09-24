@@ -1272,103 +1272,122 @@ float hexDist(vec2 p) {
   p = abs(p);
   return max(p.x * 0.866025 + p.y * 0.5, p.y);
 }
-vec3 hexCell(vec2 uv) {
-  float t = uTime * (0.16 + u_audio * 0.38);
-  vec2 p = (uv - 0.5) * vec2(1.7, 1.0) * (4.4 + u_bass * 1.1 + uScale * 0.15);
+vec2 hexGv(vec2 p) {
   vec2 r = vec2(1.0, 1.73205);
   vec2 h = r * 0.5;
   vec2 a = mod(p, r) - h;
   vec2 b = mod(p - h, r) - h;
-  vec2 gv = dot(a, a) < dot(b, b) ? a : b;
-  vec2 id = floor(p - gv + 0.001);
-  float n = hash21(id + uSeed);
-  float ang = t * mix(-1.35, 1.35, n) + n * 6.28318;
+  return dot(a, a) < dot(b, b) ? a : b;
+}
+float hexCellMask(vec2 p, float inset) {
+  return 1.0 - smoothstep(inset, inset + 0.025, hexDist(p));
+}
+float wave01(float x) {
+  return 0.5 + 0.5 * sin(x);
+}
+float flipEase(float x) {
+  float s = sin(x);
+  return smoothstep(-0.15, 0.15, s);
+}
+vec3 hexCell(vec2 uv) {
+  float t = uTime * (0.55 + u_audio * 0.7);
+  vec2 p = (uv - 0.5) * vec2(1.78, 1.0) * (5.2 + uScale * 0.2);
+  vec2 gv = hexGv(p);
+  vec2 id = floor(p - gv + 0.002);
+  float phase = id.x * 0.62 + id.y * 0.36 - t * 2.15;
+  float turn = flipEase(phase);
+  float ang = 1.0471976 * turn;
   vec2 q = rot2(gv, ang);
-  float d = hexDist(q);
-  float inset = 0.34 + 0.1 * sin(t * 2.1 + n * 7.0 + u_bass * 5.0);
-  float body = 1.0 - smoothstep(inset, inset + 0.02, d);
-  float gap = smoothstep(0.44, 0.49, hexDist(gv));
-  vec3 ca = mix(uColorA, vec3(1.0, 0.18, 0.52), 0.18);
-  vec3 cb = mix(uColorB, vec3(0.15, 0.95, 0.82), 0.18);
-  vec3 col = mix(ca, cb, step(0.5, n));
-  vec3 gapCol = mix(cb, ca, step(0.5, n));
-  col = mix(col, gapCol, gap);
-  col = mix(col * 0.28, col, body);
-  float flip = 0.5 + 0.5 * sin(t * 2.6 + n * 5.0);
-  col = mix(col, cb + ca - col, (0.1 + 0.22 * u_audio) * flip);
+  float body = hexCellMask(q, 0.36);
+  float gap = smoothstep(0.42, 0.48, hexDist(gv));
+  float crest = wave01(phase);
+  vec3 ca = uColorA;
+  vec3 cb = uColorB;
+  vec3 col = mix(ca, cb, step(0.5, fract((id.x + id.y) * 0.5)));
+  col = mix(col, ca + cb - col, crest);
+  col = mix(col * 0.22, col, body);
+  col = mix(col, mix(cb, ca, 0.5) * 0.2, gap);
+  col = mix(col, cb, 0.12 * u_bass * crest);
   return col;
 }
 vec3 tileFlip(vec2 uv) {
-  float t = uTime * (0.2 + u_audio * 0.42);
-  vec2 g = (uv - 0.5) * vec2(1.6, 1.0) * (6.4 + u_bass * 1.4);
+  float t = uTime * (0.48 + u_audio * 0.75);
+  vec2 g = (uv - 0.5) * vec2(1.7, 1.0) * 7.2;
   vec2 cell = floor(g);
   vec2 f = fract(g) - 0.5;
-  float wave = sin(cell.x * 0.65 + cell.y * 0.42 + t * 2.15);
-  float flip = max(0.1, abs(wave));
-  vec2 q = rot2(f, t * 0.35 + hash21(cell + uSeed) * 1.5708);
-  q.x /= flip;
+  float phase = cell.x * 0.72 + cell.y * 0.18 - t * 2.4;
+  float turn = flipEase(phase);
+  float ang = 1.5707963 * turn;
+  vec2 q = rot2(f, ang);
+  float squash = max(0.08, abs(cos(phase)));
+  q.x /= squash;
   float diamond = abs(q.x) + abs(q.y);
-  float tile = 1.0 - smoothstep(0.4, 0.46, diamond);
+  float motif = 1.0 - smoothstep(0.38, 0.44, diamond);
   float checker = mod(cell.x + cell.y, 2.0);
-  vec3 col = mix(uColorA, uColorB, checker);
-  col = mix(col, mix(uColorB, uColorA, checker), tile);
+  vec3 ground = mix(uColorA, uColorB, checker);
+  vec3 motifC = mix(uColorB, uColorA, checker);
+  motifC = mix(motifC, ground, turn);
+  vec3 col = mix(ground, motifC, motif);
   float grout = max(abs(f.x), abs(f.y));
-  col = mix(col, mix(uColorA, uColorB, 0.5) * 0.22, smoothstep(0.46, 0.5, grout));
-  col = mix(col, uColorB, 0.08 * u_bass);
+  col = mix(col, mix(uColorA, uColorB, 0.5) * 0.18, smoothstep(0.46, 0.5, grout));
+  col = mix(col, uColorB, 0.1 * u_bass * wave01(phase));
   return col;
 }
 vec3 phaseBeat(vec2 uv) {
-  float t = uTime * (0.14 + u_audio * 0.48);
-  vec2 p = (uv - 0.5) * (9.0 + uScale * 0.4);
-  float a = sin(p.x * 3.14159 + t) * sin(p.y * 3.14159 - t * 0.72);
-  float b = sin((p.x + p.y) * 2.15 - t * 1.25) * sin((p.x - p.y) * 2.15 + t);
-  float beat = a * b;
-  vec3 col = mix(uColorA, uColorB, smoothstep(-0.35, 0.35, beat));
-  float cell = hexDist(fract(p * 0.42) - 0.5);
-  col = mix(col, uColorA + uColorB - col, step(0.4, cell) * (0.16 + 0.24 * u_bass));
+  float t = uTime * (0.22 + u_audio * 0.45);
+  vec2 p = (uv - 0.5) * vec2(1.7, 1.0) * (8.4 + uScale * 0.15);
+  vec2 a = hexGv(rot2(p, t * 0.18));
+  vec2 b = hexGv(rot2(p * 1.04 + vec2(0.18, -0.12), -t * 0.16));
+  float ma = hexCellMask(a, 0.34);
+  float mb = hexCellMask(b, 0.34);
+  float inter = abs(ma - mb);
+  vec3 col = mix(uColorA, uColorB, ma);
+  col = mix(col, uColorA + uColorB - col, mb * 0.65);
+  col = mix(col, mix(uColorB, uColorA, 0.35), inter);
+  col = mix(col, uColorB, 0.14 * u_bass);
   return col;
 }
 vec3 coilRing(vec2 uv) {
   vec2 p = uv - 0.5;
-  p.x *= 1.65;
-  float t = uTime * (0.18 + u_audio * 0.36);
+  p.x *= 1.7;
+  float t = uTime * (0.32 + u_audio * 0.5);
   float rad = length(p);
   float ang = atan(p.y, p.x);
-  float rings = 8.0;
+  float rings = 9.0;
   float ring = floor(rad * rings);
   float fi = fract(rad * rings);
   float dir = mod(ring, 2.0) * 2.0 - 1.0;
-  float teeth = abs(fract((ang / 6.28318) * (9.0 + ring) + dir * t) - 0.5);
-  float tooth = step(0.2, teeth);
-  vec3 col = mix(uColorA, uColorB, fract(ring * 0.19 + t * 0.12));
-  col = mix(col, mix(uColorB, uColorA, 0.35), tooth);
-  col *= 1.0 - smoothstep(0.6, 0.78, rad);
-  col += uColorB * (0.08 + 0.16 * u_bass) * (1.0 - fi);
+  float teethN = 12.0;
+  float spin = ang / 6.2831853 * teethN + dir * t * 1.15;
+  float tooth = step(0.28, abs(fract(spin) - 0.5));
+  float band = step(0.08, fi) * step(fi, 0.92);
+  float chase = step(0.5, fract(ang / 6.2831853 * 10.0 + dir * t * 0.35 + ring * 0.12));
+  vec3 col = mix(uColorA, uColorB, chase);
+  col = mix(col, mix(uColorB, uColorA, 0.25), tooth);
+  col *= band;
+  col *= 1.0 - smoothstep(0.58, 0.76, rad);
+  col += uColorB * 0.14 * u_bass * (1.0 - fi) * band;
   return col;
 }
 vec3 facetEdge(vec2 uv) {
-  float t = uTime * (0.11 + u_audio * 0.32);
-  vec2 p = uv * (5.4 + u_bass * 1.3);
-  vec2 nearest = vec2(0.0);
-  float md = 8.0;
-  for (int i = -1; i <= 1; i++) {
-    for (int j = -1; j <= 1; j++) {
-      vec2 g = floor(p) + vec2(float(i), float(j));
-      vec2 o = vec2(hash21(g + uSeed), hash21(g + 9.2));
-      o = 0.5 + 0.5 * sin(t + 6.28318 * o);
-      vec2 r = g + o - p;
-      float d = dot(r, r);
-      if (d < md) {
-        md = d;
-        nearest = r;
-      }
-    }
-  }
-  float edge = 1.0 - smoothstep(0.0, 0.04, abs(sin(nearest.x * 11.0 + nearest.y * 8.0)));
-  float h = hash21(floor(p - nearest) + uSeed);
-  vec3 col = mix(uColorA, uColorB, step(0.5, h));
-  col = mix(col, mix(uColorB, uColorA, h), edge);
-  col = mix(col, uColorA + uColorB - col, 0.08 + 0.18 * u_bass);
+  float t = uTime * (0.4 + u_audio * 0.55);
+  vec2 p = (uv - 0.5) * vec2(1.7, 1.0);
+  float pulse = 1.0 + 0.22 * sin(length(p) * 14.0 - t * 3.1 + u_bass);
+  p *= (4.6 + uScale * 0.12) * pulse;
+  vec2 cell = floor(p);
+  vec2 f = fract(p) - 0.5;
+  float phase = cell.x * 0.5 + cell.y * 0.5 - t * 1.8;
+  float turn = flipEase(phase);
+  vec2 q = rot2(f, 0.5235988 + 1.0471976 * turn);
+  float hex = hexDist(q);
+  float star = min(hex, abs(q.x) * 0.866 + abs(q.y) * 0.5);
+  float motif = 1.0 - smoothstep(0.28, 0.34, star);
+  float ring = 1.0 - smoothstep(0.36, 0.4, hex);
+  float checker = mod(cell.x + cell.y, 2.0);
+  vec3 col = mix(uColorA, uColorB, checker);
+  col = mix(col, uColorA + uColorB - col, wave01(phase));
+  col = mix(col, mix(uColorB, uColorA, checker), motif);
+  col = mix(col, mix(uColorA, uColorB, 0.5) * 0.25, 1.0 - ring);
   return col;
 }
 void main() {
