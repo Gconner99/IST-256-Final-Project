@@ -1245,6 +1245,143 @@ void main() {
 }
 `;
 
+/** Geometric fields: lattice / tessera / phase / coil / prism. Own program so boot and fabric places stay light. */
+export const FIELDS_GLSL = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform int uMode;
+uniform float uTime;
+uniform vec3 uColorA;
+uniform vec3 uColorB;
+uniform float uScale;
+uniform float uSeed;
+uniform float u_audio;
+uniform float u_bass;
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 345.45));
+  p += dot(p, p + 34.345);
+  return fract(p.x * p.y);
+}
+vec2 rot2(vec2 p, float a) {
+  float c = cos(a);
+  float s = sin(a);
+  return vec2(c * p.x - s * p.y, s * p.x + c * p.y);
+}
+float hexDist(vec2 p) {
+  p = abs(p);
+  return max(p.x * 0.866025 + p.y * 0.5, p.y);
+}
+vec3 hexCell(vec2 uv) {
+  float t = uTime * (0.16 + u_audio * 0.38);
+  vec2 p = (uv - 0.5) * vec2(1.7, 1.0) * (4.4 + u_bass * 1.1 + uScale * 0.15);
+  vec2 r = vec2(1.0, 1.73205);
+  vec2 h = r * 0.5;
+  vec2 a = mod(p, r) - h;
+  vec2 b = mod(p - h, r) - h;
+  vec2 gv = dot(a, a) < dot(b, b) ? a : b;
+  vec2 id = floor(p - gv + 0.001);
+  float n = hash21(id + uSeed);
+  float ang = t * mix(-1.35, 1.35, n) + n * 6.28318;
+  vec2 q = rot2(gv, ang);
+  float d = hexDist(q);
+  float inset = 0.34 + 0.1 * sin(t * 2.1 + n * 7.0 + u_bass * 5.0);
+  float body = 1.0 - smoothstep(inset, inset + 0.02, d);
+  float gap = smoothstep(0.44, 0.49, hexDist(gv));
+  vec3 ca = mix(uColorA, vec3(1.0, 0.18, 0.52), 0.18);
+  vec3 cb = mix(uColorB, vec3(0.15, 0.95, 0.82), 0.18);
+  vec3 col = mix(ca, cb, step(0.5, n));
+  vec3 gapCol = mix(cb, ca, step(0.5, n));
+  col = mix(col, gapCol, gap);
+  col = mix(col * 0.28, col, body);
+  float flip = 0.5 + 0.5 * sin(t * 2.6 + n * 5.0);
+  col = mix(col, cb + ca - col, (0.1 + 0.22 * u_audio) * flip);
+  return col;
+}
+vec3 tileFlip(vec2 uv) {
+  float t = uTime * (0.2 + u_audio * 0.42);
+  vec2 g = (uv - 0.5) * vec2(1.6, 1.0) * (6.4 + u_bass * 1.4);
+  vec2 cell = floor(g);
+  vec2 f = fract(g) - 0.5;
+  float wave = sin(cell.x * 0.65 + cell.y * 0.42 + t * 2.15);
+  float flip = max(0.1, abs(wave));
+  vec2 q = rot2(f, t * 0.35 + hash21(cell + uSeed) * 1.5708);
+  q.x /= flip;
+  float diamond = abs(q.x) + abs(q.y);
+  float tile = 1.0 - smoothstep(0.4, 0.46, diamond);
+  float checker = mod(cell.x + cell.y, 2.0);
+  vec3 col = mix(uColorA, uColorB, checker);
+  col = mix(col, mix(uColorB, uColorA, checker), tile);
+  float grout = max(abs(f.x), abs(f.y));
+  col = mix(col, mix(uColorA, uColorB, 0.5) * 0.22, smoothstep(0.46, 0.5, grout));
+  col = mix(col, uColorB, 0.08 * u_bass);
+  return col;
+}
+vec3 phaseBeat(vec2 uv) {
+  float t = uTime * (0.14 + u_audio * 0.48);
+  vec2 p = (uv - 0.5) * (9.0 + uScale * 0.4);
+  float a = sin(p.x * 3.14159 + t) * sin(p.y * 3.14159 - t * 0.72);
+  float b = sin((p.x + p.y) * 2.15 - t * 1.25) * sin((p.x - p.y) * 2.15 + t);
+  float beat = a * b;
+  vec3 col = mix(uColorA, uColorB, smoothstep(-0.35, 0.35, beat));
+  float cell = hexDist(fract(p * 0.42) - 0.5);
+  col = mix(col, uColorA + uColorB - col, step(0.4, cell) * (0.16 + 0.24 * u_bass));
+  return col;
+}
+vec3 coilRing(vec2 uv) {
+  vec2 p = uv - 0.5;
+  p.x *= 1.65;
+  float t = uTime * (0.18 + u_audio * 0.36);
+  float rad = length(p);
+  float ang = atan(p.y, p.x);
+  float rings = 8.0;
+  float ring = floor(rad * rings);
+  float fi = fract(rad * rings);
+  float dir = mod(ring, 2.0) * 2.0 - 1.0;
+  float teeth = abs(fract((ang / 6.28318) * (9.0 + ring) + dir * t) - 0.5);
+  float tooth = step(0.2, teeth);
+  vec3 col = mix(uColorA, uColorB, fract(ring * 0.19 + t * 0.12));
+  col = mix(col, mix(uColorB, uColorA, 0.35), tooth);
+  col *= 1.0 - smoothstep(0.6, 0.78, rad);
+  col += uColorB * (0.08 + 0.16 * u_bass) * (1.0 - fi);
+  return col;
+}
+vec3 facetEdge(vec2 uv) {
+  float t = uTime * (0.11 + u_audio * 0.32);
+  vec2 p = uv * (5.4 + u_bass * 1.3);
+  vec2 nearest = vec2(0.0);
+  float md = 8.0;
+  for (int i = -1; i <= 1; i++) {
+    for (int j = -1; j <= 1; j++) {
+      vec2 g = floor(p) + vec2(float(i), float(j));
+      vec2 o = vec2(hash21(g + uSeed), hash21(g + 9.2));
+      o = 0.5 + 0.5 * sin(t + 6.28318 * o);
+      vec2 r = g + o - p;
+      float d = dot(r, r);
+      if (d < md) {
+        md = d;
+        nearest = r;
+      }
+    }
+  }
+  float edge = 1.0 - smoothstep(0.0, 0.04, abs(sin(nearest.x * 11.0 + nearest.y * 8.0)));
+  float h = hash21(floor(p - nearest) + uSeed);
+  vec3 col = mix(uColorA, uColorB, step(0.5, h));
+  col = mix(col, mix(uColorB, uColorA, h), edge);
+  col = mix(col, uColorA + uColorB - col, 0.08 + 0.18 * u_bass);
+  return col;
+}
+void main() {
+  vec3 col;
+  if (uMode == 28) col = hexCell(vUv);
+  else if (uMode == 29) col = tileFlip(vUv);
+  else if (uMode == 30) col = phaseBeat(vUv);
+  else if (uMode == 31) col = coilRing(vUv);
+  else col = facetEdge(vUv);
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+`;
+
 export const COPY_GLSL = `#version 300 es
 precision highp float;
 in vec2 vUv;

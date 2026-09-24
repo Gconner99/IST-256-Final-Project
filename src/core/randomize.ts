@@ -37,6 +37,11 @@ const PALETTES: Palette[] = [
 ];
 
 const LOOKS: Look[] = [
+  { name: "lattice field", mood: "lush", wacky: true, stack: ["grade", "bloom", "grain"], blend: "normal" },
+  { name: "tessera field", mood: "mix", wacky: true, stack: ["grade", "bloom", "chroma"], blend: "normal" },
+  { name: "phase field", mood: "lush", wacky: true, stack: ["grade", "bloom", "grain"], blend: "screen" },
+  { name: "coil field", mood: "outsider", wacky: true, stack: ["grade", "posterize", "bloom"], blend: "normal" },
+  { name: "prism field", mood: "mix", wacky: true, stack: ["duotone", "bloom", "grain"], blend: "normal" },
   { name: "silk garden", mood: "lush", stack: ["grade", "bloom", "grain", "warp"], blend: "normal" },
   { name: "honey dusk", mood: "lush", stack: ["grade", "duotone", "bloom", "lens"], blend: "normal" },
   { name: "lagoon", mood: "lush", stack: ["grade", "channels", "bloom", "chroma"], blend: "screen" },
@@ -292,12 +297,16 @@ export function ensureCritters(project: Project): Project {
   };
 }
 
+function fieldLooks(): Look[] {
+  return LOOKS.filter((l) => l.wacky && l.name.endsWith(" field"));
+}
+
 function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false): Layer {
   const rng = mulberry32(seed >>> 0);
-  const pool = wacky ? LOOKS.filter((l) => l.wacky) : LOOKS;
+  const pool = wacky ? fieldLooks() : LOOKS;
   const look = pool[Math.floor(rng() * pool.length)] ?? LOOKS[0];
   const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
-  const stack = look.stack.filter((id) => getEffect(id)).slice(0, 5);
+  const stack = look.stack.filter((id) => getEffect(id) && id !== "dancer").slice(0, 5);
   const effects = stack.map((id, i) => applyMood(makeFx(id, seed + i * 997, amount), look.mood, palette, rng));
   if (look.name === "toy pop" || look.name === "candy idol" || look.name === "flower drift" || look.name === "chapel idol" || look.name === "cream garden" || look.name === "charm lamp" || look.name === "toy recital" || look.name === "candy keys" || look.name === "boombox garden" || look.name === "sticker book" || look.name === "sketch idol" || look.name === "pencil garden" || look.name === "felt garden" || look.name === "foil wrap" || look.name === "plush recital" || look.name === "yarn garden" || look.name === "sequin wrap" || look.name === "quilt recital" || look.name === "cork garden" || look.name === "picnic wrap" || look.name === "sprinkle recital" || look.name === "velvet lounge" || look.name === "confetti parade" || look.name === "disco idol" || look.name === "terrazzo garden" || look.name === "comic wrap") {
     for (const fx of effects) {
@@ -420,12 +429,17 @@ export function randomizeProject(
   });
 
   const places = wacky
-    ? (["marsh", "oil", "paper", "stars", "cave", "stage", "sketch", "felt", "foil", "plush", "yarn", "sequin", "quilt", "cork", "gingham", "sprinkle", "velvet", "confetti", "disco", "terrazzo", "comic"] as const)
-    : (["plasma", "noise", "gradient", "stars", "marsh", "oil", "paper", "cave", "stage", "sketch", "felt", "foil", "plush", "yarn", "sequin", "quilt", "cork", "gingham", "sprinkle", "velvet", "confetti", "disco", "terrazzo", "comic"] as const);
+    ? (["lattice", "tessera", "phase", "coil", "prism"] as const)
+    : (["lattice", "tessera", "phase", "coil", "prism", "plasma", "oil", "stars", "cave"] as const);
   const lookRng = mulberry32((seed + 0 * 7919) >>> 0);
-  const lookPool = wacky ? LOOKS.filter((l) => l.wacky) : LOOKS;
+  const lookPool = wacky ? fieldLooks() : LOOKS;
   const look = lookPool[Math.floor(lookRng() * lookPool.length)] ?? LOOKS[0];
   const forcedPlace: Partial<Record<string, { generator: GeneratorType; a: string; b: string }>> = {
+    "lattice field": { generator: "lattice", a: "#1a0830", b: "#ffe14a" },
+    "tessera field": { generator: "tessera", a: "#0a1a28", b: "#ff4ad2" },
+    "phase field": { generator: "phase", a: "#120814", b: "#3dffd0" },
+    "coil field": { generator: "coil", a: "#081018", b: "#ff6a3c" },
+    "prism field": { generator: "prism", a: "#201028", b: "#7ad8ff" },
     "toy recital": { generator: "stage", a: "#ff8ab8", b: "#7ad8ff" },
     "candy keys": { generator: "stage", a: "#ff8ab8", b: "#7ad8ff" },
     "boombox garden": { generator: "stage", a: "#ff8ab8", b: "#7ad8ff" },
@@ -520,6 +534,7 @@ export function chaosStamp(project: Project): Project {
     })),
   };
   next = ensureCritters(next);
-  next = ensureIdol(next);
   return next;
 }
+
+export const FIELD_ROOMS: GeneratorType[] = ["lattice", "tessera", "phase", "coil", "prism"];

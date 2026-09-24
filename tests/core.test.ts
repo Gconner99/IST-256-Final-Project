@@ -4,14 +4,14 @@ import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../s
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, ensureIdol, chaosStamp, randomizeProject } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
 import { allEffects, getEffect } from "../src/effects/registry";
 import { dancerForCompile } from "../src/effects/dancer";
 import { compileEffectSource } from "../src/engine/compile";
-import { BOOT_GENERATOR_GLSL, COMIC_GENERATOR_GLSL, CONFETTI_GENERATOR_GLSL, CORK_GENERATOR_GLSL, DISCO_GENERATOR_GLSL, FELT_GENERATOR_GLSL, FOIL_GENERATOR_GLSL, GENERATOR_GLSL, GINGHAM_GENERATOR_GLSL, PLUSH_GENERATOR_GLSL, QUILT_GENERATOR_GLSL, SEQUIN_GENERATOR_GLSL, SKETCH_GENERATOR_GLSL, SPRINKLE_GENERATOR_GLSL, STAGE_GENERATOR_GLSL, TERRAZZO_GENERATOR_GLSL, VELVET_GENERATOR_GLSL, YARN_GENERATOR_GLSL } from "../src/engine/shaders";
+import { BOOT_GENERATOR_GLSL, COMIC_GENERATOR_GLSL, CONFETTI_GENERATOR_GLSL, CORK_GENERATOR_GLSL, DISCO_GENERATOR_GLSL, FELT_GENERATOR_GLSL, FIELDS_GLSL, FOIL_GENERATOR_GLSL, GENERATOR_GLSL, GINGHAM_GENERATOR_GLSL, PLUSH_GENERATOR_GLSL, QUILT_GENERATOR_GLSL, SEQUIN_GENERATOR_GLSL, SKETCH_GENERATOR_GLSL, SPRINKLE_GENERATOR_GLSL, STAGE_GENERATOR_GLSL, TERRAZZO_GENERATOR_GLSL, VELVET_GENERATOR_GLSL, YARN_GENERATOR_GLSL } from "../src/engine/shaders";
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
@@ -155,6 +155,18 @@ describe("project files", () => {
     const loaded = parseProject(serializeProject(p));
     expect(loaded.layers[0].effects.some((fx) => fx.typeId === "buddy")).toBe(false);
   });
+
+  it("drops retired Idol effects from old saves", () => {
+    const p = createDefaultProject();
+    p.layers[0].effects.push({
+      id: "fx-idol",
+      typeId: "dancer",
+      enabled: true,
+      params: { size: 0.12, mix: 1 },
+    });
+    const loaded = parseProject(serializeProject(p));
+    expect(loaded.layers[0].effects.some((fx) => fx.typeId === "dancer")).toBe(false);
+  });
 });
 
 describe("place buttons", () => {
@@ -220,6 +232,14 @@ describe("place buttons", () => {
     const comic = defaultGeneratorSource("comic");
     addSource(comic, true);
     expect(comic.generator).toBe("comic");
+    const lattice = defaultGeneratorSource("lattice");
+    addSource(lattice, true);
+    expect(lattice.generator).toBe("lattice");
+    expect(lattice.name).toBe("LATTICE");
+    expect(defaultGeneratorSource("tessera").generator).toBe("tessera");
+    expect(defaultGeneratorSource("phase").generator).toBe("phase");
+    expect(defaultGeneratorSource("coil").generator).toBe("coil");
+    expect(defaultGeneratorSource("prism").generator).toBe("prism");
   });
 });
 
@@ -406,6 +426,11 @@ describe("effects registry", () => {
     expect(GEN_INDEX.disco).toBe(25);
     expect(GEN_INDEX.terrazzo).toBe(26);
     expect(GEN_INDEX.comic).toBe(27);
+    expect(GEN_INDEX.lattice).toBe(28);
+    expect(GEN_INDEX.tessera).toBe(29);
+    expect(GEN_INDEX.phase).toBe(30);
+    expect(GEN_INDEX.coil).toBe(31);
+    expect(GEN_INDEX.prism).toBe(32);
     expect(GEN_INDEX.lot).toBeUndefined();
     expect(GEN_INDEX.chapel).toBeUndefined();
     expect(GENERATOR_GLSL).toContain("genStars");
@@ -434,6 +459,14 @@ describe("effects registry", () => {
     expect(DISCO_GENERATOR_GLSL).toContain("mirrorTile");
     expect(TERRAZZO_GENERATOR_GLSL).toContain("chip");
     expect(COMIC_GENERATOR_GLSL).toContain("halftone");
+    expect(FIELDS_GLSL).toContain("hexCell");
+    expect(FIELDS_GLSL).toContain("tileFlip");
+    expect(FIELDS_GLSL).toContain("phaseBeat");
+    expect(FIELDS_GLSL).toContain("coilRing");
+    expect(FIELDS_GLSL).toContain("facetEdge");
+    expect(GENERATOR_GLSL).not.toContain("hexCell");
+    expect(GENERATOR_GLSL).not.toContain("tileFlip");
+    expect(GENERATOR_GLSL).not.toContain("phaseBeat");
     expect(GENERATOR_GLSL).not.toContain("genSketch");
     expect(GENERATOR_GLSL).not.toContain("genYarn");
     expect(GENERATOR_GLSL).not.toContain("genCork");
@@ -452,6 +485,9 @@ describe("effects registry", () => {
     expect(BOOT_GENERATOR_GLSL).not.toContain("confetti");
     expect(BOOT_GENERATOR_GLSL).not.toContain("mirrorTile");
     expect(BOOT_GENERATOR_GLSL).not.toContain("halftone");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("hexCell");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("tileFlip");
+    expect(BOOT_GENERATOR_GLSL).not.toContain("coilRing");
     expect(GENERATOR_GLSL).toContain("musicPiano");
     expect(GENERATOR_GLSL).toContain("starLayer");
     expect(GENERATOR_GLSL).toContain("reed");
@@ -524,14 +560,13 @@ describe("randomize + presets", () => {
     expect(idol.params.form).toBeUndefined();
   });
 
-  it("wacky rand keeps a short stack and plants overlays", () => {
+  it("wacky rand keeps a short stack and plants a field, not an idol", () => {
     for (const seed of [1, 7, 99, 256, 90210]) {
-      let p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null, true);
-      p = ensureCritters(ensureIdol(p));
+      const p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null, true);
       const types = p.layers[0].effects.map((e) => e.typeId);
       expect(types.length).toBeLessThanOrEqual(5);
-      expect(types.some((t) => t === "dancer")).toBe(true);
-      expect(types.some((t) => t === "critters")).toBe(true);
+      expect(types).not.toContain("dancer");
+      expect(FIELD_ROOMS).toContain(p.sources[0].generator);
     }
   });
 

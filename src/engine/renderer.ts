@@ -39,6 +39,7 @@ import {
   DISCO_GENERATOR_GLSL,
   TERRAZZO_GENERATOR_GLSL,
   COMIC_GENERATOR_GLSL,
+  FIELDS_GLSL,
   TEXTURE_GLSL,
 } from "./shaders";
 
@@ -91,6 +92,7 @@ export class Renderer {
   private discoProg: Program | null = null;
   private terrazzoProg: Program | null = null;
   private comicProg: Program | null = null;
+  private fieldsProg: Program | null = null;
   private textureProg: Program | null = null;
   private black: WebGLTexture | null = null;
   lastError: string | null = null;
@@ -217,6 +219,10 @@ export class Renderer {
     if (mode === 27) {
       this.comicProg ??= new Program(this.gl, COMIC_GENERATOR_GLSL);
       return this.comicProg;
+    }
+    if (mode >= 28 && mode <= 32) {
+      this.fieldsProg ??= new Program(this.gl, FIELDS_GLSL);
+      return this.fieldsProg;
     }
     this.generatorFull ??= new Program(this.gl, GENERATOR_GLSL);
     return this.generatorFull;

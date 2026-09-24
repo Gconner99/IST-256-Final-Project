@@ -63,7 +63,7 @@ export function setSoundtrack(source: MediaSource) {
   const secs = source.duration ? `${Math.floor(source.duration / 60)}:${String(Math.floor(source.duration % 60)).padStart(2, "0")}` : "";
   store.patchUi({
     selectedSourceId: source.id,
-    status: `soundtrack ${source.name}${secs ? ` · ${secs}` : ""} — hit Play; the mix moves idols, floaters, and places`,
+    status: `soundtrack ${source.name}${secs ? ` · ${secs}` : ""} — hit Play; the mix moves the fields`,
   });
 }
 
@@ -172,8 +172,8 @@ export function randomize(mode: "all" | "selected" | "param", wacky = false) {
   store.setProject((p) => {
     const next = randomizeProject(p, mode, ui.selectedLayerId, ui.selectedEffectId, ui.selectedParam?.paramId ?? null, wacky);
     let out = next;
-    if (mode === "all" && (ui.includeCritters || wacky)) out = ensureCritters(out);
-    if (mode === "all" && (ui.includeIdol || wacky)) out = ensureIdol(out);
+    if (mode === "all" && ui.includeCritters) out = ensureCritters(out);
+    if (mode === "all" && ui.includeIdol) out = ensureIdol(out);
     return out;
   });
   const names = store.project.layers[0]?.effects.map((e) => e.typeId).join(" · ");

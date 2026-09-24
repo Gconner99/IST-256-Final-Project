@@ -8,7 +8,7 @@ const PLACE_FALLBACK: Record<string, GeneratorType> = {
   lamp: "stars",
 };
 
-const RETIRED_EFFECTS = new Set(["window", "buddy"]);
+const RETIRED_EFFECTS = new Set(["window", "buddy", "dancer"]);
 
 function keepEffect(fx: EffectInstance): boolean {
   return !RETIRED_EFFECTS.has(fx.typeId);

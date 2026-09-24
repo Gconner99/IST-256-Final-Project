@@ -65,12 +65,9 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="status">RND</label>
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
-      <button class="btn tiny hot" data-act="rand-wacky" title="Outsider looks, idols, floaters, a new place">Rand wacky</button>
+      <button class="btn tiny hot" data-act="rand-wacky" title="A new geometric field, color pair, and motion">Rand wacky</button>
       <label class="check" title="Drop drifting colored shapes onto every layer when you hit Rand all">
         <input type="checkbox" id="inc-critters" /> floaters
-      </label>
-      <label class="check" title="Drop a dancing 3D figure in the middle when you hit Rand all">
-        <input type="checkbox" id="inc-idol" /> idol
       </label>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
@@ -103,11 +100,10 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
-          <li><strong>Rand all</strong> picks a new look each time — lush color/bloom mixed with outsider-art dirt. Keep the <em>floaters</em> box on to send stickers across the frame. <strong>Rand wacky</strong> stays pretty: cream/toy-pop looks, an idol + floaters, a calm place.</li>
-          <li><strong>Idol</strong> is a small low-poly creature facing the camera. Grow picks petals, a halo, antennae, a skirt, wings, horns, crystals, puff, spikes, a sprout, or a quieter body. Coat tints the paint (cream, moss, sodium, night, candy, jelly, grape, ice, lava, slime, gold, ink, soda, banana, berry, mint, cobalt). Stamp it for a new seed — each stamp grows a different silhouette and dance. Crowd → Mini army.</li>
-          <li><strong>Stamp chaos</strong> rerolls floater + idol seeds and their kit/grow/coat — keeps the backdrop. <strong>Print frame</strong> turns the live picture into a still.</li>
-          <li><strong>Backgrounds</strong> on the left rail: Plasma, Noise, Bars, plus Stars, Marsh, Oil, Paper, Cave, Stage, Sketch, Felt, Foil, Plush, Yarn, Sequins, Quilt, Cork, Gingham, Sprinkle, Velvet, Confetti, Disco, Terrazzo, and Comic. Stage is a candy toy-pop room. Sketch is a composition-notebook sticker album. The rest are textured toy-pop places — wool, wrapper, pile, knit, sparkle, patchwork, pin-board, picnic, frosting, crush pile, paper bits, mirror tiles, stone chips, pop dots. Click one to put that place on the picture. Rand all will swap these too. Drop an MP3 and fog/bloom/keys breathe with the mix.</li>
-          <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; idols kick harder on the bass; floaters and places move with it. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
+          <li><strong>Rand all</strong> picks a new color grade. <strong>Rand wacky</strong> rolls a geometric field — lattice, tessera, phase, coil, or prism — with a new color pair. The shapes are built into the picture, not floating on top.</li>
+          <li><strong>Stamp chaos</strong> rerolls overlay seeds if you added any. <strong>Print frame</strong> turns the live picture into a still.</li>
+          <li><strong>Fields</strong> on the left rail: Lattice, Tessera, Phase, Coil, Prism. Color does the trick — complementary pairs, flipping tiles, opposite-spinning rings. Old textured places are still there if you want them. Drop an MP3 and the fields move with the mix.</li>
+          <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song; the fields pulse and rotate on the bass. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
@@ -472,6 +468,13 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny" data-act="gen" data-kind="checker">Check</button>
     </div>
     <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="lattice">Lattice</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="tessera">Tessera</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="phase">Phase</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="coil">Coil</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="prism">Prism</button>
+    </div>
+    <div class="row">
       <button class="btn tiny acid" data-act="gen" data-kind="stars">Stars</button>
       <button class="btn tiny acid" data-act="gen" data-kind="marsh">Marsh</button>
       <button class="btn tiny acid" data-act="gen" data-kind="oil">Oil</button>
@@ -495,17 +498,11 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="comic">Comic</button>
     </div>
     <div class="row">
-      <button class="btn tiny acid" data-act="gen" data-kind="critters">Floaters</button>
-      <button class="btn tiny acid" data-act="stamp-critters">Stamp floaters</button>
-      <button class="btn tiny acid" data-act="stamp-idol">Stamp idol</button>
-    </div>
-    <div class="row">
       <button class="btn tiny hot" data-act="stamp-chaos">Stamp chaos</button>
       <button class="btn tiny" data-act="reprint">Print frame</button>
     </div>
     <label class="check"><input type="checkbox" id="inc-critters-rail" ${ui.includeCritters ? "checked" : ""}/> include floaters in Rand all</label>
-    <label class="check"><input type="checkbox" id="inc-idol-rail" ${ui.includeIdol ? "checked" : ""}/> include idol in Rand all</label>
-    <div class="status" style="margin-top:4px">Floaters Kit: Shapes, Toy pop. Idol Grow: petals, halo, antenna, skirt, wings, horns, crystal, puff, spikes, sprout, quiet. Coat: candy, jelly, grape, ice, lava, slime, gold, ink, soda, banana, berry, mint, cobalt. Places: Stage, Sketch, Felt, Foil, Plush, Yarn, Sequins, Quilt, Cork, Gingham, Sprinkle, Velvet, Confetti, Disco, Terrazzo, Comic. Stamp chaos rerolls overlays, not the backdrop.</div>
+    <div class="status" style="margin-top:4px">Fields: Lattice, Tessera, Phase, Coil, Prism. Shapes sit in the wallpaper and move as a field. Color pairs do the trick. Drop an MP3 and motion follows the mix. Stamp chaos rerolls overlays, not the field.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
@@ -606,14 +603,12 @@ function paintStack(n: HTMLElement) {
       <select id="add-fx" class="addfx">
         <option value="">+ add effect</option>
         ${EFFECT_CATEGORIES.map((cat) => {
-          const list = groups[cat.id] ?? [];
+          const list = (groups[cat.id] ?? []).filter((e) => e.id !== "dancer");
           if (!list.length) return "";
           return `<optgroup label="${cat.label}">${list.map((e) => `<option value="${e.id}">${e.name}</option>`).join("")}</optgroup>`;
         }).join("")}
       </select>
       <div class="row" style="margin-top:4px">
-        <button class="btn tiny acid" data-act="stamp-critters">stamp floaters</button>
-        <button class="btn tiny acid" data-act="stamp-idol">stamp idol</button>
         <button class="btn tiny hot" data-act="stamp-chaos">stamp chaos</button>
       </div>
       ${fx ? `

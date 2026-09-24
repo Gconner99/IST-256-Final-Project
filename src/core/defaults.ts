@@ -91,6 +91,11 @@ const GEN_INK: Record<string, { a: string; b: string }> = {
   disco: { a: "#2a1038", b: "#ffd86a" },
   terrazzo: { a: "#e8d8cc", b: "#d45c78" },
   comic: { a: "#fff4a8", b: "#2a1810" },
+  lattice: { a: "#1a0830", b: "#ffe14a" },
+  tessera: { a: "#0a1a28", b: "#ff4ad2" },
+  phase: { a: "#120814", b: "#3dffd0" },
+  coil: { a: "#081018", b: "#ff6a3c" },
+  prism: { a: "#201028", b: "#7ad8ff" },
 };
 
 export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"): MediaSource {
@@ -132,13 +137,13 @@ export function defaultLayer(name: string, sourceId: string | null, effects: str
 }
 
 export function createDefaultProject(): Project {
-  const plasma = defaultGeneratorSource("plasma");
-  const layer = defaultLayer("SIGNAL", plasma.id, ["grade", "bloom", "grain"]);
+  const field = defaultGeneratorSource("lattice");
+  const layer = defaultLayer("SIGNAL", field.id, ["grade", "bloom", "grain"]);
   layer.effects.forEach((fx) => {
     if (fx.typeId === "grade") {
-      fx.params.saturation = 0.22;
-      fx.params.contrast = 0.12;
-      fx.params.gamma = 0.92;
+      fx.params.saturation = 0.38;
+      fx.params.contrast = 0.16;
+      fx.params.gamma = 0.9;
     }
     if (fx.typeId === "bloom") {
       fx.params.amount = 0.42;
@@ -158,7 +163,7 @@ export function createDefaultProject(): Project {
     quality: "preview",
     duration: 8,
     fps: 30,
-    sources: [plasma],
+    sources: [field],
     layers: [layer],
     keyframes: [],
     playback: defaultPlayback(),
