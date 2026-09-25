@@ -59,7 +59,8 @@ HOW TO USE IT
   glow / bounce on the beat. The older bounce / glow / kick set is
   still there if you want it. Mix rolls a locked move.
 - Grounds are warm colored washes — each kit has a bigger set of
-  colors now. Kit buttons keep the last move.
+  colors now. Kits also have more stamp shapes (crabs, roses, guitars,
+  aliens, and so on). Kit buttons keep the last move.
 - Rand wacky rolls a new kit and zoom.
 - Drag a photo, video, or MP3 onto the big area
 - Hit MP3 (or drop a clip) to use it as a soundtrack. Playback

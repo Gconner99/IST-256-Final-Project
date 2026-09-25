@@ -135,7 +135,7 @@ export function detectBeats(ch: Float32Array, sampleRate: number): number[] {
     energy[i] = Math.sqrt(e / (win * 0.5));
   }
   const look = Math.max(10, Math.floor(0.32 / (hop / sampleRate)));
-  const minGap = 0.3;
+  const minGap = 0.28;
   const beats: number[] = [];
   let last = -99;
   for (let i = look; i < n; i++) {
@@ -147,7 +147,7 @@ export function detectBeats(ch: Float32Array, sampleRate: number): number[] {
     }
     mean /= look;
     const flux = energy[i] - energy[i - 1];
-    const hot = energy[i] > mean * 1.48 && energy[i] > peak * 0.82 && flux > 0.006;
+    const hot = energy[i] > mean * 1.32 && energy[i] > peak * 0.72 && flux > 0.0035;
     if (!hot) continue;
     const t = (i * hop) / sampleRate;
     if (t - last < minGap) continue;
@@ -168,6 +168,15 @@ export function estimateBpm(beats: number[]): number {
   gaps.sort((a, b) => a - b);
   const mid = gaps[Math.floor(gaps.length / 2)];
   return clampNum(Math.round(60 / mid), 70, 170);
+}
+
+/** Pulse locked to estimated tempo so hits still land when an onset is missed. */
+export function tempoPulse(time: number, bpm: number, decay = 0.13): number {
+  if (!(bpm > 40) || !Number.isFinite(time)) return 0;
+  const period = 60 / bpm;
+  if (!(period > 0)) return 0;
+  const phase = ((time % period) + period) % period;
+  return Math.exp(-phase / decay);
 }
 
 /** Soft raised pulse on an onset. Long enough to feel, never a hard click. */
@@ -248,16 +257,19 @@ export function sampleAudio(
     energy = s.energy;
     bass = s.bass;
     const hits = source.beats ?? [];
-    beat = hits.length ? beatEnvelope(hits, wrapped) : clampNum((energy - 0.16) * 0.55, 0, 0.45);
+    const onset = hits.length ? beatEnvelope(hits, wrapped, 0.14) : 0;
+    const grid = tempoPulse(wrapped, source.bpm ?? 0);
+    const energyHit = clampNum((energy - 0.12) * 0.75, 0, 0.6);
+    beat = Math.max(onset, grid * 0.78, hits.length ? energyHit * 0.42 : energyHit);
   } else if (source?.kind === "audio") {
     const live = analyserLevels();
     if (live) {
       energy = live.energy;
       bass = live.bass;
-      beat = clampNum((energy - 0.16) * 0.45, 0, 0.4);
+      beat = Math.max(tempoPulse(time, source.bpm ?? 0) * 0.78, clampNum((energy - 0.12) * 0.55, 0, 0.5));
     }
   }
-  beatHold += (beat - beatHold) * 0.22;
+  beatHold += (beat - beatHold) * (beat > beatHold ? 0.78 : 0.4);
   const follow = source?.kind === "audio" ? 0.22 : 0.14;
   energyEma += (energy - energyEma) * follow;
   bassEma += (bass - bassEma) * Math.min(follow, 0.16);

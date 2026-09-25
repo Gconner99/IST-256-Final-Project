@@ -200,41 +200,66 @@ type Kind =
   | "vinyl"
   | "headphone"
   | "mic"
-  | "speaker";
+  | "speaker"
+  | "crab"
+  | "helm"
+  | "lighthouse"
+  | "compass"
+  | "popcorn"
+  | "cane"
+  | "mask"
+  | "apple"
+  | "banana"
+  | "grape"
+  | "rabbit"
+  | "snail"
+  | "fern"
+  | "rose"
+  | "diamond"
+  | "candle"
+  | "alien"
+  | "asteroid"
+  | "telescope"
+  | "cookie"
+  | "waffle"
+  | "guitar"
+  | "drum"
+  | "piano"
+  | "clef";
 
 type Pattern = "plain" | "polka" | "hoop" | "half" | "bar";
 
 const KIT_PAPER: Record<CollageKit, Kind[]> = {
-  sailor: ["fish", "anchor", "wave", "shell", "starfish", "boat", "tail", "swallow", "star", "moon"],
-  circus: ["elephant", "tent", "ball", "bow", "horse", "balloon", "ticket", "moon", "star", "figure"],
-  fruit: ["pear", "lemon", "cherry", "leaf", "mushroom", "flower", "sun", "cloud", "bolt", "umbrella", "bird"],
-  nature: ["tree", "deer", "fox", "owl", "mushroom", "leaf", "acorn", "cone", "mountain", "drop", "moth", "bird"],
-  love: ["heart", "wingfig", "swan", "cat", "crown", "moon", "star", "key", "ring", "envelope", "bow", "potion", "house"],
-  space: ["rocket", "planet", "saturn", "ufo", "comet", "satellite", "star", "moon"],
-  sweet: ["lolly", "coneice", "cupcake", "donut", "candy", "cherry", "heart"],
-  music: ["note", "vinyl", "headphone", "mic", "speaker", "star", "heart"],
+  sailor: ["fish", "anchor", "wave", "shell", "starfish", "boat", "tail", "swallow", "star", "moon", "crab", "helm", "lighthouse", "compass"],
+  circus: ["elephant", "tent", "ball", "bow", "horse", "balloon", "ticket", "moon", "star", "figure", "popcorn", "cane", "mask"],
+  fruit: ["pear", "lemon", "cherry", "leaf", "mushroom", "flower", "sun", "cloud", "bolt", "umbrella", "bird", "apple", "banana", "grape"],
+  nature: ["tree", "deer", "fox", "owl", "mushroom", "leaf", "acorn", "cone", "mountain", "drop", "moth", "bird", "rabbit", "snail", "fern"],
+  love: ["heart", "wingfig", "swan", "cat", "crown", "moon", "star", "key", "ring", "envelope", "bow", "potion", "house", "rose", "diamond", "candle"],
+  space: ["rocket", "planet", "saturn", "ufo", "comet", "satellite", "star", "moon", "alien", "asteroid", "telescope"],
+  sweet: ["lolly", "coneice", "cupcake", "donut", "candy", "cherry", "heart", "cookie", "waffle"],
+  music: ["note", "vinyl", "headphone", "mic", "speaker", "star", "heart", "guitar", "drum", "piano", "clef"],
 };
 
 const KIT_GIANTS: Record<CollageKit, Kind[]> = {
-  sailor: ["fish", "boat", "tail", "swallow", "anchor"],
-  circus: ["elephant", "tent", "horse", "balloon", "figure"],
-  fruit: ["pear", "lemon", "mushroom", "sun", "umbrella"],
-  nature: ["tree", "deer", "owl", "fox", "mountain"],
-  love: ["heart", "wingfig", "swan", "cat", "house"],
-  space: ["rocket", "saturn", "ufo", "planet", "comet"],
-  sweet: ["lolly", "cupcake", "donut", "coneice", "candy"],
-  music: ["vinyl", "headphone", "speaker", "note", "mic"],
+  sailor: ["fish", "boat", "tail", "swallow", "anchor", "lighthouse", "helm"],
+  circus: ["elephant", "tent", "horse", "balloon", "figure", "mask"],
+  fruit: ["pear", "lemon", "mushroom", "sun", "umbrella", "apple", "banana"],
+  nature: ["tree", "deer", "owl", "fox", "mountain", "rabbit"],
+  love: ["heart", "wingfig", "swan", "cat", "house", "rose"],
+  space: ["rocket", "saturn", "ufo", "planet", "comet", "alien"],
+  sweet: ["lolly", "cupcake", "donut", "coneice", "candy", "waffle"],
+  music: ["vinyl", "headphone", "speaker", "note", "mic", "guitar", "piano"],
 };
 
 const KIT_SHOWER: Record<CollageKit, Kind[]> = {
-  sailor: ["starfish", "shell", "star", "fish", "anchor"],
-  circus: ["ball", "star", "balloon", "bow", "ticket"],
-  fruit: ["cherry", "leaf", "star", "drop", "lemon"],
-  nature: ["leaf", "acorn", "drop", "moth", "bird"],
-  love: ["heart", "star", "key", "moon", "ring"],
-  space: ["star", "moon", "comet", "satellite", "planet"],
-  sweet: ["candy", "heart", "lolly", "cherry", "donut"],
-  music: ["note", "star", "heart", "vinyl", "mic"],
+  sailor: ["starfish", "shell", "star", "fish", "anchor", "crab", "compass"],
+  circus: ["ball", "star", "balloon", "bow", "ticket", "popcorn", "cane"],
+  fruit: ["cherry", "leaf", "star", "drop", "lemon", "grape", "apple"],
+  nature: ["leaf", "acorn", "drop", "moth", "bird", "snail", "fern"],
+  love: ["heart", "star", "key", "moon", "ring", "diamond", "candle"],
+  space: ["star", "moon", "comet", "satellite", "planet", "asteroid"],
+  sweet: ["candy", "heart", "lolly", "cherry", "donut", "cookie"],
+  music: ["note", "star", "heart", "vinyl", "mic", "clef", "drum"],
 };
 
 interface Charge {
@@ -1021,6 +1046,259 @@ function speakerPath(ctx: CanvasRenderingContext2D, r: number) {
   ctx.arc(0, r * 0.42, r * 0.22, 0, Math.PI * 2);
 }
 
+function crabPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, r * 0.08, r * 0.55, r * 0.4, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.95, -r * 0.55);
+  ctx.quadraticCurveTo(-r * 0.55, -r * 0.15, -r * 0.35, r * 0.05);
+  ctx.quadraticCurveTo(-r * 0.85, r * 0.15, -r * 0.95, -r * 0.55);
+  ctx.closePath();
+  ctx.moveTo(r * 0.95, -r * 0.55);
+  ctx.quadraticCurveTo(r * 0.55, -r * 0.15, r * 0.35, r * 0.05);
+  ctx.quadraticCurveTo(r * 0.85, r * 0.15, r * 0.95, -r * 0.55);
+  ctx.closePath();
+}
+
+function helmPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, r * 0.08, r * 0.72, Math.PI * 0.12, Math.PI - 0.12, true);
+  ctx.lineTo(-r * 0.95, r * 0.55);
+  ctx.lineTo(-r * 0.55, r * 0.35);
+  ctx.lineTo(r * 0.55, r * 0.35);
+  ctx.lineTo(r * 0.95, r * 0.55);
+  ctx.closePath();
+}
+
+function lighthousePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.22, r);
+  ctx.lineTo(-r * 0.12, -r * 0.15);
+  ctx.lineTo(-r * 0.32, -r * 0.15);
+  ctx.lineTo(-r * 0.32, -r * 0.45);
+  ctx.lineTo(r * 0.32, -r * 0.45);
+  ctx.lineTo(r * 0.32, -r * 0.15);
+  ctx.lineTo(r * 0.12, -r * 0.15);
+  ctx.lineTo(r * 0.22, r);
+  ctx.closePath();
+  ctx.moveTo(0, -r * 0.95);
+  ctx.lineTo(r * 0.22, -r * 0.45);
+  ctx.lineTo(-r * 0.22, -r * 0.45);
+  ctx.closePath();
+}
+
+function compassPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, 0, r * 0.88, 0, Math.PI * 2);
+  ctx.moveTo(0, -r * 0.78);
+  ctx.lineTo(r * 0.16, 0);
+  ctx.lineTo(0, r * 0.78);
+  ctx.lineTo(-r * 0.16, 0);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.78, 0);
+  ctx.lineTo(0, r * 0.16);
+  ctx.lineTo(r * 0.78, 0);
+  ctx.lineTo(0, -r * 0.16);
+  ctx.closePath();
+}
+
+function popcornPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.55, r * 0.15);
+  ctx.lineTo(-r * 0.42, r * 0.95);
+  ctx.lineTo(r * 0.42, r * 0.95);
+  ctx.lineTo(r * 0.55, r * 0.15);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.35, r * 0.12);
+  ctx.arc(-r * 0.22, -r * 0.15, r * 0.28, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.12, -r * 0.05);
+  ctx.arc(r * 0.22, -r * 0.12, r * 0.26, 0, Math.PI * 2);
+  ctx.moveTo(0, -r * 0.45);
+  ctx.arc(0, -r * 0.42, r * 0.24, 0, Math.PI * 2);
+}
+
+function canePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, -r * 0.45, r * 0.38, Math.PI * 0.15, Math.PI, true);
+  ctx.lineTo(-r * 0.38, r * 0.95);
+  ctx.lineTo(-r * 0.12, r * 0.95);
+  ctx.lineTo(-r * 0.12, -r * 0.45);
+  ctx.arc(0, -r * 0.45, r * 0.12, Math.PI, Math.PI * 0.15, false);
+  ctx.closePath();
+}
+
+function maskPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, 0, r * 0.9, r * 0.62, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.42, -r * 0.08);
+  ctx.ellipse(-r * 0.28, -r * 0.05, r * 0.18, r * 0.14, 0, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.42, -r * 0.08);
+  ctx.ellipse(r * 0.28, -r * 0.05, r * 0.18, r * 0.14, 0, 0, Math.PI * 2);
+}
+
+function applePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(-r * 0.22, r * 0.08, r * 0.55, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.75, r * 0.08);
+  ctx.arc(r * 0.22, r * 0.08, r * 0.55, 0, Math.PI * 2);
+  ctx.moveTo(0, -r * 0.35);
+  ctx.quadraticCurveTo(r * 0.22, -r * 0.95, r * 0.08, -r);
+  ctx.quadraticCurveTo(-r * 0.05, -r * 0.55, 0, -r * 0.35);
+  ctx.closePath();
+}
+
+function bananaPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.85, r * 0.35);
+  ctx.quadraticCurveTo(-r * 0.15, -r * 0.85, r * 0.85, -r * 0.15);
+  ctx.quadraticCurveTo(r * 0.95, r * 0.25, r * 0.55, r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.05, -r * 0.25, -r * 0.65, r * 0.55);
+  ctx.closePath();
+}
+
+function grapePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(-r * 0.22, r * 0.35, r * 0.28, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.45, r * 0.35);
+  ctx.arc(r * 0.18, r * 0.32, r * 0.26, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.12, r * 0.08);
+  ctx.arc(0, r * 0.02, r * 0.28, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.05, -r * 0.35);
+  ctx.arc(-r * 0.08, -r * 0.32, r * 0.24, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.28, -r * 0.28);
+  ctx.arc(r * 0.2, -r * 0.22, r * 0.22, 0, Math.PI * 2);
+}
+
+function rabbitPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(-r * 0.22, -r * 0.55, r * 0.16, r * 0.48, -0.2, 0, Math.PI * 2);
+  ctx.ellipse(r * 0.22, -r * 0.55, r * 0.16, r * 0.48, 0.2, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.48, r * 0.15);
+  ctx.arc(0, r * 0.18, r * 0.48, 0, Math.PI * 2);
+}
+
+function snailPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(r * 0.12, 0, r * 0.55, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.35, r * 0.35);
+  ctx.quadraticCurveTo(-r * 0.85, r * 0.15, -r * 0.75, -r * 0.35);
+  ctx.quadraticCurveTo(-r * 0.35, r * 0.05, -r * 0.15, r * 0.22);
+  ctx.closePath();
+}
+
+function fernPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, r);
+  ctx.quadraticCurveTo(r * 0.15, 0, 0, -r);
+  ctx.quadraticCurveTo(-r * 0.15, 0, 0, r);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.55, r * 0.15);
+  ctx.ellipse(-r * 0.28, r * 0.2, r * 0.32, r * 0.16, -0.4, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.55, -r * 0.05);
+  ctx.ellipse(r * 0.28, -r * 0.02, r * 0.3, r * 0.15, 0.4, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.42, -r * 0.35);
+  ctx.ellipse(-r * 0.2, -r * 0.28, r * 0.26, r * 0.13, -0.5, 0, Math.PI * 2);
+}
+
+function rosePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, -r * 0.08, r * 0.42, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.55, -r * 0.25);
+  ctx.arc(r * 0.22, -r * 0.22, r * 0.32, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.15, r * 0.15);
+  ctx.arc(-r * 0.18, 0, r * 0.32, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.08, r * 0.15);
+  ctx.rect(-r * 0.08, r * 0.15, r * 0.16, r * 0.75);
+}
+
+function diamondPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, -r);
+  ctx.lineTo(r * 0.72, 0);
+  ctx.lineTo(0, r);
+  ctx.lineTo(-r * 0.72, 0);
+  ctx.closePath();
+}
+
+function candlePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.22, -r * 0.15, r * 0.44, r * 1.05);
+  ctx.moveTo(0, -r * 0.95);
+  ctx.quadraticCurveTo(r * 0.28, -r * 0.55, 0, -r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.22, -r * 0.55, 0, -r * 0.95);
+  ctx.closePath();
+}
+
+function alienPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, -r * 0.05, r * 0.62, r * 0.78, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.38, -r * 0.15);
+  ctx.ellipse(-r * 0.22, -r * 0.08, r * 0.2, r * 0.28, -0.3, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.38, -r * 0.15);
+  ctx.ellipse(r * 0.22, -r * 0.08, r * 0.2, r * 0.28, 0.3, 0, Math.PI * 2);
+}
+
+function asteroidPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, -r * 0.85);
+  ctx.lineTo(r * 0.62, -r * 0.45);
+  ctx.lineTo(r * 0.85, r * 0.15);
+  ctx.lineTo(r * 0.35, r * 0.82);
+  ctx.lineTo(-r * 0.45, r * 0.72);
+  ctx.lineTo(-r * 0.88, r * 0.05);
+  ctx.lineTo(-r * 0.55, -r * 0.55);
+  ctx.closePath();
+}
+
+function telescopePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.85, r * 0.35);
+  ctx.lineTo(-r * 0.55, r * 0.55);
+  ctx.lineTo(r * 0.75, -r * 0.35);
+  ctx.lineTo(r * 0.95, -r * 0.55);
+  ctx.lineTo(r * 0.75, -r * 0.75);
+  ctx.lineTo(-r * 0.85, r * 0.15);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.15, r * 0.55);
+  ctx.rect(-r * 0.22, r * 0.15, r * 0.16, r * 0.7);
+}
+
+function cookiePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, 0, r * 0.82, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.22, -r * 0.22);
+  ctx.arc(-r * 0.22, -r * 0.22, r * 0.1, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.28, r * 0.12);
+  ctx.arc(r * 0.28, r * 0.12, r * 0.08, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.05, -r * 0.38);
+  ctx.arc(r * 0.05, -r * 0.38, r * 0.07, 0, Math.PI * 2);
+}
+
+function wafflePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, -r * 0.9);
+  ctx.lineTo(r * 0.9, 0);
+  ctx.lineTo(0, r * 0.9);
+  ctx.lineTo(-r * 0.9, 0);
+  ctx.closePath();
+}
+
+function guitarPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, r * 0.42, r * 0.42, r * 0.48, 0, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.28, -r * 0.05);
+  ctx.ellipse(0, r * 0.02, r * 0.28, r * 0.22, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.08, -r * 0.15);
+  ctx.rect(-r * 0.08, -r * 0.95, r * 0.16, r * 0.9);
+}
+
+function drumPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, -r * 0.35, r * 0.72, r * 0.28, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.72, -r * 0.35);
+  ctx.lineTo(-r * 0.72, r * 0.45);
+  ctx.ellipse(0, r * 0.45, r * 0.72, r * 0.28, 0, Math.PI, 0, true);
+  ctx.lineTo(r * 0.72, -r * 0.35);
+  ctx.closePath();
+}
+
+function pianoPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.95, -r * 0.35, r * 1.9, r * 0.85);
+  ctx.moveTo(-r * 0.55, -r * 0.35);
+  ctx.rect(-r * 0.62, -r * 0.35, r * 0.18, r * 0.42);
+  ctx.moveTo(-r * 0.12, -r * 0.35);
+  ctx.rect(-r * 0.18, -r * 0.35, r * 0.18, r * 0.42);
+  ctx.moveTo(r * 0.32, -r * 0.35);
+  ctx.rect(r * 0.26, -r * 0.35, r * 0.18, r * 0.42);
+}
+
+function clefPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(r * 0.12, r * 0.85);
+  ctx.bezierCurveTo(-r * 0.85, r * 0.35, -r * 0.55, -r * 0.85, r * 0.25, -r * 0.75);
+  ctx.bezierCurveTo(r * 0.85, -r * 0.65, r * 0.55, r * 0.15, -r * 0.05, r * 0.05);
+  ctx.bezierCurveTo(-r * 0.45, 0, -r * 0.15, -r * 0.35, r * 0.15, -r * 0.15);
+  ctx.lineTo(r * 0.12, r * 0.85);
+  ctx.closePath();
+  ctx.moveTo(r * 0.22, r * 0.72);
+  ctx.arc(r * 0.08, r * 0.72, r * 0.16, 0, Math.PI * 2);
+}
+
 function drawKind(ctx: CanvasRenderingContext2D, kind: Kind, r: number) {
   ctx.beginPath();
   switch (kind) {
@@ -1210,6 +1488,81 @@ function drawKind(ctx: CanvasRenderingContext2D, kind: Kind, r: number) {
       break;
     case "speaker":
       speakerPath(ctx, r);
+      break;
+    case "crab":
+      crabPath(ctx, r);
+      break;
+    case "helm":
+      helmPath(ctx, r);
+      break;
+    case "lighthouse":
+      lighthousePath(ctx, r);
+      break;
+    case "compass":
+      compassPath(ctx, r);
+      break;
+    case "popcorn":
+      popcornPath(ctx, r);
+      break;
+    case "cane":
+      canePath(ctx, r);
+      break;
+    case "mask":
+      maskPath(ctx, r);
+      break;
+    case "apple":
+      applePath(ctx, r);
+      break;
+    case "banana":
+      bananaPath(ctx, r);
+      break;
+    case "grape":
+      grapePath(ctx, r);
+      break;
+    case "rabbit":
+      rabbitPath(ctx, r);
+      break;
+    case "snail":
+      snailPath(ctx, r);
+      break;
+    case "fern":
+      fernPath(ctx, r);
+      break;
+    case "rose":
+      rosePath(ctx, r);
+      break;
+    case "diamond":
+      diamondPath(ctx, r);
+      break;
+    case "candle":
+      candlePath(ctx, r);
+      break;
+    case "alien":
+      alienPath(ctx, r);
+      break;
+    case "asteroid":
+      asteroidPath(ctx, r);
+      break;
+    case "telescope":
+      telescopePath(ctx, r);
+      break;
+    case "cookie":
+      cookiePath(ctx, r);
+      break;
+    case "waffle":
+      wafflePath(ctx, r);
+      break;
+    case "guitar":
+      guitarPath(ctx, r);
+      break;
+    case "drum":
+      drumPath(ctx, r);
+      break;
+    case "piano":
+      pianoPath(ctx, r);
+      break;
+    case "clef":
+      clefPath(ctx, r);
       break;
     default:
       housePath(ctx, r);
@@ -1406,18 +1759,20 @@ function poseParticle(
   bpm: number,
 ): Pose | null {
   const music = isMusicMove(scene);
+  const rate = bpm > 40 ? (bpm / 60) * Math.PI * 2 : 0;
   const idle =
-    scene === "kick" || scene === "jelly" || music
-      ? Math.max(0, Math.sin(t * (bpm > 40 ? (bpm / 60) * Math.PI * 2 : 6.2)))
+    scene === "kick" || scene === "jelly" || music || rate > 0
+      ? Math.max(0, Math.sin(t * (rate || 6.2)))
       : 0;
-  const punch = music ? Math.max(beat, idle * 0.25) : Math.max(beat * 0.85, idle * 0.18);
+  const punch = clamp(Math.max(beat, idle * (music ? 0.28 : rate > 0 ? 0.2 : 0.16)), 0, 1);
   if (scene === "bounce") {
     const sx = 0.11 + Math.abs(p.vx) * 2.4;
     const sy = 0.09 + Math.abs(p.vy) * 2.1;
     return {
       x: screenBounce(p.x + sx * t),
       y: screenBounce(p.y + sy * t * 0.92),
-      px: clamp((0.1 + p.size * 0.07) * (1 + punch * 0.14), 0.08, 0.26),
+      px: clamp((0.1 + p.size * 0.07) * (1 + punch * 0.22), 0.08, 0.28),
+      glow: punch * 0.45,
       rot: p.rot + p.vr * t * 1.6,
       alpha: 1,
     };
@@ -1428,7 +1783,8 @@ function poseParticle(
     return {
       x: screenBounce(p.x + p.vx * t * 0.45),
       y: screenBounce(p.y + p.vy * t * 0.38),
-      px: clamp((0.12 + p.size * 0.06) * (1 + punch * 0.1), 0.08, 0.24),
+      px: clamp((0.12 + p.size * 0.06) * (1 + punch * 0.18), 0.08, 0.26),
+      glow: punch * 0.35,
       rot: p.rot + Math.sin(spin) * 0.15,
       alpha: clamp(0.28 + Math.abs(flip) * 0.72, 0.2, 1),
       flip,
@@ -1436,7 +1792,7 @@ function poseParticle(
   }
   if (scene === "glow") {
     const pulse = 0.45 + 0.55 * Math.sin(t * 2.4 + i * 0.7);
-    const lit = clamp(pulse * 0.55 + punch * 0.35 + bass * 0.18, 0, 1);
+    const lit = clamp(pulse * 0.4 + punch * 0.55 + bass * 0.18, 0, 1);
     return {
       x: (p.x - 0.5) * 0.86 + Math.sin(t * 0.55 + p.y * 7) * 0.07,
       y: (p.y - 0.5) * 0.74 + Math.cos(t * 0.48 + p.x * 6) * 0.06,
@@ -1452,17 +1808,17 @@ function poseParticle(
     return {
       x: screenBounce(p.x + p.vx * t * 0.32),
       y: screenBounce(p.y + p.vy * t * 0.28),
-      px: clamp((0.11 + p.size * 0.07) * (1 + punch * 0.1), 0.08, 0.24),
+      px: clamp((0.11 + p.size * 0.07) * (1 + punch * 0.18), 0.08, 0.26),
       rot: p.rot + t * 0.4 * p.vr,
       alpha: clamp(blink, 0.4, 1),
-      glow: 0.16 + punch * 0.28,
+      glow: 0.16 + punch * 0.45,
       tint,
     };
   }
   if (scene === "hop") {
     const rate = bpm > 40 ? bpm / 60 : 0.85;
     const phase = wrap01(t * rate + p.z);
-    const hop = Math.abs(Math.sin(phase * Math.PI)) + punch * 0.16;
+    const hop = Math.abs(Math.sin(phase * Math.PI)) * (0.72 + punch * 0.45) + punch * 0.14;
     const flip = Math.cos(phase * Math.PI * 2);
     return {
       x: screenBounce(p.x + (0.1 + Math.abs(p.vx) * 1.8) * t),
@@ -1507,9 +1863,10 @@ function poseParticle(
     return {
       x: u * 0.9 + wave * 0.07,
       y: v * 0.74 + Math.sin(t * 0.48 + row * 0.9) * 0.035,
-      px: clamp(0.085 + p.size * 0.045 + punch * 0.02, 0.06, 0.18),
+      px: clamp(0.085 + p.size * 0.045 + punch * 0.05, 0.06, 0.2),
       rot: p.rot + wave * 0.22,
       alpha: 1,
+      glow: punch * 0.5,
     };
   }
   if (scene === "rings") {
@@ -1523,9 +1880,10 @@ function poseParticle(
     return {
       x: Math.cos(ang) * rad,
       y: Math.sin(ang) * rad * 0.88,
-      px: clamp(0.07 + p.size * 0.035 + punch * 0.02, 0.05, 0.16),
+      px: clamp(0.07 + p.size * 0.035 + punch * 0.05, 0.05, 0.18),
       rot: ang + p.rot * 0.25,
       alpha: 0.96,
+      glow: punch * 0.48,
     };
   }
   if (scene === "loom") {
@@ -1534,9 +1892,10 @@ function poseParticle(
     return {
       x: Math.sin(a) * 0.4 + Math.sin(b * 0.5) * 0.06,
       y: Math.sin(a * 2 + p.z * Math.PI) * 0.3,
-      px: clamp(0.08 + p.size * 0.045 + punch * 0.02, 0.06, 0.18),
+      px: clamp(0.08 + p.size * 0.045 + punch * 0.05, 0.06, 0.2),
       rot: a * 0.18 + p.rot,
       alpha: 1,
+      glow: punch * 0.48,
     };
   }
   if (scene === "petal") {
@@ -1549,9 +1908,10 @@ function poseParticle(
     return {
       x: Math.cos(ang) * rad,
       y: Math.sin(ang) * rad * 0.9,
-      px: clamp(0.075 + p.size * 0.04 + punch * 0.02, 0.055, 0.18),
+      px: clamp(0.075 + p.size * 0.04 + punch * 0.05, 0.055, 0.2),
       rot: ang + Math.PI * 0.5,
       alpha: clamp(0.42 + breath * 0.55, 0.4, 1),
+      glow: punch * 0.5,
     };
   }
   if (scene === "flock") {
@@ -1562,9 +1922,10 @@ function poseParticle(
     return {
       x: Math.cos(ang) * rad,
       y: Math.sin(ang * 0.86) * rad * 0.7,
-      px: clamp(0.075 + p.size * 0.04 + punch * 0.02, 0.055, 0.17),
+      px: clamp(0.075 + p.size * 0.04 + punch * 0.05, 0.055, 0.19),
       rot: ang + Math.PI * 0.5,
       alpha: 1,
+      glow: punch * 0.48,
     };
   }
   if (scene === "wheel") {
@@ -1578,9 +1939,10 @@ function poseParticle(
     return {
       x: Math.cos(ang) * rad,
       y: Math.sin(ang) * rad * 0.72,
-      px: clamp((0.075 + p.size * 0.035) * (0.78 + near * 0.28) + punch * 0.02, 0.05, 0.2),
+      px: clamp((0.075 + p.size * 0.035) * (0.78 + near * 0.28) + punch * 0.05, 0.05, 0.22),
       rot: ang,
       alpha: clamp(0.5 + near * 0.45, 0.45, 1),
+      glow: punch * 0.48,
     };
   }
   if (scene === "silk") {
@@ -1591,9 +1953,10 @@ function poseParticle(
     return {
       x: s - 0.5,
       y,
-      px: clamp(0.07 + p.size * 0.038 + punch * 0.02, 0.05, 0.16),
+      px: clamp(0.07 + p.size * 0.038 + punch * 0.05, 0.05, 0.18),
       rot: Math.cos(s * Math.PI * 3) * 0.28 + p.rot * 0.15,
       alpha: 0.94,
+      glow: punch * 0.45,
     };
   }
   if (scene === "bars") {
@@ -1603,7 +1966,7 @@ function poseParticle(
     const row = Math.floor(i / cols) % rows;
     const u = (col + 0.5) / cols - 0.5;
     const drive = 0.32 + 0.68 * (0.5 + 0.5 * Math.sin(t * 2.15 + col * 0.85 + p.z));
-    const hgt = clamp(drive * (0.45 + audio * 0.28 + bass * 0.18 + punch * 0.38), 0.18, 1);
+    const hgt = clamp(drive * (0.42 + audio * 0.28 + bass * 0.2 + punch * 0.52), 0.18, 1);
     const y = 0.42 - (row / Math.max(rows - 1, 1)) * hgt * 0.82;
     return {
       x: u * 0.86,
@@ -1621,7 +1984,7 @@ function poseParticle(
     const slot = Math.floor(i / rings);
     const n = 16;
     const s = wrap01(t * 0.2);
-    const rad = 0.15 + ring * 0.145 + s * 0.16 + punch * 0.045;
+    const rad = 0.15 + ring * 0.145 + s * 0.16 + punch * 0.07;
     const ang = (slot / n) * Math.PI * 2 + t * 0.1;
     return {
       x: Math.cos(ang) * rad,
@@ -1657,7 +2020,7 @@ function poseParticle(
     const slot = Math.floor(i / rings);
     const n = 16;
     const ang = (slot / n) * Math.PI * 2 + t * 0.2 * (ring === 1 ? -1 : 1);
-    const rad = (0.14 + ring * 0.13) * (1 + punch * 0.62);
+    const rad = (0.14 + ring * 0.13) * (1 + punch * 0.78);
     return {
       x: Math.cos(ang) * rad,
       y: Math.sin(ang) * rad * 0.9,
@@ -1690,7 +2053,7 @@ function poseParticle(
     const side = i & 1 ? 1 : -1;
     const row = Math.floor(i / 2) % 8;
     const depth = Math.floor(i / 16) % 3;
-    const gap = 0.28 - punch * 0.14;
+    const gap = 0.28 - punch * 0.2;
     return {
       x: side * (gap + depth * 0.055),
       y: (row / 7 - 0.5) * 0.78,
@@ -1707,7 +2070,7 @@ function poseParticle(
     const col = i % cols;
     const row = Math.floor(i / cols) % rows;
     const u = (col + 0.5) / cols - 0.5;
-    const amp = 0.09 + audio * 0.07 + punch * 0.13;
+    const amp = 0.09 + audio * 0.07 + punch * 0.2;
     const phase = u * Math.PI * 3.4 + t * 2.15 + row * 0.55;
     return {
       x: u * 0.92,
@@ -1727,7 +2090,8 @@ function poseParticle(
     return {
       x: Math.cos(ang) * rad,
       y: Math.sin(ang) * rad,
-      px: clamp((0.2 * p.size * (0.95 + bass * 0.08 + punch * 0.12)) / depth, 0.04, 0.48),
+      px: clamp((0.2 * p.size * (0.95 + bass * 0.1 + punch * 0.26)) / depth, 0.04, 0.5),
+      glow: punch * 0.42,
       rot: p.rot + p.vr * t * 0.2,
       alpha: clamp((2.65 - depth) / 0.28, 0, 1) * clamp((depth - 0.3) / 0.1, 0, 1),
     };
@@ -1754,7 +2118,8 @@ function poseParticle(
     return {
       x: Math.cos(ang) * grow * 0.92,
       y: Math.sin(ang) * grow * 0.92,
-      px: clamp(0.05 + grow * 0.32 * p.size * (1 + audio * 0.06 + punch * 0.12), 0.04, 0.46),
+      px: clamp(0.05 + grow * 0.32 * p.size * (1 + audio * 0.06 + punch * 0.24), 0.04, 0.48),
+      glow: punch * 0.4,
       rot: p.rot + u * 0.4,
       alpha: clamp(1.05 - grow, 0, 1) * clamp(u / 0.08, 0, 1),
     };
@@ -1768,7 +2133,8 @@ function poseParticle(
     return {
       x: Math.cos(ang) * rad,
       y: Math.sin(ang) * rad,
-      px: clamp((0.2 * p.size * (0.94 + bass * 0.08 + punch * 0.12)) / depth, 0.04, 0.5),
+      px: clamp((0.2 * p.size * (0.94 + bass * 0.1 + punch * 0.26)) / depth, 0.04, 0.52),
+      glow: punch * 0.4,
       rot: p.rot + ang * 0.15,
       alpha: clamp((2.75 - depth) / 0.28, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
     };
@@ -1783,7 +2149,8 @@ function poseParticle(
     return {
       x: Math.cos(ang) * rad,
       y: Math.sin(ang) * rad * 0.92,
-      px: clamp((0.22 * p.size * (0.93 + bass * 0.08 + punch * 0.12)) / depth, 0.04, 0.52),
+      px: clamp((0.22 * p.size * (0.93 + bass * 0.1 + punch * 0.26)) / depth, 0.04, 0.54),
+      glow: punch * 0.4,
       rot: ang + p.rot,
       alpha: clamp((2.85 - depth) / 0.28, 0, 1) * clamp((depth - 0.26) / 0.1, 0, 1),
     };
@@ -1800,7 +2167,8 @@ function poseParticle(
     return {
       x: (x0 * c - y0 * s) / depth,
       y: (x0 * s + y0 * c) / depth,
-      px: clamp((0.2 * p.size * (0.94 + bass * 0.08 + punch * 0.12)) / depth, 0.04, 0.5),
+      px: clamp((0.2 * p.size * (0.94 + bass * 0.1 + punch * 0.26)) / depth, 0.04, 0.52),
+      glow: punch * 0.4,
       rot: p.rot + spin,
       alpha: clamp((2.7 - depth) / 0.26, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
     };
@@ -1813,7 +2181,8 @@ function poseParticle(
   return {
     x,
     y,
-    px: clamp((0.24 * p.size * (0.92 + bass * 0.08 + punch * 0.14)) / depth, 0.04, 0.58),
+    px: clamp((0.24 * p.size * (0.92 + bass * 0.1 + punch * 0.28)) / depth, 0.04, 0.6),
+    glow: punch * 0.48,
     rot: p.rot + p.vr * t * 0.12,
     alpha: clamp((2.85 - depth) / 0.3, 0, 1) * clamp((depth - 0.26) / 0.1, 0, 1),
   };
