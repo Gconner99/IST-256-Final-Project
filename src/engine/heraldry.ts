@@ -1471,15 +1471,15 @@ function poseParticle(
     const rings = 4;
     const ring = i % rings;
     const slot = Math.floor(i / rings);
-    const n = 8 + ring * 3;
+    const n = 12;
     const dir = ring & 1 ? -1 : 1;
-    const ang = (slot / n) * Math.PI * 2 + t * (0.32 + ring * 0.06) * dir;
-    const rad = 0.11 + ring * 0.095;
+    const ang = (slot / n) * Math.PI * 2 + t * (0.28 + ring * 0.05) * dir;
+    const rad = 0.14 + ring * 0.11;
     return {
       x: Math.cos(ang) * rad,
-      y: Math.sin(ang) * rad * 0.86,
-      px: clamp(0.075 + p.size * 0.04 + punch * 0.02, 0.055, 0.17),
-      rot: ang + p.rot * 0.3,
+      y: Math.sin(ang) * rad * 0.88,
+      px: clamp(0.07 + p.size * 0.035 + punch * 0.02, 0.05, 0.16),
+      rot: ang + p.rot * 0.25,
       alpha: 0.96,
     };
   }
@@ -1499,8 +1499,8 @@ function poseParticle(
     const petal = i % petals;
     const step = Math.floor(i / petals) / 8;
     const ang = (petal / petals) * Math.PI * 2 + t * 0.2;
-    const breath = 0.58 + 0.42 * Math.sin(t * 0.85);
-    const rad = (0.07 + step * 0.34) * breath;
+    const breath = 0.8 + 0.2 * Math.sin(t * 0.85);
+    const rad = (0.1 + step * 0.32) * breath;
     return {
       x: Math.cos(ang) * rad,
       y: Math.sin(ang) * rad * 0.9,
@@ -1523,29 +1523,31 @@ function poseParticle(
     };
   }
   if (scene === "wheel") {
-    const ring = i & 1;
-    const slot = Math.floor(i / 2);
-    const n = 16;
-    const ang = (slot / n) * Math.PI * 2 + t * 0.42 * (ring ? -1 : 1);
-    const rad = 0.26 + ring * 0.1;
+    const rings = 3;
+    const ring = i % rings;
+    const slot = Math.floor(i / rings);
+    const n = 14;
+    const ang = (slot / n) * Math.PI * 2 + t * 0.38 * (ring === 1 ? -1 : 1);
+    const rad = 0.2 + ring * 0.12;
     const near = 0.5 + 0.5 * Math.sin(ang);
     return {
       x: Math.cos(ang) * rad,
-      y: Math.sin(ang) * rad * 0.4 + ring * 0.03,
-      px: clamp((0.08 + p.size * 0.04) * (0.72 + near * 0.38) + punch * 0.02, 0.055, 0.22),
+      y: Math.sin(ang) * rad * 0.72,
+      px: clamp((0.075 + p.size * 0.035) * (0.78 + near * 0.28) + punch * 0.02, 0.05, 0.2),
       rot: ang,
-      alpha: clamp(0.42 + near * 0.55, 0.4, 1),
+      alpha: clamp(0.5 + near * 0.45, 0.45, 1),
     };
   }
   if (scene === "silk") {
-    const lane = i & 1;
-    const s = wrap01(p.x + t * (0.07 + lane * 0.025) * (lane ? -1 : 1));
-    const y = (p.y - 0.5) * 0.68 + Math.sin(s * Math.PI * 4 + lane) * 0.11;
+    const lane = i % 4;
+    const dir = lane < 2 ? 1 : -1;
+    const s = wrap01(p.x + t * 0.075 * dir + lane * 0.08);
+    const y = (lane / 3 - 0.5) * 0.52 + Math.sin(s * Math.PI * 3 + lane) * 0.055;
     return {
       x: s - 0.5,
       y,
-      px: clamp(0.075 + p.size * 0.04 + punch * 0.02, 0.055, 0.17),
-      rot: Math.cos(s * Math.PI * 4) * 0.35 + p.rot * 0.2,
+      px: clamp(0.07 + p.size * 0.038 + punch * 0.02, 0.05, 0.16),
+      rot: Math.cos(s * Math.PI * 3) * 0.28 + p.rot * 0.15,
       alpha: 0.94,
     };
   }
