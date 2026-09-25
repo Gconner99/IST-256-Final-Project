@@ -91,7 +91,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera or bounce around a warm colored ground. Each clip locks one move. Rush is the fly-at-the-lens; bounce / flip / glow / flash / hop stay on the screen. Kick and jelly pulse with the mix. Drop or upload an MP3 and the stamps breathe on the beat without jumping off their path.</p>
+        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tide / rings / loom / petal / flock / wheel / silk are the slow looping patterns. Bounce and glow stay if you still want them. Drop an MP3 and the stamps breathe on the beat without jumping off their path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -490,27 +490,34 @@ function paintRail(n: HTMLElement) {
     <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-move="rush">Rush</button>
       <button class="btn tiny" data-act="gen" data-kind="giants" data-move="tunnel">Tunnel</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="bloom">Bloom</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="spiral">Spiral</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="helix">Helix</button>
     </div>
     <div class="row">
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="helix">Helix</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="prism">Prism</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="tide">Tide</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="rings">Rings</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="loom">Loom</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="petal">Petal</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="flock">Flock</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="wheel">Wheel</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="silk">Silk</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="mix">Mix</button>
     </div>
     <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="bounce">Bounce</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="flip">Flip</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="glow">Glow</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="flash">Flash</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="kick">Kick</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="jelly">Jelly</button>
     </div>
     <div class="row">
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="flip">Flip</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="flash">Flash</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="hop">Hop</button>
-      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="kick">Kick</button>
-      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="jelly">Jelly</button>
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
     </div>
-    <div class="status" style="margin-top:4px">Each clip keeps one move. Rush flies at the lens. Bounce / flip / glow / flash / hop stay on the screen. Kick and jelly pulse with the mix. Drop an MP3 and they breathe on the beat. Kit buttons keep the last move.</div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move. Tide / rings / loom / petal / flock / wheel / silk are the looping patterns. Rush still flies at the lens. Kit buttons keep the last move.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"

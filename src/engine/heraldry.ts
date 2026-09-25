@@ -19,6 +19,13 @@ export const COLLAGE_MOVES = [
   "hop",
   "kick",
   "jelly",
+  "tide",
+  "rings",
+  "loom",
+  "petal",
+  "flock",
+  "wheel",
+  "silk",
 ] as const;
 export type CollageMove = (typeof COLLAGE_MOVES)[number];
 export type HeraldryScene = CollageMove | "tour" | "lattice";
@@ -37,6 +44,13 @@ export const MOVE_LABEL: Record<CollageMove, string> = {
   hop: "HOP",
   kick: "KICK",
   jelly: "JELLY",
+  tide: "TIDE",
+  rings: "RINGS",
+  loom: "LOOM",
+  petal: "PETAL",
+  flock: "FLOCK",
+  wheel: "WHEEL",
+  silk: "SILK",
 };
 
 export function isHeraldry(kind?: string | null): boolean {
@@ -1259,17 +1273,19 @@ export class HeraldryField {
     const count =
       scene === "bounce" || scene === "flip" || scene === "hop" || scene === "kick" || scene === "jelly"
         ? 36
-        : scene === "glow" || scene === "flash"
-          ? 28
-          : scene === "prism"
-            ? 64
-            : scene === "helix"
-              ? 130
-              : scene === "tunnel"
-                ? 120
-                : scene === "bloom"
-                  ? 140
-                  : this.particles.length;
+        : scene === "tide" || scene === "rings" || scene === "loom" || scene === "petal" || scene === "flock" || scene === "wheel" || scene === "silk"
+          ? 48
+          : scene === "glow" || scene === "flash"
+            ? 28
+            : scene === "prism"
+              ? 64
+              : scene === "helix"
+                ? 130
+                : scene === "tunnel"
+                  ? 120
+                  : scene === "bloom"
+                    ? 140
+                    : this.particles.length;
     const prisms = scene === "prism" ? 3 : 1;
 
     for (let i = 0; i < count; i++) {
@@ -1433,6 +1449,104 @@ function poseParticle(
       rot: p.rot + Math.sin(t * 3 + i) * 0.2,
       alpha: 1,
       squash: wobble,
+    };
+  }
+  if (scene === "tide") {
+    const cols = 8;
+    const rows = 6;
+    const col = i % cols;
+    const row = Math.floor(i / cols) % rows;
+    const u = (col + 0.5) / cols - 0.5;
+    const v = (row + 0.5) / rows - 0.5;
+    const wave = Math.sin(t * 1.05 + row * 0.72 + col * 0.18);
+    return {
+      x: u * 0.9 + wave * 0.07,
+      y: v * 0.74 + Math.sin(t * 0.48 + row * 0.9) * 0.035,
+      px: clamp(0.085 + p.size * 0.045 + punch * 0.02, 0.06, 0.18),
+      rot: p.rot + wave * 0.22,
+      alpha: 1,
+    };
+  }
+  if (scene === "rings") {
+    const rings = 4;
+    const ring = i % rings;
+    const slot = Math.floor(i / rings);
+    const n = 8 + ring * 3;
+    const dir = ring & 1 ? -1 : 1;
+    const ang = (slot / n) * Math.PI * 2 + t * (0.32 + ring * 0.06) * dir;
+    const rad = 0.11 + ring * 0.095;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad * 0.86,
+      px: clamp(0.075 + p.size * 0.04 + punch * 0.02, 0.055, 0.17),
+      rot: ang + p.rot * 0.3,
+      alpha: 0.96,
+    };
+  }
+  if (scene === "loom") {
+    const a = t * 0.62 + p.x * Math.PI * 2;
+    const b = t * 0.94 + p.y * Math.PI * 2;
+    return {
+      x: Math.sin(a) * 0.4 + Math.sin(b * 0.5) * 0.06,
+      y: Math.sin(a * 2 + p.z * Math.PI) * 0.3,
+      px: clamp(0.08 + p.size * 0.045 + punch * 0.02, 0.06, 0.18),
+      rot: a * 0.18 + p.rot,
+      alpha: 1,
+    };
+  }
+  if (scene === "petal") {
+    const petals = 6;
+    const petal = i % petals;
+    const step = Math.floor(i / petals) / 8;
+    const ang = (petal / petals) * Math.PI * 2 + t * 0.2;
+    const breath = 0.58 + 0.42 * Math.sin(t * 0.85);
+    const rad = (0.07 + step * 0.34) * breath;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad * 0.9,
+      px: clamp(0.075 + p.size * 0.04 + punch * 0.02, 0.055, 0.18),
+      rot: ang + Math.PI * 0.5,
+      alpha: clamp(0.42 + breath * 0.55, 0.4, 1),
+    };
+  }
+  if (scene === "flock") {
+    const lane = i % 5;
+    const s = wrap01(p.z + t * (0.11 + lane * 0.015));
+    const ang = s * Math.PI * 2 + lane * 0.32;
+    const rad = 0.2 + Math.sin(ang * 2 + lane) * 0.1 + lane * 0.028;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang * 0.86) * rad * 0.7,
+      px: clamp(0.075 + p.size * 0.04 + punch * 0.02, 0.055, 0.17),
+      rot: ang + Math.PI * 0.5,
+      alpha: 1,
+    };
+  }
+  if (scene === "wheel") {
+    const ring = i & 1;
+    const slot = Math.floor(i / 2);
+    const n = 16;
+    const ang = (slot / n) * Math.PI * 2 + t * 0.42 * (ring ? -1 : 1);
+    const rad = 0.26 + ring * 0.1;
+    const near = 0.5 + 0.5 * Math.sin(ang);
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad * 0.4 + ring * 0.03,
+      px: clamp((0.08 + p.size * 0.04) * (0.72 + near * 0.38) + punch * 0.02, 0.055, 0.22),
+      rot: ang,
+      alpha: clamp(0.42 + near * 0.55, 0.4, 1),
+    };
+  }
+  if (scene === "silk") {
+    const lane = i & 1;
+    const s = wrap01(p.x + t * (0.07 + lane * 0.025) * (lane ? -1 : 1));
+    const y = (p.y - 0.5) * 0.68 + Math.sin(s * Math.PI * 4 + lane) * 0.11;
+    return {
+      x: s - 0.5,
+      y,
+      px: clamp(0.075 + p.size * 0.04 + punch * 0.02, 0.055, 0.17),
+      rot: Math.cos(s * Math.PI * 4) * 0.35 + p.rot * 0.2,
+      alpha: 0.94,
     };
   }
   if (scene === "tunnel") {

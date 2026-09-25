@@ -171,7 +171,14 @@ export interface MediaSource {
     | "flash"
     | "hop"
     | "kick"
-    | "jelly";
+    | "jelly"
+    | "tide"
+    | "rings"
+    | "loom"
+    | "petal"
+    | "flock"
+    | "wheel"
+    | "silk";
 }
 
 export interface Keyframe {

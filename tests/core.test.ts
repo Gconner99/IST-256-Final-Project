@@ -262,6 +262,13 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("heraldry", "music", "hop").name).toBe("HOP · MUSIC");
     expect(defaultGeneratorSource("heraldry", "music", "kick").name).toBe("KICK · MUSIC");
     expect(defaultGeneratorSource("heraldry", "sweet", "jelly").name).toBe("JELLY · SWEET");
+    expect(defaultGeneratorSource("heraldry", "sailor", "tide").name).toBe("TIDE · SAILOR");
+    expect(defaultGeneratorSource("heraldry", "love", "rings").name).toBe("RINGS · LOVE");
+    expect(defaultGeneratorSource("heraldry", "fruit", "loom").name).toBe("LOOM · FRUIT");
+    expect(defaultGeneratorSource("heraldry", "nature", "petal").name).toBe("PETAL · GROVE");
+    expect(defaultGeneratorSource("heraldry", "space", "flock").name).toBe("FLOCK · SPACE");
+    expect(defaultGeneratorSource("heraldry", "circus", "wheel").name).toBe("WHEEL · CIRCUS");
+    expect(defaultGeneratorSource("heraldry", "music", "silk").name).toBe("SILK · MUSIC");
   });
 });
 
@@ -793,6 +800,13 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("heraldry", "hop")).toBe("hop");
     expect(sceneFromGenerator("heraldry", "kick")).toBe("kick");
     expect(sceneFromGenerator("heraldry", "jelly")).toBe("jelly");
+    expect(sceneFromGenerator("heraldry", "tide")).toBe("tide");
+    expect(sceneFromGenerator("heraldry", "rings")).toBe("rings");
+    expect(sceneFromGenerator("heraldry", "loom")).toBe("loom");
+    expect(sceneFromGenerator("heraldry", "petal")).toBe("petal");
+    expect(sceneFromGenerator("heraldry", "flock")).toBe("flock");
+    expect(sceneFromGenerator("heraldry", "wheel")).toBe("wheel");
+    expect(sceneFromGenerator("heraldry", "silk")).toBe("silk");
     expect(sceneFromGenerator("heraldry", "helix")).toBe("helix");
     expect(sceneFromGenerator("heraldry", "prism")).toBe("prism");
     expect(sceneAt(0.2, 8, "tour")).toBe("rush");
@@ -815,6 +829,13 @@ describe("heraldry collage", () => {
       "hop",
       "kick",
       "jelly",
+      "tide",
+      "rings",
+      "loom",
+      "petal",
+      "flock",
+      "wheel",
+      "silk",
     ]);
   });
 
