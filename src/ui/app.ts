@@ -81,7 +81,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <section class="stage">
         <div class="viewport" id="view">
           <div class="hud" id="hud"></div>
-          <div class="dropveil" id="veil">DROP IMAGE / VIDEO / AUDIO</div>
+          <div class="dropveil" id="veil">DROP IMAGE / VIDEO / MP3</div>
         </div>
       </section>
       <aside class="stack" id="stack"></aside>
@@ -90,7 +90,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera or bounce around a warm colored ground. Each clip locks one move. Rush is the fly-at-the-lens; bounce / flip / glow / flash / hop stay on the screen and get wacky. Drop an MP3 and the motion follows the mix.</p>
+        <p>A collage machine. Stamp kits fly at the camera or bounce around a warm colored ground. Each clip locks one move. Rush is the fly-at-the-lens; bounce / flip / glow / flash / hop stay on the screen. Kick punches the stamps; jelly squishes them. Drop or upload an MP3 and the motion snaps to the beat.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -101,7 +101,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music. Move buttons keep the current kit.</li>
-          <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
+          <li><strong>Soundtrack</strong> — hit <em>MP3</em> or drop a clip (mp3/wav/ogg/m4a). It does not replace your picture. Playback starts and the stamps punch on the detected beats. Exported clips are silent for now — the motion still follows the song. Check <em>close loop</em> so the last beats fade into the first frame.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
@@ -167,6 +167,7 @@ function bind(root: HTMLElement) {
     }
     if (act === "help") store.patchUi({ helpOpen: !store.state.ui.helpOpen });
     if (act === "import") root.querySelector<HTMLInputElement>("#media-file")?.click();
+    if (act === "import-audio") root.querySelector<HTMLInputElement>("#audio-file")?.click();
     if (act === "replace") root.querySelector<HTMLInputElement>("#replace-file")?.click();
     if (act === "freeze") void freezeSelected();
     if (act === "gen") {
@@ -280,6 +281,10 @@ function bind(root: HTMLElement) {
     }
     if (t.id === "replace-file" && t instanceof HTMLInputElement && t.files) {
       void importFiles(t.files, true);
+      t.value = "";
+    }
+    if (t.id === "audio-file" && t instanceof HTMLInputElement && t.files) {
+      void importFiles(t.files, false);
       t.value = "";
     }
     if (t.id === "quality") store.setProject((p) => ({ ...p, quality: t.value as ProjectQuality }));
@@ -454,10 +459,12 @@ function paintRail(n: HTMLElement) {
     <div class="sec">Sources</div>
     <div class="row">
       <button class="btn tiny acid" data-act="import">Import</button>
+      <button class="btn tiny hot" data-act="import-audio" title="Upload an MP3. Playback starts and the collage hits the beat.">MP3</button>
       <button class="btn tiny" data-act="replace">Replace</button>
       <button class="btn tiny" data-act="freeze">Still frame</button>
       <button class="btn tiny" data-act="reprint">Print frame</button>
       <input id="media-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" multiple hidden />
+      <input id="audio-file" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden />
       <input id="replace-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden />
     </div>
     <hr class="div" />
@@ -499,17 +506,18 @@ function paintRail(n: HTMLElement) {
     </div>
     <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="hop">Hop</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="kick">Kick</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="jelly">Jelly</button>
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
-      <button class="btn tiny" data-act="reprint">Print frame</button>
     </div>
-    <div class="status" style="margin-top:4px">Each clip keeps one move. Rush flies at the lens. Bounce / flip / glow / flash / hop stay on the screen. Kit buttons keep the last move.</div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move. Rush flies at the lens. Bounce / flip / glow / flash / hop stay on the screen. Kick punches; jelly squishes. Drop an MP3 and they hit the beat. Kit buttons keep the last move.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
-          ? `soundtrack · ${fmtTime(s.duration || 0)}`
+          ? `beat-sync · ${fmtTime(s.duration || 0)}${s.bpm && s.bpm > 40 ? ` · ${s.bpm}bpm` : ""}`
           : `${s.kind} ${s.width}×${s.height}`;
         const useBtn = s.kind === "audio"
-          ? `<span class="status">mix</span>`
+          ? `<span class="status">beat</span>`
           : `<button class="btn tiny" data-act="use-src" data-id="${s.id}">use</button>`;
         return `
         <div class="thumb ${s.id === ui.selectedSourceId ? "on" : ""}" data-act="sel-src" data-id="${s.id}">

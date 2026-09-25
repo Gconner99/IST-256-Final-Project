@@ -54,13 +54,14 @@ HOW TO USE IT
   Space / Sweet / Music
 - Then pick ONE move. That clip stays on that move. Toward the camera:
   Rush, Tunnel, Bloom, Spiral, Helix, Prism. On the screen: Bounce,
-  Flip, Glow, Flash, Hop. Mix rolls a locked move.
+  Flip, Glow, Flash, Hop. Kick punches the stamps; Jelly squishes
+  them. Mix rolls a locked move.
 - Grounds are warm colored washes (no paper textures). Kit buttons
   keep the last move.
 - Rand wacky rolls a new kit and zoom.
 - Drag a photo, video, or MP3 onto the big area
-- Drop an MP3 to use it as a soundtrack. Hit Play — the collage
-  fly-through follows the mix
+- Hit MP3 (or drop a clip) to use it as a soundtrack. Playback
+  starts and the collage punches on the beat.
 - Click Print frame to turn the live picture into a still
 - Click New at the top to start over
 - Move the sliders. Click Export to save.

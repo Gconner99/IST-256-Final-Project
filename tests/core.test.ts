@@ -16,7 +16,8 @@ import { BOOT_GENERATOR_GLSL, COMIC_GENERATOR_GLSL, CONFETTI_GENERATOR_GLSL, COR
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
-import { isAudioFile, sampleLevelsFromSamples } from "../src/media/audio";
+import { beatEnvelope, detectBeats, estimateBpm, isAudioFile, sampleLevelsFromSamples } from "../src/media/audio";
+import { setSoundtrack } from "../src/ui/actions";
 import { seekVideo } from "../src/media/sources";
 
 describe("seeded random", () => {
@@ -259,6 +260,8 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("heraldry", "circus", "helix").name).toBe("HELIX · CIRCUS");
     expect(defaultGeneratorSource("heraldry", "love", "glow").name).toBe("GLOW · LOVE");
     expect(defaultGeneratorSource("heraldry", "music", "hop").name).toBe("HOP · MUSIC");
+    expect(defaultGeneratorSource("heraldry", "music", "kick").name).toBe("KICK · MUSIC");
+    expect(defaultGeneratorSource("heraldry", "sweet", "jelly").name).toBe("JELLY · SWEET");
   });
 });
 
@@ -730,6 +733,49 @@ describe("soundtrack", () => {
     expect(loud.bass).toBeGreaterThan(0.1);
     expect(quiet.energy).toBeLessThan(0.05);
   });
+
+  it("finds regular onsets and estimates tempo", () => {
+    const sr = 44100;
+    const seconds = 6;
+    const bpm = 120;
+    const ch = new Float32Array(sr * seconds);
+    const gap = 60 / bpm;
+    for (let t = 0.4; t < seconds - 0.15; t += gap) {
+      const i = Math.floor(t * sr);
+      for (let k = 0; k < 180 && i + k < ch.length; k++) ch[i + k] = (1 - k / 180) * 0.95;
+    }
+    const beats = detectBeats(ch, sr);
+    expect(beats.length).toBeGreaterThan(6);
+    expect(beats[0]).toBeGreaterThan(0.2);
+    const tempo = estimateBpm(beats);
+    expect(tempo).toBeGreaterThanOrEqual(100);
+    expect(tempo).toBeLessThanOrEqual(140);
+    expect(beatEnvelope(beats, beats[2])).toBeGreaterThan(0.9);
+    expect(beatEnvelope(beats, beats[2] + 0.4)).toBeLessThan(0.1);
+  });
+
+  it("starts playback when an mp3 is attached", () => {
+    store.replace(createDefaultProject());
+    store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: false, time: 2 } }));
+    setSoundtrack({
+      id: "src_audio",
+      name: "clip.mp3",
+      kind: "audio",
+      width: 0,
+      height: 0,
+      duration: 12,
+      beats: [0.5, 1, 1.5, 2],
+      bpm: 120,
+    });
+    expect(store.project.playback.playing).toBe(true);
+    expect(store.project.playback.time).toBe(0);
+    expect(store.project.duration).toBeGreaterThanOrEqual(12);
+    expect(store.state.ui.status).toMatch(/beat-sync/i);
+    expect(store.project.sources.some((s) => s.kind === "audio" && s.bpm === 120)).toBe(true);
+    const json = serializeProject(store.project);
+    expect(json).not.toContain("\"beats\"");
+    expect(json).not.toContain("\"bpm\"");
+  });
 });
 
 describe("heraldry collage", () => {
@@ -744,6 +790,8 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("heraldry", "glow")).toBe("glow");
     expect(sceneFromGenerator("heraldry", "flash")).toBe("flash");
     expect(sceneFromGenerator("heraldry", "hop")).toBe("hop");
+    expect(sceneFromGenerator("heraldry", "kick")).toBe("kick");
+    expect(sceneFromGenerator("heraldry", "jelly")).toBe("jelly");
     expect(sceneFromGenerator("heraldry", "helix")).toBe("helix");
     expect(sceneFromGenerator("heraldry", "prism")).toBe("prism");
     expect(sceneAt(0.2, 8, "tour")).toBe("rush");
@@ -764,6 +812,8 @@ describe("heraldry collage", () => {
       "glow",
       "flash",
       "hop",
+      "kick",
+      "jelly",
     ]);
   });
 

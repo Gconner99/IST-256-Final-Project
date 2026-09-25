@@ -70,6 +70,8 @@ export class Renderer {
   private sourceTex = new Map<string, WebGLTexture>();
   private audioEnergy = 0;
   private audioBass = 0;
+  private audioBeat = 0;
+  private audioBpm = 0;
   private effectProg = new Map<string, Program>();
   private copy: Program | null = null;
   private blit: Program | null = null;
@@ -322,6 +324,8 @@ export class Renderer {
       ink: src.colorB ?? "#c41e3a",
       audio: this.audioEnergy,
       bass: this.audioBass,
+      beat: this.audioBeat,
+      bpm: this.audioBpm,
     });
     texImage(gl, this.heraldryTex, canvas);
     if (target) {
@@ -476,6 +480,8 @@ export class Renderer {
     const mix = sampleAudio(getSoundtrack(project), time);
     this.audioEnergy = mix.energy;
     this.audioBass = mix.bass;
+    this.audioBeat = mix.beat;
+    this.audioBpm = getSoundtrack(project)?.bpm ?? 0;
 
     if (quality !== "export" && !this.needsPipeline(project)) {
       this.drawLite(project, time);

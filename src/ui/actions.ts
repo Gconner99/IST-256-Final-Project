@@ -48,22 +48,32 @@ export function setSoundtrack(source: MediaSource) {
       old.some((o) => o.id === l.sourceId) ? { ...l, sourceId: keep.find((s) => s.kind !== "audio")?.id ?? null } : l,
     );
     const duration = Math.max(p.duration, source.duration || 0);
-    return { ...p, sources: [...keep, source], layers, duration };
+    return {
+      ...p,
+      sources: [...keep, source],
+      layers,
+      duration,
+      playback: { ...p.playback, playing: true, time: 0 },
+    };
   });
   void resumeAudio();
-  if (store.project.playback.playing && source.audio) {
+  if (source.audio) {
     try {
-      const dur = source.duration || source.audio.duration || 1;
-      source.audio.currentTime = store.project.playback.time % Math.max(dur, 0.001);
+      source.audio.currentTime = 0;
     } catch {
       /* metadata may still be settling */
     }
     void source.audio.play().catch(() => undefined);
   }
   const secs = source.duration ? `${Math.floor(source.duration / 60)}:${String(Math.floor(source.duration % 60)).padStart(2, "0")}` : "";
+  const bpm = source.bpm && source.bpm > 40 ? `${source.bpm}bpm` : "";
+  const hits = source.beats?.length ? `${source.beats.length} hits` : "";
+  const extra = [secs, bpm, hits].filter(Boolean).join(" · ");
   store.patchUi({
     selectedSourceId: source.id,
-    status: `soundtrack ${source.name}${secs ? ` · ${secs}` : ""} — hit Play; the mix moves the collage`,
+    status: extra
+      ? `beat-sync · ${source.name} · ${extra}`
+      : `beat-sync · ${source.name} — collage punches on the mix`,
   });
 }
 

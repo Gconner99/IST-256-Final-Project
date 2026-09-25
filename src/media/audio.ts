@@ -17,6 +17,8 @@ let freq: Uint8Array | null = null;
 const hooked = new WeakSet<HTMLAudioElement>();
 let energyEma = 0;
 let bassEma = 0;
+let beatHold = 0;
+let prevEnergy = 0;
 
 function busCtx(): AudioContext | null {
   const AC =
@@ -84,6 +86,7 @@ export async function loadAudio(file: File): Promise<MediaSource> {
     }
   }
 
+  const beats = pcm ? detectBeats(pcm.getChannelData(0), pcm.sampleRate) : [];
   return {
     id: uid("src"),
     name: file.name,
@@ -95,8 +98,84 @@ export async function loadAudio(file: File): Promise<MediaSource> {
     duration,
     audio,
     pcm,
+    beats,
+    bpm: estimateBpm(beats),
     objectUrl: url,
   };
+}
+
+/** Energy-flux onsets. Cheap enough to run once when an MP3 loads. */
+export function detectBeats(ch: Float32Array, sampleRate: number): number[] {
+  if (ch.length < sampleRate * 0.4 || sampleRate < 1) return [];
+  const hop = Math.max(256, Math.floor(sampleRate * 0.012));
+  const win = hop * 2;
+  const n = Math.floor((ch.length - win) / hop);
+  if (n < 16) return [];
+  const energy = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const a = i * hop;
+    let e = 0;
+    for (let k = 0; k < win; k += 2) {
+      const s = ch[a + k];
+      e += s * s;
+    }
+    energy[i] = Math.sqrt(e / (win * 0.5));
+  }
+  const look = Math.max(10, Math.floor(0.32 / (hop / sampleRate)));
+  const minGap = 0.24;
+  const beats: number[] = [];
+  let last = -99;
+  for (let i = look; i < n; i++) {
+    let mean = 0;
+    let peak = 0;
+    for (let j = i - look; j < i; j++) {
+      mean += energy[j];
+      if (energy[j] > peak) peak = energy[j];
+    }
+    mean /= look;
+    const flux = energy[i] - energy[i - 1];
+    const hot = energy[i] > mean * 1.32 && energy[i] > peak * 0.72 && flux > 0.002;
+    if (!hot) continue;
+    const t = (i * hop) / sampleRate;
+    if (t - last < minGap) continue;
+    beats.push(t);
+    last = t;
+  }
+  return beats;
+}
+
+export function estimateBpm(beats: number[]): number {
+  if (beats.length < 4) return 0;
+  const gaps: number[] = [];
+  for (let i = 1; i < beats.length; i++) {
+    const g = beats[i] - beats[i - 1];
+    if (g >= 0.28 && g <= 0.8) gaps.push(g);
+  }
+  if (gaps.length < 3) return 0;
+  gaps.sort((a, b) => a - b);
+  const mid = gaps[Math.floor(gaps.length / 2)];
+  return clampNum(Math.round(60 / mid), 70, 170);
+}
+
+/** 1 at an onset, then a short decay so stamps can punch. */
+export function beatEnvelope(beats: number[], time: number, decay = 0.13): number {
+  if (!beats.length) return 0;
+  let lo = 0;
+  let hi = beats.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (beats[mid] <= time) lo = mid;
+    else hi = mid - 1;
+  }
+  const at = beats[lo];
+  if (at > time) return 0;
+  const dt = time - at;
+  if (dt > decay * 3) return 0;
+  return Math.exp(-dt / decay);
+}
+
+function clampNum(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v));
 }
 
 /** RMS of a short window plus a cheap downsampled "bass" window. */
@@ -142,13 +221,18 @@ function analyserLevels(): { energy: number; bass: number } | null {
   return { energy: sum / n, bass: low / lowN };
 }
 
-export function sampleAudio(source: MediaSource | undefined, time: number): { energy: number; bass: number } {
+export function sampleAudio(
+  source: MediaSource | undefined,
+  time: number,
+): { energy: number; bass: number; beat: number } {
   let energy = 0;
   let bass = 0;
+  let beat = 0;
   if (source?.kind === "audio" && source.pcm && source.pcm.duration > 0) {
     const s = sampleLevelsFromSamples(source.pcm.getChannelData(0), source.pcm.sampleRate, source.pcm.duration, time);
     energy = s.energy;
     bass = s.bass;
+    beat = beatEnvelope(source.beats ?? [], time);
   } else if (source?.kind === "audio") {
     const live = analyserLevels();
     if (live) {
@@ -156,12 +240,17 @@ export function sampleAudio(source: MediaSource | undefined, time: number): { en
       bass = live.bass;
     }
   }
-  const follow = source?.kind === "audio" ? 0.28 : 0.18;
+  const flux = energy - prevEnergy;
+  prevEnergy = energy;
+  if (source?.kind === "audio" && beat < 0.15 && flux > 0.07 && energy > 0.18) beat = 1;
+  beatHold = Math.max(beatHold * 0.72, beat);
+  const follow = source?.kind === "audio" ? 0.38 : 0.18;
   energyEma += (energy - energyEma) * follow;
-  bassEma += (bass - bassEma) * Math.min(follow, 0.22);
+  bassEma += (bass - bassEma) * Math.min(follow, 0.28);
   if (!source && energyEma < 0.002) energyEma = 0;
   if (!source && bassEma < 0.002) bassEma = 0;
-  return { energy: energyEma, bass: bassEma };
+  if (!source) beatHold = 0;
+  return { energy: energyEma, bass: bassEma, beat: beatHold };
 }
 
 export function applyTransport(

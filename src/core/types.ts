@@ -146,6 +146,10 @@ export interface MediaSource {
   video?: HTMLVideoElement | null;
   audio?: HTMLAudioElement | null;
   pcm?: AudioBuffer | null;
+  /** Onset times in seconds, computed from the MP3. Runtime only. */
+  beats?: number[];
+  /** Estimated tempo from those onsets. */
+  bpm?: number;
   objectUrl?: string | null;
   frozenFrame?: ImageBitmap | null;
   /** Optional generator inks. */
@@ -165,7 +169,9 @@ export interface MediaSource {
     | "flip"
     | "glow"
     | "flash"
-    | "hop";
+    | "hop"
+    | "kick"
+    | "jelly";
 }
 
 export interface Keyframe {
