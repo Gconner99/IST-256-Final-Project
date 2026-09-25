@@ -5,7 +5,7 @@ import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
-import { buildField, COLLAGE_KITS, COLLAGE_MOVES, groundsForKit, isHeraldry, kindsForKit, sceneAt, sceneFromGenerator, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { buildField, COLLAGE_KITS, COLLAGE_MOVES, groundsForKit, isHeraldry, isMusicMove, kindsForKit, sceneAt, sceneFromGenerator, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -269,6 +269,13 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("heraldry", "space", "flock").name).toBe("FLOCK · SPACE");
     expect(defaultGeneratorSource("heraldry", "circus", "wheel").name).toBe("WHEEL · CIRCUS");
     expect(defaultGeneratorSource("heraldry", "music", "silk").name).toBe("SILK · MUSIC");
+    expect(defaultGeneratorSource("heraldry", "music", "bars").name).toBe("BARS · MUSIC");
+    expect(defaultGeneratorSource("heraldry", "circus", "ripple").name).toBe("RIPPLE · CIRCUS");
+    expect(defaultGeneratorSource("heraldry", "love", "swing").name).toBe("SWING · LOVE");
+    expect(defaultGeneratorSource("heraldry", "space", "burst").name).toBe("BURST · SPACE");
+    expect(defaultGeneratorSource("heraldry", "sweet", "halo").name).toBe("HALO · SWEET");
+    expect(defaultGeneratorSource("heraldry", "sailor", "clap").name).toBe("CLAP · SAILOR");
+    expect(defaultGeneratorSource("heraldry", "fruit", "wave").name).toBe("WAVE · FRUIT");
   });
 });
 
@@ -807,6 +814,13 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("heraldry", "flock")).toBe("flock");
     expect(sceneFromGenerator("heraldry", "wheel")).toBe("wheel");
     expect(sceneFromGenerator("heraldry", "silk")).toBe("silk");
+    expect(sceneFromGenerator("heraldry", "bars")).toBe("bars");
+    expect(sceneFromGenerator("heraldry", "ripple")).toBe("ripple");
+    expect(sceneFromGenerator("heraldry", "swing")).toBe("swing");
+    expect(sceneFromGenerator("heraldry", "burst")).toBe("burst");
+    expect(sceneFromGenerator("heraldry", "halo")).toBe("halo");
+    expect(sceneFromGenerator("heraldry", "clap")).toBe("clap");
+    expect(sceneFromGenerator("heraldry", "wave")).toBe("wave");
     expect(sceneFromGenerator("heraldry", "helix")).toBe("helix");
     expect(sceneFromGenerator("heraldry", "prism")).toBe("prism");
     expect(sceneAt(0.2, 8, "tour")).toBe("rush");
@@ -836,7 +850,18 @@ describe("heraldry collage", () => {
       "flock",
       "wheel",
       "silk",
+      "bars",
+      "ripple",
+      "swing",
+      "burst",
+      "halo",
+      "clap",
+      "wave",
     ]);
+    expect(isMusicMove("bars")).toBe(true);
+    expect(isMusicMove("wave")).toBe(true);
+    expect(isMusicMove("rush")).toBe(false);
+    expect(isMusicMove("silk")).toBe(false);
   });
 
   it("builds a seeded field of unique charges", () => {

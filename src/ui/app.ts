@@ -91,7 +91,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tide / rings / loom / petal / flock / wheel / silk are the slow looping patterns. Bounce and glow stay if you still want them. Drop an MP3 and the stamps breathe on the beat without jumping off their path.</p>
+        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tide / rings / loom / petal / flock / wheel / silk are the slow looping patterns. Bars / ripple / swing / burst / halo / clap / wave are the music moves — they stay on a smooth path and punch scale, glow, and bounce on the beat. Bounce and glow stay if you still want them. Drop an MP3 and the stamps breathe on the beat without jumping off their path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -505,6 +505,18 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="silk">Silk</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="mix">Mix</button>
     </div>
+    <div class="sec">Music</div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="bars">Bars</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="ripple">Ripple</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="swing">Swing</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="burst">Burst</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="halo">Halo</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="clap">Clap</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="wave">Wave</button>
+    </div>
     <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="bounce">Bounce</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="glow">Glow</button>
@@ -517,7 +529,7 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="hop">Hop</button>
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
     </div>
-    <div class="status" style="margin-top:4px">Each clip keeps one move. Tide / rings / loom / petal / flock / wheel / silk are the looping patterns. Rush still flies at the lens. Kit buttons keep the last move.</div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move. Music moves (bars, ripple, swing, burst, halo, clap, wave) punch on the beat without jumping off their path. Rush still flies at the lens. Kit buttons keep the last move.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"

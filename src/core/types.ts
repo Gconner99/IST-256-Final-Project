@@ -178,7 +178,14 @@ export interface MediaSource {
     | "petal"
     | "flock"
     | "wheel"
-    | "silk";
+    | "silk"
+    | "bars"
+    | "ripple"
+    | "swing"
+    | "burst"
+    | "halo"
+    | "clap"
+    | "wave";
 }
 
 export interface Keyframe {

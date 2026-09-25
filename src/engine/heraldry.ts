@@ -26,9 +26,23 @@ export const COLLAGE_MOVES = [
   "flock",
   "wheel",
   "silk",
+  "bars",
+  "ripple",
+  "swing",
+  "burst",
+  "halo",
+  "clap",
+  "wave",
 ] as const;
 export type CollageMove = (typeof COLLAGE_MOVES)[number];
 export type HeraldryScene = CollageMove | "tour" | "lattice";
+
+export const MUSIC_MOVES = ["bars", "ripple", "swing", "burst", "halo", "clap", "wave"] as const;
+export type MusicMove = (typeof MUSIC_MOVES)[number];
+
+export function isMusicMove(scene?: string | null): scene is MusicMove {
+  return !!scene && (MUSIC_MOVES as readonly string[]).includes(scene);
+}
 
 export const MOVE_LABEL: Record<CollageMove, string> = {
   rush: "RUSH",
@@ -51,6 +65,13 @@ export const MOVE_LABEL: Record<CollageMove, string> = {
   flock: "FLOCK",
   wheel: "WHEEL",
   silk: "SILK",
+  bars: "BARS",
+  ripple: "RIPPLE",
+  swing: "SWING",
+  burst: "BURST",
+  halo: "HALO",
+  clap: "CLAP",
+  wave: "WAVE",
 };
 
 export function isHeraldry(kind?: string | null): boolean {
@@ -1273,7 +1294,14 @@ export class HeraldryField {
     const count =
       scene === "bounce" || scene === "flip" || scene === "hop" || scene === "kick" || scene === "jelly"
         ? 36
-        : scene === "tide" || scene === "rings" || scene === "loom" || scene === "petal" || scene === "flock" || scene === "wheel" || scene === "silk"
+        : scene === "tide" ||
+            scene === "rings" ||
+            scene === "loom" ||
+            scene === "petal" ||
+            scene === "flock" ||
+            scene === "wheel" ||
+            scene === "silk" ||
+            isMusicMove(scene)
           ? 48
           : scene === "glow" || scene === "flash"
             ? 28
@@ -1322,6 +1350,22 @@ export class HeraldryField {
       }
     }
 
+    if (isMusicMove(scene) && beat > 0.04) {
+      ctx.save();
+      ctx.translate(w * 0.5, h * 0.5);
+      ctx.strokeStyle = ink;
+      ctx.globalAlpha = beat * 0.3;
+      ctx.lineWidth = 2.4 + beat * 5;
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.min(w, h) * (0.16 + beat * 0.2), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = beat * 0.14;
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.min(w, h) * (0.28 + beat * 0.16), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     return this.canvas;
   }
 }
@@ -1361,11 +1405,12 @@ function poseParticle(
   beat: number,
   bpm: number,
 ): Pose | null {
+  const music = isMusicMove(scene);
   const idle =
-    scene === "kick" || scene === "jelly"
+    scene === "kick" || scene === "jelly" || music
       ? Math.max(0, Math.sin(t * (bpm > 40 ? (bpm / 60) * Math.PI * 2 : 6.2)))
       : 0;
-  const punch = Math.max(beat * 0.85, idle * 0.18);
+  const punch = music ? Math.max(beat, idle * 0.25) : Math.max(beat * 0.85, idle * 0.18);
   if (scene === "bounce") {
     const sx = 0.11 + Math.abs(p.vx) * 2.4;
     const sy = 0.09 + Math.abs(p.vy) * 2.1;
@@ -1549,6 +1594,127 @@ function poseParticle(
       px: clamp(0.07 + p.size * 0.038 + punch * 0.02, 0.05, 0.16),
       rot: Math.cos(s * Math.PI * 3) * 0.28 + p.rot * 0.15,
       alpha: 0.94,
+    };
+  }
+  if (scene === "bars") {
+    const cols = 8;
+    const rows = 6;
+    const col = i % cols;
+    const row = Math.floor(i / cols) % rows;
+    const u = (col + 0.5) / cols - 0.5;
+    const drive = 0.32 + 0.68 * (0.5 + 0.5 * Math.sin(t * 2.15 + col * 0.85 + p.z));
+    const hgt = clamp(drive * (0.45 + audio * 0.28 + bass * 0.18 + punch * 0.38), 0.18, 1);
+    const y = 0.42 - (row / Math.max(rows - 1, 1)) * hgt * 0.82;
+    return {
+      x: u * 0.86,
+      y,
+      px: clamp(0.075 + p.size * 0.03 + punch * 0.03, 0.055, 0.18),
+      rot: p.rot * 0.2,
+      alpha: clamp(0.45 + (1 - row / rows) * 0.5 + punch * 0.15, 0.4, 1),
+      glow: punch * 0.55,
+      squash: 1 - punch * 0.08,
+    };
+  }
+  if (scene === "ripple") {
+    const rings = 4;
+    const ring = i % rings;
+    const slot = Math.floor(i / rings);
+    const n = 12;
+    const s = wrap01(p.z * 0.15 + t * 0.16 + ring * 0.18);
+    const rad = 0.07 + s * 0.4 + punch * 0.05;
+    const ang = (slot / n) * Math.PI * 2 + t * 0.12;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad * 0.88,
+      px: clamp((0.09 + p.size * 0.03) * (0.7 + (1 - s) * 0.4) + punch * 0.025, 0.05, 0.18),
+      rot: ang + p.rot * 0.2,
+      alpha: clamp(1.05 - s, 0.2, 1),
+      glow: punch * 0.45,
+    };
+  }
+  if (scene === "swing") {
+    const cols = 8;
+    const rows = 6;
+    const col = i % cols;
+    const row = Math.floor(i / cols) % rows;
+    const rate = bpm > 40 ? (bpm / 60) * Math.PI * 2 : 5.4;
+    const theta = Math.sin(t * rate + col * 0.4) * 0.72;
+    const len = 0.16 + row * 0.095;
+    const originX = (col / Math.max(cols - 1, 1) - 0.5) * 0.78;
+    return {
+      x: originX + Math.sin(theta) * len,
+      y: -0.4 + Math.cos(theta) * len * 0.9,
+      px: clamp(0.075 + p.size * 0.035 + punch * 0.03, 0.055, 0.18),
+      rot: theta,
+      alpha: 1,
+      glow: punch * 0.4,
+    };
+  }
+  if (scene === "burst") {
+    const rings = 3;
+    const ring = i % rings;
+    const slot = Math.floor(i / rings);
+    const n = 16;
+    const ang = (slot / n) * Math.PI * 2 + t * 0.2 * (ring === 1 ? -1 : 1);
+    const rad = (0.14 + ring * 0.13) * (1 + punch * 0.62);
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad * 0.9,
+      px: clamp((0.08 + p.size * 0.035) * (1 + punch * 0.22), 0.055, 0.22),
+      rot: ang + p.rot * 0.2,
+      alpha: clamp(0.55 + punch * 0.4, 0.45, 1),
+      glow: punch * 0.75,
+      squash: 1 + punch * 0.14,
+    };
+  }
+  if (scene === "halo") {
+    const rings = 2;
+    const ring = i % rings;
+    const slot = Math.floor(i / rings);
+    const n = 24;
+    const ang = (slot / n) * Math.PI * 2 + t * 0.26 * (ring ? -1 : 1);
+    const breath = 0.84 + 0.16 * Math.sin(t * 1.15) + punch * 0.2;
+    const rad = (0.26 + ring * 0.14) * breath;
+    const lit = clamp(0.28 + punch * 0.65 + bass * 0.15, 0, 1);
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad * 0.9,
+      px: clamp(0.07 + p.size * 0.032 + lit * 0.04, 0.05, 0.18),
+      rot: ang + Math.PI * 0.5,
+      alpha: clamp(0.5 + lit * 0.45, 0.4, 1),
+      glow: lit,
+    };
+  }
+  if (scene === "clap") {
+    const side = i & 1 ? 1 : -1;
+    const row = Math.floor(i / 2) % 8;
+    const depth = Math.floor(i / 16) % 3;
+    const gap = 0.28 - punch * 0.14;
+    return {
+      x: side * (gap + depth * 0.055),
+      y: (row / 7 - 0.5) * 0.78,
+      px: clamp(0.08 + p.size * 0.035 + punch * 0.03, 0.055, 0.18),
+      rot: p.rot * 0.15 + side * punch * 0.2,
+      alpha: 1,
+      squash: 1 - punch * 0.16,
+      glow: punch * 0.5,
+    };
+  }
+  if (scene === "wave") {
+    const cols = 12;
+    const rows = 4;
+    const col = i % cols;
+    const row = Math.floor(i / cols) % rows;
+    const u = (col + 0.5) / cols - 0.5;
+    const amp = 0.1 + audio * 0.08 + punch * 0.14;
+    const phase = u * Math.PI * 3.2 + t * 2.2;
+    return {
+      x: u * 0.92,
+      y: (row / 3 - 0.5) * 0.16 + Math.sin(phase) * amp,
+      px: clamp(0.07 + p.size * 0.032 + punch * 0.028, 0.05, 0.16),
+      rot: Math.cos(phase) * 0.35,
+      alpha: 1,
+      glow: punch * 0.45,
     };
   }
   if (scene === "tunnel") {
