@@ -39,7 +39,10 @@ function busCtx(): AudioContext | null {
 export async function resumeAudio(): Promise<void> {
   const ctx = busCtx();
   if (ctx && ctx.state === "suspended") {
-    await ctx.resume().catch(() => undefined);
+    await Promise.race([
+      ctx.resume().catch(() => undefined),
+      new Promise<void>((resolve) => setTimeout(resolve, 400)),
+    ]);
   }
 }
 
@@ -63,28 +66,39 @@ export async function loadAudio(file: File): Promise<MediaSource> {
   audio.loop = true;
   audio.preload = "auto";
 
-  const duration = await new Promise<number>((resolve, reject) => {
-    audio.addEventListener(
-      "loadedmetadata",
-      () => resolve(Number.isFinite(audio.duration) ? audio.duration : 0),
-      { once: true },
-    );
-    audio.addEventListener("error", () => reject(new Error(`Audio failed: ${file.name}`)), { once: true });
-  });
-
   hookElement(audio);
-  await resumeAudio();
+  void resumeAudio();
 
   let pcm: AudioBuffer | null = null;
   const ctx = busCtx();
   if (ctx) {
     try {
       const raw = await file.arrayBuffer();
-      pcm = await ctx.decodeAudioData(raw.slice(0));
+      const decoded = ctx.decodeAudioData(raw.slice(0)).catch(() => null);
+      pcm = await Promise.race([
+        decoded,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+      ]);
     } catch {
       pcm = null;
     }
   }
+
+  const duration = await Promise.race([
+    new Promise<number>((resolve) => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        resolve(audio.duration);
+        return;
+      }
+      audio.addEventListener(
+        "loadedmetadata",
+        () => resolve(Number.isFinite(audio.duration) ? audio.duration : pcm?.duration ?? 0),
+        { once: true },
+      );
+      audio.addEventListener("error", () => resolve(pcm?.duration ?? 0), { once: true });
+    }),
+    new Promise<number>((resolve) => setTimeout(() => resolve(pcm?.duration ?? 0), 2500)),
+  ]);
 
   const beats = pcm ? detectBeats(pcm.getChannelData(0), pcm.sampleRate) : [];
   return {
@@ -95,7 +109,7 @@ export async function loadAudio(file: File): Promise<MediaSource> {
     mime: file.type || "audio/mpeg",
     width: 0,
     height: 0,
-    duration,
+    duration: duration || pcm?.duration || 0,
     audio,
     pcm,
     beats,

@@ -58,6 +58,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <button class="btn tiny hot" data-act="scratch">New</button>
       <button class="btn tiny acid" data-act="export" id="top-export">Export</button>
       <input type="file" id="proj-file" accept=".json,.phos.json" hidden />
+      <input id="audio-file" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden />
       <div class="sp"></div>
       <label class="status">SEED</label>
       <input type="number" id="seed" style="width:84px" />
@@ -464,7 +465,6 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny" data-act="freeze">Still frame</button>
       <button class="btn tiny" data-act="reprint">Print frame</button>
       <input id="media-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" multiple hidden />
-      <input id="audio-file" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden />
       <input id="replace-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden />
     </div>
     <hr class="div" />

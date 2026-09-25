@@ -80,6 +80,8 @@ export function setSoundtrack(source: MediaSource) {
 export async function importFiles(files: FileList | File[], replace = false) {
   for (const file of Array.from(files)) {
     try {
+      const audioish = /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus)$/i.test(file.name) || (file.type || "").startsWith("audio/");
+      if (audioish) store.patchUi({ status: `reading ${file.name}…` });
       const src = await loadMediaFile(file);
       if (src.kind === "audio") {
         setSoundtrack(src);
