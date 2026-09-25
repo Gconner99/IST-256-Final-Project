@@ -1353,15 +1353,15 @@ export class HeraldryField {
     if (isMusicMove(scene) && beat > 0.04) {
       ctx.save();
       ctx.translate(w * 0.5, h * 0.5);
-      ctx.strokeStyle = ink;
-      ctx.globalAlpha = beat * 0.3;
-      ctx.lineWidth = 2.4 + beat * 5;
+      ctx.strokeStyle = mixHex(ink, "#fff4d8", 0.72);
+      ctx.globalAlpha = 0.18 + beat * 0.42;
+      ctx.lineWidth = 2.6 + beat * 6;
       ctx.beginPath();
       ctx.arc(0, 0, Math.min(w, h) * (0.16 + beat * 0.2), 0, Math.PI * 2);
       ctx.stroke();
-      ctx.globalAlpha = beat * 0.14;
+      ctx.globalAlpha = 0.1 + beat * 0.22;
       ctx.beginPath();
-      ctx.arc(0, 0, Math.min(w, h) * (0.28 + beat * 0.16), 0, Math.PI * 2);
+      ctx.arc(0, 0, Math.min(w, h) * (0.3 + beat * 0.18), 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
@@ -1616,35 +1616,36 @@ function poseParticle(
     };
   }
   if (scene === "ripple") {
-    const rings = 4;
+    const rings = 3;
     const ring = i % rings;
     const slot = Math.floor(i / rings);
-    const n = 12;
-    const s = wrap01(p.z * 0.15 + t * 0.16 + ring * 0.18);
-    const rad = 0.07 + s * 0.4 + punch * 0.05;
-    const ang = (slot / n) * Math.PI * 2 + t * 0.12;
+    const n = 16;
+    const s = wrap01(t * 0.2);
+    const rad = 0.15 + ring * 0.145 + s * 0.16 + punch * 0.045;
+    const ang = (slot / n) * Math.PI * 2 + t * 0.1;
     return {
       x: Math.cos(ang) * rad,
       y: Math.sin(ang) * rad * 0.88,
-      px: clamp((0.09 + p.size * 0.03) * (0.7 + (1 - s) * 0.4) + punch * 0.025, 0.05, 0.18),
+      px: clamp(0.062 + p.size * 0.024 + punch * 0.02, 0.048, 0.13),
       rot: ang + p.rot * 0.2,
-      alpha: clamp(1.05 - s, 0.2, 1),
+      alpha: clamp(0.96 - ring * 0.08, 0.6, 1),
       glow: punch * 0.45,
     };
   }
   if (scene === "swing") {
-    const cols = 8;
-    const rows = 6;
+    const cols = 6;
+    const rows = 8;
     const col = i % cols;
     const row = Math.floor(i / cols) % rows;
     const rate = bpm > 40 ? (bpm / 60) * Math.PI * 2 : 5.4;
-    const theta = Math.sin(t * rate + col * 0.4) * 0.72;
-    const len = 0.16 + row * 0.095;
-    const originX = (col / Math.max(cols - 1, 1) - 0.5) * 0.78;
+    const dir = col & 1 ? -1 : 1;
+    const theta = Math.sin(t * rate + col * 0.85) * 0.82 * dir;
+    const len = 0.07 + row * 0.072;
+    const originX = (col / Math.max(cols - 1, 1) - 0.5) * 0.9;
     return {
       x: originX + Math.sin(theta) * len,
-      y: -0.4 + Math.cos(theta) * len * 0.9,
-      px: clamp(0.075 + p.size * 0.035 + punch * 0.03, 0.055, 0.18),
+      y: -0.44 + Math.cos(theta) * len,
+      px: clamp(0.07 + p.size * 0.03 + punch * 0.028, 0.05, 0.16),
       rot: theta,
       alpha: 1,
       glow: punch * 0.4,
@@ -1701,18 +1702,18 @@ function poseParticle(
     };
   }
   if (scene === "wave") {
-    const cols = 12;
-    const rows = 4;
+    const cols = 16;
+    const rows = 3;
     const col = i % cols;
     const row = Math.floor(i / cols) % rows;
     const u = (col + 0.5) / cols - 0.5;
-    const amp = 0.1 + audio * 0.08 + punch * 0.14;
-    const phase = u * Math.PI * 3.2 + t * 2.2;
+    const amp = 0.09 + audio * 0.07 + punch * 0.13;
+    const phase = u * Math.PI * 3.4 + t * 2.15 + row * 0.55;
     return {
       x: u * 0.92,
-      y: (row / 3 - 0.5) * 0.16 + Math.sin(phase) * amp,
-      px: clamp(0.07 + p.size * 0.032 + punch * 0.028, 0.05, 0.16),
-      rot: Math.cos(phase) * 0.35,
+      y: (row - 1) * 0.2 + Math.sin(phase) * amp,
+      px: clamp(0.065 + p.size * 0.03 + punch * 0.026, 0.05, 0.15),
+      rot: Math.cos(phase) * 0.32,
       alpha: 1,
       glow: punch * 0.45,
     };
