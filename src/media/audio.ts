@@ -267,6 +267,63 @@ export function sampleAudio(
   return { energy: energyEma, bass: bassEma, beat: beatHold };
 }
 
+/** Copy a channel, wrapping the source so a short song still fills the clip. */
+export function copyWrappedChannel(src: Float32Array, dst: Float32Array, fadeTail = 0): void {
+  const n = dst.length;
+  const m = src.length;
+  if (n < 1) return;
+  if (m < 1) {
+    dst.fill(0);
+    return;
+  }
+  for (let i = 0; i < n; i++) dst[i] = src[i % m];
+  if (fadeTail <= 0) return;
+  const span = Math.max(1, Math.round(n * fadeTail));
+  for (let i = 0; i < span; i++) dst[n - span + i] *= 1 - (i + 1) / span;
+}
+
+/** A clip-length AudioBuffer that matches the exported frames (from t=0, wrapping). */
+export function sliceSoundtrack(pcm: AudioBuffer, duration: number, fadeTail = false): AudioBuffer {
+  const sampleRate = pcm.sampleRate;
+  const frames = Math.max(1, Math.round(Math.max(0.05, duration) * sampleRate));
+  const numberOfChannels = Math.max(1, pcm.numberOfChannels);
+  const out = new AudioBuffer({ length: frames, numberOfChannels, sampleRate });
+  const fade = fadeTail ? 0.12 : 0;
+  for (let c = 0; c < numberOfChannels; c++) {
+    copyWrappedChannel(pcm.getChannelData(c), out.getChannelData(c), fade);
+  }
+  return out;
+}
+
+export async function ensureSoundtrackPcm(source: MediaSource | undefined): Promise<AudioBuffer | null> {
+  if (source?.kind !== "audio") return null;
+  if (source.pcm && source.pcm.length > 32 && source.pcm.duration > 0) return source.pcm;
+  if (!source.objectUrl) return null;
+  const AC =
+    globalThis.AudioContext ||
+    (globalThis as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AC) return null;
+  try {
+    const raw = await Promise.race([
+      fetch(source.objectUrl).then((r) => r.arrayBuffer()),
+      new Promise<ArrayBuffer | null>((resolve) => setTimeout(() => resolve(null), 2500)),
+    ]);
+    if (!raw) return null;
+    const ctx = busCtx() ?? new AC();
+    const decoded = await Promise.race([
+      ctx.decodeAudioData(raw.slice(0)).catch(() => null),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+    ]);
+    if (decoded && decoded.length > 32) {
+      source.pcm = decoded;
+      return decoded;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export function applyTransport(
   el: HTMLAudioElement | null | undefined,
   playback: Pick<PlaybackState, "playing" | "time" | "loop" | "freeze" | "speed">,

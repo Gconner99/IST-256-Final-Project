@@ -16,7 +16,7 @@ import { BOOT_GENERATOR_GLSL, COMIC_GENERATOR_GLSL, CONFETTI_GENERATOR_GLSL, COR
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
-import { beatEnvelope, detectBeats, estimateBpm, isAudioFile, sampleLevelsFromSamples } from "../src/media/audio";
+import { beatEnvelope, copyWrappedChannel, detectBeats, estimateBpm, isAudioFile, sampleLevelsFromSamples } from "../src/media/audio";
 import { setSoundtrack } from "../src/ui/actions";
 import { seekVideo } from "../src/media/sources";
 
@@ -790,6 +790,19 @@ describe("soundtrack", () => {
     const json = serializeProject(store.project);
     expect(json).not.toContain("\"beats\"");
     expect(json).not.toContain("\"bpm\"");
+  });
+
+  it("wraps a short song to fill the exported clip and fades the tail", () => {
+    const src = new Float32Array([1, -1, 0.5]);
+    const dst = new Float32Array(9);
+    copyWrappedChannel(src, dst, 0);
+    expect(Array.from(dst)).toEqual([1, -1, 0.5, 1, -1, 0.5, 1, -1, 0.5]);
+    const faded = new Float32Array(10);
+    copyWrappedChannel(new Float32Array(10).fill(1), faded, 0.2);
+    expect(faded[0]).toBe(1);
+    expect(faded[7]).toBe(1);
+    expect(faded[8]).toBeCloseTo(0.5, 5);
+    expect(faded[9]).toBeCloseTo(0, 5);
   });
 });
 

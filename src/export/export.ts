@@ -1,12 +1,16 @@
 import JSZip from "jszip";
 import {
+  AudioBufferSource,
   BufferTarget,
   Mp4OutputFormat,
   Output,
+  QUALITY_HIGH,
   Quality,
   VideoSample,
   VideoSampleSource,
+  getFirstEncodableAudioCodec,
   getFirstEncodableVideoCodec,
+  type AudioCodec,
   type VideoCodec,
 } from "mediabunny";
 import type { Project } from "../core/types";
@@ -14,6 +18,7 @@ import { downloadBlob } from "../core/project";
 import { evenSize, fitEven } from "../core/random";
 import { clipLoopFade } from "../core/exportSize";
 import { mediaTime } from "../core/timeline";
+import { ensureSoundtrackPcm, getSoundtrack, sliceSoundtrack } from "../media/audio";
 import type { Renderer } from "../engine/renderer";
 
 const CLIP_MAX = 960;
@@ -75,8 +80,8 @@ export async function exportMp4(
   clip = false,
 ): Promise<string> {
   try {
-    await exportMp4WebCodecs(renderer, project, onProgress, clip);
-    return "mp4 clip saved";
+    const withMusic = await exportMp4WebCodecs(renderer, project, onProgress, clip);
+    return withMusic ? "mp4 clip saved · with music" : "mp4 clip saved";
   } catch (err) {
     const mp4Mime = pickMp4Mime();
     if (mp4Mime) {
@@ -95,7 +100,7 @@ async function exportMp4WebCodecs(
   project: Project,
   onProgress?: (i: number, n: number) => void,
   clip = false,
-): Promise<void> {
+): Promise<boolean> {
   if (typeof VideoEncoder === "undefined") throw new Error("this browser has no video encoder");
   const fps = Math.min(24, Math.max(12, project.exportSettings.fps || 24));
   const duration = Math.min(8, Math.max(1, project.exportSettings.duration || 4));
@@ -117,10 +122,12 @@ async function exportMp4WebCodecs(
     keyFrameInterval: 1,
   });
   output.addVideoTrack(videoSource, { frameRate: fps });
+  const music = await attachSoundtrack(output, format, project, duration);
   renderer.resetTemporal();
   const frame = document.createElement("canvas");
   await output.start();
   try {
+    if (music) await music.audioSource.add(music.buffer);
     const n = Math.max(1, Math.round(duration * fps));
     const frameDur = 1 / fps;
     const close = project.exportSettings.loopClose !== false;
@@ -149,6 +156,40 @@ async function exportMp4WebCodecs(
   if (!buffer || buffer.byteLength < 32) throw new Error("MP4 mux produced an empty file");
   const copy = buffer.slice(0);
   downloadBlob(`${project.exportSettings.filename}.mp4`, new Blob([copy], { type: "video/mp4" }));
+  return !!music;
+}
+
+async function attachSoundtrack(
+  output: Output,
+  format: Mp4OutputFormat,
+  project: Project,
+  duration: number,
+): Promise<{ audioSource: AudioBufferSource; buffer: AudioBuffer } | null> {
+  const pcm = await ensureSoundtrackPcm(getSoundtrack(project));
+  if (!pcm || pcm.length < 32 || pcm.duration <= 0) return null;
+  const close = project.exportSettings.loopClose !== false;
+  let sliced: AudioBuffer;
+  try {
+    sliced = sliceSoundtrack(pcm, duration, close);
+  } catch {
+    return null;
+  }
+  const channels = Math.min(2, Math.max(1, sliced.numberOfChannels));
+  const sampleRate = sliced.sampleRate >= 46000 ? 48000 : 44100;
+  const supported = format.getSupportedAudioCodecs();
+  const prefer: AudioCodec[] = (["aac", "mp3", "opus"] as AudioCodec[]).filter((c) => supported.includes(c));
+  const codec = await getFirstEncodableAudioCodec(prefer.length ? prefer : supported, {
+    numberOfChannels: channels,
+    sampleRate,
+  });
+  if (!codec) return null;
+  const audioSource = new AudioBufferSource({
+    codec,
+    quality: QUALITY_HIGH,
+    transform: { numberOfChannels: channels, sampleRate },
+  });
+  output.addAudioTrack(audioSource);
+  return { audioSource, buffer: sliced };
 }
 
 async function recordCanvasVideo(

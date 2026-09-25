@@ -69,5 +69,5 @@ HOW TO USE IT
 - Move the sliders. Click Export to save.
 - Click 2s / 4s / 8s mp4 for a short video clip. Wait until the
   status says saved.
-  Clips are silent for now; the motion still follows the song.
+  If an MP3 is loaded, the MP4 keeps the music. Stills stay silent.
   Check "close loop" so the last beats fade into the first frame.

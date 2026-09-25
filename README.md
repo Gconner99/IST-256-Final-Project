@@ -42,7 +42,7 @@ Requires a browser (or Electron) with **WebGL2**.
 ## MVP
 
 - Image + video import (drag/drop, replace, freeze a video frame as a still)
-- **Soundtrack**: drop an MP3 / wav / ogg / m4a. Playback follows the song; the collage fly-through follows the mix. Exported clips are visual-only for now.
+- **Soundtrack**: drop an MP3 / wav / ogg / m4a. Playback follows the song; the collage fly-through follows the mix. MP4 export keeps the music when a song is loaded.
 - Procedural generators including a **heraldic collage** (tour / paper / giants / shower) so it makes pictures with no files
 - Real-time WebGL2 preview (draft / preview / full quality)
 - Layers: opacity, blend modes, transform, enable, duplicate
