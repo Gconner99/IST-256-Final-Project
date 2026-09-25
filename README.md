@@ -10,6 +10,8 @@ Do **not** open the files inside Cursor.
 
 On Windows, open the folder in **File Explorer** and double-click **`Start Phosphene.bat`**. That opens a **private** Chrome or Edge window (not a tab in a Chrome you already had open). Unzip the whole folder: `PHOSPHENE.html` plus `phosphene.js`. If Chrome crashes, use **`Start Phosphene Safe.bat`** instead.
 
+This branch is **Phosphene v2** (five collage kits). The older idol instrument is on the local-launcher branch.
+
 Read `START HERE.txt` if you get stuck.
 
 ## Run (developers)

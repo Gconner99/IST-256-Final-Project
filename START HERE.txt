@@ -1,8 +1,12 @@
-PHOSPHENE
-=========
+PHOSPHENE v2
+============
+
+This folder is the collage instrument (five stamp kits).
+It is not the older idol / fabric Phosphene.
 
 Do NOT open the files inside Cursor.
 Cursor will show the code instead of running the program.
+
 
 WHY CHROME WAS CRASHING
 ------------------------
@@ -29,8 +33,7 @@ HOW TO OPEN IT (Windows)
    A black command window flashes, then a NEW Chrome or Edge window
    opens. THAT window is the program.
 
-   The picture should look sharp again (Preview quality, full size,
-   heraldic collage on white paper). Use the top-bar quality menu if you want Draft/Full.
+   You should see a white-paper collage (not idols).
 
    If that window crashes: double-click  Start Phosphene Safe.bat
    instead. The picture will be softer, but Chrome should stay up.
@@ -47,19 +50,17 @@ HOW TO OPEN IT (Mac)
 HOW TO USE IT
 -------------
 
-- Drag a photo, video, or MP3 onto the big dark area
-  OR click Plasma / Noise / Bars / Stars / Marsh / Oil / Paper / Cave / Stage / Sketch / Felt / Foil / Plush / Yarn / Sequins / Quilt / Cork / Gingham / Sprinkle / Velvet / Floaters on the left
-  (that click puts the place on the picture)
-- Type a prompt on the left and click Generate to make a NEW image. Again rolls a new seed.
-- Drop an MP3 to use it as a soundtrack. Hit Play — idols, floaters, and places move with the mix
-- Click Stamp floaters / Stamp idol / Stamp chaos (new seeds and wardrobe, same place)
-- Idol Grow / Coat pick petals, halo, wings, horns, crystals, puff, cream / jelly / grape / ice / lava paint, etc. Floaters Kit picks toy-pop (piano, guitar, notes, boombox), votives, moths, charms
-- Sketch is a composition-notebook / sticker-album place (cream paper, tape, doodles)
-- Felt / Foil / Plush / Yarn / Sequins / Quilt / Cork / Gingham / Sprinkle / Velvet are textured toy-pop places
+- Pick a kit on the left: Sailor / Circus / Fruit / Grove / Love
+- Then pick a zoom: Tour (walks packed paper → big stamps → tiny rain),
+  Paper, Giants, or Shower. Zoom keeps the kit you last used.
+- Rand wacky rolls a new kit and zoom.
+- Drag a photo, video, or MP3 onto the big area
+- Drop an MP3 to use it as a soundtrack. Hit Play — the collage
+  fly-through follows the mix
 - Click Print frame to turn the live picture into a still
-- Click Rand all for a new look. Rand wacky stays pretty (cream / toy-pop).
 - Click New at the top to start over
 - Move the sliders. Click Export to save.
-- Click 2s / 4s / 8s mp4 for a short video clip. Wait until the status says saved.
+- Click 2s / 4s / 8s mp4 for a short video clip. Wait until the
+  status says saved.
   Clips are silent for now; the motion still follows the song.
   Check "close loop" so the last beats fade into the first frame.
