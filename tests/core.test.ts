@@ -245,11 +245,12 @@ describe("place buttons", () => {
     addSource(tour, true);
     expect(tour.generator).toBe("heraldry");
     expect(tour.name).toBe("TOUR · SAILOR");
-    expect(tour.colorA).toBe("#ffffff");
+    expect(tour.colorA).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(tour.colorA).not.toBe("#ffffff");
     expect(tour.collageKit).toBe("sailor");
-    expect(defaultGeneratorSource("wallpaper", "love").name).toBe("PAPER · LOVE");
-    expect(defaultGeneratorSource("giants", "circus").name).toBe("GIANTS · CIRCUS");
-    expect(defaultGeneratorSource("shower", "nature").name).toBe("SHOWER · GROVE");
+    expect(defaultGeneratorSource("wallpaper", "love").name).toBe("RUSH · LOVE");
+    expect(defaultGeneratorSource("giants", "circus").name).toBe("TUNNEL · CIRCUS");
+    expect(defaultGeneratorSource("shower", "nature").name).toBe("LATTICE · GROVE");
     expect(defaultGeneratorSource("heraldry", "fruit").collageKit).toBe("fruit");
   });
 });
@@ -727,12 +728,14 @@ describe("soundtrack", () => {
 describe("heraldry collage", () => {
   it("tours the four looks on a loop", () => {
     expect(sceneFromGenerator("heraldry")).toBe("tour");
-    expect(sceneFromGenerator("wallpaper")).toBe("wallpaper");
-    expect(sceneAt(0.2, 8, "tour")).toBe("wallpaper");
-    expect(sceneAt(3.0, 8, "tour")).toBe("sparse");
-    expect(sceneAt(5.5, 8, "tour")).toBe("giants");
-    expect(sceneAt(7.2, 8, "tour")).toBe("shower");
-    expect(sceneAt(1, 8, "giants")).toBe("giants");
+    expect(sceneFromGenerator("wallpaper")).toBe("rush");
+    expect(sceneFromGenerator("giants")).toBe("tunnel");
+    expect(sceneFromGenerator("shower")).toBe("lattice");
+    expect(sceneAt(0.2, 8, "tour")).toBe("rush");
+    expect(sceneAt(3.0, 8, "tour")).toBe("tunnel");
+    expect(sceneAt(5.5, 8, "tour")).toBe("lattice");
+    expect(sceneAt(7.2, 8, "tour")).toBe("bloom");
+    expect(sceneAt(1, 8, "rush")).toBe("rush");
   });
 
   it("builds a seeded field of unique charges", () => {
@@ -753,17 +756,18 @@ describe("heraldry collage", () => {
     expect(kindsForKit("fruit")).toContain("pear");
     expect(kindsForKit("nature")).toContain("deer");
     expect(kindsForKit("love")).toContain("heart");
-    expect(kindsForKit("love", "shower")).toContain("key");
+    expect(kindsForKit("love", "lattice")).toContain("key");
     const sailor = new Set(buildField(7, "#1c4db8", "sailor").map((p) => p.charge.kind));
     const love = new Set(buildField(7, "#e84a8a", "love").map((p) => p.charge.kind));
     expect([...sailor].some((k) => !love.has(k))).toBe(true);
   });
 
-  it("starts on a white-paper sailor tour", () => {
+  it("starts on a colored-ground sailor tour", () => {
     const p = createDefaultProject();
     expect(p.sources[0].generator).toBe("heraldry");
     expect(p.sources[0].collageKit).toBe("sailor");
-    expect(p.sources[0].colorA).toBe("#ffffff");
+    expect(p.sources[0].colorA).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(p.sources[0].colorA).not.toBe("#ffffff");
     expect(p.layers[0].effects).toHaveLength(0);
     expect(isHeraldry("heraldry")).toBe(true);
     expect(isHeraldry("plasma")).toBe(false);

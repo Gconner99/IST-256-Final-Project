@@ -1,4 +1,4 @@
-import { COLLAGE_KITS, HERALDRY_ROOMS, inkForKit, inkForSeed, isHeraldry, kitForSeed, paperForSeed } from "../engine/heraldry";
+import { COLLAGE_KITS, HERALDRY_ROOMS, inkForKit, inkForSeed, isHeraldry, kitForSeed, paperForKit, paperForSeed } from "../engine/heraldry";
 import { getEffect } from "../effects/registry";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
@@ -360,8 +360,8 @@ export function randomizeProject(
     "herald tour": { generator: "heraldry", a: paperForSeed(seed), b: inkForSeed(seed) },
     "dense paper": { generator: "wallpaper", a: paperForSeed(seed + 3), b: inkForSeed(seed + 3, "#1c4db8") },
     "giant charges": { generator: "giants", a: paperForSeed(seed + 5), b: inkForSeed(seed + 5) },
-    "heart rain": { generator: "shower", a: "#ffffff", b: inkForSeed(seed + 7, "#e84a8a") },
-    "cream paper": { generator: "heraldry", a: "#fff8ee", b: inkForSeed(seed + 9, "#c41e3a") },
+    "heart rain": { generator: "shower", a: paperForSeed(seed + 7), b: inkForSeed(seed + 7, "#e84a8a") },
+    "cream paper": { generator: "heraldry", a: paperForSeed(seed + 9), b: inkForSeed(seed + 9, "#c41e3a") },
     "lattice field": { generator: "lattice", a: "#1a0830", b: "#ffe14a" },
     "tessera field": { generator: "tessera", a: "#0a1a28", b: "#ff4ad2" },
     "phase field": { generator: "phase", a: "#120814", b: "#3dffd0" },
@@ -400,7 +400,7 @@ export function randomizeProject(
         ? src.generator
         : places[Math.floor(prng() * places.length)];
     const kit = kitForSeed(seed + i * 41);
-    const paper = isHeraldry(generator) ? paperForSeed(seed + i * 17) : pal.inkA;
+    const paper = isHeraldry(generator) ? paperForKit(kit, seed + i * 17) : pal.inkA;
     const ink = isHeraldry(generator) ? inkForKit(kit) : pal.inkB;
     return {
       ...src,
@@ -438,16 +438,16 @@ export function chaosStamp(project: Project): Project {
   let next: Project = {
     ...project,
     seed,
-    sources: project.sources.map((src, i) =>
-      isHeraldry(src.generator)
-        ? {
-            ...src,
-            collageKit: COLLAGE_KITS[Math.floor(rng() * COLLAGE_KITS.length)],
-            colorA: paperForSeed(seed + i * 13),
-            colorB: inkForSeed(seed + i * 29),
-          }
-        : src,
-    ),
+    sources: project.sources.map((src, i) => {
+      if (!isHeraldry(src.generator)) return src;
+      const kit = COLLAGE_KITS[Math.floor(rng() * COLLAGE_KITS.length)];
+      return {
+        ...src,
+        collageKit: kit,
+        colorA: paperForKit(kit, seed + i * 13),
+        colorB: inkForSeed(seed + i * 29),
+      };
+    }),
     layers: project.layers.map((layer) => ({
       ...layer,
       effects: layer.effects.map((fx) => {

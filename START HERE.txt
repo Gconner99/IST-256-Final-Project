@@ -33,7 +33,7 @@ HOW TO OPEN IT (Windows)
    A black command window flashes, then a NEW Chrome or Edge window
    opens. THAT window is the program.
 
-   You should see a white-paper collage (not idols).
+   You should see a colored-ground collage flying at the camera (not idols).
 
    If that window crashes: double-click  Start Phosphene Safe.bat
    instead. The picture will be softer, but Chrome should stay up.
@@ -51,8 +51,8 @@ HOW TO USE IT
 -------------
 
 - Pick a kit on the left: Sailor / Circus / Fruit / Grove / Love
-- Then pick a zoom: Tour (walks packed paper → big stamps → tiny rain),
-  Paper, Giants, or Shower. Zoom keeps the kit you last used.
+- Then pick a move: Tour (walks rush → tunnel → lattice → bloom),
+  Rush, Tunnel, or Lattice. Moves keep the kit you last used.
 - Rand wacky rolls a new kit and zoom.
 - Drag a photo, video, or MP3 onto the big area
 - Drop an MP3 to use it as a soundtrack. Hit Play — the collage

@@ -5,7 +5,7 @@ export const HERALDRY_ROOMS: GeneratorType[] = ["heraldry", "wallpaper", "giants
 export const COLLAGE_KITS = ["sailor", "circus", "fruit", "nature", "love"] as const;
 export type CollageKit = (typeof COLLAGE_KITS)[number];
 
-export type HeraldryScene = "tour" | "wallpaper" | "sparse" | "giants" | "shower";
+export type HeraldryScene = "tour" | "rush" | "tunnel" | "lattice" | "bloom";
 
 export function isHeraldry(kind?: string | null): boolean {
   return kind === "heraldry" || kind === "wallpaper" || kind === "giants" || kind === "shower";
@@ -16,21 +16,21 @@ export function kitFromUnknown(value?: string | null): CollageKit {
 }
 
 export function sceneFromGenerator(kind?: string | null): HeraldryScene {
-  if (kind === "wallpaper") return "wallpaper";
-  if (kind === "giants") return "giants";
-  if (kind === "shower") return "shower";
+  if (kind === "wallpaper") return "rush";
+  if (kind === "giants") return "tunnel";
+  if (kind === "shower") return "lattice";
   return "tour";
 }
 
-/** Clip-like tour: dense paper → sparse → poster giants → confetti rain. */
+/** Tour walks the four approach loops: rush → tunnel → lattice → bloom. */
 export function sceneAt(time: number, duration: number, locked: HeraldryScene): HeraldryScene {
   if (locked !== "tour") return locked;
   const span = Math.max(duration, 8);
   const u = (((time % span) + span) % span) / span;
-  if (u < 0.29) return "wallpaper";
-  if (u < 0.58) return "sparse";
-  if (u < 0.82) return "giants";
-  return "shower";
+  if (u < 0.25) return "rush";
+  if (u < 0.5) return "tunnel";
+  if (u < 0.75) return "lattice";
+  return "bloom";
 }
 
 const TINCTURES = [
@@ -106,7 +106,7 @@ type Kind =
   | "potion"
   | "house";
 
-type Pattern = "plain" | "checky" | "barry" | "paly" | "quarterly" | "bendy" | "saltire" | "fess" | "pale" | "split";
+type Pattern = "plain" | "polka" | "hoop" | "half" | "bar";
 
 const KIT_PAPER: Record<CollageKit, Kind[]> = {
   sailor: ["fish", "anchor", "wave", "shell", "starfish", "boat", "tail", "swallow", "star", "moon"],
@@ -131,25 +131,6 @@ const KIT_SHOWER: Record<CollageKit, Kind[]> = {
   nature: ["leaf", "acorn", "drop", "moth", "bird"],
   love: ["heart", "star", "key", "moon", "ring"],
 };
-
-const BODIES = new Set<Kind>([
-  "fish",
-  "elephant",
-  "horse",
-  "deer",
-  "fox",
-  "owl",
-  "swan",
-  "cat",
-  "swallow",
-  "bird",
-  "moth",
-  "wingfig",
-  "figure",
-  "boat",
-  "tree",
-  "tail",
-]);
 
 interface Charge {
   kind: Kind;
@@ -201,28 +182,23 @@ function mixInk(rng: () => number, bias: string): string {
   return pick(rng, TINCTURES);
 }
 
-export function kindsForKit(kit: CollageKit, scene: HeraldryScene = "wallpaper"): Kind[] {
-  if (scene === "giants") return KIT_GIANTS[kit];
-  if (scene === "shower") return KIT_SHOWER[kit];
+export function kindsForKit(kit: CollageKit, scene: HeraldryScene = "rush"): Kind[] {
+  if (scene === "tunnel") return KIT_GIANTS[kit];
+  if (scene === "lattice") return KIT_SHOWER[kit];
   return KIT_PAPER[kit];
 }
 
 function makeCharge(rng: () => number, scene: HeraldryScene, bias: string, kit: CollageKit): Charge {
-  const pool = kindsForKit(kit, scene === "sparse" ? "wallpaper" : scene);
+  const pool = kindsForKit(kit, scene === "bloom" ? "rush" : scene);
   let kind = pick(rng, pool);
-  if (scene === "shower" && rng() < 0.4) kind = pick(rng, KIT_SHOWER[kit]);
-  if (scene === "giants" && rng() < 0.28) kind = pick(rng, KIT_GIANTS[kit]);
+  if (scene === "lattice" && rng() < 0.4) kind = pick(rng, KIT_SHOWER[kit]);
+  if (scene === "tunnel" && rng() < 0.28) kind = pick(rng, KIT_GIANTS[kit]);
   const a = mixInk(rng, bias);
   let b = mixInk(rng, bias);
   if (b === a) b = pick(rng, TINCTURES);
-  const patterned = BODIES.has(kind)
-    ? rng() < 0.28
-    : rng() < 0.82;
   return {
     kind,
-    pattern: patterned
-      ? pick(rng, ["checky", "barry", "paly", "quarterly", "bendy", "fess", "pale", "split"] as Pattern[])
-      : "plain",
+    pattern: rng() < 0.58 ? "plain" : pick(rng, ["polka", "hoop", "half", "bar"] as Pattern[]),
     a,
     b,
     mirror: rng() > 0.5,
@@ -234,7 +210,7 @@ export function buildField(seed: number, bias: string, kit: CollageKit = "sailor
   const n = 240;
   const out: Particle[] = [];
   for (let i = 0; i < n; i++) {
-    const sceneHint: HeraldryScene = i < 70 ? "shower" : i < 130 ? "giants" : "wallpaper";
+    const sceneHint: HeraldryScene = i < 70 ? "lattice" : i < 130 ? "tunnel" : "rush";
     out.push({
       x: rng(),
       y: rng(),
@@ -254,6 +230,15 @@ function chargeKey(c: Charge): string {
   return `${c.kind}|${c.pattern}|${c.a}|${c.b}|${c.mirror ? 1 : 0}`;
 }
 
+function luma(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  if (Number.isNaN(n)) return 0.5;
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return (0.22 * r + 0.7 * g + 0.08 * b) / 255;
+}
+
 function fillPattern(ctx: CanvasRenderingContext2D, path: () => void, c: Charge, r: number) {
   ctx.save();
   ctx.beginPath();
@@ -265,55 +250,36 @@ function fillPattern(ctx: CanvasRenderingContext2D, path: () => void, c: Charge,
   ctx.fillStyle = a;
   ctx.fillRect(-s, -s, s * 2, s * 2);
   ctx.fillStyle = b;
-  const cell = r * 0.42;
-  if (c.pattern === "plain") {
-    /* already filled */
-  } else if (c.pattern === "checky") {
+  if (c.pattern === "polka") {
+    const cell = r * 0.38;
     for (let y = -4; y < 5; y++) {
       for (let x = -4; x < 5; x++) {
-        if (((x + y) & 1) === 0) ctx.fillRect(x * cell, y * cell, cell + 0.5, cell + 0.5);
+        ctx.beginPath();
+        ctx.arc((x + 0.5 * (y & 1)) * cell, y * cell, cell * 0.22, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
-  } else if (c.pattern === "barry") {
-    const h = r * 0.28;
-    for (let i = -6; i < 7; i += 2) ctx.fillRect(-s, i * h, s * 2, h);
-  } else if (c.pattern === "paly") {
-    const w = r * 0.28;
-    for (let i = -6; i < 7; i += 2) ctx.fillRect(i * w, -s, w, s * 2);
-  } else if (c.pattern === "quarterly") {
-    ctx.fillRect(0, -s, s, s);
-    ctx.fillRect(-s, 0, s, s);
-  } else if (c.pattern === "bendy") {
-    ctx.save();
-    ctx.rotate(0.7);
-    const w = r * 0.3;
-    for (let i = -8; i < 9; i += 2) ctx.fillRect(i * w, -s, w, s * 2);
-    ctx.restore();
-  } else if (c.pattern === "saltire") {
-    ctx.save();
-    ctx.lineWidth = r * 0.38;
+  } else if (c.pattern === "hoop") {
     ctx.strokeStyle = b;
-    ctx.beginPath();
-    ctx.moveTo(-r, -r);
-    ctx.lineTo(r, r);
-    ctx.moveTo(r, -r);
-    ctx.lineTo(-r, r);
-    ctx.stroke();
-    ctx.restore();
-  } else if (c.pattern === "fess") {
-    ctx.fillRect(-s, -r * 0.22, s * 2, r * 0.44);
-  } else if (c.pattern === "pale") {
-    ctx.fillRect(-r * 0.22, -s, r * 0.44, s * 2);
-  } else if (c.pattern === "split") {
+    ctx.lineWidth = r * 0.14;
+    for (let i = 1; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.arc(0, 0, r * (0.28 * i), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  } else if (c.pattern === "half") {
     ctx.fillRect(0, -s, s, s * 2);
+  } else if (c.pattern === "bar") {
+    ctx.fillRect(-s, -r * 0.18, s * 2, r * 0.36);
   }
   ctx.restore();
   ctx.save();
   ctx.beginPath();
   path();
   ctx.lineJoin = "round";
-  ctx.lineWidth = Math.max(1, r * 0.03);
-  ctx.strokeStyle = "#111111";
+  ctx.lineCap = "round";
+  ctx.lineWidth = Math.max(1.6, r * 0.07);
+  ctx.strokeStyle = luma(c.a) > 0.55 ? "#141414" : "#f6f1e6";
   ctx.stroke();
   ctx.restore();
 }
@@ -1027,13 +993,12 @@ export class HeraldryField {
     const ctx = this.canvas.getContext("2d", { alpha: false });
     if (!ctx) return this.canvas;
 
-    const paper = hexOk(opts.paper, "#ffffff");
     const kit = kitFromUnknown(opts.kit);
+    const paper = hexOk(opts.paper, paperForKit(kit, opts.seed));
     const ink = hexOk(opts.ink, KIT_INK[kit]);
     this.ensure(opts.seed >>> 0, ink, kit);
 
-    ctx.fillStyle = paper;
-    ctx.fillRect(0, 0, w, h);
+    paintGround(ctx, w, h, paper, kit, opts.time, opts.seed);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
 
@@ -1043,93 +1008,145 @@ export class HeraldryField {
     const bass = clamp(opts.bass, 0, 1);
     const t = opts.time;
     const aspect = w / Math.max(h, 1);
+    const count = scene === "lattice" ? 48 : scene === "tunnel" ? 120 : this.particles.length;
 
-    let camX = t * 0.22 + Math.sin(t * 0.37) * 0.08;
-    let camY = t * 0.11 + Math.cos(t * 0.29) * 0.05;
-    let camZ = t * 0.55;
-    if (scene === "wallpaper") {
-      camX = t * (0.55 + audio * 0.45);
-      camY = t * 0.28 + Math.sin(t * 0.9) * 0.03;
-      camZ = 0;
-    } else if (scene === "sparse") {
-      camX = t * 0.28;
-      camY = t * 0.12 + Math.sin(t * 0.4) * 0.03;
-      camZ = t * 0.22;
-    } else if (scene === "giants") {
-      camX = Math.sin(t * 0.18) * 0.08;
-      camY = t * 0.035 + bass * 0.01;
-      camZ = 0;
-    } else {
-      camX = Math.sin(t * 0.2) * 0.04;
-      camY = t * (0.22 + audio * 0.18);
-      camZ = 0;
-    }
-
-    const minZ = scene === "wallpaper" ? 0.62 : 0.7;
-    const maxZ = scene === "wallpaper" ? 2.4 : 2.0;
-    const confetti = new Set(KIT_SHOWER[kit]);
-
-    for (let i = 0; i < this.particles.length; i++) {
+    for (let i = 0; i < count; i++) {
       const p = this.particles[i];
-      if (scene === "giants" && i % 5 !== 0) continue;
-      if (scene === "sparse" && i % 2 === 0) continue;
-
-      let x: number;
-      let y: number;
-      let px: number;
-      if (scene === "wallpaper") {
-        x = ((p.x - camX) % 1 + 1) % 1 - 0.5;
-        y = ((p.y - camY) % 1 + 1) % 1 - 0.5;
-        px = 0.062 + p.size * 0.028 + bass * 0.01;
-      } else if (scene === "sparse") {
-        const z = ((p.z - camZ) % 1 + 1) % 1;
-        const depth = minZ + z * (maxZ - minZ);
-        if (depth < 0.55 || depth > maxZ * 0.96) continue;
-        x = ((p.x - camX) % 1 + 1) % 1 - 0.5;
-        y = ((p.y - camY) % 1 + 1) % 1 - 0.5;
-        x = x / depth;
-        y = y / depth;
-        px = clamp((0.28 * p.size * (0.9 + bass * 0.12)) / depth, 0.05, 0.2);
-      } else if (scene === "giants") {
-        x = ((p.x + p.vx * t * 0.12 - camX) % 1 + 1) % 1 - 0.5;
-        y = ((p.y + p.vy * t * 0.08 - camY) % 1 + 1) % 1 - 0.5;
-        if (Math.abs(x) > 0.55 || Math.abs(y) > 0.55) continue;
-        px = clamp(0.26 * p.size * (1.05 + audio * 0.06), 0.18, 0.34);
-      } else {
-        x = ((p.x + Math.sin(t * 0.4 + p.z * 9) * 0.02 - camX) % 1 + 1) % 1 - 0.5;
-        y = ((p.y + t * (0.12 + p.vy * 0.4) - camY) % 1 + 1) % 1 - 0.5;
-        px = 0.095 * p.size * (0.75 + (confetti.has(p.charge.kind) ? 0.2 : 0));
-      }
-
-      if ((scene === "wallpaper" || scene === "sparse") && BODIES.has(p.charge.kind)) px *= 0.78;
-
-      const dim = px * Math.min(w, h);
-      if (dim < 4) continue;
-      const rot = p.rot + p.vr * t * (scene === "giants" ? 0.35 : scene === "shower" ? 0.15 : 0.08);
+      const pose = poseParticle(p, i, scene, t, audio, bass);
+      if (!pose) continue;
+      const dim = pose.px * Math.min(w, h);
+      if (dim < 5) continue;
       const stamp = this.stamp(p.charge);
-      const wrap = scene === "wallpaper" || scene === "shower" ? [-1, 0, 1] : [0];
-      for (const ox of wrap) {
-        for (const oy of wrap) {
-          const sx = (0.5 + x + ox) * w;
-          const sy = (0.5 + (y + oy) / aspect) * h;
-          if (sx < -dim || sy < -dim || sx > w + dim || sy > h + dim) continue;
-          ctx.save();
-          ctx.translate(sx, sy);
-          ctx.rotate(rot);
-          ctx.drawImage(stamp, -dim / 2, -dim / 2, dim, dim);
-          ctx.restore();
-        }
-      }
+      const sx = (0.5 + pose.x) * w;
+      const sy = (0.5 + pose.y / aspect) * h;
+      if (sx < -dim || sy < -dim || sx > w + dim || sy > h + dim) continue;
+      ctx.save();
+      ctx.globalAlpha = pose.alpha;
+      ctx.translate(sx, sy);
+      ctx.rotate(pose.rot);
+      ctx.drawImage(stamp, -dim / 2, -dim / 2, dim, dim);
+      ctx.restore();
     }
 
     return this.canvas;
   }
 }
 
-export function paperForSeed(seed: number): string {
+function wrap01(v: number): number {
+  return ((v % 1) + 1) % 1;
+}
+
+function poseParticle(
+  p: Particle,
+  i: number,
+  scene: HeraldryScene,
+  t: number,
+  audio: number,
+  bass: number,
+): { x: number; y: number; px: number; rot: number; alpha: number } | null {
+  if (scene === "tunnel") {
+    const z = wrap01(p.z - t * (0.4 + audio * 0.5 + bass * 0.22));
+    const depth = 0.3 + z * 2.45;
+    if (depth < 0.34 || depth > 2.65) return null;
+    const ang = p.x * Math.PI * 2 + t * 0.14 + p.rot * 0.3;
+    const rad = (0.16 + p.y * 0.58) / depth;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad,
+      px: clamp((0.2 * p.size * (0.95 + bass * 0.15)) / depth, 0.04, 0.5),
+      rot: p.rot + p.vr * t * 0.2,
+      alpha: clamp((2.65 - depth) / 0.28, 0, 1) * clamp((depth - 0.3) / 0.1, 0, 1),
+    };
+  }
+  if (scene === "lattice") {
+    const cols = 8;
+    const rows = 6;
+    const gx = ((i % cols) + 0.5) / cols - 0.5;
+    const gy = (Math.floor(i / cols) + 0.5) / rows - 0.5;
+    const z = wrap01(t * (0.2 + audio * 0.12) + p.z * 0.02);
+    const depth = 0.32 + (1 - z) * 2.2;
+    return {
+      x: gx / (depth * 0.62),
+      y: gy / (depth * 0.62),
+      px: clamp((0.16 * p.size) / depth, 0.05, 0.42),
+      rot: p.rot * 0.25,
+      alpha: clamp((2.4 - depth) / 0.25, 0, 1),
+    };
+  }
+  if (scene === "bloom") {
+    const u = wrap01(p.z - t * (0.34 + bass * 0.28));
+    const grow = u * u;
+    const ang = p.x * Math.PI * 2 + t * 0.1 + p.rot;
+    return {
+      x: Math.cos(ang) * grow * 0.92,
+      y: Math.sin(ang) * grow * 0.92,
+      px: clamp(0.05 + grow * 0.32 * p.size * (1 + audio * 0.12), 0.04, 0.48),
+      rot: p.rot + u * 0.4,
+      alpha: clamp(1.05 - grow, 0, 1) * clamp(u / 0.08, 0, 1),
+    };
+  }
+  const z = wrap01(p.z - t * (0.46 + audio * 0.58 + bass * 0.28));
+  const depth = 0.26 + z * 2.7;
+  if (depth < 0.3 || depth > 2.85) return null;
+  const x = (wrap01(p.x + p.vx * t * 0.03) - 0.5) / depth;
+  const y = (wrap01(p.y + p.vy * t * 0.02) - 0.5) / depth;
+  return {
+    x,
+    y,
+    px: clamp((0.24 * p.size * (0.92 + bass * 0.18)) / depth, 0.04, 0.62),
+    rot: p.rot + p.vr * t * 0.12,
+    alpha: clamp((2.85 - depth) / 0.3, 0, 1) * clamp((depth - 0.26) / 0.1, 0, 1),
+  };
+}
+
+const KIT_GROUNDS: Record<CollageKit, string[]> = {
+  sailor: ["#0b2a4a", "#123c5c", "#f0e2c4", "#0e4d5c", "#1a1a2e"],
+  circus: ["#1a0614", "#ff2f86", "#2a0a18", "#f5d76e", "#101010"],
+  fruit: ["#fff1b8", "#ff8a4c", "#7ec8e3", "#2d1b0e", "#f4efe0"],
+  nature: ["#1a3324", "#3d5c3a", "#e8f0d8", "#243028", "#6b8f71"],
+  love: ["#3a1028", "#f4c4d4", "#2a0818", "#8b1e4a", "#1a0a14"],
+};
+
+function mixHex(a: string, b: string, t: number): string {
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  if (Number.isNaN(pa) || Number.isNaN(pb)) return a;
+  const u = clamp(t, 0, 1);
+  const ch = (shift: number) => Math.round((((pa >> shift) & 255) * (1 - u) + ((pb >> shift) & 255) * u));
+  const n = (ch(16) << 16) | (ch(8) << 8) | ch(0);
+  return `#${n.toString(16).padStart(6, "0")}`;
+}
+
+function paintGround(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  paper: string,
+  kit: CollageKit,
+  time: number,
+  seed: number,
+) {
+  ctx.fillStyle = paper;
+  ctx.fillRect(0, 0, w, h);
+  const wash = pick(mulberry32((seed + 4) >>> 0), KIT_GROUNDS[kit]);
+  const cx = w * (0.5 + Math.sin(time * 0.17) * 0.08);
+  const cy = h * (0.46 + Math.cos(time * 0.13) * 0.06);
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.72);
+  g.addColorStop(0, mixHex(paper, wash, 0.45));
+  g.addColorStop(1, paper);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+}
+
+export function paperForKit(kit: CollageKit, seed = 0): string {
   const rng = mulberry32((seed + 17) >>> 0);
-  if (rng() < 0.82) return "#ffffff";
-  return pick(rng, ["#fff8ee", "#f6f1e4", "#ffffff", "#f3f6ff"]);
+  return pick(rng, KIT_GROUNDS[kit]);
+}
+
+export function paperForSeed(seed: number, kit?: CollageKit): string {
+  if (kit) return paperForKit(kit, seed);
+  const rng = mulberry32((seed + 17) >>> 0);
+  return pick(rng, KIT_GROUNDS[COLLAGE_KITS[Math.floor(rng() * COLLAGE_KITS.length)]]);
 }
 
 export function inkForSeed(seed: number, fallback = "#c41e3a"): string {

@@ -1,4 +1,4 @@
-import { inkForKit, isHeraldry, kitFromUnknown, type CollageKit } from "../engine/heraldry";
+import { inkForKit, isHeraldry, kitFromUnknown, paperForKit, type CollageKit } from "../engine/heraldry";
 import { uid } from "./ids";
 import type {
   EffectInstance,
@@ -113,9 +113,9 @@ const KIT_LABEL: Record<CollageKit, string> = {
 
 const PLACE_LABEL: Record<string, string> = {
   heraldry: "TOUR",
-  wallpaper: "PAPER",
-  giants: "GIANTS",
-  shower: "SHOWER",
+  wallpaper: "RUSH",
+  giants: "TUNNEL",
+  shower: "LATTICE",
 };
 
 export function defaultGeneratorSource(
@@ -131,7 +131,7 @@ export function defaultGeneratorSource(
     name,
     kind: "generator",
     generator: kind ?? "plasma",
-    colorA: collageKit ? "#ffffff" : ink.a,
+    colorA: collageKit ? paperForKit(collageKit, kind === "heraldry" ? 1 : kind === "wallpaper" ? 3 : kind === "giants" ? 5 : 7) : ink.a,
     colorB: collageKit ? inkForKit(collageKit) : ink.b,
     collageKit,
     width: 1280,

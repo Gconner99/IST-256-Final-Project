@@ -66,7 +66,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="status">RND</label>
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
-      <button class="btn tiny hot" data-act="rand-wacky" title="A new collage of arms, paper, and zoom">Rand wacky</button>
+      <button class="btn tiny hot" data-act="rand-wacky" title="A new kit, ground color, and camera move">Rand wacky</button>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
       <select id="quality">
@@ -90,7 +90,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Five stamp kits — sailor, circus, fruit & weather, grove, love — fly over white paper. The camera rips through a dense wallpaper, slams into giant charges, then rains tiny icons. Drop an MP3 and the fly-through follows the mix.</p>
+        <p>A collage machine. Five stamp kits — sailor, circus, fruit & weather, grove, love — fly at the camera on colored grounds. Rush, tunnel, lattice, and bloom are all “coming toward you” loops. Drop an MP3 and the fly-through follows the mix.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -98,9 +98,9 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
-          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit and zoom: Tour (the 4-beat trip), Paper, Giants, or Shower.</li>
+          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground color, and move: Tour, Rush, Tunnel, or Lattice.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
-          <li><strong>Kits</strong> — Sailor (fish, anchors, boats), Circus (tents, elephants), Fruit (pears, weather), Grove (trees, deer), Love (hearts, keys, swans). Zoom buttons keep the current kit.</li>
+          <li><strong>Kits</strong> — Sailor (fish, anchors, boats), Circus (tents, elephants), Fruit (pears, weather), Grove (trees, deer), Love (hearts, keys, swans). Move buttons keep the current kit.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
@@ -469,15 +469,15 @@ function paintRail(n: HTMLElement) {
     </div>
     <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="heraldry">Tour</button>
-      <button class="btn tiny" data-act="gen" data-kind="wallpaper">Paper</button>
-      <button class="btn tiny" data-act="gen" data-kind="giants">Giants</button>
-      <button class="btn tiny" data-act="gen" data-kind="shower">Shower</button>
+      <button class="btn tiny" data-act="gen" data-kind="wallpaper">Rush</button>
+      <button class="btn tiny" data-act="gen" data-kind="giants">Tunnel</button>
+      <button class="btn tiny" data-act="gen" data-kind="shower">Lattice</button>
     </div>
     <div class="row">
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
       <button class="btn tiny" data-act="reprint">Print frame</button>
     </div>
-    <div class="status" style="margin-top:4px">Pick a kit, then a zoom. Tour walks packed paper → big charges → tiny rain. Paper / Giants / Shower keep the kit you last used. Rand wacky rolls a new kit.</div>
+    <div class="status" style="margin-top:4px">Pick a kit, then a move. Rush is stamps flying at the camera. Tunnel / Lattice / Bloom are pattern versions of that. Tour walks all four. Rand wacky rolls a new kit and ground color.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
