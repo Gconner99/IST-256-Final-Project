@@ -18,7 +18,6 @@ const hooked = new WeakSet<HTMLAudioElement>();
 let energyEma = 0;
 let bassEma = 0;
 let beatHold = 0;
-let prevEnergy = 0;
 
 function busCtx(): AudioContext | null {
   const AC =
@@ -136,7 +135,7 @@ export function detectBeats(ch: Float32Array, sampleRate: number): number[] {
     energy[i] = Math.sqrt(e / (win * 0.5));
   }
   const look = Math.max(10, Math.floor(0.32 / (hop / sampleRate)));
-  const minGap = 0.24;
+  const minGap = 0.3;
   const beats: number[] = [];
   let last = -99;
   for (let i = look; i < n; i++) {
@@ -148,7 +147,7 @@ export function detectBeats(ch: Float32Array, sampleRate: number): number[] {
     }
     mean /= look;
     const flux = energy[i] - energy[i - 1];
-    const hot = energy[i] > mean * 1.32 && energy[i] > peak * 0.72 && flux > 0.002;
+    const hot = energy[i] > mean * 1.48 && energy[i] > peak * 0.82 && flux > 0.006;
     if (!hot) continue;
     const t = (i * hop) / sampleRate;
     if (t - last < minGap) continue;
@@ -171,8 +170,8 @@ export function estimateBpm(beats: number[]): number {
   return clampNum(Math.round(60 / mid), 70, 170);
 }
 
-/** 1 at an onset, then a short decay so stamps can punch. */
-export function beatEnvelope(beats: number[], time: number, decay = 0.13): number {
+/** Soft raised pulse on an onset. Long enough to feel, never a hard click. */
+export function beatEnvelope(beats: number[], time: number, decay = 0.2): number {
   if (!beats.length) return 0;
   let lo = 0;
   let hi = beats.length - 1;
@@ -184,7 +183,7 @@ export function beatEnvelope(beats: number[], time: number, decay = 0.13): numbe
   const at = beats[lo];
   if (at > time) return 0;
   const dt = time - at;
-  if (dt > decay * 3) return 0;
+  if (dt > decay * 3.2) return 0;
   return Math.exp(-dt / decay);
 }
 
@@ -243,24 +242,25 @@ export function sampleAudio(
   let bass = 0;
   let beat = 0;
   if (source?.kind === "audio" && source.pcm && source.pcm.duration > 0) {
-    const s = sampleLevelsFromSamples(source.pcm.getChannelData(0), source.pcm.sampleRate, source.pcm.duration, time);
+    const dur = source.pcm.duration;
+    const wrapped = ((time % dur) + dur) % dur;
+    const s = sampleLevelsFromSamples(source.pcm.getChannelData(0), source.pcm.sampleRate, dur, wrapped);
     energy = s.energy;
     bass = s.bass;
-    beat = beatEnvelope(source.beats ?? [], time);
+    const hits = source.beats ?? [];
+    beat = hits.length ? beatEnvelope(hits, wrapped) : clampNum((energy - 0.16) * 0.55, 0, 0.45);
   } else if (source?.kind === "audio") {
     const live = analyserLevels();
     if (live) {
       energy = live.energy;
       bass = live.bass;
+      beat = clampNum((energy - 0.16) * 0.45, 0, 0.4);
     }
   }
-  const flux = energy - prevEnergy;
-  prevEnergy = energy;
-  if (source?.kind === "audio" && beat < 0.15 && flux > 0.07 && energy > 0.18) beat = 1;
-  beatHold = Math.max(beatHold * 0.72, beat);
-  const follow = source?.kind === "audio" ? 0.38 : 0.18;
+  beatHold += (beat - beatHold) * 0.22;
+  const follow = source?.kind === "audio" ? 0.22 : 0.14;
   energyEma += (energy - energyEma) * follow;
-  bassEma += (bass - bassEma) * Math.min(follow, 0.28);
+  bassEma += (bass - bassEma) * Math.min(follow, 0.16);
   if (!source && energyEma < 0.002) energyEma = 0;
   if (!source && bassEma < 0.002) bassEma = 0;
   if (!source) beatHold = 0;

@@ -91,7 +91,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera or bounce around a warm colored ground. Each clip locks one move. Rush is the fly-at-the-lens; bounce / flip / glow / flash / hop stay on the screen. Kick punches the stamps; jelly squishes them. Drop or upload an MP3 and the motion snaps to the beat.</p>
+        <p>A collage machine. Stamp kits fly at the camera or bounce around a warm colored ground. Each clip locks one move. Rush is the fly-at-the-lens; bounce / flip / glow / flash / hop stay on the screen. Kick and jelly pulse with the mix. Drop or upload an MP3 and the stamps breathe on the beat without jumping off their path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -510,7 +510,7 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="jelly">Jelly</button>
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
     </div>
-    <div class="status" style="margin-top:4px">Each clip keeps one move. Rush flies at the lens. Bounce / flip / glow / flash / hop stay on the screen. Kick punches; jelly squishes. Drop an MP3 and they hit the beat. Kit buttons keep the last move.</div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move. Rush flies at the lens. Bounce / flip / glow / flash / hop stay on the screen. Kick and jelly pulse with the mix. Drop an MP3 and they breathe on the beat. Kit buttons keep the last move.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"

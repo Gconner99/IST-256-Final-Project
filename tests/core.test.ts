@@ -5,7 +5,7 @@ import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
-import { buildField, COLLAGE_KITS, COLLAGE_MOVES, isHeraldry, kindsForKit, sceneAt, sceneFromGenerator, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { buildField, COLLAGE_KITS, COLLAGE_MOVES, groundsForKit, isHeraldry, kindsForKit, sceneAt, sceneFromGenerator, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -750,8 +750,9 @@ describe("soundtrack", () => {
     const tempo = estimateBpm(beats);
     expect(tempo).toBeGreaterThanOrEqual(100);
     expect(tempo).toBeLessThanOrEqual(140);
-    expect(beatEnvelope(beats, beats[2])).toBeGreaterThan(0.9);
-    expect(beatEnvelope(beats, beats[2] + 0.4)).toBeLessThan(0.1);
+    expect(beatEnvelope([1], 1)).toBeGreaterThan(0.9);
+    expect(beatEnvelope([1], 1.08)).toBeGreaterThan(0.55);
+    expect(beatEnvelope([1], 1.7)).toBeLessThan(0.08);
   });
 
   it("starts playback when an mp3 is attached", () => {
@@ -842,6 +843,17 @@ describe("heraldry collage", () => {
     const sailor = new Set(buildField(7, "#1c4db8", "sailor").map((p) => p.charge.kind));
     const love = new Set(buildField(7, "#e84a8a", "love").map((p) => p.charge.kind));
     expect([...sailor].some((k) => !love.has(k))).toBe(true);
+  });
+
+  it("gives each kit a wider wash of ground colors", () => {
+    for (const kit of COLLAGE_KITS) {
+      const grounds = groundsForKit(kit);
+      expect(grounds.length).toBeGreaterThanOrEqual(8);
+      expect(new Set(grounds).size).toBe(grounds.length);
+      for (const hex of grounds) expect(hex).toMatch(/^#[0-9a-f]{6}$/i);
+    }
+    expect(groundsForKit("sailor")).toContain("#c98a4a");
+    expect(groundsForKit("love")).toContain("#f0a0b8");
   });
 
   it("starts on a colored-ground sailor tour", () => {
