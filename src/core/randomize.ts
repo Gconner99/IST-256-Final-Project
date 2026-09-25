@@ -1,4 +1,4 @@
-import { COLLAGE_KITS, HERALDRY_ROOMS, generatorForMove, inkForKit, inkForSeed, isHeraldry, kitForSeed, moveForSeed, paperForKit, paperForSeed } from "../engine/heraldry";
+import { COLLAGE_KITS, HERALDRY_ROOMS, generatorForMove, inkForKit, inkForSeed, isHeraldry, kitForSeed, moveForSeed, paperForStyle, paperForSeed, paperStyleForSeed } from "../engine/heraldry";
 import { getEffect } from "../effects/registry";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
@@ -401,13 +401,15 @@ export function randomizeProject(
         : places[Math.floor(prng() * places.length)];
     const kit = kitForSeed(seed + i * 41);
     const move = isHeraldry(generator) ? moveForSeed(seed + i * 73) : undefined;
-    const paper = isHeraldry(generator) ? paperForKit(kit, seed + i * 17) : pal.inkA;
+    const style = isHeraldry(generator) ? paperStyleForSeed(seed + i * 19) : undefined;
+    const paper = isHeraldry(generator) ? paperForStyle(style ?? "flat", kit, seed + i * 17) : pal.inkA;
     const ink = isHeraldry(generator) ? inkForKit(kit) : pal.inkB;
     return {
       ...src,
       generator: move ? generatorForMove(move) : generator,
       collageKit: isHeraldry(generator) ? kit : src.collageKit,
       collageMove: move ?? src.collageMove,
+      collagePaper: style ?? src.collagePaper,
       colorA: pinned ? pinned.a : paper,
       colorB: pinned ? inkForKit(kit) : ink,
     };
@@ -444,12 +446,14 @@ export function chaosStamp(project: Project): Project {
       if (!isHeraldry(src.generator)) return src;
       const kit = COLLAGE_KITS[Math.floor(rng() * COLLAGE_KITS.length)];
       const move = moveForSeed(seed + i * 59);
+      const style = paperStyleForSeed(seed + i * 23);
       return {
         ...src,
         generator: generatorForMove(move),
         collageKit: kit,
         collageMove: move,
-        colorA: paperForKit(kit, seed + i * 13),
+        collagePaper: style,
+        colorA: paperForStyle(style, kit, seed + i * 13),
         colorB: inkForSeed(seed + i * 29),
       };
     }),

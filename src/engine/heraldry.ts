@@ -5,7 +5,7 @@ export const HERALDRY_ROOMS: GeneratorType[] = ["heraldry", "wallpaper", "giants
 export const COLLAGE_KITS = ["sailor", "circus", "fruit", "nature", "love", "space", "sweet", "music"] as const;
 export type CollageKit = (typeof COLLAGE_KITS)[number];
 
-export const COLLAGE_MOVES = ["rush", "tunnel", "lattice", "bloom", "spiral", "lanes", "pulse"] as const;
+export const COLLAGE_MOVES = ["rush", "tunnel", "lattice", "bloom", "spiral", "lanes", "pulse", "kaleido", "vortex", "ripple", "orbit"] as const;
 export type CollageMove = (typeof COLLAGE_MOVES)[number];
 export type HeraldryScene = CollageMove | "tour";
 
@@ -17,7 +17,31 @@ export const MOVE_LABEL: Record<CollageMove, string> = {
   spiral: "SPIRAL",
   lanes: "LANES",
   pulse: "PULSE",
+  kaleido: "KALEIDO",
+  vortex: "VORTEX",
+  ripple: "RIPPLE",
+  orbit: "ORBIT",
 };
+
+export const COLLAGE_PAPERS = ["flat", "notebook", "graph", "legal", "marble", "dots"] as const;
+export type CollagePaper = (typeof COLLAGE_PAPERS)[number];
+
+export const PAPER_LABEL: Record<CollagePaper, string> = {
+  flat: "FLAT",
+  notebook: "NOTE",
+  graph: "GRAPH",
+  legal: "LEGAL",
+  marble: "MARBLE",
+  dots: "DOTS",
+};
+
+export function paperFromUnknown(value?: string | null): CollagePaper {
+  return COLLAGE_PAPERS.includes(value as CollagePaper) ? (value as CollagePaper) : "flat";
+}
+
+export function paperStyleForSeed(seed: number): CollagePaper {
+  return COLLAGE_PAPERS[(seed >>> 0) % COLLAGE_PAPERS.length];
+}
 
 export function isHeraldry(kind?: string | null): boolean {
   return kind === "heraldry" || kind === "wallpaper" || kind === "giants" || kind === "shower";
@@ -211,6 +235,7 @@ export interface HeraldryPaintOpts {
   generator?: string | null;
   kit?: string | null;
   move?: string | null;
+  paperStyle?: string | null;
   paper: string;
   ink: string;
   audio: number;
@@ -1224,7 +1249,8 @@ export class HeraldryField {
     const ink = hexOk(opts.ink, KIT_INK[kit]);
     this.ensure(opts.seed >>> 0, ink, kit);
 
-    paintGround(ctx, w, h, paper, kit, opts.time, opts.seed);
+    const style = paperFromUnknown(opts.paperStyle);
+    paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, style);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
 
@@ -1234,7 +1260,20 @@ export class HeraldryField {
     const t = opts.time;
     const aspect = w / Math.max(h, 1);
     const count =
-      scene === "lattice" ? 48 : scene === "lanes" ? 90 : scene === "pulse" ? 72 : scene === "tunnel" ? 120 : scene === "bloom" ? 140 : this.particles.length;
+      scene === "lattice"
+        ? 48
+        : scene === "kaleido"
+          ? 36
+          : scene === "lanes"
+            ? 90
+            : scene === "pulse"
+              ? 72
+              : scene === "tunnel"
+                ? 120
+                : scene === "bloom"
+                  ? 140
+                  : this.particles.length;
+    const folds = scene === "kaleido" ? 6 : 1;
 
     for (let i = 0; i < count; i++) {
       const p = this.particles[i];
@@ -1245,14 +1284,26 @@ export class HeraldryField {
       const stamp = this.stamp(p.charge);
       const sx = (0.5 + pose.x) * w;
       const sy = (0.5 + pose.y / aspect) * h;
-      if (sx < -dim || sy < -dim || sx > w + dim || sy > h + dim) continue;
-      ctx.save();
-      ctx.globalAlpha = pose.alpha;
-      ctx.translate(sx, sy);
-      ctx.rotate(pose.rot);
-      ctx.drawImage(stamp, -dim / 2, -dim / 2, dim, dim);
-      ctx.restore();
+      const wobble = style === "notebook" || style === "legal" ? Math.sin(t * 2.1 + i * 0.7) * 0.05 : 0;
+      for (let k = 0; k < folds; k++) {
+        ctx.save();
+        if (folds > 1) {
+          ctx.translate(w * 0.5, h * 0.5);
+          ctx.rotate((k * Math.PI * 2) / folds);
+          ctx.translate(-w * 0.5, -h * 0.5);
+        }
+        if (sx < -dim || sy < -dim || sx > w + dim || sy > h + dim) {
+          ctx.restore();
+          continue;
+        }
+        ctx.globalAlpha = pose.alpha;
+        ctx.translate(sx, sy);
+        ctx.rotate(pose.rot + wobble);
+        ctx.drawImage(stamp, -dim / 2, -dim / 2, dim, dim);
+        ctx.restore();
+      }
     }
+    if (style !== "flat") paintGrain(ctx, w, h, opts.seed, style);
 
     return this.canvas;
   }
@@ -1350,6 +1401,66 @@ function poseParticle(
       alpha: clamp((2.3 - depth) / 0.22, 0, 1),
     };
   }
+  if (scene === "kaleido") {
+    const z = wrap01(p.z - t * (0.38 + audio * 0.4 + bass * 0.16));
+    const depth = 0.3 + z * 2.35;
+    if (depth < 0.34 || depth > 2.55) return null;
+    const ang = p.x * (Math.PI / 3);
+    const rad = (0.08 + p.y * 0.55) / depth;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad,
+      px: clamp((0.18 * p.size) / depth, 0.04, 0.46),
+      rot: p.rot + t * 0.2,
+      alpha: clamp((2.55 - depth) / 0.24, 0, 1) * clamp((depth - 0.3) / 0.1, 0, 1),
+    };
+  }
+  if (scene === "vortex") {
+    const z = wrap01(p.z - t * (0.5 + audio * 0.55 + bass * 0.24));
+    const depth = 0.24 + z * 2.75;
+    if (depth < 0.28 || depth > 2.9) return null;
+    const spin = t * (0.8 + (2.2 / depth)) + p.x * Math.PI * 2;
+    const rad = (0.06 + p.y * 0.5) / (depth * depth * 0.55 + 0.35);
+    return {
+      x: Math.cos(spin) * rad,
+      y: Math.sin(spin) * rad * 0.86,
+      px: clamp((0.26 * p.size * (0.9 + bass * 0.2)) / depth, 0.04, 0.64),
+      rot: spin + p.rot,
+      alpha: clamp((2.9 - depth) / 0.3, 0, 1) * clamp((depth - 0.24) / 0.1, 0, 1),
+    };
+  }
+  if (scene === "ripple") {
+    const z = wrap01(p.z - t * (0.4 + audio * 0.42 + bass * 0.18));
+    const depth = 0.28 + z * 2.55;
+    if (depth < 0.32 || depth > 2.7) return null;
+    let x = (wrap01(p.x) - 0.5) / depth;
+    let y = (wrap01(p.y) - 0.5) / depth;
+    const rad = Math.hypot(x, y) + 0.0001;
+    const wave = Math.sin(rad * 16 - t * 6.2 + bass * 2) * (0.07 / depth);
+    x += (x / rad) * wave;
+    y += (y / rad) * wave;
+    return {
+      x,
+      y,
+      px: clamp((0.22 * p.size) / depth, 0.04, 0.5),
+      rot: p.rot + wave * 2,
+      alpha: clamp((2.7 - depth) / 0.26, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
+    };
+  }
+  if (scene === "orbit") {
+    const z = wrap01(p.z - t * (0.36 + audio * 0.4 + bass * 0.16));
+    const depth = 0.3 + z * 2.4;
+    if (depth < 0.34 || depth > 2.6) return null;
+    const ang = t * (1.15 + (1.4 / depth)) + p.x * Math.PI * 2;
+    const rad = (0.18 + p.y * 0.42) / depth;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad,
+      px: clamp((0.2 * p.size * (0.94 + bass * 0.12)) / depth, 0.04, 0.5),
+      rot: ang + p.rot,
+      alpha: clamp((2.6 - depth) / 0.24, 0, 1) * clamp((depth - 0.3) / 0.1, 0, 1),
+    };
+  }
   const z = wrap01(p.z - t * (0.46 + audio * 0.58 + bass * 0.28));
   const depth = 0.26 + z * 2.7;
   if (depth < 0.3 || depth > 2.85) return null;
@@ -1385,6 +1496,20 @@ function mixHex(a: string, b: string, t: number): string {
   return `#${n.toString(16).padStart(6, "0")}`;
 }
 
+const TEXTURE_BASE: Record<CollagePaper, string> = {
+  flat: "#ffffff",
+  notebook: "#f3edd8",
+  graph: "#eef6ee",
+  legal: "#f6e79a",
+  marble: "#121212",
+  dots: "#f6f1e4",
+};
+
+export function paperForStyle(style: CollagePaper, kit: CollageKit, seed = 0): string {
+  if (style === "flat") return paperForKit(kit, seed);
+  return TEXTURE_BASE[style];
+}
+
 function paintGround(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -1393,7 +1518,102 @@ function paintGround(
   kit: CollageKit,
   time: number,
   seed: number,
+  style: CollagePaper,
 ) {
+  if (style === "notebook") {
+    ctx.fillStyle = "#f3edd8";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "#d45c66";
+    ctx.lineWidth = Math.max(1.5, w * 0.003);
+    ctx.beginPath();
+    ctx.moveTo(w * 0.12, 0);
+    ctx.lineTo(w * 0.12, h);
+    ctx.stroke();
+    ctx.strokeStyle = "#8eb0d8";
+    ctx.lineWidth = 1;
+    const step = Math.max(16, h / 24);
+    for (let y = step * 1.4; y < h; y += step) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#c9c2b0";
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.arc(w * 0.045, h * (0.18 + i * 0.2), Math.max(4, w * 0.012), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    return;
+  }
+  if (style === "graph") {
+    ctx.fillStyle = "#eef6ee";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "#b7d3c2";
+    ctx.lineWidth = 1;
+    const step = Math.max(14, Math.min(w, h) / 28);
+    for (let x = 0; x <= w; x += step) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= h; y += step) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+    return;
+  }
+  if (style === "legal") {
+    ctx.fillStyle = "#f6e79a";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "#c45c66";
+    ctx.lineWidth = Math.max(1.5, w * 0.003);
+    ctx.beginPath();
+    ctx.moveTo(w * 0.1, 0);
+    ctx.lineTo(w * 0.1, h);
+    ctx.stroke();
+    ctx.strokeStyle = "#d2b56a";
+    ctx.lineWidth = 1;
+    const step = Math.max(16, h / 22);
+    for (let y = step; y < h; y += step) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+    return;
+  }
+  if (style === "marble") {
+    ctx.fillStyle = "#121212";
+    ctx.fillRect(0, 0, w, h);
+    const rng = mulberry32((seed + 44) >>> 0);
+    for (let i = 0; i < 90; i++) {
+      ctx.fillStyle = `rgba(245,245,245,${0.04 + rng() * 0.12})`;
+      ctx.beginPath();
+      ctx.ellipse(rng() * w, rng() * h, 8 + rng() * 70, 4 + rng() * 22, rng() * 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "#f4f0e4";
+    ctx.fillRect(w * 0.28, h * 0.38, w * 0.44, h * 0.22);
+    return;
+  }
+  if (style === "dots") {
+    ctx.fillStyle = "#f6f1e4";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#c8c0b0";
+    const step = Math.max(12, Math.min(w, h) / 32);
+    for (let y = step; y < h; y += step) {
+      for (let x = step; x < w; x += step) {
+        ctx.beginPath();
+        ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    return;
+  }
   ctx.fillStyle = paper;
   ctx.fillRect(0, 0, w, h);
   const wash = pick(mulberry32((seed + 4) >>> 0), KIT_GROUNDS[kit]);
@@ -1404,6 +1624,18 @@ function paintGround(
   g.addColorStop(1, paper);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, w, h);
+}
+
+function paintGrain(ctx: CanvasRenderingContext2D, w: number, h: number, seed: number, style: CollagePaper) {
+  const rng = mulberry32((seed + 211) >>> 0);
+  const n = style === "marble" ? 80 : 220;
+  ctx.save();
+  ctx.globalAlpha = style === "marble" ? 0.08 : 0.055;
+  ctx.fillStyle = style === "marble" ? "#ffffff" : "#2a2418";
+  for (let i = 0; i < n; i++) {
+    ctx.fillRect(rng() * w, rng() * h, 1 + rng() * 1.5, 1 + rng() * 1.5);
+  }
+  ctx.restore();
 }
 
 export function paperForKit(kit: CollageKit, seed = 0): string {

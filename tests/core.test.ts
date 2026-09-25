@@ -256,6 +256,8 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("heraldry", "space", "spiral").name).toBe("SPIRAL · SPACE");
     expect(defaultGeneratorSource("heraldry", "sweet", "lanes").name).toBe("LANES · SWEET");
     expect(defaultGeneratorSource("heraldry", "music", "pulse").name).toBe("PULSE · MUSIC");
+    expect(defaultGeneratorSource("wallpaper", "sailor", "rush", "notebook").name).toBe("RUSH · SAILOR · NOTE");
+    expect(defaultGeneratorSource("heraldry", "love", "kaleido", "marble").collagePaper).toBe("marble");
   });
 });
 
@@ -736,6 +738,8 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("giants")).toBe("tunnel");
     expect(sceneFromGenerator("shower")).toBe("lattice");
     expect(sceneFromGenerator("heraldry", "spiral")).toBe("spiral");
+    expect(sceneFromGenerator("heraldry", "kaleido")).toBe("kaleido");
+    expect(sceneFromGenerator("heraldry", "vortex")).toBe("vortex");
     expect(sceneAt(0.2, 8, "tour")).toBe("rush");
     expect(sceneAt(3.0, 8, "tour")).toBe("rush");
     expect(sceneAt(5.5, 8, "lattice")).toBe("lattice");

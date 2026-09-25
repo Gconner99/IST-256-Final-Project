@@ -154,7 +154,9 @@ export interface MediaSource {
   /** Collage stamp drawer. */
   collageKit?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music";
   /** Locked camera move for this clip. */
-  collageMove?: "rush" | "tunnel" | "lattice" | "bloom" | "spiral" | "lanes" | "pulse";
+  collageMove?: "rush" | "tunnel" | "lattice" | "bloom" | "spiral" | "lanes" | "pulse" | "kaleido" | "vortex" | "ripple" | "orbit";
+  /** Paper texture under the stamps. */
+  collagePaper?: "flat" | "notebook" | "graph" | "legal" | "marble" | "dots";
 }
 
 export interface Keyframe {
