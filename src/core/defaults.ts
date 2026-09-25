@@ -6,13 +6,10 @@ import {
   MOVE_LABEL,
   moveForSeed,
   moveFromUnknown,
-  PAPER_LABEL,
-  paperForStyle,
-  paperFromUnknown,
+  paperForKit,
   sceneFromGenerator,
   type CollageKit,
   type CollageMove,
-  type CollagePaper,
 } from "../engine/heraldry";
 import { uid } from "./ids";
 import type {
@@ -140,7 +137,6 @@ export function defaultGeneratorSource(
   kind: MediaSource["generator"] = "plasma",
   kit?: CollageKit | string | null,
   move?: CollageMove | string | null,
-  paper?: CollagePaper | string | null,
 ): MediaSource {
   const collageKit = isHeraldry(kind) ? kitFromUnknown(kit) : undefined;
   const ink = GEN_INK[kind ?? "plasma"] ?? { a: "#140c10", b: "#f0d2b0" };
@@ -153,21 +149,18 @@ export function defaultGeneratorSource(
           ? moveFromUnknown(move)
           : (sceneFromGenerator(kind) as CollageMove);
   }
-  const collagePaper = collageKit ? paperFromUnknown(paper) : undefined;
   const generator = collageMove ? generatorForMove(collageMove) : (kind ?? "plasma");
   const place = collageMove ? MOVE_LABEL[collageMove] : PLACE_LABEL[kind ?? ""] ?? (kind ? kind.toUpperCase() : "SIGNAL");
-  const paperBit = collagePaper && collagePaper !== "flat" ? ` · ${PAPER_LABEL[collagePaper]}` : "";
-  const name = collageKit ? `${place} · ${KIT_LABEL[collageKit]}${paperBit}` : kind === "critters" ? "FLOATERS" : kind === "stage" ? "STAGE" : kind === "sketch" ? "SKETCH" : place;
+  const name = collageKit ? `${place} · ${KIT_LABEL[collageKit]}` : kind === "critters" ? "FLOATERS" : kind === "stage" ? "STAGE" : kind === "sketch" ? "SKETCH" : place;
   return {
     id: uid("src"),
     name,
     kind: "generator",
     generator,
-    colorA: collageKit ? paperForStyle(collagePaper ?? "flat", collageKit, collageMove === "rush" ? 1 : collageMove === "tunnel" ? 5 : collageMove === "lattice" ? 7 : 11) : ink.a,
+    colorA: collageKit ? paperForKit(collageKit, collageMove === "rush" ? 1 : collageMove === "tunnel" ? 5 : collageMove === "bounce" ? 7 : 11) : ink.a,
     colorB: collageKit ? inkForKit(collageKit) : ink.b,
     collageKit,
     collageMove,
-    collagePaper,
     width: 1280,
     height: 720,
     duration: 0,

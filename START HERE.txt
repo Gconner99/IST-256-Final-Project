@@ -52,13 +52,11 @@ HOW TO USE IT
 
 - Pick a kit on the left: Sailor / Circus / Fruit / Grove / Love /
   Space / Sweet / Music
-- Then pick ONE move. That clip stays on that move: Rush (fly at the
-  lens), Tunnel, Lattice, Bloom, Spiral, Lanes, Pulse, Kaleido,
-  Vortex, Ripple, Orbit, Helix, Weave, Twist, Burst, Echo, or Prism.
-  Mix rolls a locked move.
-- Paper: Flat color, Note (school notebook), Graph, Legal, Marble
-  (composition cover), Dots, Kraft bag, Chalkboard, Manila folder,
-  Sticky note, Doodle notebook. Kit buttons keep the last move and paper.
+- Then pick ONE move. That clip stays on that move. Toward the camera:
+  Rush, Tunnel, Bloom, Spiral, Helix, Prism. On the screen: Bounce,
+  Flip, Glow, Flash, Hop. Mix rolls a locked move.
+- Grounds are warm colored washes (no paper textures). Kit buttons
+  keep the last move.
 - Rand wacky rolls a new kit and zoom.
 - Drag a photo, video, or MP3 onto the big area
 - Drop an MP3 to use it as a soundtrack. Hit Play — the collage

@@ -39,7 +39,7 @@ import {
 import { resumeAudio } from "../media/audio";
 import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
 import { defaultGeneratorSource } from "../core/defaults";
-import { isHeraldry, kitFromUnknown, moveFromUnknown, paperFromUnknown, type CollageKit, type CollageMove, type CollagePaper } from "../engine/heraldry";
+import { isHeraldry, kitFromUnknown, moveFromUnknown, type CollageKit, type CollageMove } from "../engine/heraldry";
 
 let liveScrub = false;
 let rendererRef: Renderer | null = null;
@@ -90,7 +90,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera. Each clip locks one move and one paper. Rush is the fly-at-the-lens; helix / weave / twist / burst / echo / prism get weirder. Notebook and doodle are school-kid pages. Drop an MP3 and the fly-through follows the mix.</p>
+        <p>A collage machine. Stamp kits fly at the camera or bounce around a warm colored ground. Each clip locks one move. Rush is the fly-at-the-lens; bounce / flip / glow / flash / hop stay on the screen and get wacky. Drop an MP3 and the motion follows the mix.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -100,8 +100,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
-          <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music. Move and paper buttons keep the current kit.</li>
-          <li><strong>Paper</strong> — Flat color, Notebook (ruled), Graph, Legal pad, Marble composition cover, Dots, Kraft bag, Chalkboard, Manila folder, Sticky note, Doodle notebook.</li>
+          <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music. Move buttons keep the current kit.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
@@ -175,12 +174,11 @@ function bind(root: HTMLElement) {
       const selected = store.project.sources.find((s) => s.id === store.state.ui.selectedSourceId);
       const kit = (t.dataset.kit as CollageKit | undefined) ?? (isHeraldry(kind) ? kitFromUnknown(selected?.collageKit) : undefined);
       const move = (t.dataset.move as CollageMove | "mix" | undefined) ?? (isHeraldry(kind) ? moveFromUnknown(selected?.collageMove) : undefined);
-      const paper = (t.dataset.paper as CollagePaper | undefined) ?? (isHeraldry(kind) ? paperFromUnknown(selected?.collagePaper) : undefined);
-      const src = defaultGeneratorSource(kind, kit, move, paper);
+      const src = defaultGeneratorSource(kind, kit, move);
       addSource(src, true);
       store.patchUi({
         status: src.collageMove
-          ? `place · ${src.collageMove} · ${src.collageKit ?? ""}${src.collagePaper && src.collagePaper !== "flat" ? ` · ${src.collagePaper}` : ""}`
+          ? `place · ${src.collageMove} · ${src.collageKit ?? ""}`
           : src.collageKit
             ? `place · ${kind} · ${src.collageKit}`
             : kind === "critters"
@@ -485,52 +483,26 @@ function paintRail(n: HTMLElement) {
     <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-move="rush">Rush</button>
       <button class="btn tiny" data-act="gen" data-kind="giants" data-move="tunnel">Tunnel</button>
-      <button class="btn tiny" data-act="gen" data-kind="shower" data-move="lattice">Lattice</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="bloom">Bloom</button>
-    </div>
-    <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="spiral">Spiral</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="lanes">Lanes</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="pulse">Pulse</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="mix">Mix</button>
-    </div>
-    <div class="row">
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="kaleido">Kaleido</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="vortex">Vortex</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="ripple">Ripple</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="orbit">Orbit</button>
     </div>
     <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="helix">Helix</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="weave">Weave</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="twist">Twist</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="burst">Burst</button>
-    </div>
-    <div class="row">
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="echo">Echo</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="prism">Prism</button>
-    </div>
-    <div class="sec">Paper</div>
-    <div class="row">
-      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="flat">Flat</button>
-      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="notebook">Note</button>
-      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="graph">Graph</button>
-      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="legal">Legal</button>
-      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="marble">Marble</button>
-      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="dots">Dots</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="mix">Mix</button>
     </div>
     <div class="row">
-      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="kraft">Kraft</button>
-      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="chalk">Chalk</button>
-      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="folder">Folder</button>
-      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="sticky">Sticky</button>
-      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="doodle">Doodle</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="bounce">Bounce</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="flip">Flip</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="glow">Glow</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="flash">Flash</button>
     </div>
     <div class="row">
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="hop">Hop</button>
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
       <button class="btn tiny" data-act="reprint">Print frame</button>
     </div>
-    <div class="status" style="margin-top:4px">Each clip keeps one move and one paper. Rush is the fly-at-the-lens. Helix / weave / twist / burst / echo / prism get weirder. Note is a school notebook; doodle adds margin scribbles. Kit buttons keep the last move and paper.</div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move. Rush flies at the lens. Bounce / flip / glow / flash / hop stay on the screen. Kit buttons keep the last move.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"

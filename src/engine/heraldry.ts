@@ -8,81 +8,32 @@ export type CollageKit = (typeof COLLAGE_KITS)[number];
 export const COLLAGE_MOVES = [
   "rush",
   "tunnel",
-  "lattice",
   "bloom",
   "spiral",
-  "lanes",
-  "pulse",
-  "kaleido",
-  "vortex",
-  "ripple",
-  "orbit",
   "helix",
-  "weave",
-  "twist",
-  "burst",
-  "echo",
   "prism",
+  "bounce",
+  "flip",
+  "glow",
+  "flash",
+  "hop",
 ] as const;
 export type CollageMove = (typeof COLLAGE_MOVES)[number];
-export type HeraldryScene = CollageMove | "tour";
+export type HeraldryScene = CollageMove | "tour" | "lattice";
 
 export const MOVE_LABEL: Record<CollageMove, string> = {
   rush: "RUSH",
   tunnel: "TUNNEL",
-  lattice: "LATTICE",
   bloom: "BLOOM",
   spiral: "SPIRAL",
-  lanes: "LANES",
-  pulse: "PULSE",
-  kaleido: "KALEIDO",
-  vortex: "VORTEX",
-  ripple: "RIPPLE",
-  orbit: "ORBIT",
   helix: "HELIX",
-  weave: "WEAVE",
-  twist: "TWIST",
-  burst: "BURST",
-  echo: "ECHO",
   prism: "PRISM",
+  bounce: "BOUNCE",
+  flip: "FLIP",
+  glow: "GLOW",
+  flash: "FLASH",
+  hop: "HOP",
 };
-
-export const COLLAGE_PAPERS = [
-  "flat",
-  "notebook",
-  "graph",
-  "legal",
-  "marble",
-  "dots",
-  "kraft",
-  "chalk",
-  "folder",
-  "sticky",
-  "doodle",
-] as const;
-export type CollagePaper = (typeof COLLAGE_PAPERS)[number];
-
-export const PAPER_LABEL: Record<CollagePaper, string> = {
-  flat: "FLAT",
-  notebook: "NOTE",
-  graph: "GRAPH",
-  legal: "LEGAL",
-  marble: "MARBLE",
-  dots: "DOTS",
-  kraft: "KRAFT",
-  chalk: "CHALK",
-  folder: "FOLDER",
-  sticky: "STICKY",
-  doodle: "DOODLE",
-};
-
-export function paperFromUnknown(value?: string | null): CollagePaper {
-  return COLLAGE_PAPERS.includes(value as CollagePaper) ? (value as CollagePaper) : "flat";
-}
-
-export function paperStyleForSeed(seed: number): CollagePaper {
-  return COLLAGE_PAPERS[(seed >>> 0) % COLLAGE_PAPERS.length];
-}
 
 export function isHeraldry(kind?: string | null): boolean {
   return kind === "heraldry" || kind === "wallpaper" || kind === "giants" || kind === "shower";
@@ -103,7 +54,7 @@ export function moveForSeed(seed: number): CollageMove {
 export function generatorForMove(move: CollageMove): GeneratorType {
   if (move === "rush") return "wallpaper";
   if (move === "tunnel") return "giants";
-  if (move === "lattice") return "shower";
+  if (move === "bounce") return "shower";
   return "heraldry";
 }
 
@@ -111,7 +62,7 @@ export function sceneFromGenerator(kind?: string | null, move?: string | null): 
   if (move && COLLAGE_MOVES.includes(move as CollageMove)) return move as CollageMove;
   if (kind === "wallpaper") return "rush";
   if (kind === "giants") return "tunnel";
-  if (kind === "shower") return "lattice";
+  if (kind === "shower") return "bounce";
   return "rush";
 }
 
@@ -276,7 +227,6 @@ export interface HeraldryPaintOpts {
   generator?: string | null;
   kit?: string | null;
   move?: string | null;
-  paperStyle?: string | null;
   paper: string;
   ink: string;
   audio: number;
@@ -1290,8 +1240,7 @@ export class HeraldryField {
     const ink = hexOk(opts.ink, KIT_INK[kit]);
     this.ensure(opts.seed >>> 0, ink, kit);
 
-    const style = paperFromUnknown(opts.paperStyle);
-    paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, style);
+    paintGround(ctx, w, h, paper, kit, opts.time, opts.seed);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
 
@@ -1301,68 +1250,52 @@ export class HeraldryField {
     const t = opts.time;
     const aspect = w / Math.max(h, 1);
     const count =
-      scene === "lattice"
-        ? 48
-        : scene === "kaleido"
-          ? 36
-          : scene === "echo"
-            ? 70
-            : scene === "prism"
-              ? 78
-              : scene === "lanes"
-                ? 90
-                : scene === "pulse"
-                  ? 72
-                  : scene === "weave"
-                    ? 110
-                    : scene === "helix"
-                      ? 130
-                      : scene === "tunnel"
-                        ? 120
-                        : scene === "bloom" || scene === "burst"
-                          ? 140
-                          : this.particles.length;
-    const folds = scene === "kaleido" ? 6 : 1;
-    const echoes = scene === "echo" ? 3 : 1;
+      scene === "bounce" || scene === "flip" || scene === "hop"
+        ? 40
+        : scene === "glow" || scene === "flash"
+          ? 46
+          : scene === "prism"
+            ? 78
+            : scene === "helix"
+              ? 130
+              : scene === "tunnel"
+                ? 120
+                : scene === "bloom"
+                  ? 140
+                  : this.particles.length;
     const prisms = scene === "prism" ? 3 : 1;
-    const handPaper = style === "notebook" || style === "legal" || style === "doodle" || style === "sticky" || style === "folder";
 
     for (let i = 0; i < count; i++) {
       const p = this.particles[i];
       const stamp = this.stamp(p.charge);
-      for (let e = 0; e < echoes; e++) {
-        const pose = poseParticle(p, i, scene, t - e * 0.16, audio, bass);
-        if (!pose) continue;
-        const dim = pose.px * Math.min(w, h);
-        if (dim < 5) continue;
-        const sx = (0.5 + pose.x) * w;
-        const sy = (0.5 + pose.y / aspect) * h;
-        const wobble = handPaper ? Math.sin(t * 2.1 + i * 0.7) * 0.05 : 0;
-        for (let k = 0; k < folds; k++) {
-          for (let pr = 0; pr < prisms; pr++) {
-            ctx.save();
-            if (folds > 1) {
-              ctx.translate(w * 0.5, h * 0.5);
-              ctx.rotate((k * Math.PI * 2) / folds);
-              ctx.translate(-w * 0.5, -h * 0.5);
-            }
-            const ox = prisms > 1 ? (pr - 1) * dim * 0.09 : 0;
-            const oy = prisms > 1 ? (pr === 2 ? dim * 0.06 : pr === 0 ? -dim * 0.03 : 0) : 0;
-            if (sx + ox < -dim || sy + oy < -dim || sx + ox > w + dim || sy + oy > h + dim) {
-              ctx.restore();
-              continue;
-            }
-            if (prisms > 1) ctx.filter = `hue-rotate(${pr * 120}deg) saturate(1.35)`;
-            ctx.globalAlpha = pose.alpha * (echoes > 1 ? 1 - e * 0.32 : prisms > 1 ? 0.72 : 1);
-            ctx.translate(sx + ox, sy + oy);
-            ctx.rotate(pose.rot + wobble + (prisms > 1 ? pr * 0.1 : 0));
-            ctx.drawImage(stamp, -dim / 2, -dim / 2, dim, dim);
-            ctx.restore();
-          }
+      const pose = poseParticle(p, i, scene, t, audio, bass);
+      if (!pose) continue;
+      const dim = pose.px * Math.min(w, h);
+      if (dim < 5) continue;
+      const sx = (0.5 + pose.x) * w;
+      const sy = (0.5 + pose.y / aspect) * h;
+      for (let pr = 0; pr < prisms; pr++) {
+        ctx.save();
+        const ox = prisms > 1 ? (pr - 1) * dim * 0.09 : 0;
+        const oy = prisms > 1 ? (pr === 2 ? dim * 0.06 : pr === 0 ? -dim * 0.03 : 0) : 0;
+        if (sx + ox < -dim || sy + oy < -dim || sx + ox > w + dim || sy + oy > h + dim) {
+          ctx.restore();
+          continue;
         }
+        if (prisms > 1) ctx.filter = `hue-rotate(${pr * 120}deg) saturate(1.35)`;
+        else if (pose.hue != null) ctx.filter = `hue-rotate(${pose.hue}deg) saturate(1.3)`;
+        if (pose.glow) {
+          ctx.shadowColor = ink;
+          ctx.shadowBlur = 10 + pose.glow * 38;
+        }
+        ctx.globalAlpha = pose.alpha * (prisms > 1 ? 0.72 : 1);
+        ctx.translate(sx + ox, sy + oy);
+        ctx.rotate(pose.rot + (prisms > 1 ? pr * 0.1 : 0));
+        if (pose.flip != null) ctx.scale(pose.flip, 1);
+        ctx.drawImage(stamp, -dim / 2, -dim / 2, dim, dim);
+        ctx.restore();
       }
     }
-    if (style !== "flat") paintGrain(ctx, w, h, opts.seed, style);
 
     return this.canvas;
   }
@@ -1372,6 +1305,26 @@ function wrap01(v: number): number {
   return ((v % 1) + 1) % 1;
 }
 
+interface Pose {
+  x: number;
+  y: number;
+  px: number;
+  rot: number;
+  alpha: number;
+  flip?: number;
+  hue?: number;
+  glow?: number;
+}
+
+function reflect01(v: number): number {
+  const u = wrap01(v);
+  return u < 0.5 ? u * 2 : 2 - u * 2;
+}
+
+function screenBounce(v: number): number {
+  return reflect01(v) - 0.5;
+}
+
 function poseParticle(
   p: Particle,
   i: number,
@@ -1379,7 +1332,68 @@ function poseParticle(
   t: number,
   audio: number,
   bass: number,
-): { x: number; y: number; px: number; rot: number; alpha: number } | null {
+): Pose | null {
+  if (scene === "bounce") {
+    const sx = 0.11 + Math.abs(p.vx) * 2.4;
+    const sy = 0.09 + Math.abs(p.vy) * 2.1;
+    return {
+      x: screenBounce(p.x + sx * t),
+      y: screenBounce(p.y + sy * t * 0.92),
+      px: clamp(0.1 + p.size * 0.07, 0.08, 0.22),
+      rot: p.rot + p.vr * t * 1.6,
+      alpha: 1,
+    };
+  }
+  if (scene === "flip") {
+    const spin = t * (2.2 + audio * 0.8) + i * 0.55;
+    const flip = Math.cos(spin);
+    return {
+      x: screenBounce(p.x + p.vx * t * 0.45),
+      y: screenBounce(p.y + p.vy * t * 0.38),
+      px: clamp(0.12 + p.size * 0.06, 0.08, 0.24),
+      rot: p.rot + Math.sin(spin) * 0.15,
+      alpha: clamp(0.28 + Math.abs(flip) * 0.72, 0.2, 1),
+      flip,
+    };
+  }
+  if (scene === "glow") {
+    const pulse = 0.5 + 0.5 * Math.sin(t * (2.8 + audio * 1.4) + i * 0.7);
+    const lit = clamp(pulse * (0.55 + bass * 0.7 + audio * 0.35), 0, 1);
+    return {
+      x: (p.x - 0.5) * 0.86 + Math.sin(t * 0.55 + p.y * 7) * 0.07,
+      y: (p.y - 0.5) * 0.74 + Math.cos(t * 0.48 + p.x * 6) * 0.06,
+      px: clamp((0.1 + p.size * 0.08) * (0.82 + lit * 0.5), 0.07, 0.28),
+      rot: p.rot + t * 0.12 * p.vr,
+      alpha: clamp(0.35 + lit * 0.65, 0.25, 1),
+      glow: lit,
+    };
+  }
+  if (scene === "flash") {
+    const hue = wrap01(t * (0.18 + audio * 0.12) + p.z * 0.35 + i * 0.07) * 360;
+    const blink = 0.7 + 0.3 * Math.sin(t * 5.2 + i + bass * 4);
+    return {
+      x: screenBounce(p.x + p.vx * t * 0.32),
+      y: screenBounce(p.y + p.vy * t * 0.28),
+      px: clamp(0.11 + p.size * 0.07, 0.08, 0.24),
+      rot: p.rot + t * 0.4 * p.vr,
+      alpha: clamp(blink, 0.35, 1),
+      hue,
+      glow: 0.25 + bass * 0.45,
+    };
+  }
+  if (scene === "hop") {
+    const phase = wrap01(t * (0.85 + audio * 0.2) + p.z);
+    const hop = Math.abs(Math.sin(phase * Math.PI));
+    const flip = Math.cos(phase * Math.PI * 2);
+    return {
+      x: screenBounce(p.x + (0.1 + Math.abs(p.vx) * 1.8) * t),
+      y: screenBounce(p.y) * 0.62 - hop * 0.22,
+      px: clamp(0.1 + p.size * 0.07 + hop * 0.03, 0.08, 0.24),
+      rot: p.rot + hop * 0.8,
+      alpha: 1,
+      flip,
+    };
+  }
   if (scene === "tunnel") {
     const z = wrap01(p.z - t * (0.4 + audio * 0.5 + bass * 0.22));
     const depth = 0.3 + z * 2.45;
@@ -1435,91 +1449,6 @@ function poseParticle(
       alpha: clamp((2.75 - depth) / 0.28, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
     };
   }
-  if (scene === "lanes") {
-    const lanes = 6;
-    const lane = (Math.floor(p.x * lanes) + 0.5) / lanes - 0.5;
-    const z = wrap01(p.z - t * (0.44 + audio * 0.42 + bass * 0.18) + p.y * 0.04);
-    const depth = 0.28 + z * 2.55;
-    if (depth < 0.32 || depth > 2.7) return null;
-    return {
-      x: lane / (depth * 0.82),
-      y: (wrap01(p.y) - 0.5) / depth,
-      px: clamp((0.2 * p.size * (0.95 + bass * 0.12)) / depth, 0.045, 0.48),
-      rot: p.rot * 0.35,
-      alpha: clamp((2.7 - depth) / 0.26, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
-    };
-  }
-  if (scene === "pulse") {
-    const z = wrap01(t * (0.17 + audio * 0.1 + bass * 0.06));
-    const depth = 0.4 + (1 - z) * 1.95;
-    return {
-      x: (p.x - 0.5) / (depth * 0.68),
-      y: (p.y - 0.5) / (depth * 0.68),
-      px: clamp((0.15 * p.size) / depth, 0.05, 0.4),
-      rot: p.rot * 0.2,
-      alpha: clamp((2.3 - depth) / 0.22, 0, 1),
-    };
-  }
-  if (scene === "kaleido") {
-    const z = wrap01(p.z - t * (0.38 + audio * 0.4 + bass * 0.16));
-    const depth = 0.3 + z * 2.35;
-    if (depth < 0.34 || depth > 2.55) return null;
-    const ang = p.x * (Math.PI / 3);
-    const rad = (0.08 + p.y * 0.55) / depth;
-    return {
-      x: Math.cos(ang) * rad,
-      y: Math.sin(ang) * rad,
-      px: clamp((0.18 * p.size) / depth, 0.04, 0.46),
-      rot: p.rot + t * 0.2,
-      alpha: clamp((2.55 - depth) / 0.24, 0, 1) * clamp((depth - 0.3) / 0.1, 0, 1),
-    };
-  }
-  if (scene === "vortex") {
-    const z = wrap01(p.z - t * (0.5 + audio * 0.55 + bass * 0.24));
-    const depth = 0.24 + z * 2.75;
-    if (depth < 0.28 || depth > 2.9) return null;
-    const spin = t * (0.8 + (2.2 / depth)) + p.x * Math.PI * 2;
-    const rad = (0.06 + p.y * 0.5) / (depth * depth * 0.55 + 0.35);
-    return {
-      x: Math.cos(spin) * rad,
-      y: Math.sin(spin) * rad * 0.86,
-      px: clamp((0.26 * p.size * (0.9 + bass * 0.2)) / depth, 0.04, 0.64),
-      rot: spin + p.rot,
-      alpha: clamp((2.9 - depth) / 0.3, 0, 1) * clamp((depth - 0.24) / 0.1, 0, 1),
-    };
-  }
-  if (scene === "ripple") {
-    const z = wrap01(p.z - t * (0.4 + audio * 0.42 + bass * 0.18));
-    const depth = 0.28 + z * 2.55;
-    if (depth < 0.32 || depth > 2.7) return null;
-    let x = (wrap01(p.x) - 0.5) / depth;
-    let y = (wrap01(p.y) - 0.5) / depth;
-    const rad = Math.hypot(x, y) + 0.0001;
-    const wave = Math.sin(rad * 16 - t * 6.2 + bass * 2) * (0.07 / depth);
-    x += (x / rad) * wave;
-    y += (y / rad) * wave;
-    return {
-      x,
-      y,
-      px: clamp((0.22 * p.size) / depth, 0.04, 0.5),
-      rot: p.rot + wave * 2,
-      alpha: clamp((2.7 - depth) / 0.26, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
-    };
-  }
-  if (scene === "orbit") {
-    const z = wrap01(p.z - t * (0.36 + audio * 0.4 + bass * 0.16));
-    const depth = 0.3 + z * 2.4;
-    if (depth < 0.34 || depth > 2.6) return null;
-    const ang = t * (1.15 + (1.4 / depth)) + p.x * Math.PI * 2;
-    const rad = (0.18 + p.y * 0.42) / depth;
-    return {
-      x: Math.cos(ang) * rad,
-      y: Math.sin(ang) * rad,
-      px: clamp((0.2 * p.size * (0.94 + bass * 0.12)) / depth, 0.04, 0.5),
-      rot: ang + p.rot,
-      alpha: clamp((2.6 - depth) / 0.24, 0, 1) * clamp((depth - 0.3) / 0.1, 0, 1),
-    };
-  }
   if (scene === "helix") {
     const z = wrap01(p.z - t * (0.46 + audio * 0.5 + bass * 0.2));
     const depth = 0.26 + z * 2.7;
@@ -1533,61 +1462,6 @@ function poseParticle(
       px: clamp((0.22 * p.size * (0.93 + bass * 0.16)) / depth, 0.04, 0.56),
       rot: ang + p.rot,
       alpha: clamp((2.85 - depth) / 0.28, 0, 1) * clamp((depth - 0.26) / 0.1, 0, 1),
-    };
-  }
-  if (scene === "weave") {
-    const z = wrap01(p.z - t * (0.42 + audio * 0.48 + bass * 0.18));
-    const depth = 0.28 + z * 2.55;
-    if (depth < 0.32 || depth > 2.7) return null;
-    const a = t * (1.55 + audio * 0.4) + p.x * Math.PI * 2;
-    return {
-      x: (Math.sin(a) * 0.46 + Math.sin(a * 0.5 + p.y) * 0.08) / depth,
-      y: (Math.sin(a * 2 + p.y * Math.PI) * 0.34) / depth,
-      px: clamp((0.2 * p.size * (0.94 + bass * 0.14)) / depth, 0.04, 0.5),
-      rot: p.rot + a * 0.2,
-      alpha: clamp((2.7 - depth) / 0.26, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
-    };
-  }
-  if (scene === "twist") {
-    const z = wrap01(p.z - t * (0.44 + audio * 0.5 + bass * 0.2));
-    const depth = 0.26 + z * 2.7;
-    if (depth < 0.3 || depth > 2.85) return null;
-    const x0 = wrap01(p.x) - 0.5;
-    const y0 = wrap01(p.y) - 0.5;
-    const twist = 2.6 / depth + t * 0.42 + bass * 0.35;
-    const c = Math.cos(twist);
-    const s = Math.sin(twist);
-    return {
-      x: (x0 * c - y0 * s) / depth,
-      y: (x0 * s + y0 * c) / depth,
-      px: clamp((0.23 * p.size * (0.92 + bass * 0.16)) / depth, 0.04, 0.58),
-      rot: p.rot + twist,
-      alpha: clamp((2.85 - depth) / 0.28, 0, 1) * clamp((depth - 0.26) / 0.1, 0, 1),
-    };
-  }
-  if (scene === "burst") {
-    const u = wrap01(p.z - t * (0.4 + audio * 0.38 + bass * 0.28));
-    const grow = Math.pow(u, 0.62);
-    const ang = p.x * Math.PI * 2 + p.rot + t * 0.08;
-    const rush = 0.08 + grow * 1.15;
-    return {
-      x: Math.cos(ang) * rush * 0.78,
-      y: Math.sin(ang) * rush * 0.78,
-      px: clamp(0.04 + grow * 0.4 * p.size * (1 + bass * 0.2), 0.04, 0.6),
-      rot: p.rot + grow * 1.4,
-      alpha: clamp(1.08 - grow, 0, 1) * clamp(u / 0.07, 0, 1),
-    };
-  }
-  if (scene === "echo") {
-    const z = wrap01(p.z - t * (0.4 + audio * 0.5 + bass * 0.2));
-    const depth = 0.28 + z * 2.6;
-    if (depth < 0.32 || depth > 2.75) return null;
-    return {
-      x: (wrap01(p.x + p.vx * t * 0.02) - 0.5) / depth,
-      y: (wrap01(p.y + p.vy * t * 0.015) - 0.5) / depth,
-      px: clamp((0.22 * p.size * (0.93 + bass * 0.15)) / depth, 0.04, 0.54),
-      rot: p.rot + p.vr * t * 0.1,
-      alpha: clamp((2.75 - depth) / 0.28, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
     };
   }
   if (scene === "prism") {
@@ -1642,25 +1516,6 @@ function mixHex(a: string, b: string, t: number): string {
   return `#${n.toString(16).padStart(6, "0")}`;
 }
 
-const TEXTURE_BASE: Record<CollagePaper, string> = {
-  flat: "#ffffff",
-  notebook: "#f3edd8",
-  graph: "#eef6ee",
-  legal: "#f6e79a",
-  marble: "#121212",
-  dots: "#f6f1e4",
-  kraft: "#c9a36a",
-  chalk: "#1c2e22",
-  folder: "#e8c878",
-  sticky: "#fff176",
-  doodle: "#f3edd8",
-};
-
-export function paperForStyle(style: CollagePaper, kit: CollageKit, seed = 0): string {
-  if (style === "flat") return paperForKit(kit, seed);
-  return TEXTURE_BASE[style];
-}
-
 function paintGround(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -1669,255 +1524,26 @@ function paintGround(
   kit: CollageKit,
   time: number,
   seed: number,
-  style: CollagePaper,
 ) {
-  if (style === "notebook" || style === "doodle") {
-    ctx.fillStyle = "#f3edd8";
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "#d45c66";
-    ctx.lineWidth = Math.max(1.5, w * 0.003);
-    ctx.beginPath();
-    ctx.moveTo(w * 0.12, 0);
-    ctx.lineTo(w * 0.12, h);
-    ctx.stroke();
-    ctx.strokeStyle = "#8eb0d8";
-    ctx.lineWidth = 1;
-    const step = Math.max(16, h / 24);
-    for (let y = step * 1.4; y < h; y += step) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-    ctx.fillStyle = "#c9c2b0";
-    for (let i = 0; i < 4; i++) {
-      ctx.beginPath();
-      ctx.arc(w * 0.045, h * (0.18 + i * 0.2), Math.max(4, w * 0.012), 0, Math.PI * 2);
-      ctx.fill();
-    }
-    if (style === "doodle") paintDoodles(ctx, w, h, seed);
-    return;
-  }
-  if (style === "graph") {
-    ctx.fillStyle = "#eef6ee";
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "#b7d3c2";
-    ctx.lineWidth = 1;
-    const step = Math.max(14, Math.min(w, h) / 28);
-    for (let x = 0; x <= w; x += step) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, h);
-      ctx.stroke();
-    }
-    for (let y = 0; y <= h; y += step) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-    return;
-  }
-  if (style === "legal") {
-    ctx.fillStyle = "#f6e79a";
-    ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "#c45c66";
-    ctx.lineWidth = Math.max(1.5, w * 0.003);
-    ctx.beginPath();
-    ctx.moveTo(w * 0.1, 0);
-    ctx.lineTo(w * 0.1, h);
-    ctx.stroke();
-    ctx.strokeStyle = "#d2b56a";
-    ctx.lineWidth = 1;
-    const step = Math.max(16, h / 22);
-    for (let y = step; y < h; y += step) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-    return;
-  }
-  if (style === "marble") {
-    ctx.fillStyle = "#121212";
-    ctx.fillRect(0, 0, w, h);
-    const rng = mulberry32((seed + 44) >>> 0);
-    for (let i = 0; i < 90; i++) {
-      ctx.fillStyle = `rgba(245,245,245,${0.04 + rng() * 0.12})`;
-      ctx.beginPath();
-      ctx.ellipse(rng() * w, rng() * h, 8 + rng() * 70, 4 + rng() * 22, rng() * 6, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.fillStyle = "#f4f0e4";
-    ctx.fillRect(w * 0.28, h * 0.38, w * 0.44, h * 0.22);
-    return;
-  }
-  if (style === "dots") {
-    ctx.fillStyle = "#f6f1e4";
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = "#c8c0b0";
-    const step = Math.max(12, Math.min(w, h) / 32);
-    for (let y = step; y < h; y += step) {
-      for (let x = step; x < w; x += step) {
-        ctx.beginPath();
-        ctx.arc(x, y, 1.2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    return;
-  }
-  if (style === "kraft") {
-    ctx.fillStyle = "#c9a36a";
-    ctx.fillRect(0, 0, w, h);
-    const wash = ctx.createLinearGradient(0, 0, w, h);
-    wash.addColorStop(0, "#d4b27a");
-    wash.addColorStop(1, "#b89058");
-    ctx.fillStyle = wash;
-    ctx.globalAlpha = 0.45;
-    ctx.fillRect(0, 0, w, h);
-    ctx.globalAlpha = 1;
-    const rng = mulberry32((seed + 71) >>> 0);
-    ctx.strokeStyle = "rgba(90, 60, 28, 0.18)";
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 48; i++) {
-      ctx.beginPath();
-      ctx.moveTo(rng() * w, rng() * h);
-      ctx.lineTo(rng() * w, rng() * h);
-      ctx.stroke();
-    }
-    return;
-  }
-  if (style === "chalk") {
-    ctx.fillStyle = "#1c2e22";
-    ctx.fillRect(0, 0, w, h);
-    const rng = mulberry32((seed + 88) >>> 0);
-    ctx.fillStyle = "rgba(220, 230, 210, 0.06)";
-    for (let i = 0; i < 70; i++) {
-      ctx.fillRect(rng() * w, rng() * h, 8 + rng() * 40, 2 + rng() * 8);
-    }
-    ctx.fillStyle = "rgba(245, 245, 230, 0.16)";
-    for (let i = 0; i < 160; i++) {
-      ctx.fillRect(rng() * w, rng() * h, 1, 1);
-    }
-    ctx.strokeStyle = "rgba(230, 230, 210, 0.08)";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(w * 0.04, h * 0.05, w * 0.92, h * 0.9);
-    return;
-  }
-  if (style === "folder") {
-    ctx.fillStyle = "#e8c878";
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = "#d4b05e";
-    ctx.fillRect(w * 0.08, 0, w * 0.28, h * 0.08);
-    ctx.strokeStyle = "rgba(140, 100, 40, 0.28)";
-    ctx.lineWidth = Math.max(1.5, w * 0.004);
-    ctx.beginPath();
-    ctx.moveTo(w * 0.5, 0);
-    ctx.lineTo(w * 0.5, h);
-    ctx.stroke();
-    ctx.fillStyle = "rgba(90, 60, 20, 0.08)";
-    ctx.fillRect(0, 0, w * 0.04, h);
-    ctx.fillRect(w * 0.96, 0, w * 0.04, h);
-    return;
-  }
-  if (style === "sticky") {
-    ctx.fillStyle = "#c8b84a";
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = "#fff176";
-    ctx.fillRect(0, 0, w * 0.97, h * 0.96);
-    const hi = ctx.createLinearGradient(0, 0, 0, h * 0.18);
-    hi.addColorStop(0, "rgba(255, 255, 220, 0.7)");
-    hi.addColorStop(1, "rgba(255, 241, 118, 0)");
-    ctx.fillStyle = hi;
-    ctx.fillRect(0, 0, w * 0.97, h * 0.18);
-    ctx.fillStyle = "#efe04e";
-    ctx.beginPath();
-    ctx.moveTo(w * 0.86, h * 0.96);
-    ctx.lineTo(w * 0.97, h * 0.96);
-    ctx.lineTo(w * 0.97, h * 0.82);
-    ctx.closePath();
-    ctx.fill();
-    return;
-  }
+  const rng = mulberry32((seed + 4) >>> 0);
+  const wash = pick(rng, KIT_GROUNDS[kit]);
+  const wash2 = pick(rng, KIT_GROUNDS[kit]);
   ctx.fillStyle = paper;
   ctx.fillRect(0, 0, w, h);
-  const wash = pick(mulberry32((seed + 4) >>> 0), KIT_GROUNDS[kit]);
+  const lin = ctx.createLinearGradient(0, 0, w, h);
+  lin.addColorStop(0, mixHex(paper, wash, 0.34));
+  lin.addColorStop(1, mixHex(paper, wash2, 0.4));
+  ctx.fillStyle = lin;
+  ctx.fillRect(0, 0, w, h);
   const cx = w * (0.5 + Math.sin(time * 0.17) * 0.08);
   const cy = h * (0.46 + Math.cos(time * 0.13) * 0.06);
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.72);
   g.addColorStop(0, mixHex(paper, wash, 0.45));
   g.addColorStop(1, paper);
   ctx.fillStyle = g;
+  ctx.globalAlpha = 0.88;
   ctx.fillRect(0, 0, w, h);
-}
-
-function paintDoodles(ctx: CanvasRenderingContext2D, w: number, h: number, seed: number) {
-  const rng = mulberry32((seed + 404) >>> 0);
-  ctx.save();
-  ctx.strokeStyle = "rgba(70, 64, 56, 0.38)";
-  ctx.fillStyle = "rgba(70, 64, 56, 0.22)";
-  ctx.lineWidth = Math.max(1.1, w * 0.0018);
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  const margin = w * 0.11;
-  for (let i = 0; i < 14; i++) {
-    const inMargin = i < 9;
-    const x = inMargin ? rng() * margin * 0.82 + w * 0.01 : rng() * w * 0.86 + w * 0.14;
-    const y = rng() * h * 0.9 + h * 0.04;
-    const s = (inMargin ? 10 : 16) + rng() * 18;
-    const kind = Math.floor(rng() * 6);
-    ctx.beginPath();
-    if (kind === 0) {
-      for (let k = 0; k < 10; k++) {
-        const rad = k % 2 === 0 ? s : s * 0.42;
-        const a = (k * Math.PI) / 5 - Math.PI / 2;
-        const px = x + Math.cos(a) * rad;
-        const py = y + Math.sin(a) * rad;
-        if (k === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.closePath();
-      ctx.stroke();
-    } else if (kind === 1) {
-      ctx.moveTo(x, y + s * 0.45);
-      ctx.bezierCurveTo(x + s * 0.55, y - s * 0.1, x + s * 0.35, y - s * 0.55, x, y - s * 0.1);
-      ctx.bezierCurveTo(x - s * 0.35, y - s * 0.55, x - s * 0.55, y - s * 0.1, x, y + s * 0.45);
-      ctx.stroke();
-    } else if (kind === 2) {
-      ctx.moveTo(x, y);
-      for (let k = 1; k < 7; k++) ctx.lineTo(x + k * s * 0.18, y + ((k & 1) ? s * 0.35 : 0));
-      ctx.stroke();
-    } else if (kind === 3) {
-      ctx.arc(x, y, s * 0.28, 0, Math.PI * 1.7);
-      ctx.moveTo(x + s * 0.22, y - s * 0.08);
-      ctx.lineTo(x + s * 0.5, y - s * 0.22);
-      ctx.stroke();
-    } else if (kind === 4) {
-      ctx.moveTo(x - s * 0.4, y);
-      ctx.lineTo(x + s * 0.15, y);
-      ctx.lineTo(x + s * 0.02, y - s * 0.18);
-      ctx.moveTo(x + s * 0.15, y);
-      ctx.lineTo(x + s * 0.02, y + s * 0.18);
-      ctx.stroke();
-    } else {
-      ctx.moveTo(x, y);
-      ctx.bezierCurveTo(x + s, y - s, x - s, y + s * 0.2, x + s * 0.2, y + s * 0.4);
-      ctx.stroke();
-    }
-  }
-  ctx.restore();
-}
-
-function paintGrain(ctx: CanvasRenderingContext2D, w: number, h: number, seed: number, style: CollagePaper) {
-  const rng = mulberry32((seed + 211) >>> 0);
-  const n = style === "marble" || style === "chalk" ? 80 : style === "kraft" ? 280 : 220;
-  ctx.save();
-  ctx.globalAlpha = style === "marble" || style === "chalk" ? 0.08 : style === "kraft" ? 0.09 : 0.055;
-  ctx.fillStyle = style === "marble" || style === "chalk" ? "#ffffff" : "#2a2418";
-  for (let i = 0; i < n; i++) {
-    ctx.fillRect(rng() * w, rng() * h, 1 + rng() * 1.5, 1 + rng() * 1.5);
-  }
-  ctx.restore();
+  ctx.globalAlpha = 1;
 }
 
 export function paperForKit(kit: CollageKit, seed = 0): string {

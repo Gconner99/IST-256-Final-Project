@@ -318,7 +318,6 @@ export class Renderer {
       generator: src.generator,
       kit: src.collageKit,
       move: src.collageMove,
-      paperStyle: src.collagePaper,
       paper: src.colorA ?? "#ffffff",
       ink: src.colorB ?? "#c41e3a",
       audio: this.audioEnergy,

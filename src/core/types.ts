@@ -157,34 +157,15 @@ export interface MediaSource {
   collageMove?:
     | "rush"
     | "tunnel"
-    | "lattice"
     | "bloom"
     | "spiral"
-    | "lanes"
-    | "pulse"
-    | "kaleido"
-    | "vortex"
-    | "ripple"
-    | "orbit"
     | "helix"
-    | "weave"
-    | "twist"
-    | "burst"
-    | "echo"
-    | "prism";
-  /** Paper texture under the stamps. */
-  collagePaper?:
-    | "flat"
-    | "notebook"
-    | "graph"
-    | "legal"
-    | "marble"
-    | "dots"
-    | "kraft"
-    | "chalk"
-    | "folder"
-    | "sticky"
-    | "doodle";
+    | "prism"
+    | "bounce"
+    | "flip"
+    | "glow"
+    | "flash"
+    | "hop";
 }
 
 export interface Keyframe {

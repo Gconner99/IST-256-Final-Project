@@ -5,7 +5,7 @@ import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
-import { buildField, COLLAGE_KITS, COLLAGE_PAPERS, isHeraldry, kindsForKit, paperForStyle, sceneAt, sceneFromGenerator, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { buildField, COLLAGE_KITS, COLLAGE_MOVES, isHeraldry, kindsForKit, sceneAt, sceneFromGenerator, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -251,16 +251,14 @@ describe("place buttons", () => {
     expect(tour.collageKit).toBe("sailor");
     expect(defaultGeneratorSource("wallpaper", "love").name).toBe("RUSH · LOVE");
     expect(defaultGeneratorSource("giants", "circus").name).toBe("TUNNEL · CIRCUS");
-    expect(defaultGeneratorSource("shower", "nature").name).toBe("LATTICE · GROVE");
+    expect(defaultGeneratorSource("shower", "nature").name).toBe("BOUNCE · GROVE");
     expect(defaultGeneratorSource("heraldry", "fruit", "spiral").collageKit).toBe("fruit");
     expect(defaultGeneratorSource("heraldry", "space", "spiral").name).toBe("SPIRAL · SPACE");
-    expect(defaultGeneratorSource("heraldry", "sweet", "lanes").name).toBe("LANES · SWEET");
-    expect(defaultGeneratorSource("heraldry", "music", "pulse").name).toBe("PULSE · MUSIC");
-    expect(defaultGeneratorSource("wallpaper", "sailor", "rush", "notebook").name).toBe("RUSH · SAILOR · NOTE");
-    expect(defaultGeneratorSource("heraldry", "love", "kaleido", "marble").collagePaper).toBe("marble");
-    expect(defaultGeneratorSource("heraldry", "circus", "helix", "kraft").name).toBe("HELIX · CIRCUS · KRAFT");
-    expect(defaultGeneratorSource("heraldry", "sweet", "prism", "doodle").collagePaper).toBe("doodle");
-    expect(defaultGeneratorSource("heraldry", "music", "echo", "sticky").name).toBe("ECHO · MUSIC · STICKY");
+    expect(defaultGeneratorSource("heraldry", "sweet", "bounce").name).toBe("BOUNCE · SWEET");
+    expect(defaultGeneratorSource("heraldry", "music", "flash").name).toBe("FLASH · MUSIC");
+    expect(defaultGeneratorSource("heraldry", "circus", "helix").name).toBe("HELIX · CIRCUS");
+    expect(defaultGeneratorSource("heraldry", "love", "glow").name).toBe("GLOW · LOVE");
+    expect(defaultGeneratorSource("heraldry", "music", "hop").name).toBe("HOP · MUSIC");
   });
 });
 
@@ -739,38 +737,34 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("heraldry")).toBe("rush");
     expect(sceneFromGenerator("wallpaper")).toBe("rush");
     expect(sceneFromGenerator("giants")).toBe("tunnel");
-    expect(sceneFromGenerator("shower")).toBe("lattice");
+    expect(sceneFromGenerator("shower")).toBe("bounce");
     expect(sceneFromGenerator("heraldry", "spiral")).toBe("spiral");
-    expect(sceneFromGenerator("heraldry", "kaleido")).toBe("kaleido");
-    expect(sceneFromGenerator("heraldry", "vortex")).toBe("vortex");
+    expect(sceneFromGenerator("heraldry", "bounce")).toBe("bounce");
+    expect(sceneFromGenerator("heraldry", "flip")).toBe("flip");
+    expect(sceneFromGenerator("heraldry", "glow")).toBe("glow");
+    expect(sceneFromGenerator("heraldry", "flash")).toBe("flash");
+    expect(sceneFromGenerator("heraldry", "hop")).toBe("hop");
     expect(sceneFromGenerator("heraldry", "helix")).toBe("helix");
-    expect(sceneFromGenerator("heraldry", "weave")).toBe("weave");
-    expect(sceneFromGenerator("heraldry", "twist")).toBe("twist");
-    expect(sceneFromGenerator("heraldry", "burst")).toBe("burst");
-    expect(sceneFromGenerator("heraldry", "echo")).toBe("echo");
     expect(sceneFromGenerator("heraldry", "prism")).toBe("prism");
     expect(sceneAt(0.2, 8, "tour")).toBe("rush");
     expect(sceneAt(3.0, 8, "tour")).toBe("rush");
-    expect(sceneAt(5.5, 8, "lattice")).toBe("lattice");
+    expect(sceneAt(5.5, 8, "bounce")).toBe("bounce");
     expect(sceneAt(7.2, 8, "bloom")).toBe("bloom");
     expect(sceneAt(1, 8, "rush")).toBe("rush");
     expect(sceneAt(2, 8, "helix")).toBe("helix");
-    expect(COLLAGE_PAPERS).toEqual([
-      "flat",
-      "notebook",
-      "graph",
-      "legal",
-      "marble",
-      "dots",
-      "kraft",
-      "chalk",
-      "folder",
-      "sticky",
-      "doodle",
+    expect(COLLAGE_MOVES).toEqual([
+      "rush",
+      "tunnel",
+      "bloom",
+      "spiral",
+      "helix",
+      "prism",
+      "bounce",
+      "flip",
+      "glow",
+      "flash",
+      "hop",
     ]);
-    expect(paperForStyle("doodle", "sailor")).toBe("#f3edd8");
-    expect(paperForStyle("kraft", "circus")).toBe("#c9a36a");
-    expect(paperForStyle("sticky", "sweet")).toBe("#fff176");
   });
 
   it("builds a seeded field of unique charges", () => {
