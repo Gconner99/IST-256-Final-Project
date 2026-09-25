@@ -5,7 +5,7 @@ import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
-import { buildField, isHeraldry, sceneAt, sceneFromGenerator, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { buildField, COLLAGE_KITS, isHeraldry, kindsForKit, sceneAt, sceneFromGenerator, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -244,11 +244,13 @@ describe("place buttons", () => {
     const tour = defaultGeneratorSource("heraldry");
     addSource(tour, true);
     expect(tour.generator).toBe("heraldry");
-    expect(tour.name).toBe("TOUR");
+    expect(tour.name).toBe("TOUR · SAILOR");
     expect(tour.colorA).toBe("#ffffff");
-    expect(defaultGeneratorSource("wallpaper").name).toBe("PAPER");
-    expect(defaultGeneratorSource("giants").name).toBe("GIANTS");
-    expect(defaultGeneratorSource("shower").name).toBe("SHOWER");
+    expect(tour.collageKit).toBe("sailor");
+    expect(defaultGeneratorSource("wallpaper", "love").name).toBe("PAPER · LOVE");
+    expect(defaultGeneratorSource("giants", "circus").name).toBe("GIANTS · CIRCUS");
+    expect(defaultGeneratorSource("shower", "nature").name).toBe("SHOWER · GROVE");
+    expect(defaultGeneratorSource("heraldry", "fruit").collageKit).toBe("fruit");
   });
 });
 
@@ -734,18 +736,33 @@ describe("heraldry collage", () => {
   });
 
   it("builds a seeded field of unique charges", () => {
-    const a = buildField(256, "#c41e3a");
-    const b = buildField(256, "#c41e3a");
-    const c = buildField(99, "#c41e3a");
+    const a = buildField(256, "#c41e3a", "sailor");
+    const b = buildField(256, "#c41e3a", "sailor");
+    const c = buildField(99, "#c41e3a", "sailor");
     expect(a.length).toBe(240);
     expect(a).toEqual(b);
     expect(a[0]).not.toEqual(c[0]);
-    expect(new Set(a.map((p) => p.charge.kind)).size).toBeGreaterThan(4);
+    expect(new Set(a.map((p) => p.charge.kind)).size).toBeGreaterThan(3);
   });
 
-  it("starts on a white-paper tour", () => {
+  it("gives each kit its own stamp drawer", () => {
+    expect(COLLAGE_KITS).toEqual(["sailor", "circus", "fruit", "nature", "love"]);
+    expect(kindsForKit("sailor")).toContain("fish");
+    expect(kindsForKit("sailor")).not.toContain("elephant");
+    expect(kindsForKit("circus")).toContain("tent");
+    expect(kindsForKit("fruit")).toContain("pear");
+    expect(kindsForKit("nature")).toContain("deer");
+    expect(kindsForKit("love")).toContain("heart");
+    expect(kindsForKit("love", "shower")).toContain("key");
+    const sailor = new Set(buildField(7, "#1c4db8", "sailor").map((p) => p.charge.kind));
+    const love = new Set(buildField(7, "#e84a8a", "love").map((p) => p.charge.kind));
+    expect([...sailor].some((k) => !love.has(k))).toBe(true);
+  });
+
+  it("starts on a white-paper sailor tour", () => {
     const p = createDefaultProject();
     expect(p.sources[0].generator).toBe("heraldry");
+    expect(p.sources[0].collageKit).toBe("sailor");
     expect(p.sources[0].colorA).toBe("#ffffff");
     expect(p.layers[0].effects).toHaveLength(0);
     expect(isHeraldry("heraldry")).toBe(true);

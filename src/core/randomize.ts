@@ -1,4 +1,4 @@
-import { HERALDRY_ROOMS, inkForSeed, isHeraldry, paperForSeed } from "../engine/heraldry";
+import { COLLAGE_KITS, HERALDRY_ROOMS, inkForKit, inkForSeed, isHeraldry, kitForSeed, paperForSeed } from "../engine/heraldry";
 import { getEffect } from "../effects/registry";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
@@ -399,13 +399,15 @@ export function randomizeProject(
       : keep
         ? src.generator
         : places[Math.floor(prng() * places.length)];
+    const kit = kitForSeed(seed + i * 41);
     const paper = isHeraldry(generator) ? paperForSeed(seed + i * 17) : pal.inkA;
-    const ink = isHeraldry(generator) ? inkForSeed(seed + i * 31, pal.leak) : pal.inkB;
+    const ink = isHeraldry(generator) ? inkForKit(kit) : pal.inkB;
     return {
       ...src,
       generator,
+      collageKit: isHeraldry(generator) ? kit : src.collageKit,
       colorA: pinned ? pinned.a : paper,
-      colorB: pinned ? pinned.b : ink,
+      colorB: pinned ? inkForKit(kit) : ink,
     };
   });
 
@@ -438,7 +440,12 @@ export function chaosStamp(project: Project): Project {
     seed,
     sources: project.sources.map((src, i) =>
       isHeraldry(src.generator)
-        ? { ...src, colorA: paperForSeed(seed + i * 13), colorB: inkForSeed(seed + i * 29) }
+        ? {
+            ...src,
+            collageKit: COLLAGE_KITS[Math.floor(rng() * COLLAGE_KITS.length)],
+            colorA: paperForSeed(seed + i * 13),
+            colorB: inkForSeed(seed + i * 29),
+          }
         : src,
     ),
     layers: project.layers.map((layer) => ({

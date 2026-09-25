@@ -2,11 +2,17 @@ import { clamp, mulberry32 } from "../core/random";
 import type { GeneratorType } from "../core/types";
 
 export const HERALDRY_ROOMS: GeneratorType[] = ["heraldry", "wallpaper", "giants", "shower"];
+export const COLLAGE_KITS = ["sailor", "circus", "fruit", "nature", "love"] as const;
+export type CollageKit = (typeof COLLAGE_KITS)[number];
 
 export type HeraldryScene = "tour" | "wallpaper" | "sparse" | "giants" | "shower";
 
 export function isHeraldry(kind?: string | null): boolean {
   return kind === "heraldry" || kind === "wallpaper" || kind === "giants" || kind === "shower";
+}
+
+export function kitFromUnknown(value?: string | null): CollageKit {
+  return COLLAGE_KITS.includes(value as CollageKit) ? (value as CollageKit) : "sailor";
 }
 
 export function sceneFromGenerator(kind?: string | null): HeraldryScene {
@@ -16,11 +22,11 @@ export function sceneFromGenerator(kind?: string | null): HeraldryScene {
   return "tour";
 }
 
-/** Clip-like tour: dense paper → sparse → poster giants → heart rain. */
+/** Clip-like tour: dense paper → sparse → poster giants → confetti rain. */
 export function sceneAt(time: number, duration: number, locked: HeraldryScene): HeraldryScene {
   if (locked !== "tour") return locked;
   const span = Math.max(duration, 8);
-  const u = ((time % span) + span) % span / span;
+  const u = (((time % span) + span) % span) / span;
   if (u < 0.29) return "wallpaper";
   if (u < 0.58) return "sparse";
   if (u < 0.82) return "giants";
@@ -42,8 +48,108 @@ const TINCTURES = [
   "#2a2a2a",
 ];
 
-type Kind = "shield" | "heater" | "lion" | "cross" | "patee" | "heart" | "star" | "mullet" | "rider" | "figure" | "horse" | "helm" | "fleur";
+const KIT_INK: Record<CollageKit, string> = {
+  sailor: "#1c4db8",
+  circus: "#ff2f86",
+  fruit: "#f0c020",
+  nature: "#1a8a3a",
+  love: "#e84a8a",
+};
+
+type Kind =
+  | "star"
+  | "heart"
+  | "moon"
+  | "figure"
+  | "fish"
+  | "anchor"
+  | "wave"
+  | "shell"
+  | "starfish"
+  | "boat"
+  | "tail"
+  | "swallow"
+  | "elephant"
+  | "tent"
+  | "ball"
+  | "bow"
+  | "horse"
+  | "balloon"
+  | "ticket"
+  | "pear"
+  | "lemon"
+  | "cherry"
+  | "leaf"
+  | "mushroom"
+  | "flower"
+  | "sun"
+  | "cloud"
+  | "bolt"
+  | "umbrella"
+  | "bird"
+  | "tree"
+  | "deer"
+  | "fox"
+  | "owl"
+  | "acorn"
+  | "cone"
+  | "mountain"
+  | "drop"
+  | "moth"
+  | "wingfig"
+  | "swan"
+  | "cat"
+  | "crown"
+  | "key"
+  | "ring"
+  | "envelope"
+  | "potion"
+  | "house";
+
 type Pattern = "plain" | "checky" | "barry" | "paly" | "quarterly" | "bendy" | "saltire" | "fess" | "pale" | "split";
+
+const KIT_PAPER: Record<CollageKit, Kind[]> = {
+  sailor: ["fish", "anchor", "wave", "shell", "starfish", "boat", "tail", "swallow", "star", "moon"],
+  circus: ["elephant", "tent", "ball", "bow", "horse", "balloon", "ticket", "moon", "star", "figure"],
+  fruit: ["pear", "lemon", "cherry", "leaf", "mushroom", "flower", "sun", "cloud", "bolt", "umbrella", "bird"],
+  nature: ["tree", "deer", "fox", "owl", "mushroom", "leaf", "acorn", "cone", "mountain", "drop", "moth", "bird"],
+  love: ["heart", "wingfig", "swan", "cat", "crown", "moon", "star", "key", "ring", "envelope", "bow", "potion", "house"],
+};
+
+const KIT_GIANTS: Record<CollageKit, Kind[]> = {
+  sailor: ["fish", "boat", "tail", "swallow", "anchor"],
+  circus: ["elephant", "tent", "horse", "balloon", "figure"],
+  fruit: ["pear", "lemon", "mushroom", "sun", "umbrella"],
+  nature: ["tree", "deer", "owl", "fox", "mountain"],
+  love: ["heart", "wingfig", "swan", "cat", "house"],
+};
+
+const KIT_SHOWER: Record<CollageKit, Kind[]> = {
+  sailor: ["starfish", "shell", "star", "fish", "anchor"],
+  circus: ["ball", "star", "balloon", "bow", "ticket"],
+  fruit: ["cherry", "leaf", "star", "drop", "lemon"],
+  nature: ["leaf", "acorn", "drop", "moth", "bird"],
+  love: ["heart", "star", "key", "moon", "ring"],
+};
+
+const BODIES = new Set<Kind>([
+  "fish",
+  "elephant",
+  "horse",
+  "deer",
+  "fox",
+  "owl",
+  "swan",
+  "cat",
+  "swallow",
+  "bird",
+  "moth",
+  "wingfig",
+  "figure",
+  "boat",
+  "tree",
+  "tail",
+]);
 
 interface Charge {
   kind: Kind;
@@ -72,6 +178,7 @@ export interface HeraldryPaintOpts {
   duration: number;
   seed: number;
   generator?: string | null;
+  kit?: string | null;
   paper: string;
   ink: string;
   audio: number;
@@ -90,39 +197,39 @@ function pick<T>(rng: () => number, list: T[]): T {
 }
 
 function mixInk(rng: () => number, bias: string): string {
-  if (rng() < 0.28) return bias;
+  if (rng() < 0.32) return bias;
   return pick(rng, TINCTURES);
 }
 
-function makeCharge(rng: () => number, scene: HeraldryScene, bias: string): Charge {
-  const showery = scene === "shower";
-  const giant = scene === "giants";
-  const kinds: Kind[] = showery
-    ? ["heart", "star", "mullet", "shield", "rider", "figure", "lion", "cross"]
-    : giant
-      ? ["lion", "shield", "heater", "rider", "horse", "helm", "star", "heart", "fleur"]
-      : ["shield", "heater", "lion", "cross", "patee", "heart", "star", "mullet", "rider", "figure", "horse", "helm", "fleur"];
-  const patterns: Pattern[] = ["plain", "checky", "barry", "paly", "quarterly", "bendy", "saltire", "fess", "pale", "split"];
-  let kind = pick(rng, kinds);
-  if (showery && rng() < 0.42) kind = rng() < 0.55 ? "heart" : "star";
-  if (giant && rng() < 0.22) kind = "lion";
+export function kindsForKit(kit: CollageKit, scene: HeraldryScene = "wallpaper"): Kind[] {
+  if (scene === "giants") return KIT_GIANTS[kit];
+  if (scene === "shower") return KIT_SHOWER[kit];
+  return KIT_PAPER[kit];
+}
+
+function makeCharge(rng: () => number, scene: HeraldryScene, bias: string, kit: CollageKit): Charge {
+  const pool = kindsForKit(kit, scene === "sparse" ? "wallpaper" : scene);
+  let kind = pick(rng, pool);
+  if (scene === "shower" && rng() < 0.4) kind = pick(rng, KIT_SHOWER[kit]);
+  if (scene === "giants" && rng() < 0.28) kind = pick(rng, KIT_GIANTS[kit]);
   const a = mixInk(rng, bias);
   let b = mixInk(rng, bias);
   if (b === a) b = pick(rng, TINCTURES);
+  const patterned = BODIES.has(kind)
+    ? rng() < 0.28
+    : rng() < 0.82;
   return {
     kind,
-    pattern: kind === "lion" || kind === "rider" || kind === "figure" || kind === "horse" || kind === "fleur"
-      ? rng() < 0.35
-        ? pick(rng, ["plain", "barry", "paly", "checky"] as Pattern[])
-        : "plain"
-      : pick(rng, patterns),
+    pattern: patterned
+      ? pick(rng, ["checky", "barry", "paly", "quarterly", "bendy", "fess", "pale", "split"] as Pattern[])
+      : "plain",
     a,
     b,
     mirror: rng() > 0.5,
   };
 }
 
-export function buildField(seed: number, bias: string): Particle[] {
+export function buildField(seed: number, bias: string, kit: CollageKit = "sailor"): Particle[] {
   const rng = mulberry32(seed >>> 0);
   const n = 240;
   const out: Particle[] = [];
@@ -137,7 +244,7 @@ export function buildField(seed: number, bias: string): Particle[] {
       vx: (rng() - 0.5) * 0.06,
       vy: (rng() - 0.35) * 0.08,
       vr: (rng() - 0.5) * 0.25,
-      charge: makeCharge(rng, sceneHint, bias),
+      charge: makeCharge(rng, sceneHint, bias, kit),
     });
   }
   return out;
@@ -211,25 +318,6 @@ function fillPattern(ctx: CanvasRenderingContext2D, path: () => void, c: Charge,
   ctx.restore();
 }
 
-function heaterPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(0, -r * 0.95);
-  ctx.lineTo(r * 0.82, -r * 0.95);
-  ctx.lineTo(r * 0.86, -r * 0.15);
-  ctx.quadraticCurveTo(r * 0.7, r * 0.55, 0, r * 0.98);
-  ctx.quadraticCurveTo(-r * 0.7, r * 0.55, -r * 0.86, -r * 0.15);
-  ctx.lineTo(-r * 0.82, -r * 0.95);
-  ctx.closePath();
-}
-
-function shieldPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.72, -r * 0.92);
-  ctx.lineTo(r * 0.72, -r * 0.92);
-  ctx.lineTo(r * 0.78, r * 0.05);
-  ctx.quadraticCurveTo(r * 0.4, r * 0.82, 0, r);
-  ctx.quadraticCurveTo(-r * 0.4, r * 0.82, -r * 0.78, r * 0.05);
-  ctx.closePath();
-}
-
 function starPath(ctx: CanvasRenderingContext2D, r: number, n: number, inner = 0.42) {
   for (let i = 0; i < n * 2; i++) {
     const rad = i % 2 === 0 ? r : r * inner;
@@ -249,58 +337,9 @@ function heartPath(ctx: CanvasRenderingContext2D, r: number) {
   ctx.closePath();
 }
 
-function crossPath(ctx: CanvasRenderingContext2D, r: number) {
-  const a = r * 0.28;
-  const b = r * 0.92;
-  ctx.moveTo(-a, -b);
-  ctx.lineTo(a, -b);
-  ctx.lineTo(a, -a);
-  ctx.lineTo(b, -a);
-  ctx.lineTo(b, a);
-  ctx.lineTo(a, a);
-  ctx.lineTo(a, b);
-  ctx.lineTo(-a, b);
-  ctx.lineTo(-a, a);
-  ctx.lineTo(-b, a);
-  ctx.lineTo(-b, -a);
-  ctx.lineTo(-a, -a);
-  ctx.closePath();
-}
-
-function pateePath(ctx: CanvasRenderingContext2D, r: number) {
-  for (let i = 0; i < 4; i++) {
-    const a = (i * Math.PI) / 2;
-    const ca = Math.cos(a);
-    const sa = Math.sin(a);
-    const pt = (x: number, y: number): [number, number] => [x * ca - y * sa, x * sa + y * ca];
-    const p0 = pt(-r * 0.16, -r * 0.12);
-    const p1 = pt(-r * 0.42, -r * 0.95);
-    const p2 = pt(r * 0.42, -r * 0.95);
-    const p3 = pt(r * 0.16, -r * 0.12);
-    if (i === 0) ctx.moveTo(p0[0], p0[1]);
-    else ctx.lineTo(p0[0], p0[1]);
-    ctx.lineTo(p1[0], p1[1]);
-    ctx.lineTo(p2[0], p2[1]);
-    ctx.lineTo(p3[0], p3[1]);
-  }
-  ctx.closePath();
-}
-
-function fleurPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(0, r);
-  ctx.lineTo(r * 0.12, r * 0.15);
-  ctx.bezierCurveTo(r * 0.7, r * 0.05, r * 0.75, -r * 0.55, r * 0.12, -r * 0.2);
-  ctx.bezierCurveTo(r * 0.08, -r * 0.85, -r * 0.08, -r * 0.85, -r * 0.12, -r * 0.2);
-  ctx.bezierCurveTo(-r * 0.75, -r * 0.55, -r * 0.7, r * 0.05, -r * 0.12, r * 0.15);
-  ctx.closePath();
-}
-
-function helmPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.62, r * 0.15);
-  ctx.lineTo(-r * 0.55, -r * 0.35);
-  ctx.quadraticCurveTo(0, -r * 1.05, r * 0.55, -r * 0.35);
-  ctx.lineTo(r * 0.62, r * 0.15);
-  ctx.quadraticCurveTo(0, r * 0.55, -r * 0.62, r * 0.15);
+function moonPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, 0, r, 0.55, Math.PI * 2 - 0.55);
+  ctx.arc(r * 0.38, -r * 0.08, r * 0.72, Math.PI * 0.85, -Math.PI * 0.55, true);
   ctx.closePath();
 }
 
@@ -317,6 +356,135 @@ function figurePath(ctx: CanvasRenderingContext2D, r: number) {
   ctx.lineTo(-r * 0.32, r * 0.95);
   ctx.lineTo(-r * 0.2, r * 0.18);
   ctx.lineTo(-r * 0.34, r * 0.18);
+  ctx.closePath();
+}
+
+function fishPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(-r * 0.08, 0, r * 0.7, r * 0.42, 0, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.55, 0);
+  ctx.lineTo(r * 0.98, -r * 0.42);
+  ctx.lineTo(r * 0.78, 0);
+  ctx.lineTo(r * 0.98, r * 0.42);
+  ctx.closePath();
+}
+
+function anchorPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.18, -r * 0.95);
+  ctx.lineTo(r * 0.18, -r * 0.95);
+  ctx.lineTo(r * 0.18, -r * 0.55);
+  ctx.lineTo(r * 0.42, -r * 0.55);
+  ctx.lineTo(r * 0.42, -r * 0.28);
+  ctx.lineTo(r * 0.18, -r * 0.28);
+  ctx.lineTo(r * 0.18, r * 0.35);
+  ctx.quadraticCurveTo(r * 0.72, r * 0.22, r * 0.85, r * 0.7);
+  ctx.lineTo(r * 0.55, r * 0.82);
+  ctx.quadraticCurveTo(r * 0.35, r * 0.5, 0, r * 0.62);
+  ctx.quadraticCurveTo(-r * 0.35, r * 0.5, -r * 0.55, r * 0.82);
+  ctx.lineTo(-r * 0.85, r * 0.7);
+  ctx.quadraticCurveTo(-r * 0.72, r * 0.22, -r * 0.18, r * 0.35);
+  ctx.lineTo(-r * 0.18, -r * 0.28);
+  ctx.lineTo(-r * 0.42, -r * 0.28);
+  ctx.lineTo(-r * 0.42, -r * 0.55);
+  ctx.lineTo(-r * 0.18, -r * 0.55);
+  ctx.closePath();
+}
+
+function wavePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r, r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.66, -r * 0.55, -r * 0.33, r * 0.1);
+  ctx.quadraticCurveTo(0, r * 0.7, r * 0.33, r * 0.1);
+  ctx.quadraticCurveTo(r * 0.66, -r * 0.55, r, r * 0.15);
+  ctx.lineTo(r, r * 0.55);
+  ctx.quadraticCurveTo(r * 0.5, r * 0.2, 0, r * 0.55);
+  ctx.quadraticCurveTo(-r * 0.5, r * 0.85, -r, r * 0.55);
+  ctx.closePath();
+}
+
+function shellPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, r * 0.85);
+  for (let i = 0; i <= 7; i++) {
+    const a = -Math.PI * 0.95 + (i / 7) * Math.PI * 1.9;
+    const rad = i % 2 === 0 ? r : r * 0.72;
+    ctx.lineTo(Math.sin(a) * rad, -Math.cos(a) * rad * 0.85);
+  }
+  ctx.closePath();
+}
+
+function boatPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.95, r * 0.15);
+  ctx.lineTo(r * 0.95, r * 0.15);
+  ctx.lineTo(r * 0.62, r * 0.72);
+  ctx.lineTo(-r * 0.62, r * 0.72);
+  ctx.closePath();
+  ctx.moveTo(0, r * 0.12);
+  ctx.lineTo(0, -r * 0.95);
+  ctx.lineTo(r * 0.62, r * 0.05);
+  ctx.closePath();
+}
+
+function tailPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.15, -r * 0.9);
+  ctx.quadraticCurveTo(r * 0.85, -r * 0.4, r * 0.35, r * 0.15);
+  ctx.quadraticCurveTo(r * 0.95, r * 0.55, r * 0.15, r * 0.95);
+  ctx.quadraticCurveTo(r * 0.05, r * 0.2, -r * 0.55, r * 0.05);
+  ctx.quadraticCurveTo(-r * 0.95, -r * 0.55, -r * 0.15, -r * 0.9);
+  ctx.closePath();
+}
+
+function swallowPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.9, r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.1, -r * 0.15, r * 0.55, -r * 0.08);
+  ctx.lineTo(r * 0.95, -r * 0.42);
+  ctx.lineTo(r * 0.7, 0);
+  ctx.lineTo(r * 0.95, r * 0.42);
+  ctx.lineTo(r * 0.5, r * 0.12);
+  ctx.quadraticCurveTo(-r * 0.05, r * 0.55, -r * 0.55, r * 0.85);
+  ctx.lineTo(-r * 0.35, r * 0.2);
+  ctx.closePath();
+}
+
+function elephantPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.7, r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.75, -r * 0.55, -r * 0.15, -r * 0.62);
+  ctx.quadraticCurveTo(r * 0.45, -r * 0.7, r * 0.55, -r * 0.15);
+  ctx.lineTo(r * 0.95, r * 0.35);
+  ctx.lineTo(r * 0.72, r * 0.48);
+  ctx.lineTo(r * 0.42, r * 0.05);
+  ctx.lineTo(r * 0.35, r * 0.85);
+  ctx.lineTo(r * 0.12, r * 0.85);
+  ctx.lineTo(r * 0.08, r * 0.2);
+  ctx.lineTo(-r * 0.15, r * 0.85);
+  ctx.lineTo(-r * 0.38, r * 0.85);
+  ctx.lineTo(-r * 0.32, r * 0.2);
+  ctx.lineTo(-r * 0.7, r * 0.2);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.05, -r * 0.55);
+  ctx.quadraticCurveTo(-r * 0.55, -r * 0.95, -r * 0.85, -r * 0.35);
+  ctx.quadraticCurveTo(-r * 0.35, -r * 0.45, -r * 0.05, -r * 0.35);
+  ctx.closePath();
+}
+
+function tentPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, -r);
+  ctx.lineTo(r * 0.95, r * 0.85);
+  ctx.lineTo(-r * 0.95, r * 0.85);
+  ctx.closePath();
+  ctx.moveTo(0, -r);
+  ctx.lineTo(r * 0.22, -r * 0.85);
+  ctx.lineTo(r * 0.08, -r * 0.55);
+  ctx.closePath();
+}
+
+function ballPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, 0, r * 0.92, 0, Math.PI * 2);
+}
+
+function bowPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, 0);
+  ctx.bezierCurveTo(-r * 0.15, -r * 0.7, -r * 0.95, -r * 0.55, -r * 0.85, 0);
+  ctx.bezierCurveTo(-r * 0.95, r * 0.55, -r * 0.15, r * 0.7, 0, 0);
+  ctx.bezierCurveTo(r * 0.15, -r * 0.7, r * 0.95, -r * 0.55, r * 0.85, 0);
+  ctx.bezierCurveTo(r * 0.95, r * 0.55, r * 0.15, r * 0.7, 0, 0);
   ctx.closePath();
 }
 
@@ -339,88 +507,469 @@ function horsePath(ctx: CanvasRenderingContext2D, r: number) {
   ctx.closePath();
 }
 
-function riderPath(ctx: CanvasRenderingContext2D, r: number) {
-  horsePath(ctx, r * 0.92);
-  ctx.moveTo(-r * 0.05, -r * 0.85);
-  ctx.arc(-r * 0.02, -r * 0.72, r * 0.16, 0, Math.PI * 2);
-  ctx.moveTo(-r * 0.2, -r * 0.5);
-  ctx.lineTo(r * 0.18, -r * 0.5);
-  ctx.lineTo(r * 0.22, -r * 0.05);
-  ctx.lineTo(-r * 0.22, -r * 0.05);
+function balloonPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, -r * 0.2, r * 0.62, r * 0.72, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.08, r * 0.48);
+  ctx.lineTo(0, r * 0.62);
+  ctx.lineTo(r * 0.08, r * 0.48);
+  ctx.lineTo(0, r * 0.95);
+  ctx.lineTo(-r * 0.02, r * 0.95);
   ctx.closePath();
 }
 
-function lionPath(ctx: CanvasRenderingContext2D, r: number) {
-  // rampant, facing right
-  ctx.moveTo(-r * 0.15, r * 0.95);
-  ctx.lineTo(r * 0.02, r * 0.95);
-  ctx.lineTo(r * 0.08, r * 0.35);
-  ctx.lineTo(r * 0.22, r * 0.92);
-  ctx.lineTo(r * 0.4, r * 0.88);
-  ctx.quadraticCurveTo(r * 0.18, r * 0.2, r * 0.28, -r * 0.05);
-  ctx.lineTo(r * 0.72, -r * 0.55);
-  ctx.lineTo(r * 0.55, -r * 0.62);
-  ctx.lineTo(r * 0.32, -r * 0.22);
-  ctx.quadraticCurveTo(r * 0.22, -r * 0.55, r * 0.42, -r * 0.78);
-  ctx.lineTo(r * 0.78, -r * 0.7);
-  ctx.lineTo(r * 0.7, -r * 0.9);
-  ctx.lineTo(r * 0.28, -r * 0.95);
-  ctx.quadraticCurveTo(r * 0.05, -r * 0.72, r * 0.08, -r * 0.38);
-  ctx.quadraticCurveTo(-r * 0.05, -r * 0.55, -r * 0.22, -r * 0.28);
-  ctx.quadraticCurveTo(-r * 0.55, -r * 0.05, -r * 0.85, -r * 0.42);
-  ctx.quadraticCurveTo(-r * 1.02, -r * 0.62, -r * 0.72, -r * 0.72);
-  ctx.quadraticCurveTo(-r * 0.95, -r * 0.15, -r * 0.42, r * 0.08);
-  ctx.lineTo(-r * 0.55, r * 0.78);
-  ctx.lineTo(-r * 0.35, r * 0.82);
-  ctx.lineTo(-r * 0.22, r * 0.22);
+function ticketPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.95, -r * 0.48);
+  ctx.lineTo(r * 0.95, -r * 0.48);
+  ctx.arc(r * 0.95, 0, r * 0.16, -Math.PI / 2, Math.PI / 2);
+  ctx.lineTo(-r * 0.95, r * 0.48);
+  ctx.arc(-r * 0.95, 0, r * 0.16, Math.PI / 2, -Math.PI / 2);
   ctx.closePath();
+}
+
+function pearPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, r * 0.95);
+  ctx.bezierCurveTo(r * 0.75, r * 0.7, r * 0.7, 0, r * 0.32, -r * 0.35);
+  ctx.quadraticCurveTo(r * 0.18, -r * 0.75, 0, -r * 0.85);
+  ctx.quadraticCurveTo(-r * 0.18, -r * 0.75, -r * 0.32, -r * 0.35);
+  ctx.bezierCurveTo(-r * 0.7, 0, -r * 0.75, r * 0.7, 0, r * 0.95);
+  ctx.closePath();
+}
+
+function lemonPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.95, 0);
+  ctx.quadraticCurveTo(-r * 0.5, -r * 0.72, 0, -r * 0.55);
+  ctx.quadraticCurveTo(r * 0.5, -r * 0.72, r * 0.95, 0);
+  ctx.quadraticCurveTo(r * 0.5, r * 0.72, 0, r * 0.55);
+  ctx.quadraticCurveTo(-r * 0.5, r * 0.72, -r * 0.95, 0);
+  ctx.closePath();
+}
+
+function cherryPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(-r * 0.32, r * 0.28, r * 0.4, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.55, r * 0.22);
+  ctx.arc(r * 0.32, r * 0.22, r * 0.38, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.2, -r * 0.05);
+  ctx.quadraticCurveTo(0, -r * 0.85, r * 0.15, -r * 0.95);
+  ctx.quadraticCurveTo(r * 0.05, -r * 0.4, r * 0.22, -r * 0.08);
+  ctx.lineTo(r * 0.12, 0);
+  ctx.quadraticCurveTo(0, -r * 0.55, -r * 0.28, -r * 0.02);
+  ctx.closePath();
+}
+
+function leafPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, r);
+  ctx.bezierCurveTo(r * 0.95, r * 0.25, r * 0.7, -r * 0.7, 0, -r);
+  ctx.bezierCurveTo(-r * 0.7, -r * 0.7, -r * 0.95, r * 0.25, 0, r);
+  ctx.closePath();
+}
+
+function mushroomPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.95, 0);
+  ctx.quadraticCurveTo(-r * 0.2, -r, r * 0.95, 0);
+  ctx.lineTo(r * 0.55, r * 0.12);
+  ctx.lineTo(r * 0.28, r * 0.95);
+  ctx.lineTo(-r * 0.28, r * 0.95);
+  ctx.lineTo(-r * 0.55, r * 0.12);
+  ctx.closePath();
+}
+
+function flowerPath(ctx: CanvasRenderingContext2D, r: number) {
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+    ctx.ellipse(Math.cos(a) * r * 0.45, Math.sin(a) * r * 0.45, r * 0.32, r * 0.22, a, 0, Math.PI * 2);
+  }
+  ctx.moveTo(r * 0.22, 0);
+  ctx.arc(0, 0, r * 0.22, 0, Math.PI * 2);
+}
+
+function sunPath(ctx: CanvasRenderingContext2D, r: number) {
+  starPath(ctx, r, 8, 0.55);
+}
+
+function cloudPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(-r * 0.42, r * 0.08, r * 0.42, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.55, r * 0.12);
+  ctx.arc(r * 0.32, r * 0.05, r * 0.4, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.15, -r * 0.2);
+  ctx.arc(0, -r * 0.18, r * 0.48, 0, Math.PI * 2);
+}
+
+function boltPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(r * 0.15, -r);
+  ctx.lineTo(-r * 0.15, -r * 0.05);
+  ctx.lineTo(r * 0.08, -r * 0.05);
+  ctx.lineTo(-r * 0.2, r);
+  ctx.lineTo(r * 0.35, r * 0.08);
+  ctx.lineTo(r * 0.08, r * 0.08);
+  ctx.closePath();
+}
+
+function umbrellaPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r, r * 0.05);
+  ctx.quadraticCurveTo(0, -r * 1.05, r, r * 0.05);
+  ctx.quadraticCurveTo(r * 0.5, -r * 0.05, 0, r * 0.12);
+  ctx.quadraticCurveTo(-r * 0.5, -r * 0.05, -r, r * 0.05);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.04, r * 0.08);
+  ctx.lineTo(r * 0.04, r * 0.08);
+  ctx.lineTo(r * 0.04, r * 0.72);
+  ctx.quadraticCurveTo(r * 0.28, r * 0.95, r * 0.02, r * 0.95);
+  ctx.lineTo(-r * 0.02, r * 0.82);
+  ctx.quadraticCurveTo(r * 0.12, r * 0.82, -r * 0.04, r * 0.7);
+  ctx.closePath();
+}
+
+function birdPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.95, r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.2, -r * 0.35, r * 0.35, 0);
+  ctx.lineTo(r * 0.85, -r * 0.35);
+  ctx.lineTo(r * 0.55, r * 0.08);
+  ctx.quadraticCurveTo(r * 0.15, r * 0.55, -r * 0.35, r * 0.45);
+  ctx.closePath();
+}
+
+function treePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.18, r * 0.25);
+  ctx.lineTo(-r * 0.22, r);
+  ctx.lineTo(r * 0.22, r);
+  ctx.lineTo(r * 0.18, r * 0.25);
+  ctx.closePath();
+  ctx.moveTo(0, -r);
+  ctx.arc(-r * 0.28, -r * 0.15, r * 0.48, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.55, -r * 0.05);
+  ctx.arc(r * 0.28, -r * 0.08, r * 0.45, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.2, -r * 0.45);
+  ctx.arc(0, -r * 0.42, r * 0.5, 0, Math.PI * 2);
+}
+
+function deerPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.7, r * 0.2);
+  ctx.quadraticCurveTo(-r * 0.2, -r * 0.25, r * 0.2, -r * 0.05);
+  ctx.lineTo(r * 0.55, -r * 0.35);
+  ctx.lineTo(r * 0.72, -r * 0.85);
+  ctx.lineTo(r * 0.55, -r * 0.85);
+  ctx.lineTo(r * 0.42, -r * 0.48);
+  ctx.lineTo(r * 0.28, -r * 0.78);
+  ctx.lineTo(r * 0.12, -r * 0.72);
+  ctx.lineTo(r * 0.28, -r * 0.28);
+  ctx.lineTo(r * 0.55, 0);
+  ctx.lineTo(r * 0.35, r * 0.85);
+  ctx.lineTo(r * 0.15, r * 0.85);
+  ctx.lineTo(r * 0.08, r * 0.25);
+  ctx.lineTo(-r * 0.15, r * 0.85);
+  ctx.lineTo(-r * 0.35, r * 0.85);
+  ctx.lineTo(-r * 0.22, r * 0.22);
+  ctx.lineTo(-r * 0.7, r * 0.22);
+  ctx.closePath();
+}
+
+function foxPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.35, r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.15, -r * 0.55, r * 0.45, -r * 0.15);
+  ctx.lineTo(r * 0.85, -r * 0.55);
+  ctx.lineTo(r * 0.95, -r * 0.22);
+  ctx.lineTo(r * 0.55, r * 0.08);
+  ctx.lineTo(r * 0.35, r * 0.85);
+  ctx.lineTo(r * 0.12, r * 0.85);
+  ctx.lineTo(0.05 * r, r * 0.28);
+  ctx.lineTo(-r * 0.15, r * 0.85);
+  ctx.lineTo(-r * 0.38, r * 0.85);
+  ctx.lineTo(-r * 0.22, r * 0.22);
+  ctx.quadraticCurveTo(-r * 0.85, r * 0.55, -r * 0.95, -r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.55, r * 0.15, -r * 0.35, r * 0.15);
+  ctx.closePath();
+}
+
+function owlPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.55, -r * 0.35);
+  ctx.lineTo(-r * 0.42, -r * 0.85);
+  ctx.lineTo(-r * 0.12, -r * 0.55);
+  ctx.lineTo(r * 0.12, -r * 0.55);
+  ctx.lineTo(r * 0.42, -r * 0.85);
+  ctx.lineTo(r * 0.55, -r * 0.35);
+  ctx.quadraticCurveTo(r * 0.85, r * 0.55, 0, r * 0.95);
+  ctx.quadraticCurveTo(-r * 0.85, r * 0.55, -r * 0.55, -r * 0.35);
+  ctx.closePath();
+}
+
+function acornPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.7, -r * 0.15);
+  ctx.quadraticCurveTo(0, -r * 0.85, r * 0.7, -r * 0.15);
+  ctx.lineTo(r * 0.7, r * 0.08);
+  ctx.lineTo(-r * 0.7, r * 0.08);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.52, r * 0.05);
+  ctx.quadraticCurveTo(0, r * 1.15, r * 0.52, r * 0.05);
+  ctx.closePath();
+}
+
+function conePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, -r);
+  ctx.lineTo(r * 0.72, r * 0.85);
+  ctx.lineTo(-r * 0.72, r * 0.85);
+  ctx.closePath();
+}
+
+function mountainPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r, r * 0.75);
+  ctx.lineTo(-r * 0.35, -r * 0.35);
+  ctx.lineTo(0, r * 0.15);
+  ctx.lineTo(r * 0.45, -r * 0.85);
+  ctx.lineTo(r, r * 0.75);
+  ctx.closePath();
+}
+
+function dropPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, -r);
+  ctx.bezierCurveTo(r * 0.75, -r * 0.15, r * 0.7, r * 0.75, 0, r);
+  ctx.bezierCurveTo(-r * 0.7, r * 0.75, -r * 0.75, -r * 0.15, 0, -r);
+  ctx.closePath();
+}
+
+function mothPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(-r * 0.45, -r * 0.05, r * 0.55, r * 0.72, -0.35, 0, Math.PI * 2);
+  ctx.ellipse(r * 0.45, -r * 0.05, r * 0.55, r * 0.72, 0.35, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.12, r * 0.35);
+  ctx.ellipse(0, r * 0.2, r * 0.12, r * 0.55, 0, 0, Math.PI * 2);
+}
+
+function wingfigPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(-r * 0.62, -r * 0.05, r * 0.42, r * 0.7, -0.4, 0, Math.PI * 2);
+  ctx.ellipse(r * 0.62, -r * 0.05, r * 0.42, r * 0.7, 0.4, 0, Math.PI * 2);
+  figurePath(ctx, r * 0.72);
+}
+
+function swanPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(r * 0.05, r * 0.28, r * 0.7, r * 0.42, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.15, r * 0.05);
+  ctx.quadraticCurveTo(-r * 0.55, -r * 0.85, r * 0.15, -r * 0.75);
+  ctx.quadraticCurveTo(-r * 0.15, -r * 0.35, r * 0.05, 0);
+  ctx.closePath();
+}
+
+function catPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, r * 0.22, r * 0.58, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.42, -r * 0.55);
+  ctx.lineTo(-r * 0.55, -r * 0.95);
+  ctx.lineTo(-r * 0.12, -r * 0.55);
+  ctx.lineTo(r * 0.12, -r * 0.55);
+  ctx.lineTo(r * 0.55, -r * 0.95);
+  ctx.lineTo(r * 0.42, -r * 0.55);
+  ctx.closePath();
+  ctx.moveTo(r * 0.85, r * 0.55);
+  ctx.quadraticCurveTo(r * 0.95, -r * 0.15, r * 0.35, r * 0.15);
+  ctx.quadraticCurveTo(r * 0.75, r * 0.85, r * 0.85, r * 0.55);
+  ctx.closePath();
+}
+
+function crownPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.95, r * 0.45);
+  ctx.lineTo(-r * 0.95, -r * 0.05);
+  ctx.lineTo(-r * 0.45, r * 0.15);
+  ctx.lineTo(0, -r * 0.85);
+  ctx.lineTo(r * 0.45, r * 0.15);
+  ctx.lineTo(r * 0.95, -r * 0.05);
+  ctx.lineTo(r * 0.95, r * 0.45);
+  ctx.closePath();
+}
+
+function keyPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(-r * 0.45, 0, r * 0.42, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.05, -r * 0.12);
+  ctx.lineTo(r * 0.95, -r * 0.12);
+  ctx.lineTo(r * 0.95, r * 0.12);
+  ctx.lineTo(r * 0.55, r * 0.12);
+  ctx.lineTo(r * 0.55, r * 0.42);
+  ctx.lineTo(r * 0.32, r * 0.42);
+  ctx.lineTo(r * 0.32, r * 0.12);
+  ctx.lineTo(-r * 0.05, r * 0.12);
+  ctx.closePath();
+}
+
+function ringPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, 0, r * 0.92, 0, Math.PI * 2);
+  ctx.arc(0, 0, r * 0.52, 0, Math.PI * 2, true);
+}
+
+function envelopePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.95, -r * 0.55, r * 1.9, r * 1.15);
+  ctx.moveTo(-r * 0.95, -r * 0.55);
+  ctx.lineTo(0, r * 0.15);
+  ctx.lineTo(r * 0.95, -r * 0.55);
+  ctx.closePath();
+}
+
+function potionPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.22, -r);
+  ctx.lineTo(r * 0.22, -r);
+  ctx.lineTo(r * 0.22, -r * 0.45);
+  ctx.quadraticCurveTo(r * 0.85, -r * 0.15, r * 0.72, r * 0.85);
+  ctx.lineTo(-r * 0.72, r * 0.85);
+  ctx.quadraticCurveTo(-r * 0.85, -r * 0.15, -r * 0.22, -r * 0.45);
+  ctx.closePath();
+}
+
+function housePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, -r);
+  ctx.lineTo(r * 0.95, -r * 0.15);
+  ctx.lineTo(r * 0.7, -r * 0.15);
+  ctx.lineTo(r * 0.7, r * 0.9);
+  ctx.lineTo(-r * 0.7, r * 0.9);
+  ctx.lineTo(-r * 0.7, -r * 0.15);
+  ctx.lineTo(-r * 0.95, -r * 0.15);
+  ctx.closePath();
+}
+
+function drawKind(ctx: CanvasRenderingContext2D, kind: Kind, r: number) {
+  ctx.beginPath();
+  switch (kind) {
+    case "star":
+    case "starfish":
+      starPath(ctx, r, kind === "starfish" ? 5 : 5, kind === "starfish" ? 0.42 : 0.4);
+      break;
+    case "heart":
+      heartPath(ctx, r);
+      break;
+    case "moon":
+      moonPath(ctx, r);
+      break;
+    case "figure":
+      figurePath(ctx, r);
+      break;
+    case "fish":
+      fishPath(ctx, r);
+      break;
+    case "anchor":
+      anchorPath(ctx, r);
+      break;
+    case "wave":
+      wavePath(ctx, r);
+      break;
+    case "shell":
+      shellPath(ctx, r);
+      break;
+    case "boat":
+      boatPath(ctx, r);
+      break;
+    case "tail":
+      tailPath(ctx, r);
+      break;
+    case "swallow":
+      swallowPath(ctx, r);
+      break;
+    case "elephant":
+      elephantPath(ctx, r);
+      break;
+    case "tent":
+      tentPath(ctx, r);
+      break;
+    case "ball":
+      ballPath(ctx, r);
+      break;
+    case "bow":
+      bowPath(ctx, r);
+      break;
+    case "horse":
+      horsePath(ctx, r);
+      break;
+    case "balloon":
+      balloonPath(ctx, r);
+      break;
+    case "ticket":
+      ticketPath(ctx, r);
+      break;
+    case "pear":
+      pearPath(ctx, r);
+      break;
+    case "lemon":
+      lemonPath(ctx, r);
+      break;
+    case "cherry":
+      cherryPath(ctx, r);
+      break;
+    case "leaf":
+      leafPath(ctx, r);
+      break;
+    case "mushroom":
+      mushroomPath(ctx, r);
+      break;
+    case "flower":
+      flowerPath(ctx, r);
+      break;
+    case "sun":
+      sunPath(ctx, r);
+      break;
+    case "cloud":
+      cloudPath(ctx, r);
+      break;
+    case "bolt":
+      boltPath(ctx, r);
+      break;
+    case "umbrella":
+      umbrellaPath(ctx, r);
+      break;
+    case "bird":
+      birdPath(ctx, r);
+      break;
+    case "tree":
+      treePath(ctx, r);
+      break;
+    case "deer":
+      deerPath(ctx, r);
+      break;
+    case "fox":
+      foxPath(ctx, r);
+      break;
+    case "owl":
+      owlPath(ctx, r);
+      break;
+    case "acorn":
+      acornPath(ctx, r);
+      break;
+    case "cone":
+      conePath(ctx, r);
+      break;
+    case "mountain":
+      mountainPath(ctx, r);
+      break;
+    case "drop":
+      dropPath(ctx, r);
+      break;
+    case "moth":
+      mothPath(ctx, r);
+      break;
+    case "wingfig":
+      wingfigPath(ctx, r);
+      break;
+    case "swan":
+      swanPath(ctx, r);
+      break;
+    case "cat":
+      catPath(ctx, r);
+      break;
+    case "crown":
+      crownPath(ctx, r);
+      break;
+    case "key":
+      keyPath(ctx, r);
+      break;
+    case "ring":
+      ringPath(ctx, r);
+      break;
+    case "envelope":
+      envelopePath(ctx, r);
+      break;
+    case "potion":
+      potionPath(ctx, r);
+      break;
+    default:
+      housePath(ctx, r);
+      break;
+  }
 }
 
 function drawSilhouette(ctx: CanvasRenderingContext2D, c: Charge, r: number) {
-  const path = () => {
-    ctx.beginPath();
-    switch (c.kind) {
-      case "heater":
-        heaterPath(ctx, r);
-        break;
-      case "shield":
-        shieldPath(ctx, r);
-        break;
-      case "star":
-        starPath(ctx, r, 5, 0.4);
-        break;
-      case "mullet":
-        starPath(ctx, r, 6, 0.48);
-        break;
-      case "heart":
-        heartPath(ctx, r);
-        break;
-      case "cross":
-        crossPath(ctx, r);
-        break;
-      case "patee":
-        pateePath(ctx, r);
-        break;
-      case "fleur":
-        fleurPath(ctx, r);
-        break;
-      case "helm":
-        helmPath(ctx, r);
-        break;
-      case "figure":
-        figurePath(ctx, r);
-        break;
-      case "horse":
-        horsePath(ctx, r);
-        break;
-      case "rider":
-        riderPath(ctx, r);
-        break;
-      default:
-        lionPath(ctx, r);
-        break;
-    }
-  };
+  const path = () => drawKind(ctx, c.kind, r);
   if (c.mirror) {
     ctx.save();
     ctx.scale(-1, 1);
@@ -448,6 +997,7 @@ export class HeraldryField {
   private particles: Particle[] = [];
   private builtSeed = -1;
   private builtInk = "";
+  private builtKit: CollageKit = "sailor";
 
   private stamp(c: Charge): HTMLCanvasElement {
     const key = chargeKey(c);
@@ -459,28 +1009,28 @@ export class HeraldryField {
     return g;
   }
 
-  private ensure(seed: number, ink: string) {
-    if (this.builtSeed === seed && this.builtInk === ink && this.particles.length) return;
-    this.particles = buildField(seed, ink);
+  private ensure(seed: number, ink: string, kit: CollageKit) {
+    if (this.builtSeed === seed && this.builtInk === ink && this.builtKit === kit && this.particles.length) return;
+    this.particles = buildField(seed, ink, kit);
     this.stamps.clear();
     this.builtSeed = seed;
     this.builtInk = ink;
+    this.builtKit = kit;
   }
 
   paint(opts: HeraldryPaintOpts): HTMLCanvasElement {
     const w = Math.max(16, Math.floor(opts.width));
     const h = Math.max(16, Math.floor(opts.height));
-    if (!this.canvas) {
-      this.canvas = document.createElement("canvas");
-    }
+    if (!this.canvas) this.canvas = document.createElement("canvas");
     if (this.canvas.width !== w) this.canvas.width = w;
     if (this.canvas.height !== h) this.canvas.height = h;
     const ctx = this.canvas.getContext("2d", { alpha: false });
     if (!ctx) return this.canvas;
 
     const paper = hexOk(opts.paper, "#ffffff");
-    const ink = hexOk(opts.ink, "#c41e3a");
-    this.ensure(opts.seed >>> 0, ink);
+    const kit = kitFromUnknown(opts.kit);
+    const ink = hexOk(opts.ink, KIT_INK[kit]);
+    this.ensure(opts.seed >>> 0, ink, kit);
 
     ctx.fillStyle = paper;
     ctx.fillRect(0, 0, w, h);
@@ -517,6 +1067,7 @@ export class HeraldryField {
 
     const minZ = scene === "wallpaper" ? 0.62 : 0.7;
     const maxZ = scene === "wallpaper" ? 2.4 : 2.0;
+    const confetti = new Set(KIT_SHOWER[kit]);
 
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
@@ -547,15 +1098,10 @@ export class HeraldryField {
       } else {
         x = ((p.x + Math.sin(t * 0.4 + p.z * 9) * 0.02 - camX) % 1 + 1) % 1 - 0.5;
         y = ((p.y + t * (0.12 + p.vy * 0.4) - camY) % 1 + 1) % 1 - 0.5;
-        px = 0.095 * p.size * (0.75 + (p.charge.kind === "heart" || p.charge.kind === "star" ? 0.2 : 0));
+        px = 0.095 * p.size * (0.75 + (confetti.has(p.charge.kind) ? 0.2 : 0));
       }
 
-      if (
-        (scene === "wallpaper" || scene === "sparse") &&
-        (p.charge.kind === "figure" || p.charge.kind === "rider" || p.charge.kind === "horse" || p.charge.kind === "helm")
-      ) {
-        px *= 0.72;
-      }
+      if ((scene === "wallpaper" || scene === "sparse") && BODIES.has(p.charge.kind)) px *= 0.78;
 
       const dim = px * Math.min(w, h);
       if (dim < 4) continue;
@@ -589,4 +1135,12 @@ export function paperForSeed(seed: number): string {
 export function inkForSeed(seed: number, fallback = "#c41e3a"): string {
   const rng = mulberry32((seed + 91) >>> 0);
   return rng() < 0.35 ? fallback : pick(rng, TINCTURES);
+}
+
+export function inkForKit(kit: CollageKit): string {
+  return KIT_INK[kit];
+}
+
+export function kitForSeed(seed: number): CollageKit {
+  return COLLAGE_KITS[(seed >>> 0) % COLLAGE_KITS.length];
 }

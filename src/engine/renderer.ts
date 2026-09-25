@@ -316,6 +316,7 @@ export class Renderer {
       duration,
       seed,
       generator: src.generator,
+      kit: src.collageKit,
       paper: src.colorA ?? "#ffffff",
       ink: src.colorB ?? "#c41e3a",
       audio: this.audioEnergy,

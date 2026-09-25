@@ -151,6 +151,8 @@ export interface MediaSource {
   /** Optional generator inks. */
   colorA?: string;
   colorB?: string;
+  /** Collage stamp drawer: sailor / circus / fruit / nature / love. */
+  collageKit?: "sailor" | "circus" | "fruit" | "nature" | "love";
 }
 
 export interface Keyframe {

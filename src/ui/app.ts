@@ -39,6 +39,7 @@ import {
 import { resumeAudio } from "../media/audio";
 import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
 import { defaultGeneratorSource } from "../core/defaults";
+import { isHeraldry, kitFromUnknown, type CollageKit } from "../engine/heraldry";
 
 let liveScrub = false;
 let rendererRef: Renderer | null = null;
@@ -89,7 +90,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Heraldic stamps — shields, lions, hearts, stars, riders — fly over white paper. The camera rips through a dense wallpaper, slams into giant charges, then rains tiny hearts. Drop an MP3 and the fly-through follows the mix.</p>
+        <p>A collage machine. Five stamp kits — sailor, circus, fruit & weather, grove, love — fly over white paper. The camera rips through a dense wallpaper, slams into giant charges, then rains tiny icons. Drop an MP3 and the fly-through follows the mix.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -97,9 +98,9 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
-          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new set of arms and a zoom: Tour (the 4-beat trip), Paper (dense wallpaper), Giants (poster charges), or Shower (heart rain).</li>
+          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit and zoom: Tour (the 4-beat trip), Paper, Giants, or Shower.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
-          <li><strong>Arms</strong> — Tour flies through all four looks. Paper is the packed opening. Giants are the big lions and shields. Shower is the tiny hearts and riders. Drop an MP3 and the camera follows the bass.</li>
+          <li><strong>Kits</strong> — Sailor (fish, anchors, boats), Circus (tents, elephants), Fruit (pears, weather), Grove (trees, deer), Love (hearts, keys, swans). Zoom buttons keep the current kit.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
@@ -170,10 +171,12 @@ function bind(root: HTMLElement) {
     if (act === "freeze") void freezeSelected();
     if (act === "gen") {
       const kind = (t.dataset.kind ?? "plasma") as GeneratorType;
-      const src = defaultGeneratorSource(kind);
+      const selected = store.project.sources.find((s) => s.id === store.state.ui.selectedSourceId);
+      const kit = (t.dataset.kit as CollageKit | undefined) ?? (isHeraldry(kind) ? kitFromUnknown(selected?.collageKit) : undefined);
+      const src = defaultGeneratorSource(kind, kit);
       addSource(src, true);
       store.patchUi({
-        status: kind === "critters" ? "floaters on this layer" : `place · ${kind}`,
+        status: src.collageKit ? `place · ${kind} · ${src.collageKit}` : kind === "critters" ? "floaters on this layer" : `place · ${kind}`,
       });
     }
     if (act === "stamp-critters") stampCritters();
@@ -458,16 +461,23 @@ function paintRail(n: HTMLElement) {
     <button class="btn tiny" data-act="imagine" ${ui.generating || !ui.prompt.trim() ? "disabled" : ""}>Again</button>
     <div class="status" style="margin-top:4px">Usually a few seconds. Again rolls a new seed. Does not overwrite the upload.</div>
     <div class="row" style="margin-top:6px">
-      <button class="btn tiny acid" data-act="gen" data-kind="heraldry">Tour</button>
-      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper">Paper</button>
-      <button class="btn tiny acid" data-act="gen" data-kind="giants">Giants</button>
-      <button class="btn tiny acid" data-act="gen" data-kind="shower">Shower</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-kit="sailor">Sailor</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-kit="circus">Circus</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-kit="fruit">Fruit</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-kit="nature">Grove</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-kit="love">Love</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny" data-act="gen" data-kind="heraldry">Tour</button>
+      <button class="btn tiny" data-act="gen" data-kind="wallpaper">Paper</button>
+      <button class="btn tiny" data-act="gen" data-kind="giants">Giants</button>
+      <button class="btn tiny" data-act="gen" data-kind="shower">Shower</button>
     </div>
     <div class="row">
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
       <button class="btn tiny" data-act="reprint">Print frame</button>
     </div>
-    <div class="status" style="margin-top:4px">Tour walks the reference clip: packed arms, then a zoom to giant charges, then a rain of hearts. Paper stays dense. Giants stay big. Shower stays tiny. Drop an MP3 and the fly-through follows the bass.</div>
+    <div class="status" style="margin-top:4px">Pick a kit, then a zoom. Tour walks packed paper → big charges → tiny rain. Paper / Giants / Shower keep the kit you last used. Rand wacky rolls a new kit.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"

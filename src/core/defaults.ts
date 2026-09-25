@@ -1,3 +1,4 @@
+import { inkForKit, isHeraldry, kitFromUnknown, type CollageKit } from "../engine/heraldry";
 import { uid } from "./ids";
 import type {
   EffectInstance,
@@ -102,32 +103,37 @@ const GEN_INK: Record<string, { a: string; b: string }> = {
   shower: { a: "#ffffff", b: "#e84a8a" },
 };
 
-export function defaultGeneratorSource(kind: MediaSource["generator"] = "plasma"): MediaSource {
+const KIT_LABEL: Record<CollageKit, string> = {
+  sailor: "SAILOR",
+  circus: "CIRCUS",
+  fruit: "FRUIT",
+  nature: "GROVE",
+  love: "LOVE",
+};
+
+const PLACE_LABEL: Record<string, string> = {
+  heraldry: "TOUR",
+  wallpaper: "PAPER",
+  giants: "GIANTS",
+  shower: "SHOWER",
+};
+
+export function defaultGeneratorSource(
+  kind: MediaSource["generator"] = "plasma",
+  kit?: CollageKit | string | null,
+): MediaSource {
+  const collageKit = isHeraldry(kind) ? kitFromUnknown(kit) : undefined;
   const ink = GEN_INK[kind ?? "plasma"] ?? { a: "#140c10", b: "#f0d2b0" };
+  const place = PLACE_LABEL[kind ?? ""] ?? (kind ? kind.toUpperCase() : "SIGNAL");
+  const name = collageKit ? `${place} · ${KIT_LABEL[collageKit]}` : kind === "critters" ? "FLOATERS" : kind === "stage" ? "STAGE" : kind === "sketch" ? "SKETCH" : place;
   return {
     id: uid("src"),
-    name:
-      kind === "critters"
-        ? "FLOATERS"
-        : kind === "stage"
-          ? "STAGE"
-          : kind === "sketch"
-            ? "SKETCH"
-            : kind === "heraldry"
-              ? "TOUR"
-              : kind === "wallpaper"
-                ? "PAPER"
-                : kind === "giants"
-                  ? "GIANTS"
-                  : kind === "shower"
-                    ? "SHOWER"
-                    : kind
-                      ? kind.toUpperCase()
-                      : "SIGNAL",
+    name,
     kind: "generator",
     generator: kind ?? "plasma",
-    colorA: ink.a,
-    colorB: ink.b,
+    colorA: collageKit ? "#ffffff" : ink.a,
+    colorB: collageKit ? inkForKit(collageKit) : ink.b,
+    collageKit,
     width: 1280,
     height: 720,
     duration: 0,
@@ -158,8 +164,8 @@ export function defaultLayer(name: string, sourceId: string | null, effects: str
 }
 
 export function createDefaultProject(): Project {
-  const field = defaultGeneratorSource("heraldry");
-  const layer = defaultLayer("ARMS", field.id, []);
+  const field = defaultGeneratorSource("heraldry", "sailor");
+  const layer = defaultLayer("COLLAGE", field.id, []);
   const project: Project = {
     version: 1,
     app: "phosphene",
