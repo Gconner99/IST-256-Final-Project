@@ -154,9 +154,37 @@ export interface MediaSource {
   /** Collage stamp drawer. */
   collageKit?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music";
   /** Locked camera move for this clip. */
-  collageMove?: "rush" | "tunnel" | "lattice" | "bloom" | "spiral" | "lanes" | "pulse" | "kaleido" | "vortex" | "ripple" | "orbit";
+  collageMove?:
+    | "rush"
+    | "tunnel"
+    | "lattice"
+    | "bloom"
+    | "spiral"
+    | "lanes"
+    | "pulse"
+    | "kaleido"
+    | "vortex"
+    | "ripple"
+    | "orbit"
+    | "helix"
+    | "weave"
+    | "twist"
+    | "burst"
+    | "echo"
+    | "prism";
   /** Paper texture under the stamps. */
-  collagePaper?: "flat" | "notebook" | "graph" | "legal" | "marble" | "dots";
+  collagePaper?:
+    | "flat"
+    | "notebook"
+    | "graph"
+    | "legal"
+    | "marble"
+    | "dots"
+    | "kraft"
+    | "chalk"
+    | "folder"
+    | "sticky"
+    | "doodle";
 }
 
 export interface Keyframe {

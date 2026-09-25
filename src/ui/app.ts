@@ -90,7 +90,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera. Each clip locks one move and one paper. Rush is the fly-at-the-lens; kaleido / vortex / ripple / orbit get trippier. Notebook is a kid’s ruled page. Drop an MP3 and the fly-through follows the mix.</p>
+        <p>A collage machine. Stamp kits fly at the camera. Each clip locks one move and one paper. Rush is the fly-at-the-lens; helix / weave / twist / burst / echo / prism get weirder. Notebook and doodle are school-kid pages. Drop an MP3 and the fly-through follows the mix.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -101,7 +101,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music. Move and paper buttons keep the current kit.</li>
-          <li><strong>Paper</strong> — Flat color, Notebook (ruled), Graph, Legal pad, Marble composition cover, Dots.</li>
+          <li><strong>Paper</strong> — Flat color, Notebook (ruled), Graph, Legal pad, Marble composition cover, Dots, Kraft bag, Chalkboard, Manila folder, Sticky note, Doodle notebook.</li>
           <li><strong>Soundtrack</strong> — drop an MP3 (or wav/ogg/m4a). It does not replace your picture. Hit Play and the timeline follows the song. Exported clips are silent for now — the motion still follows the mix. Check <em>close loop</em> so the last beats fade into the first frame.</li>
           <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
@@ -481,6 +481,7 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="sweet">Sweet</button>
       <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="music">Music</button>
     </div>
+    <div class="sec">Move</div>
     <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-move="rush">Rush</button>
       <button class="btn tiny" data-act="gen" data-kind="giants" data-move="tunnel">Tunnel</button>
@@ -500,6 +501,17 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="orbit">Orbit</button>
     </div>
     <div class="row">
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="helix">Helix</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="weave">Weave</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="twist">Twist</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="burst">Burst</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="echo">Echo</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="prism">Prism</button>
+    </div>
+    <div class="sec">Paper</div>
+    <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="flat">Flat</button>
       <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="notebook">Note</button>
       <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="graph">Graph</button>
@@ -508,10 +520,17 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="dots">Dots</button>
     </div>
     <div class="row">
+      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="kraft">Kraft</button>
+      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="chalk">Chalk</button>
+      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="folder">Folder</button>
+      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="sticky">Sticky</button>
+      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-paper="doodle">Doodle</button>
+    </div>
+    <div class="row">
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
       <button class="btn tiny" data-act="reprint">Print frame</button>
     </div>
-    <div class="status" style="margin-top:4px">Each clip keeps one move and one paper. Rush is the fly-at-the-lens. Kaleido / vortex / ripple / orbit get weirder. Note is a school notebook. Kit buttons keep the last move and paper.</div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move and one paper. Rush is the fly-at-the-lens. Helix / weave / twist / burst / echo / prism get weirder. Note is a school notebook; doodle adds margin scribbles. Kit buttons keep the last move and paper.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"

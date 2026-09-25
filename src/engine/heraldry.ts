@@ -5,7 +5,25 @@ export const HERALDRY_ROOMS: GeneratorType[] = ["heraldry", "wallpaper", "giants
 export const COLLAGE_KITS = ["sailor", "circus", "fruit", "nature", "love", "space", "sweet", "music"] as const;
 export type CollageKit = (typeof COLLAGE_KITS)[number];
 
-export const COLLAGE_MOVES = ["rush", "tunnel", "lattice", "bloom", "spiral", "lanes", "pulse", "kaleido", "vortex", "ripple", "orbit"] as const;
+export const COLLAGE_MOVES = [
+  "rush",
+  "tunnel",
+  "lattice",
+  "bloom",
+  "spiral",
+  "lanes",
+  "pulse",
+  "kaleido",
+  "vortex",
+  "ripple",
+  "orbit",
+  "helix",
+  "weave",
+  "twist",
+  "burst",
+  "echo",
+  "prism",
+] as const;
 export type CollageMove = (typeof COLLAGE_MOVES)[number];
 export type HeraldryScene = CollageMove | "tour";
 
@@ -21,9 +39,27 @@ export const MOVE_LABEL: Record<CollageMove, string> = {
   vortex: "VORTEX",
   ripple: "RIPPLE",
   orbit: "ORBIT",
+  helix: "HELIX",
+  weave: "WEAVE",
+  twist: "TWIST",
+  burst: "BURST",
+  echo: "ECHO",
+  prism: "PRISM",
 };
 
-export const COLLAGE_PAPERS = ["flat", "notebook", "graph", "legal", "marble", "dots"] as const;
+export const COLLAGE_PAPERS = [
+  "flat",
+  "notebook",
+  "graph",
+  "legal",
+  "marble",
+  "dots",
+  "kraft",
+  "chalk",
+  "folder",
+  "sticky",
+  "doodle",
+] as const;
 export type CollagePaper = (typeof COLLAGE_PAPERS)[number];
 
 export const PAPER_LABEL: Record<CollagePaper, string> = {
@@ -33,6 +69,11 @@ export const PAPER_LABEL: Record<CollagePaper, string> = {
   legal: "LEGAL",
   marble: "MARBLE",
   dots: "DOTS",
+  kraft: "KRAFT",
+  chalk: "CHALK",
+  folder: "FOLDER",
+  sticky: "STICKY",
+  doodle: "DOODLE",
 };
 
 export function paperFromUnknown(value?: string | null): CollagePaper {
@@ -1264,43 +1305,61 @@ export class HeraldryField {
         ? 48
         : scene === "kaleido"
           ? 36
-          : scene === "lanes"
-            ? 90
-            : scene === "pulse"
-              ? 72
-              : scene === "tunnel"
-                ? 120
-                : scene === "bloom"
-                  ? 140
-                  : this.particles.length;
+          : scene === "echo"
+            ? 70
+            : scene === "prism"
+              ? 78
+              : scene === "lanes"
+                ? 90
+                : scene === "pulse"
+                  ? 72
+                  : scene === "weave"
+                    ? 110
+                    : scene === "helix"
+                      ? 130
+                      : scene === "tunnel"
+                        ? 120
+                        : scene === "bloom" || scene === "burst"
+                          ? 140
+                          : this.particles.length;
     const folds = scene === "kaleido" ? 6 : 1;
+    const echoes = scene === "echo" ? 3 : 1;
+    const prisms = scene === "prism" ? 3 : 1;
+    const handPaper = style === "notebook" || style === "legal" || style === "doodle" || style === "sticky" || style === "folder";
 
     for (let i = 0; i < count; i++) {
       const p = this.particles[i];
-      const pose = poseParticle(p, i, scene, t, audio, bass);
-      if (!pose) continue;
-      const dim = pose.px * Math.min(w, h);
-      if (dim < 5) continue;
       const stamp = this.stamp(p.charge);
-      const sx = (0.5 + pose.x) * w;
-      const sy = (0.5 + pose.y / aspect) * h;
-      const wobble = style === "notebook" || style === "legal" ? Math.sin(t * 2.1 + i * 0.7) * 0.05 : 0;
-      for (let k = 0; k < folds; k++) {
-        ctx.save();
-        if (folds > 1) {
-          ctx.translate(w * 0.5, h * 0.5);
-          ctx.rotate((k * Math.PI * 2) / folds);
-          ctx.translate(-w * 0.5, -h * 0.5);
+      for (let e = 0; e < echoes; e++) {
+        const pose = poseParticle(p, i, scene, t - e * 0.16, audio, bass);
+        if (!pose) continue;
+        const dim = pose.px * Math.min(w, h);
+        if (dim < 5) continue;
+        const sx = (0.5 + pose.x) * w;
+        const sy = (0.5 + pose.y / aspect) * h;
+        const wobble = handPaper ? Math.sin(t * 2.1 + i * 0.7) * 0.05 : 0;
+        for (let k = 0; k < folds; k++) {
+          for (let pr = 0; pr < prisms; pr++) {
+            ctx.save();
+            if (folds > 1) {
+              ctx.translate(w * 0.5, h * 0.5);
+              ctx.rotate((k * Math.PI * 2) / folds);
+              ctx.translate(-w * 0.5, -h * 0.5);
+            }
+            const ox = prisms > 1 ? (pr - 1) * dim * 0.09 : 0;
+            const oy = prisms > 1 ? (pr === 2 ? dim * 0.06 : pr === 0 ? -dim * 0.03 : 0) : 0;
+            if (sx + ox < -dim || sy + oy < -dim || sx + ox > w + dim || sy + oy > h + dim) {
+              ctx.restore();
+              continue;
+            }
+            if (prisms > 1) ctx.filter = `hue-rotate(${pr * 120}deg) saturate(1.35)`;
+            ctx.globalAlpha = pose.alpha * (echoes > 1 ? 1 - e * 0.32 : prisms > 1 ? 0.72 : 1);
+            ctx.translate(sx + ox, sy + oy);
+            ctx.rotate(pose.rot + wobble + (prisms > 1 ? pr * 0.1 : 0));
+            ctx.drawImage(stamp, -dim / 2, -dim / 2, dim, dim);
+            ctx.restore();
+          }
         }
-        if (sx < -dim || sy < -dim || sx > w + dim || sy > h + dim) {
-          ctx.restore();
-          continue;
-        }
-        ctx.globalAlpha = pose.alpha;
-        ctx.translate(sx, sy);
-        ctx.rotate(pose.rot + wobble);
-        ctx.drawImage(stamp, -dim / 2, -dim / 2, dim, dim);
-        ctx.restore();
       }
     }
     if (style !== "flat") paintGrain(ctx, w, h, opts.seed, style);
@@ -1461,6 +1520,93 @@ function poseParticle(
       alpha: clamp((2.6 - depth) / 0.24, 0, 1) * clamp((depth - 0.3) / 0.1, 0, 1),
     };
   }
+  if (scene === "helix") {
+    const z = wrap01(p.z - t * (0.46 + audio * 0.5 + bass * 0.2));
+    const depth = 0.26 + z * 2.7;
+    if (depth < 0.3 || depth > 2.85) return null;
+    const strand = i & 1 ? Math.PI : 0;
+    const ang = t * (1.7 + 1.35 / depth) + p.x * Math.PI * 2 + strand;
+    const rad = (0.11 + p.y * 0.26) / depth;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad * 0.92,
+      px: clamp((0.22 * p.size * (0.93 + bass * 0.16)) / depth, 0.04, 0.56),
+      rot: ang + p.rot,
+      alpha: clamp((2.85 - depth) / 0.28, 0, 1) * clamp((depth - 0.26) / 0.1, 0, 1),
+    };
+  }
+  if (scene === "weave") {
+    const z = wrap01(p.z - t * (0.42 + audio * 0.48 + bass * 0.18));
+    const depth = 0.28 + z * 2.55;
+    if (depth < 0.32 || depth > 2.7) return null;
+    const a = t * (1.55 + audio * 0.4) + p.x * Math.PI * 2;
+    return {
+      x: (Math.sin(a) * 0.46 + Math.sin(a * 0.5 + p.y) * 0.08) / depth,
+      y: (Math.sin(a * 2 + p.y * Math.PI) * 0.34) / depth,
+      px: clamp((0.2 * p.size * (0.94 + bass * 0.14)) / depth, 0.04, 0.5),
+      rot: p.rot + a * 0.2,
+      alpha: clamp((2.7 - depth) / 0.26, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
+    };
+  }
+  if (scene === "twist") {
+    const z = wrap01(p.z - t * (0.44 + audio * 0.5 + bass * 0.2));
+    const depth = 0.26 + z * 2.7;
+    if (depth < 0.3 || depth > 2.85) return null;
+    const x0 = wrap01(p.x) - 0.5;
+    const y0 = wrap01(p.y) - 0.5;
+    const twist = 2.6 / depth + t * 0.42 + bass * 0.35;
+    const c = Math.cos(twist);
+    const s = Math.sin(twist);
+    return {
+      x: (x0 * c - y0 * s) / depth,
+      y: (x0 * s + y0 * c) / depth,
+      px: clamp((0.23 * p.size * (0.92 + bass * 0.16)) / depth, 0.04, 0.58),
+      rot: p.rot + twist,
+      alpha: clamp((2.85 - depth) / 0.28, 0, 1) * clamp((depth - 0.26) / 0.1, 0, 1),
+    };
+  }
+  if (scene === "burst") {
+    const u = wrap01(p.z - t * (0.4 + audio * 0.38 + bass * 0.28));
+    const grow = Math.pow(u, 0.62);
+    const ang = p.x * Math.PI * 2 + p.rot + t * 0.08;
+    const rush = 0.08 + grow * 1.15;
+    return {
+      x: Math.cos(ang) * rush * 0.78,
+      y: Math.sin(ang) * rush * 0.78,
+      px: clamp(0.04 + grow * 0.4 * p.size * (1 + bass * 0.2), 0.04, 0.6),
+      rot: p.rot + grow * 1.4,
+      alpha: clamp(1.08 - grow, 0, 1) * clamp(u / 0.07, 0, 1),
+    };
+  }
+  if (scene === "echo") {
+    const z = wrap01(p.z - t * (0.4 + audio * 0.5 + bass * 0.2));
+    const depth = 0.28 + z * 2.6;
+    if (depth < 0.32 || depth > 2.75) return null;
+    return {
+      x: (wrap01(p.x + p.vx * t * 0.02) - 0.5) / depth,
+      y: (wrap01(p.y + p.vy * t * 0.015) - 0.5) / depth,
+      px: clamp((0.22 * p.size * (0.93 + bass * 0.15)) / depth, 0.04, 0.54),
+      rot: p.rot + p.vr * t * 0.1,
+      alpha: clamp((2.75 - depth) / 0.28, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
+    };
+  }
+  if (scene === "prism") {
+    const z = wrap01(p.z - t * (0.42 + audio * 0.48 + bass * 0.18));
+    const depth = 0.28 + z * 2.55;
+    if (depth < 0.32 || depth > 2.7) return null;
+    const spin = t * 0.22 + p.rot * 0.4;
+    const x0 = wrap01(p.x) - 0.5;
+    const y0 = wrap01(p.y) - 0.5;
+    const c = Math.cos(spin);
+    const s = Math.sin(spin);
+    return {
+      x: (x0 * c - y0 * s) / depth,
+      y: (x0 * s + y0 * c) / depth,
+      px: clamp((0.2 * p.size * (0.94 + bass * 0.14)) / depth, 0.04, 0.52),
+      rot: p.rot + spin,
+      alpha: clamp((2.7 - depth) / 0.26, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
+    };
+  }
   const z = wrap01(p.z - t * (0.46 + audio * 0.58 + bass * 0.28));
   const depth = 0.26 + z * 2.7;
   if (depth < 0.3 || depth > 2.85) return null;
@@ -1503,6 +1649,11 @@ const TEXTURE_BASE: Record<CollagePaper, string> = {
   legal: "#f6e79a",
   marble: "#121212",
   dots: "#f6f1e4",
+  kraft: "#c9a36a",
+  chalk: "#1c2e22",
+  folder: "#e8c878",
+  sticky: "#fff176",
+  doodle: "#f3edd8",
 };
 
 export function paperForStyle(style: CollagePaper, kit: CollageKit, seed = 0): string {
@@ -1520,7 +1671,7 @@ function paintGround(
   seed: number,
   style: CollagePaper,
 ) {
-  if (style === "notebook") {
+  if (style === "notebook" || style === "doodle") {
     ctx.fillStyle = "#f3edd8";
     ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = "#d45c66";
@@ -1544,6 +1695,7 @@ function paintGround(
       ctx.arc(w * 0.045, h * (0.18 + i * 0.2), Math.max(4, w * 0.012), 0, Math.PI * 2);
       ctx.fill();
     }
+    if (style === "doodle") paintDoodles(ctx, w, h, seed);
     return;
   }
   if (style === "graph") {
@@ -1614,6 +1766,79 @@ function paintGround(
     }
     return;
   }
+  if (style === "kraft") {
+    ctx.fillStyle = "#c9a36a";
+    ctx.fillRect(0, 0, w, h);
+    const wash = ctx.createLinearGradient(0, 0, w, h);
+    wash.addColorStop(0, "#d4b27a");
+    wash.addColorStop(1, "#b89058");
+    ctx.fillStyle = wash;
+    ctx.globalAlpha = 0.45;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 1;
+    const rng = mulberry32((seed + 71) >>> 0);
+    ctx.strokeStyle = "rgba(90, 60, 28, 0.18)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 48; i++) {
+      ctx.beginPath();
+      ctx.moveTo(rng() * w, rng() * h);
+      ctx.lineTo(rng() * w, rng() * h);
+      ctx.stroke();
+    }
+    return;
+  }
+  if (style === "chalk") {
+    ctx.fillStyle = "#1c2e22";
+    ctx.fillRect(0, 0, w, h);
+    const rng = mulberry32((seed + 88) >>> 0);
+    ctx.fillStyle = "rgba(220, 230, 210, 0.06)";
+    for (let i = 0; i < 70; i++) {
+      ctx.fillRect(rng() * w, rng() * h, 8 + rng() * 40, 2 + rng() * 8);
+    }
+    ctx.fillStyle = "rgba(245, 245, 230, 0.16)";
+    for (let i = 0; i < 160; i++) {
+      ctx.fillRect(rng() * w, rng() * h, 1, 1);
+    }
+    ctx.strokeStyle = "rgba(230, 230, 210, 0.08)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w * 0.04, h * 0.05, w * 0.92, h * 0.9);
+    return;
+  }
+  if (style === "folder") {
+    ctx.fillStyle = "#e8c878";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#d4b05e";
+    ctx.fillRect(w * 0.08, 0, w * 0.28, h * 0.08);
+    ctx.strokeStyle = "rgba(140, 100, 40, 0.28)";
+    ctx.lineWidth = Math.max(1.5, w * 0.004);
+    ctx.beginPath();
+    ctx.moveTo(w * 0.5, 0);
+    ctx.lineTo(w * 0.5, h);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(90, 60, 20, 0.08)";
+    ctx.fillRect(0, 0, w * 0.04, h);
+    ctx.fillRect(w * 0.96, 0, w * 0.04, h);
+    return;
+  }
+  if (style === "sticky") {
+    ctx.fillStyle = "#c8b84a";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#fff176";
+    ctx.fillRect(0, 0, w * 0.97, h * 0.96);
+    const hi = ctx.createLinearGradient(0, 0, 0, h * 0.18);
+    hi.addColorStop(0, "rgba(255, 255, 220, 0.7)");
+    hi.addColorStop(1, "rgba(255, 241, 118, 0)");
+    ctx.fillStyle = hi;
+    ctx.fillRect(0, 0, w * 0.97, h * 0.18);
+    ctx.fillStyle = "#efe04e";
+    ctx.beginPath();
+    ctx.moveTo(w * 0.86, h * 0.96);
+    ctx.lineTo(w * 0.97, h * 0.96);
+    ctx.lineTo(w * 0.97, h * 0.82);
+    ctx.closePath();
+    ctx.fill();
+    return;
+  }
   ctx.fillStyle = paper;
   ctx.fillRect(0, 0, w, h);
   const wash = pick(mulberry32((seed + 4) >>> 0), KIT_GROUNDS[kit]);
@@ -1626,12 +1851,69 @@ function paintGround(
   ctx.fillRect(0, 0, w, h);
 }
 
+function paintDoodles(ctx: CanvasRenderingContext2D, w: number, h: number, seed: number) {
+  const rng = mulberry32((seed + 404) >>> 0);
+  ctx.save();
+  ctx.strokeStyle = "rgba(70, 64, 56, 0.38)";
+  ctx.fillStyle = "rgba(70, 64, 56, 0.22)";
+  ctx.lineWidth = Math.max(1.1, w * 0.0018);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  const margin = w * 0.11;
+  for (let i = 0; i < 14; i++) {
+    const inMargin = i < 9;
+    const x = inMargin ? rng() * margin * 0.82 + w * 0.01 : rng() * w * 0.86 + w * 0.14;
+    const y = rng() * h * 0.9 + h * 0.04;
+    const s = (inMargin ? 10 : 16) + rng() * 18;
+    const kind = Math.floor(rng() * 6);
+    ctx.beginPath();
+    if (kind === 0) {
+      for (let k = 0; k < 10; k++) {
+        const rad = k % 2 === 0 ? s : s * 0.42;
+        const a = (k * Math.PI) / 5 - Math.PI / 2;
+        const px = x + Math.cos(a) * rad;
+        const py = y + Math.sin(a) * rad;
+        if (k === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    } else if (kind === 1) {
+      ctx.moveTo(x, y + s * 0.45);
+      ctx.bezierCurveTo(x + s * 0.55, y - s * 0.1, x + s * 0.35, y - s * 0.55, x, y - s * 0.1);
+      ctx.bezierCurveTo(x - s * 0.35, y - s * 0.55, x - s * 0.55, y - s * 0.1, x, y + s * 0.45);
+      ctx.stroke();
+    } else if (kind === 2) {
+      ctx.moveTo(x, y);
+      for (let k = 1; k < 7; k++) ctx.lineTo(x + k * s * 0.18, y + ((k & 1) ? s * 0.35 : 0));
+      ctx.stroke();
+    } else if (kind === 3) {
+      ctx.arc(x, y, s * 0.28, 0, Math.PI * 1.7);
+      ctx.moveTo(x + s * 0.22, y - s * 0.08);
+      ctx.lineTo(x + s * 0.5, y - s * 0.22);
+      ctx.stroke();
+    } else if (kind === 4) {
+      ctx.moveTo(x - s * 0.4, y);
+      ctx.lineTo(x + s * 0.15, y);
+      ctx.lineTo(x + s * 0.02, y - s * 0.18);
+      ctx.moveTo(x + s * 0.15, y);
+      ctx.lineTo(x + s * 0.02, y + s * 0.18);
+      ctx.stroke();
+    } else {
+      ctx.moveTo(x, y);
+      ctx.bezierCurveTo(x + s, y - s, x - s, y + s * 0.2, x + s * 0.2, y + s * 0.4);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 function paintGrain(ctx: CanvasRenderingContext2D, w: number, h: number, seed: number, style: CollagePaper) {
   const rng = mulberry32((seed + 211) >>> 0);
-  const n = style === "marble" ? 80 : 220;
+  const n = style === "marble" || style === "chalk" ? 80 : style === "kraft" ? 280 : 220;
   ctx.save();
-  ctx.globalAlpha = style === "marble" ? 0.08 : 0.055;
-  ctx.fillStyle = style === "marble" ? "#ffffff" : "#2a2418";
+  ctx.globalAlpha = style === "marble" || style === "chalk" ? 0.08 : style === "kraft" ? 0.09 : 0.055;
+  ctx.fillStyle = style === "marble" || style === "chalk" ? "#ffffff" : "#2a2418";
   for (let i = 0; i < n; i++) {
     ctx.fillRect(rng() * w, rng() * h, 1 + rng() * 1.5, 1 + rng() * 1.5);
   }
