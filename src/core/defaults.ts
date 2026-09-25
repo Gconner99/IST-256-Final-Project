@@ -1,4 +1,16 @@
-import { inkForKit, isHeraldry, kitFromUnknown, paperForKit, type CollageKit } from "../engine/heraldry";
+import {
+  generatorForMove,
+  inkForKit,
+  isHeraldry,
+  kitFromUnknown,
+  MOVE_LABEL,
+  moveForSeed,
+  moveFromUnknown,
+  paperForKit,
+  sceneFromGenerator,
+  type CollageKit,
+  type CollageMove,
+} from "../engine/heraldry";
 import { uid } from "./ids";
 import type {
   EffectInstance,
@@ -109,10 +121,13 @@ const KIT_LABEL: Record<CollageKit, string> = {
   fruit: "FRUIT",
   nature: "GROVE",
   love: "LOVE",
+  space: "SPACE",
+  sweet: "SWEET",
+  music: "MUSIC",
 };
 
 const PLACE_LABEL: Record<string, string> = {
-  heraldry: "TOUR",
+  heraldry: "RUSH",
   wallpaper: "RUSH",
   giants: "TUNNEL",
   shower: "LATTICE",
@@ -121,19 +136,31 @@ const PLACE_LABEL: Record<string, string> = {
 export function defaultGeneratorSource(
   kind: MediaSource["generator"] = "plasma",
   kit?: CollageKit | string | null,
+  move?: CollageMove | string | null,
 ): MediaSource {
   const collageKit = isHeraldry(kind) ? kitFromUnknown(kit) : undefined;
   const ink = GEN_INK[kind ?? "plasma"] ?? { a: "#140c10", b: "#f0d2b0" };
-  const place = PLACE_LABEL[kind ?? ""] ?? (kind ? kind.toUpperCase() : "SIGNAL");
+  let collageMove: CollageMove | undefined;
+  if (collageKit) {
+    collageMove =
+      move === "mix" || move === "tour"
+        ? moveForSeed(Date.now() + Math.floor(Math.random() * 997))
+        : move
+          ? moveFromUnknown(move)
+          : (sceneFromGenerator(kind) as CollageMove);
+  }
+  const generator = collageMove ? generatorForMove(collageMove) : (kind ?? "plasma");
+  const place = collageMove ? MOVE_LABEL[collageMove] : PLACE_LABEL[kind ?? ""] ?? (kind ? kind.toUpperCase() : "SIGNAL");
   const name = collageKit ? `${place} · ${KIT_LABEL[collageKit]}` : kind === "critters" ? "FLOATERS" : kind === "stage" ? "STAGE" : kind === "sketch" ? "SKETCH" : place;
   return {
     id: uid("src"),
     name,
     kind: "generator",
-    generator: kind ?? "plasma",
-    colorA: collageKit ? paperForKit(collageKit, kind === "heraldry" ? 1 : kind === "wallpaper" ? 3 : kind === "giants" ? 5 : 7) : ink.a,
+    generator,
+    colorA: collageKit ? paperForKit(collageKit, collageMove === "rush" ? 1 : collageMove === "tunnel" ? 5 : collageMove === "lattice" ? 7 : 11) : ink.a,
     colorB: collageKit ? inkForKit(collageKit) : ink.b,
     collageKit,
+    collageMove,
     width: 1280,
     height: 720,
     duration: 0,
@@ -164,7 +191,7 @@ export function defaultLayer(name: string, sourceId: string | null, effects: str
 }
 
 export function createDefaultProject(): Project {
-  const field = defaultGeneratorSource("heraldry", "sailor");
+  const field = defaultGeneratorSource("wallpaper", "sailor", "rush");
   const layer = defaultLayer("COLLAGE", field.id, []);
   const project: Project = {
     version: 1,

@@ -50,9 +50,11 @@ HOW TO OPEN IT (Mac)
 HOW TO USE IT
 -------------
 
-- Pick a kit on the left: Sailor / Circus / Fruit / Grove / Love
-- Then pick a move: Tour (walks rush → tunnel → lattice → bloom),
-  Rush, Tunnel, or Lattice. Moves keep the kit you last used.
+- Pick a kit on the left: Sailor / Circus / Fruit / Grove / Love /
+  Space / Sweet / Music
+- Then pick ONE move. That clip stays on that move: Rush (fly at the
+  lens), Tunnel, Lattice, Bloom, Spiral, Lanes, or Pulse.
+  Mix rolls a locked move. Kit buttons keep the last move.
 - Rand wacky rolls a new kit and zoom.
 - Drag a photo, video, or MP3 onto the big area
 - Drop an MP3 to use it as a soundtrack. Hit Play — the collage

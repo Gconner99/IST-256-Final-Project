@@ -2,10 +2,22 @@ import { clamp, mulberry32 } from "../core/random";
 import type { GeneratorType } from "../core/types";
 
 export const HERALDRY_ROOMS: GeneratorType[] = ["heraldry", "wallpaper", "giants", "shower"];
-export const COLLAGE_KITS = ["sailor", "circus", "fruit", "nature", "love"] as const;
+export const COLLAGE_KITS = ["sailor", "circus", "fruit", "nature", "love", "space", "sweet", "music"] as const;
 export type CollageKit = (typeof COLLAGE_KITS)[number];
 
-export type HeraldryScene = "tour" | "rush" | "tunnel" | "lattice" | "bloom";
+export const COLLAGE_MOVES = ["rush", "tunnel", "lattice", "bloom", "spiral", "lanes", "pulse"] as const;
+export type CollageMove = (typeof COLLAGE_MOVES)[number];
+export type HeraldryScene = CollageMove | "tour";
+
+export const MOVE_LABEL: Record<CollageMove, string> = {
+  rush: "RUSH",
+  tunnel: "TUNNEL",
+  lattice: "LATTICE",
+  bloom: "BLOOM",
+  spiral: "SPIRAL",
+  lanes: "LANES",
+  pulse: "PULSE",
+};
 
 export function isHeraldry(kind?: string | null): boolean {
   return kind === "heraldry" || kind === "wallpaper" || kind === "giants" || kind === "shower";
@@ -15,22 +27,32 @@ export function kitFromUnknown(value?: string | null): CollageKit {
   return COLLAGE_KITS.includes(value as CollageKit) ? (value as CollageKit) : "sailor";
 }
 
-export function sceneFromGenerator(kind?: string | null): HeraldryScene {
+export function moveFromUnknown(value?: string | null): CollageMove {
+  return COLLAGE_MOVES.includes(value as CollageMove) ? (value as CollageMove) : "rush";
+}
+
+export function moveForSeed(seed: number): CollageMove {
+  return COLLAGE_MOVES[(seed >>> 0) % COLLAGE_MOVES.length];
+}
+
+export function generatorForMove(move: CollageMove): GeneratorType {
+  if (move === "rush") return "wallpaper";
+  if (move === "tunnel") return "giants";
+  if (move === "lattice") return "shower";
+  return "heraldry";
+}
+
+export function sceneFromGenerator(kind?: string | null, move?: string | null): HeraldryScene {
+  if (move && COLLAGE_MOVES.includes(move as CollageMove)) return move as CollageMove;
   if (kind === "wallpaper") return "rush";
   if (kind === "giants") return "tunnel";
   if (kind === "shower") return "lattice";
-  return "tour";
+  return "rush";
 }
 
-/** Tour walks the four approach loops: rush → tunnel → lattice → bloom. */
-export function sceneAt(time: number, duration: number, locked: HeraldryScene): HeraldryScene {
-  if (locked !== "tour") return locked;
-  const span = Math.max(duration, 8);
-  const u = (((time % span) + span) % span) / span;
-  if (u < 0.25) return "rush";
-  if (u < 0.5) return "tunnel";
-  if (u < 0.75) return "lattice";
-  return "bloom";
+/** A clip keeps one move. Tour is an alias for rush (the toward-camera fly). */
+export function sceneAt(_time: number, _duration: number, locked: HeraldryScene): HeraldryScene {
+  return locked === "tour" ? "rush" : locked;
 }
 
 const TINCTURES = [
@@ -54,6 +76,9 @@ const KIT_INK: Record<CollageKit, string> = {
   fruit: "#f0c020",
   nature: "#1a8a3a",
   love: "#e84a8a",
+  space: "#7ad8ff",
+  sweet: "#ff6aa8",
+  music: "#ffd86a",
 };
 
 type Kind =
@@ -104,7 +129,23 @@ type Kind =
   | "ring"
   | "envelope"
   | "potion"
-  | "house";
+  | "house"
+  | "rocket"
+  | "planet"
+  | "saturn"
+  | "ufo"
+  | "comet"
+  | "satellite"
+  | "lolly"
+  | "coneice"
+  | "cupcake"
+  | "donut"
+  | "candy"
+  | "note"
+  | "vinyl"
+  | "headphone"
+  | "mic"
+  | "speaker";
 
 type Pattern = "plain" | "polka" | "hoop" | "half" | "bar";
 
@@ -114,6 +155,9 @@ const KIT_PAPER: Record<CollageKit, Kind[]> = {
   fruit: ["pear", "lemon", "cherry", "leaf", "mushroom", "flower", "sun", "cloud", "bolt", "umbrella", "bird"],
   nature: ["tree", "deer", "fox", "owl", "mushroom", "leaf", "acorn", "cone", "mountain", "drop", "moth", "bird"],
   love: ["heart", "wingfig", "swan", "cat", "crown", "moon", "star", "key", "ring", "envelope", "bow", "potion", "house"],
+  space: ["rocket", "planet", "saturn", "ufo", "comet", "satellite", "star", "moon"],
+  sweet: ["lolly", "coneice", "cupcake", "donut", "candy", "cherry", "heart"],
+  music: ["note", "vinyl", "headphone", "mic", "speaker", "star", "heart"],
 };
 
 const KIT_GIANTS: Record<CollageKit, Kind[]> = {
@@ -122,6 +166,9 @@ const KIT_GIANTS: Record<CollageKit, Kind[]> = {
   fruit: ["pear", "lemon", "mushroom", "sun", "umbrella"],
   nature: ["tree", "deer", "owl", "fox", "mountain"],
   love: ["heart", "wingfig", "swan", "cat", "house"],
+  space: ["rocket", "saturn", "ufo", "planet", "comet"],
+  sweet: ["lolly", "cupcake", "donut", "coneice", "candy"],
+  music: ["vinyl", "headphone", "speaker", "note", "mic"],
 };
 
 const KIT_SHOWER: Record<CollageKit, Kind[]> = {
@@ -130,6 +177,9 @@ const KIT_SHOWER: Record<CollageKit, Kind[]> = {
   fruit: ["cherry", "leaf", "star", "drop", "lemon"],
   nature: ["leaf", "acorn", "drop", "moth", "bird"],
   love: ["heart", "star", "key", "moon", "ring"],
+  space: ["star", "moon", "comet", "satellite", "planet"],
+  sweet: ["candy", "heart", "lolly", "cherry", "donut"],
+  music: ["note", "star", "heart", "vinyl", "mic"],
 };
 
 interface Charge {
@@ -160,6 +210,7 @@ export interface HeraldryPaintOpts {
   seed: number;
   generator?: string | null;
   kit?: string | null;
+  move?: string | null;
   paper: string;
   ink: string;
   audio: number;
@@ -786,6 +837,133 @@ function housePath(ctx: CanvasRenderingContext2D, r: number) {
   ctx.closePath();
 }
 
+function rocketPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, -r);
+  ctx.lineTo(r * 0.32, -r * 0.15);
+  ctx.lineTo(r * 0.32, r * 0.45);
+  ctx.lineTo(r * 0.55, r * 0.82);
+  ctx.lineTo(r * 0.18, r * 0.55);
+  ctx.lineTo(0, r * 0.95);
+  ctx.lineTo(-r * 0.18, r * 0.55);
+  ctx.lineTo(-r * 0.55, r * 0.82);
+  ctx.lineTo(-r * 0.32, r * 0.45);
+  ctx.lineTo(-r * 0.32, -r * 0.15);
+  ctx.closePath();
+}
+
+function planetPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2);
+}
+
+function saturnPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, 0, r * 0.95, r * 0.22, -0.25, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.55, 0);
+  ctx.arc(0, 0, r * 0.48, 0, Math.PI * 2);
+}
+
+function ufoPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, r * 0.12, r * 0.9, r * 0.28, 0, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.38, -r * 0.08);
+  ctx.ellipse(0, -r * 0.18, r * 0.4, r * 0.32, 0, Math.PI, 0, true);
+}
+
+function cometPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(r * 0.35, -r * 0.28, r * 0.32, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.1, -r * 0.1);
+  ctx.lineTo(-r * 0.9, r * 0.75);
+  ctx.lineTo(-r * 0.15, r * 0.05);
+  ctx.closePath();
+}
+
+function satellitePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.22, -r * 0.22, r * 0.44, r * 0.44);
+  ctx.moveTo(-r * 0.9, -r * 0.12);
+  ctx.rect(-r * 0.9, -r * 0.12, r * 0.62, r * 0.24);
+  ctx.moveTo(r * 0.28, -r * 0.12);
+  ctx.rect(r * 0.28, -r * 0.12, r * 0.62, r * 0.24);
+}
+
+function lollyPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, -r * 0.28, r * 0.52, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.08, r * 0.2);
+  ctx.rect(-r * 0.08, r * 0.18, r * 0.16, r * 0.72);
+}
+
+function coneicePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, -r * 0.35, r * 0.42, Math.PI, 0);
+  ctx.lineTo(r * 0.38, -r * 0.15);
+  ctx.lineTo(0, r * 0.95);
+  ctx.lineTo(-r * 0.38, -r * 0.15);
+  ctx.closePath();
+}
+
+function cupcakePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.55, r * 0.05);
+  ctx.lineTo(-r * 0.38, r * 0.85);
+  ctx.lineTo(r * 0.38, r * 0.85);
+  ctx.lineTo(r * 0.55, r * 0.05);
+  ctx.closePath();
+  ctx.moveTo(r * 0.55, r * 0.02);
+  ctx.arc(0, -r * 0.05, r * 0.55, 0.15, Math.PI - 0.15, true);
+}
+
+function donutPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, 0, r * 0.78, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.28, 0);
+  ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2, true);
+}
+
+function candyPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, 0, r * 0.38, r * 0.48, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.38, -r * 0.15);
+  ctx.lineTo(-r * 0.9, -r * 0.55);
+  ctx.lineTo(-r * 0.9, r * 0.55);
+  ctx.lineTo(-r * 0.38, r * 0.15);
+  ctx.moveTo(r * 0.38, -r * 0.15);
+  ctx.lineTo(r * 0.9, -r * 0.55);
+  ctx.lineTo(r * 0.9, r * 0.55);
+  ctx.lineTo(r * 0.38, r * 0.15);
+}
+
+function notePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(-r * 0.28, r * 0.48, r * 0.32, r * 0.22, -0.3, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.02, r * 0.42);
+  ctx.rect(0.0, -r * 0.75, r * 0.12, r * 1.2);
+  ctx.moveTo(r * 0.12, -r * 0.75);
+  ctx.bezierCurveTo(r * 0.7, -r * 0.95, r * 0.75, -r * 0.15, r * 0.12, -r * 0.08);
+  ctx.lineTo(r * 0.12, -r * 0.75);
+}
+
+function vinylPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, 0, r * 0.82, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.18, 0);
+  ctx.arc(0, 0, r * 0.18, 0, Math.PI * 2, true);
+}
+
+function headphonePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, -r * 0.05, r * 0.7, Math.PI, 0);
+  ctx.moveTo(-r * 0.78, -r * 0.05);
+  ctx.rect(-r * 0.92, -r * 0.12, r * 0.32, r * 0.7);
+  ctx.moveTo(r * 0.6, -r * 0.05);
+  ctx.rect(r * 0.6, -r * 0.12, r * 0.32, r * 0.7);
+}
+
+function micPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, -r * 0.35, r * 0.32, r * 0.48, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.1, r * 0.12);
+  ctx.rect(-r * 0.1, r * 0.1, r * 0.2, r * 0.55);
+  ctx.moveTo(-r * 0.32, r * 0.65);
+  ctx.rect(-r * 0.32, r * 0.65, r * 0.64, r * 0.16);
+}
+
+function speakerPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.55, -r * 0.85, r * 1.1, r * 1.7);
+  ctx.moveTo(r * 0.32, -r * 0.28);
+  ctx.arc(0, -r * 0.28, r * 0.32, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.22, r * 0.42);
+  ctx.arc(0, r * 0.42, r * 0.22, 0, Math.PI * 2);
+}
+
 function drawKind(ctx: CanvasRenderingContext2D, kind: Kind, r: number) {
   ctx.beginPath();
   switch (kind) {
@@ -928,6 +1106,54 @@ function drawKind(ctx: CanvasRenderingContext2D, kind: Kind, r: number) {
     case "potion":
       potionPath(ctx, r);
       break;
+    case "rocket":
+      rocketPath(ctx, r);
+      break;
+    case "planet":
+      planetPath(ctx, r);
+      break;
+    case "saturn":
+      saturnPath(ctx, r);
+      break;
+    case "ufo":
+      ufoPath(ctx, r);
+      break;
+    case "comet":
+      cometPath(ctx, r);
+      break;
+    case "satellite":
+      satellitePath(ctx, r);
+      break;
+    case "lolly":
+      lollyPath(ctx, r);
+      break;
+    case "coneice":
+      coneicePath(ctx, r);
+      break;
+    case "cupcake":
+      cupcakePath(ctx, r);
+      break;
+    case "donut":
+      donutPath(ctx, r);
+      break;
+    case "candy":
+      candyPath(ctx, r);
+      break;
+    case "note":
+      notePath(ctx, r);
+      break;
+    case "vinyl":
+      vinylPath(ctx, r);
+      break;
+    case "headphone":
+      headphonePath(ctx, r);
+      break;
+    case "mic":
+      micPath(ctx, r);
+      break;
+    case "speaker":
+      speakerPath(ctx, r);
+      break;
     default:
       housePath(ctx, r);
       break;
@@ -1002,13 +1228,13 @@ export class HeraldryField {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
 
-    const locked = sceneFromGenerator(opts.generator);
-    const scene = sceneAt(opts.time, opts.duration, locked);
+    const scene = sceneFromGenerator(opts.generator, opts.move);
     const audio = clamp(opts.audio, 0, 1);
     const bass = clamp(opts.bass, 0, 1);
     const t = opts.time;
     const aspect = w / Math.max(h, 1);
-    const count = scene === "lattice" ? 48 : scene === "tunnel" ? 120 : this.particles.length;
+    const count =
+      scene === "lattice" ? 48 : scene === "lanes" ? 90 : scene === "pulse" ? 72 : scene === "tunnel" ? 120 : scene === "bloom" ? 140 : this.particles.length;
 
     for (let i = 0; i < count; i++) {
       const p = this.particles[i];
@@ -1085,6 +1311,45 @@ function poseParticle(
       alpha: clamp(1.05 - grow, 0, 1) * clamp(u / 0.08, 0, 1),
     };
   }
+  if (scene === "spiral") {
+    const z = wrap01(p.z - t * (0.4 + audio * 0.48 + bass * 0.2));
+    const depth = 0.28 + z * 2.6;
+    if (depth < 0.32 || depth > 2.75) return null;
+    const ang = p.x * Math.PI * 2 + 2.15 / depth + t * 0.1;
+    const rad = (0.1 + p.y * 0.38) / depth;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad,
+      px: clamp((0.2 * p.size * (0.94 + bass * 0.14)) / depth, 0.04, 0.52),
+      rot: p.rot + ang * 0.15,
+      alpha: clamp((2.75 - depth) / 0.28, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
+    };
+  }
+  if (scene === "lanes") {
+    const lanes = 6;
+    const lane = (Math.floor(p.x * lanes) + 0.5) / lanes - 0.5;
+    const z = wrap01(p.z - t * (0.44 + audio * 0.42 + bass * 0.18) + p.y * 0.04);
+    const depth = 0.28 + z * 2.55;
+    if (depth < 0.32 || depth > 2.7) return null;
+    return {
+      x: lane / (depth * 0.82),
+      y: (wrap01(p.y) - 0.5) / depth,
+      px: clamp((0.2 * p.size * (0.95 + bass * 0.12)) / depth, 0.045, 0.48),
+      rot: p.rot * 0.35,
+      alpha: clamp((2.7 - depth) / 0.26, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
+    };
+  }
+  if (scene === "pulse") {
+    const z = wrap01(t * (0.17 + audio * 0.1 + bass * 0.06));
+    const depth = 0.4 + (1 - z) * 1.95;
+    return {
+      x: (p.x - 0.5) / (depth * 0.68),
+      y: (p.y - 0.5) / (depth * 0.68),
+      px: clamp((0.15 * p.size) / depth, 0.05, 0.4),
+      rot: p.rot * 0.2,
+      alpha: clamp((2.3 - depth) / 0.22, 0, 1),
+    };
+  }
   const z = wrap01(p.z - t * (0.46 + audio * 0.58 + bass * 0.28));
   const depth = 0.26 + z * 2.7;
   if (depth < 0.3 || depth > 2.85) return null;
@@ -1105,6 +1370,9 @@ const KIT_GROUNDS: Record<CollageKit, string[]> = {
   fruit: ["#fff1b8", "#ff8a4c", "#7ec8e3", "#2d1b0e", "#f4efe0"],
   nature: ["#1a3324", "#3d5c3a", "#e8f0d8", "#243028", "#6b8f71"],
   love: ["#3a1028", "#f4c4d4", "#2a0818", "#8b1e4a", "#1a0a14"],
+  space: ["#070b22", "#12183a", "#0a1028", "#1a1040", "#000000"],
+  sweet: ["#ffe4f0", "#ff6aa8", "#fff0d8", "#3a1020", "#ffd6e8"],
+  music: ["#120814", "#2a1038", "#0d0d0d", "#1a0820", "#241028"],
 };
 
 function mixHex(a: string, b: string, t: number): string {

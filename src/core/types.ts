@@ -151,8 +151,10 @@ export interface MediaSource {
   /** Optional generator inks. */
   colorA?: string;
   colorB?: string;
-  /** Collage stamp drawer: sailor / circus / fruit / nature / love. */
-  collageKit?: "sailor" | "circus" | "fruit" | "nature" | "love";
+  /** Collage stamp drawer. */
+  collageKit?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music";
+  /** Locked camera move for this clip. */
+  collageMove?: "rush" | "tunnel" | "lattice" | "bloom" | "spiral" | "lanes" | "pulse";
 }
 
 export interface Keyframe {
