@@ -54,19 +54,20 @@ function frame(now: number) {
   const speed = resolvePlaybackSpeed(p, p.playback.time);
   const track = getSoundtrack(p);
   if (!exporting && p.playback.playing && !p.playback.freeze) {
-    if (track?.audio && p.playback.mode === "forward") {
-      applyTransport(track.audio, p.playback);
-      const at = track.audio.currentTime;
-      if (Number.isFinite(at)) {
-        store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, time: at } }), false);
-      }
+    const live = track?.audio && p.playback.mode === "forward" && !track.audio.paused && Number.isFinite(track.audio.currentTime);
+    if (track?.audio) applyTransport(track.audio, p.playback);
+    if (live) {
+      const at = track.audio!.currentTime;
+      store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, time: at } }), false);
     } else {
       let t = p.playback.time + dt * speed;
       const dur = Math.max(p.duration, 0.001);
       if (p.playback.loop) t = ((t % dur) + dur) % dur;
       else t = Math.min(t, dur);
       store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, time: t } }), false);
-      if (track?.audio) applyTransport(track.audio, { ...p.playback, playing: false, time: t });
+      if (track?.audio && p.playback.mode !== "forward") {
+        applyTransport(track.audio, { ...p.playback, playing: false, time: t });
+      }
     }
   } else if (track?.audio) {
     applyTransport(track.audio, { ...p.playback, playing: false });
