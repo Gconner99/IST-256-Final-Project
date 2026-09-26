@@ -1,17 +1,20 @@
 import type { Renderer } from "../engine/renderer";
 import { store } from "../core/store";
-import { BLEND_MODES, type GeneratorType, type Layer, type ParamDef } from "../core/types";
+import { BLEND_MODES, type GeneratorType, type Layer, type MediaSource, type ParamDef } from "../core/types";
 import { runExport } from "../export/export";
+import { EXPORT_ASPECTS, matchAspectId, sizeForAspect, sizeFromSource } from "../core/exportSize";
 import {
   addEffect,
   addKeyframe,
   addLayer,
+  addSource,
   bumpSeed,
   clearKeyframes,
   delPreset,
   dupPreset,
   duplicateLayer,
   freezeSelected,
+  generateFromPrompt,
   importFiles,
   loadPreset,
   loadProjectFile,
@@ -26,10 +29,54 @@ import {
   selectedEffect,
   selectedLayer,
   setParam,
+  startFromScratch,
+  reprintFrame,
+  stampChaos,
+  stampCritters,
+  stampIdol,
   toggleEffect,
 } from "./actions";
-import { effectsByCategory, getEffect } from "../effects/registry";
-import { defaultGeneratorSource } from "../core/defaults";
+import { resumeAudio } from "../media/audio";
+import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
+import { collageName, defaultGeneratorSource } from "../core/defaults";
+import {
+  COLLAGE_KITS,
+  clampBoidAlign,
+  clampBoidCohere,
+  clampBoidRadius,
+  clampBoidSep,
+  clampBoidSpeed,
+  clampCollageChainMorph,
+  clampCollageChainSmooth,
+  clampCollageChainTravel,
+  clampCollageChainVary,
+  clampCollageDensity,
+  clampCollagePace,
+  clampCollageScale,
+  clampFlowDepth,
+  clampFlowEvolve,
+  clampFlowForce,
+  clampFlowScale,
+  clampFlowTurb,
+  clampPoleAttract,
+  clampPoleCount,
+  clampPoleFalloff,
+  clampPoleRepel,
+  clampPoleSpeed,
+  clampPoleSwitch,
+  clampSpringBreak,
+  clampSpringDamp,
+  clampSpringDist,
+  clampSpringElast,
+  clampSpringStrength,
+  groundsForKit,
+  isHeraldry,
+  kitButtonLabel,
+  kitFromUnknown,
+  moveFromUnknown,
+  type CollageKit,
+  type CollageMove,
+} from "../engine/heraldry";
 
 let liveScrub = false;
 let rendererRef: Renderer | null = null;
@@ -45,7 +92,10 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <input type="text" id="proj-name" style="width:140px" />
       <button class="btn tiny" data-act="save">Save</button>
       <button class="btn tiny" data-act="load">Load</button>
+      <button class="btn tiny hot" data-act="scratch">New</button>
+      <button class="btn tiny acid" data-act="export" id="top-export">Export</button>
       <input type="file" id="proj-file" accept=".json,.phos.json" hidden />
+      <input id="audio-file" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden />
       <div class="sp"></div>
       <label class="status">SEED</label>
       <input type="number" id="seed" style="width:84px" />
@@ -54,6 +104,8 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="status">RND</label>
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
+      <button class="btn tiny hot" data-act="rand-wacky" title="A new kit, ground color, and camera move">Rand wacky</button>
+      <button class="btn tiny ${store.project.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit" title="Cut to the beat through music-reactive looks">Cut edit</button>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
       <select id="quality">
@@ -68,7 +120,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <section class="stage">
         <div class="viewport" id="view">
           <div class="hud" id="hud"></div>
-          <div class="dropveil" id="veil">DROP IMAGE / VIDEO</div>
+          <div class="dropveil" id="veil">DROP IMAGE / VIDEO / MP3</div>
         </div>
       </section>
       <aside class="stack" id="stack"></aside>
@@ -77,13 +129,22 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A digital darkroom / video synth. Drop media, stack effects, randomize, feed the output back into itself.</p>
+        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
-          <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> randomize all</li>
+          <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
           <li><kbd>K</kbd> keyframe selected parameter</li>
-          <li><kbd>I</kbd> import &nbsp; <kbd>S</kbd> save project</li>
+          <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
+          <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
+          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Rolls stay small and slower now — no giant stamps, no frantic bounce/flip/flash.</li>
+          <li><strong>Cut edit</strong> is the other randomizer. It listens to the MP3 and cuts on the beat through music-reactive looks. Some shots hold a bar or two. Some are two quick hits that settle. It should feel edited, not shuffled.</li>
+          <li><strong>Print frame</strong> turns the live picture into a still.</li>
+          <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music. Move buttons keep the current kit.</li>
+          <li><strong>Mash</strong> — mix a second kit’s stamps onto the same ground. <strong>Wash</strong> taps a kit color without rolling a new move. <strong>Night</strong> is a darker club wash that breathes on bass.</li>
+          <li><strong>Size / Storm</strong> — few giants or a sticker storm.</li>
+          <li><strong>Soundtrack</strong> — hit <em>MP3</em> or drop a clip (mp3/wav/ogg/m4a). It does not replace your picture. Playback starts and the stamps breathe on the beat without jumping off their path. Export an MP4 while a song is loaded and the clip keeps the music (aligned from the start of the clip). Stills and PNG sequences stay silent. Check <em>close loop</em> so the last beats fade into the first frame.</li>
+          <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s / 16s / 32s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
         <button class="btn acid" data-act="help">close</button>
@@ -100,6 +161,21 @@ export function mount(root: HTMLElement, renderer: Renderer) {
   paint(root);
 }
 
+async function runCurrentExport(clip = false) {
+  if (!rendererRef) return;
+  if (store.state.ui.exporting) return;
+  store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: false } }));
+  store.patchUi({ exporting: true, status: "exporting clip…" });
+  try {
+    const note = await runExport(rendererRef, store.project, store.project.playback.time, (i, n) => {
+      store.patchUi({ status: `export ${i + 1}/${n}`, exporting: true }, false);
+    }, clip);
+    store.patchUi({ exporting: false, status: typeof note === "string" && note ? note : "export done" });
+  } catch (err) {
+    store.patchUi({ exporting: false, status: err instanceof Error ? err.message : "export failed" });
+  }
+}
+
 function bind(root: HTMLElement) {
   root.addEventListener("click", async (e) => {
     const t = (e.target as HTMLElement).closest("[data-act]") as HTMLElement | null;
@@ -108,9 +184,30 @@ function bind(root: HTMLElement) {
     const id = t.dataset.id;
     if (act === "save") saveProject();
     if (act === "load") root.querySelector<HTMLInputElement>("#proj-file")?.click();
+    if (act === "scratch") startFromScratch();
+    if (act === "imagine") void generateFromPrompt();
     if (act === "seed-") bumpSeed(-1);
     if (act === "seed+") bumpSeed(1);
     if (act === "rand-all") randomize("all");
+    if (act === "rand-wacky") randomize("all", true);
+    if (act === "cut-edit") {
+      const on = !store.project.cutEdit?.enabled;
+      store.setProject((p) => ({
+        ...p,
+        cutEdit: { enabled: on, seed: ((p.cutEdit?.seed ?? p.seed) + 1 + (Date.now() & 255)) >>> 0 },
+      }));
+      store.patchUi({
+        status: on
+          ? store.project.sources.some((s) => s.kind === "audio")
+            ? "cut edit · on the beat"
+            : "cut edit · 120bpm grid — drop an MP3 to lock to the song"
+          : "cut edit off",
+      });
+    }
+    if (act === "stamp-chaos") stampChaos();
+    if (act === "reprint") {
+      if (rendererRef) void reprintFrame(rendererRef);
+    }
     if (act === "rand-sel") randomize("selected");
     if (act === "rand-param") {
       const paramId = t.dataset.paramId;
@@ -126,12 +223,61 @@ function bind(root: HTMLElement) {
     }
     if (act === "help") store.patchUi({ helpOpen: !store.state.ui.helpOpen });
     if (act === "import") root.querySelector<HTMLInputElement>("#media-file")?.click();
+    if (act === "import-audio") root.querySelector<HTMLInputElement>("#audio-file")?.click();
     if (act === "replace") root.querySelector<HTMLInputElement>("#replace-file")?.click();
     if (act === "freeze") void freezeSelected();
     if (act === "gen") {
       const kind = (t.dataset.kind ?? "plasma") as GeneratorType;
-      store.setProject((p) => ({ ...p, sources: [...p.sources, defaultGeneratorSource(kind)] }));
+      const collage = selectedCollageSource();
+      const kit = (t.dataset.kit as CollageKit | undefined) ?? (isHeraldry(kind) ? kitFromUnknown(collage?.collageKit) : undefined);
+      const move = (t.dataset.move as CollageMove | "mix" | undefined) ?? (isHeraldry(kind) ? moveFromUnknown(collage?.collageMove) : undefined);
+      const keepWash = !kit || !collage?.collageKit || kit === collage.collageKit;
+      const src = defaultGeneratorSource(kind, kit, move, extrasFrom(collage, keepWash));
+      addSource(src, true);
+      store.patchUi({
+        status: src.collageMove
+          ? `place · ${src.collageMove} · ${src.collageKit ?? ""}${src.collageKitB ? ` · ${src.collageKitB}` : ""}`
+          : src.collageKit
+            ? `place · ${kind} · ${src.collageKit}`
+            : kind === "critters"
+              ? "floaters on this layer"
+              : `place · ${kind}`,
+      });
     }
+    if (act === "mash") {
+      const kitB = (t.dataset.kit as CollageKit | undefined) ?? "love";
+      const current = selectedCollageSource();
+      if (!current) {
+        const src = defaultGeneratorSource("wallpaper", "sailor", "rush", { kitB });
+        addSource(src, true);
+        store.patchUi({ status: `mash · sailor · ${kitB}` });
+      } else {
+        const nextB = current.collageKitB === kitB || current.collageKit === kitB ? undefined : kitB;
+        patchCollage(
+          (s) => renameCollage({ ...s, collageKitB: nextB }),
+          nextB ? `mash · ${current.collageKit ?? "kit"} · ${nextB}` : "mash off",
+        );
+      }
+    }
+    if (act === "wash") {
+      const hex = t.dataset.hex;
+      if (hex) {
+        if (!patchCollage((s) => ({ ...s, colorA: hex }), `wash · ${hex}`)) {
+          addSource(defaultGeneratorSource("wallpaper", "sailor", "rush", { wash: hex }), true);
+          store.patchUi({ status: `wash · ${hex}` });
+        }
+      }
+    }
+    if (act === "night") {
+      const current = selectedCollageSource();
+      const next = !current?.collageNight;
+      if (!patchCollage((s) => ({ ...s, collageNight: next }), next ? "night wash" : "day wash")) {
+        addSource(defaultGeneratorSource("wallpaper", "sailor", "rush", { night: true }), true);
+        store.patchUi({ status: "night wash" });
+      }
+    }
+    if (act === "stamp-critters") stampCritters();
+    if (act === "stamp-idol") stampIdol();
     if (act === "add-layer") addLayer();
     if (act === "dup-layer" && id) duplicateLayer(id);
     if (act === "del-layer" && id) removeLayer(id);
@@ -161,22 +307,52 @@ function bind(root: HTMLElement) {
     if (act === "pst-load" && id) loadPreset(id);
     if (act === "pst-dup" && id) dupPreset(id);
     if (act === "pst-del" && id) delPreset(id);
-    if (act === "export") {
-      if (!rendererRef) return;
-      store.patchUi({ status: "exporting…" });
-      try {
-        await runExport(rendererRef, store.project, store.project.playback.time, (i, n) => {
-          store.patchUi({ status: `export ${i + 1}/${n}` }, false);
-        });
-        store.patchUi({ status: "export done" });
-      } catch (err) {
-        store.patchUi({ status: err instanceof Error ? err.message : "export failed" });
+    if (act === "export") void runCurrentExport();
+    if (act === "clip") {
+      const secs = Math.max(1, Number(t.dataset.secs || 4));
+      store.setProject((p) => ({
+        ...p,
+        duration: Math.max(p.duration, secs),
+        exportSettings: {
+          ...p.exportSettings,
+          duration: secs,
+          format: "mp4",
+          fps: 24,
+          bitrate: Math.min(p.exportSettings.bitrate, 8),
+        },
+      }));
+      store.patchUi({ status: `${secs}s clip ready — hit Export` });
+    }
+    if (act === "exp-aspect" && id) {
+      const aspect = EXPORT_ASPECTS.find((a) => a.id === id);
+      if (aspect) {
+        const size = sizeForAspect(aspect.rw, aspect.rh, 1280);
+        store.setProject((p) => ({
+          ...p,
+          exportSettings: { ...p.exportSettings, width: size.width, height: size.height },
+        }));
       }
     }
+    if (act === "exp-aspect-src") {
+      const p = store.project;
+      const layer = selectedLayer(p);
+      const src = p.sources.find((s) => s.id === (layer?.sourceId ?? p.sources[0]?.id));
+      const pic = src?.kind === "audio"
+        ? p.sources.find((s) => s.kind !== "audio")
+        : src;
+      const size = sizeFromSource(pic?.width ?? 1280, pic?.height ?? 720, 1280);
+      store.setProject((pr) => ({
+        ...pr,
+        exportSettings: { ...pr.exportSettings, width: size.width, height: size.height },
+      }));
+    }
     if (act === "play") {
+      void resumeAudio();
       store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: !p.playback.playing } }));
     }
     if (act === "use-src" && id) {
+      const picked = store.project.sources.find((s) => s.id === id);
+      if (picked?.kind === "audio") return;
       const lyr = selectedLayer(store.project);
       if (lyr) patchLayer(lyr.id, (l) => ({ ...l, sourceId: id }));
     }
@@ -196,6 +372,10 @@ function bind(root: HTMLElement) {
       void importFiles(t.files, true);
       t.value = "";
     }
+    if (t.id === "audio-file" && t instanceof HTMLInputElement && t.files) {
+      void importFiles(t.files, false);
+      t.value = "";
+    }
     if (t.id === "quality") store.setProject((p) => ({ ...p, quality: t.value as ProjectQuality }));
     if (t.id === "add-fx") {
       if (t.value) addEffect(t.value);
@@ -212,16 +392,30 @@ function bind(root: HTMLElement) {
     if (t.id === "preset-sel" && t.value) loadPreset(t.value);
     if (t.id === "exp-format") store.setProject((p) => ({ ...p, exportSettings: { ...p.exportSettings, format: t.value as typeof p.exportSettings.format } }));
     if (t.id === "play-mode") store.setProject((p) => ({ ...p, playback: { ...p.playback, mode: t.value as typeof p.playback.mode } }));
+    if (t.id === "inc-critters" || t.id === "inc-critters-rail") {
+      store.patchUi({ includeCritters: (t as HTMLInputElement).checked });
+    }
+    if (t.id === "inc-idol" || t.id === "inc-idol-rail") {
+      store.patchUi({ includeIdol: (t as HTMLInputElement).checked });
+    }
   });
 
   root.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
     const p = store.project;
-    if (t.id === "proj-name") store.setProject((pr) => ({ ...pr, name: t.value }), false);
+    if (t.id === "gen-prompt") store.patchUi({ prompt: t.value }, false);
+    if (t.id === "gen-src") store.patchUi({ useSourceForGen: (t as HTMLInputElement).checked }, false);
+    if (t.id === "inc-critters" || t.id === "inc-critters-rail") {
+      store.patchUi({ includeCritters: (t as HTMLInputElement).checked });
+    }
+    if (t.id === "inc-idol" || t.id === "inc-idol-rail") {
+      store.patchUi({ includeIdol: (t as HTMLInputElement).checked });
+    }
     if (t.id === "seed") store.setProject((pr) => ({ ...pr, seed: Number(t.value) || 0 }), false);
     if (t.id === "rnd-amt") store.setProject((pr) => ({ ...pr, randomAmount: Number(t.value) }), false);
     if (t.id === "speed") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, speed: Number(t.value) } }), false);
     if (t.id === "loop") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, loop: t.checked } }), false);
+    if (t.id === "loop-close") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, loopClose: t.checked } }), false);
     if (t.id === "freeze") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, freeze: t.checked } }), false);
     if (t.id === "time") store.setProject((pr) => ({ ...pr, playback: { ...pr.playback, time: Number(t.value) } }), false);
     if (t.id === "opacity") {
@@ -260,6 +454,48 @@ function bind(root: HTMLElement) {
     if (t.id === "exp-h") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, height: Number(t.value) } }), false);
     if (t.id === "exp-fps") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, fps: Number(t.value) } }), false);
     if (t.id === "exp-dur") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, duration: Number(t.value), }, duration: Number(t.value) }), false);
+    if (t.id === "collage-scale") {
+      patchCollage((s) => ({ ...s, collageScale: clampCollageScale(Number(t.value)) }), undefined, true);
+    }
+    if (t.id === "collage-density") {
+      patchCollage((s) => ({ ...s, collageDensity: clampCollageDensity(Number(t.value)) }), undefined, true);
+    }
+    if (t.id === "collage-pace") {
+      patchCollage((s) => ({ ...s, collagePace: clampCollagePace(Number(t.value)) }), undefined, true);
+    }
+    if (t.id === "collage-chain-travel") {
+      patchCollage((s) => ({ ...s, collageChainTravel: clampCollageChainTravel(Number(t.value)) }), undefined, true);
+    }
+    if (t.id === "collage-chain-morph") {
+      patchCollage((s) => ({ ...s, collageChainMorph: clampCollageChainMorph(Number(t.value)) }), undefined, true);
+    }
+    if (t.id === "collage-chain-vary") {
+      patchCollage((s) => ({ ...s, collageChainVary: clampCollageChainVary(Number(t.value)) }), undefined, true);
+    }
+    if (t.id === "collage-chain-smooth") {
+      patchCollage((s) => ({ ...s, collageChainSmooth: clampCollageChainSmooth(Number(t.value)) }), undefined, true);
+    }
+    if (t.id === "collage-spring-strength") patchCollage((s) => ({ ...s, collageSpringStrength: clampSpringStrength(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-spring-damp") patchCollage((s) => ({ ...s, collageSpringDamp: clampSpringDamp(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-spring-dist") patchCollage((s) => ({ ...s, collageSpringDist: clampSpringDist(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-spring-elast") patchCollage((s) => ({ ...s, collageSpringElast: clampSpringElast(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-spring-break") patchCollage((s) => ({ ...s, collageSpringBreak: clampSpringBreak(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-flow-scale") patchCollage((s) => ({ ...s, collageFlowScale: clampFlowScale(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-flow-turb") patchCollage((s) => ({ ...s, collageFlowTurb: clampFlowTurb(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-flow-evolve") patchCollage((s) => ({ ...s, collageFlowEvolve: clampFlowEvolve(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-flow-force") patchCollage((s) => ({ ...s, collageFlowForce: clampFlowForce(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-flow-depth") patchCollage((s) => ({ ...s, collageFlowDepth: clampFlowDepth(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-boid-cohere") patchCollage((s) => ({ ...s, collageBoidCohere: clampBoidCohere(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-boid-sep") patchCollage((s) => ({ ...s, collageBoidSep: clampBoidSep(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-boid-align") patchCollage((s) => ({ ...s, collageBoidAlign: clampBoidAlign(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-boid-radius") patchCollage((s) => ({ ...s, collageBoidRadius: clampBoidRadius(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-boid-speed") patchCollage((s) => ({ ...s, collageBoidSpeed: clampBoidSpeed(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-pole-count") patchCollage((s) => ({ ...s, collagePoleCount: clampPoleCount(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-pole-attract") patchCollage((s) => ({ ...s, collagePoleAttract: clampPoleAttract(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-pole-repel") patchCollage((s) => ({ ...s, collagePoleRepel: clampPoleRepel(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-pole-speed") patchCollage((s) => ({ ...s, collagePoleSpeed: clampPoleSpeed(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-pole-falloff") patchCollage((s) => ({ ...s, collagePoleFalloff: clampPoleFalloff(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-pole-switch") patchCollage((s) => ({ ...s, collagePoleSwitch: clampPoleSwitch(Number(t.value)) }), undefined, true);
     if (t.id === "exp-q") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, quality: Number(t.value) } }), false);
     if (t.id === "exp-br") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, bitrate: Number(t.value) } }), false);
     if (t.id === "exp-name") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, filename: t.value } }), false);
@@ -290,10 +526,16 @@ function bind(root: HTMLElement) {
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
     if (e.code === "Space") {
       e.preventDefault();
+      void resumeAudio();
       store.setProject((p) => ({ ...p, playback: { ...p.playback, playing: !p.playback.playing } }));
     }
     if (e.key === "r" || e.key === "R") randomize(e.shiftKey ? "all" : "selected");
+    if ((e.key === "w" || e.key === "W") && e.shiftKey) randomize("all", true);
     if (e.key === "k" || e.key === "K") addKeyframe();
+    if (e.key === "n" || e.key === "N") {
+      e.preventDefault();
+      startFromScratch();
+    }
     if (e.key === "?") store.patchUi({ helpOpen: !store.state.ui.helpOpen });
     if ((e.key === "s" || e.key === "S") && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
@@ -326,9 +568,18 @@ function paint(root: HTMLElement) {
   if (seed && document.activeElement !== seed) seed.value = String(p.seed);
   if (rnd) rnd.value = String(p.randomAmount);
   if (quality) quality.value = p.quality;
+  const topExp = root.querySelector<HTMLButtonElement>("#top-export");
+  if (topExp) topExp.disabled = ui.exporting;
+  const crit = root.querySelector<HTMLInputElement>("#inc-critters");
+  if (crit) crit.checked = ui.includeCritters;
+  const idol = root.querySelector<HTMLInputElement>("#inc-idol");
+  if (idol) idol.checked = ui.includeIdol;
   root.querySelector("#help")?.classList.toggle("on", ui.helpOpen);
   root.querySelector("#veil")?.classList.toggle("on", ui.dropActive);
   root.querySelector("#led")?.classList.toggle("hot", p.playback.playing);
+  root.querySelectorAll<HTMLElement>('[data-act="cut-edit"]').forEach((el) => {
+    el.classList.toggle("acid", !!p.cutEdit?.enabled);
+  });
 
   paintRail(root.querySelector("#rail")!);
   paintStack(root.querySelector("#stack")!);
@@ -338,29 +589,215 @@ function paint(root: HTMLElement) {
 function paintRail(n: HTMLElement) {
   const p = store.project;
   const ui = store.state.ui;
+  const collage =
+    p.sources.find((s) => s.id === ui.selectedSourceId && isHeraldry(s.generator)) ??
+    p.sources.find((s) => isHeraldry(s.generator));
   n.innerHTML = `
     <div class="sec">Sources</div>
     <div class="row">
       <button class="btn tiny acid" data-act="import">Import</button>
+      <button class="btn tiny hot" data-act="import-audio" title="Upload an MP3. Playback starts and the collage hits the beat.">MP3</button>
       <button class="btn tiny" data-act="replace">Replace</button>
       <button class="btn tiny" data-act="freeze">Still frame</button>
-      <input id="media-file" type="file" accept="image/*,video/*,.tif,.tiff,.mov,.webm,.mp4,.gif" multiple hidden />
-      <input id="replace-file" type="file" accept="image/*,video/*,.tif,.tiff,.mov,.webm,.mp4,.gif" hidden />
+      <button class="btn tiny" data-act="reprint">Print frame</button>
+      <input id="media-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" multiple hidden />
+      <input id="replace-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden />
     </div>
+    <hr class="div" />
+    <div class="sec">Generate new image</div>
+    <textarea id="gen-prompt" class="prompt" placeholder="describe a new image… e.g. grainy night photo of a flooded parking lot, sodium lights">${esc(ui.prompt)}</textarea>
+    <label class="check"><input type="checkbox" id="gen-src" ${ui.useSourceForGen ? "checked" : ""}/> use selected source as reference</label>
+    <button class="btn tiny acid" data-act="imagine" ${ui.generating ? "disabled" : ""}>${ui.generating ? "working…" : "Generate"}</button>
+    <button class="btn tiny" data-act="imagine" ${ui.generating || !ui.prompt.trim() ? "disabled" : ""}>Again</button>
+    <div class="status" style="margin-top:4px">Usually a few seconds. Again rolls a new seed. Does not overwrite the upload.</div>
     <div class="row" style="margin-top:6px">
-      <button class="btn tiny" data-act="gen" data-kind="plasma">Plasma</button>
-      <button class="btn tiny" data-act="gen" data-kind="noise">Noise</button>
-      <button class="btn tiny" data-act="gen" data-kind="bars">Bars</button>
-      <button class="btn tiny" data-act="gen" data-kind="gradient">Grad</button>
-      <button class="btn tiny" data-act="gen" data-kind="checker">Check</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="sailor">Sailor</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="circus">Circus</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="fruit">Fruit</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="nature">Grove</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="love">Love</button>
     </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="space">Space</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="sweet">Sweet</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="music">Music</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="kitchen">Kitchen</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="weather">Sky</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="city">Street</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="arcade">Arcade</button>
+    </div>
+    <div class="sec">Mash</div>
+    <div class="row">
+      ${COLLAGE_KITS.map((k) => {
+        const on = collage?.collageKitB === k;
+        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="mash" data-kit="${k}">${kitButtonLabel(k)}</button>`;
+      }).join("")}
+    </div>
+    <div class="sec">Wash</div>
+    <div class="row">
+      ${groundsForKit(kitFromUnknown(collage?.collageKit)).map((hex) => {
+        const on = (collage?.colorA ?? "").toLowerCase() === hex.toLowerCase();
+        return `<button class="wash-chip ${on ? "on" : ""}" data-act="wash" data-hex="${hex}" style="background:${hex}" title="${hex}"></button>`;
+      }).join("")}
+      <button class="btn tiny ${collage?.collageNight ? "acid" : ""}" data-act="night">Night</button>
+    </div>
+    <div class="sec">Stamp</div>
+    <div class="param"><span>Size</span>
+      <input id="collage-scale" type="range" min="0.5" max="2" step="0.05" value="${clampCollageScale(collage?.collageScale)}" />
+      <input id="collage-scale" type="number" min="0.5" max="2" step="0.05" value="${clampCollageScale(collage?.collageScale).toFixed(2)}" />
+      <span></span></div>
+    <div class="param"><span>Storm</span>
+      <input id="collage-density" type="range" min="0.35" max="2" step="0.05" value="${clampCollageDensity(collage?.collageDensity)}" />
+      <input id="collage-density" type="number" min="0.35" max="2" step="0.05" value="${clampCollageDensity(collage?.collageDensity).toFixed(2)}" />
+      <span></span></div>
+    <div class="param"><span>Pace</span>
+      <input id="collage-pace" type="range" min="0.35" max="1.2" step="0.05" value="${clampCollagePace(collage?.collagePace)}" />
+      <input id="collage-pace" type="number" min="0.35" max="1.2" step="0.05" value="${clampCollagePace(collage?.collagePace).toFixed(2)}" />
+      <span></span></div>
+    <div class="sec">Move</div>
+    <div class="row">
+      <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-move="rush">Rush</button>
+      <button class="btn tiny" data-act="gen" data-kind="giants" data-move="tunnel">Tunnel</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="spiral">Spiral</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="helix">Helix</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="tide">Tide</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="rings">Rings</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="loom">Loom</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="petal">Petal</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="flock">Flock</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="wheel">Wheel</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="silk">Silk</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="mix">Mix</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="chain">Chain</button>
+    </div>
+    ${
+      collage?.collageMove === "chain"
+        ? `<div class="sec">Chain</div>
+    <div class="param"><span>Movement Speed</span>
+      <input id="collage-chain-travel" type="range" min="0.2" max="2.2" step="0.05" value="${clampCollageChainTravel(collage?.collageChainTravel)}" />
+      <input id="collage-chain-travel" type="number" min="0.2" max="2.2" step="0.05" value="${clampCollageChainTravel(collage?.collageChainTravel).toFixed(2)}" />
+      <span></span></div>
+    <div class="param"><span>Shape Change Speed</span>
+      <input id="collage-chain-morph" type="range" min="0.12" max="2" step="0.05" value="${clampCollageChainMorph(collage?.collageChainMorph)}" />
+      <input id="collage-chain-morph" type="number" min="0.12" max="2" step="0.05" value="${clampCollageChainMorph(collage?.collageChainMorph).toFixed(2)}" />
+      <span></span></div>
+    <div class="param"><span>Shape Variation</span>
+      <input id="collage-chain-vary" type="range" min="0.2" max="2" step="0.05" value="${clampCollageChainVary(collage?.collageChainVary)}" />
+      <input id="collage-chain-vary" type="number" min="0.2" max="2" step="0.05" value="${clampCollageChainVary(collage?.collageChainVary).toFixed(2)}" />
+      <span></span></div>
+    <div class="param"><span>Shape Smoothness</span>
+      <input id="collage-chain-smooth" type="range" min="0.12" max="1" step="0.02" value="${clampCollageChainSmooth(collage?.collageChainSmooth)}" />
+      <input id="collage-chain-smooth" type="number" min="0.12" max="1" step="0.02" value="${clampCollageChainSmooth(collage?.collageChainSmooth).toFixed(2)}" />
+      <span></span></div>`
+        : ""
+    }
+    <div class="sec">Matter</div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="spring">Spring</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="flow">Flow</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="boids">Boids</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="poles">Poles</button>
+    </div>
+    ${
+      collage?.collageMove === "spring"
+        ? `<div class="sec">Spring</div>
+    ${num("collage-spring-strength", "Spring Strength", clampSpringStrength(collage.collageSpringStrength), 0.2, 2.2, 0.05)}
+    ${num("collage-spring-damp", "Damping", clampSpringDamp(collage.collageSpringDamp), 0.08, 1, 0.02)}
+    ${num("collage-spring-dist", "Connection Distance", clampSpringDist(collage.collageSpringDist), 0.12, 0.72, 0.02)}
+    ${num("collage-spring-elast", "Elasticity", clampSpringElast(collage.collageSpringElast), 0.2, 2.2, 0.05)}
+    ${num("collage-spring-break", "Break / Reconnect", clampSpringBreak(collage.collageSpringBreak), 1.15, 3.6, 0.05)}`
+        : collage?.collageMove === "flow"
+          ? `<div class="sec">Flow</div>
+    ${num("collage-flow-scale", "Field Scale", clampFlowScale(collage.collageFlowScale), 0.28, 2.4, 0.05)}
+    ${num("collage-flow-turb", "Turbulence", clampFlowTurb(collage.collageFlowTurb), 0, 2, 0.05)}
+    ${num("collage-flow-evolve", "Evolution Speed", clampFlowEvolve(collage.collageFlowEvolve), 0.08, 2.2, 0.05)}
+    ${num("collage-flow-force", "Force", clampFlowForce(collage.collageFlowForce), 0.2, 2.2, 0.05)}
+    ${num("collage-flow-depth", "Depth Influence", clampFlowDepth(collage.collageFlowDepth), 0, 1.6, 0.05)}`
+          : collage?.collageMove === "boids"
+            ? `<div class="sec">Boids</div>
+    ${num("collage-boid-cohere", "Cohesion", clampBoidCohere(collage.collageBoidCohere), 0.1, 2.2, 0.05)}
+    ${num("collage-boid-sep", "Separation", clampBoidSep(collage.collageBoidSep), 0.15, 2.4, 0.05)}
+    ${num("collage-boid-align", "Alignment", clampBoidAlign(collage.collageBoidAlign), 0.1, 2.2, 0.05)}
+    ${num("collage-boid-radius", "Perception Radius", clampBoidRadius(collage.collageBoidRadius), 0.08, 0.55, 0.01)}
+    ${num("collage-boid-speed", "Speed", clampBoidSpeed(collage.collageBoidSpeed), 0.25, 2.2, 0.05)}`
+            : collage?.collageMove === "poles"
+              ? `<div class="sec">Poles</div>
+    ${num("collage-pole-count", "Pole Count", clampPoleCount(collage.collagePoleCount), 1, 5, 1)}
+    ${num("collage-pole-attract", "Attraction", clampPoleAttract(collage.collagePoleAttract), 0.15, 2.2, 0.05)}
+    ${num("collage-pole-repel", "Repulsion", clampPoleRepel(collage.collagePoleRepel), 0.1, 2.2, 0.05)}
+    ${num("collage-pole-speed", "Pole Speed", clampPoleSpeed(collage.collagePoleSpeed), 0.12, 2.2, 0.05)}
+    ${num("collage-pole-falloff", "Falloff", clampPoleFalloff(collage.collagePoleFalloff), 0.6, 2.8, 0.05)}
+    ${num("collage-pole-switch", "Polarity Switching", clampPoleSwitch(collage.collagePoleSwitch), 0, 2, 0.05)}`
+              : ""
+    }
+    <div class="sec">Music</div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="bars">Bars</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="ripple">Ripple</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="swing">Swing</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="burst">Burst</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="halo">Halo</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="clap">Clap</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="wave">Wave</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="drop">Drop</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="spot">Spot</button>
+    </div>
+    <div class="sec">Drum / illusion</div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="pong">Pong</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="fall">Fall</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="snap">Snap</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="step">Step</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="moire">Moire</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="poly">Poly</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="grid">Grid</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="zip">Zip</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="liss">Liss</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="ghost">Ghost</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="bounce">Bounce</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="glow">Glow</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="kick">Kick</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="jelly">Jelly</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="flip">Flip</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="flash">Flash</button>
+      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="hop">Hop</button>
+      <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
+      <button class="btn tiny ${p.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit">Cut edit</button>
+    </div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move. Matter moves are a spring mesh, a flowing current, a flock, or wandering magnets — each with its own sliders. Chain is a freeform 3D conga line. Drum / illusion locks to the tempo grid. Music punches glow, not the path.</div>
     <div style="margin-top:8px">
-      ${p.sources.map((s) => `
+      ${p.sources.map((s) => {
+        const meta = s.kind === "audio"
+          ? `beat-sync · ${fmtTime(s.duration || 0)}${s.bpm && s.bpm > 40 ? ` · ${s.bpm}bpm` : ""}`
+          : `${s.kind} ${s.width}×${s.height}`;
+        const useBtn = s.kind === "audio"
+          ? `<span class="status">beat</span>`
+          : `<button class="btn tiny" data-act="use-src" data-id="${s.id}">use</button>`;
+        return `
         <div class="thumb ${s.id === ui.selectedSourceId ? "on" : ""}" data-act="sel-src" data-id="${s.id}">
           <div class="sw" style="background:linear-gradient(135deg,#2a1830,#c8ff3d33)"></div>
-          <div class="meta"><b>${esc(s.name)}</b><span>${s.kind} ${s.width}×${s.height}</span></div>
-          <button class="btn tiny" data-act="use-src" data-id="${s.id}">use</button>
-        </div>`).join("")}
+          <div class="meta"><b>${esc(s.name)}</b><span>${meta}</span></div>
+          ${useBtn}
+        </div>`;
+      }).join("")}
     </div>
     <hr class="div" />
     <div class="sec">Feedback bus</div>
@@ -445,8 +882,15 @@ function paintStack(n: HTMLElement) {
         </div>`).join("")}
       <select id="add-fx" class="addfx">
         <option value="">+ add effect</option>
-        ${Object.entries(groups).map(([cat, list]) => `<optgroup label="${cat}">${list.map((e) => `<option value="${e.id}">${e.name}</option>`).join("")}</optgroup>`).join("")}
+        ${EFFECT_CATEGORIES.map((cat) => {
+          const list = (groups[cat.id] ?? []).filter((e) => e.id !== "dancer");
+          if (!list.length) return "";
+          return `<optgroup label="${cat.label}">${list.map((e) => `<option value="${e.id}">${e.name}</option>`).join("")}</optgroup>`;
+        }).join("")}
       </select>
+      <div class="row" style="margin-top:4px">
+        <button class="btn tiny hot" data-act="stamp-chaos">stamp chaos</button>
+      </div>
       ${fx ? `
         <hr class="div" />
         <div class="sec">${esc(getEffect(fx.typeId)?.name ?? "params")} · ${esc(getEffect(fx.typeId)?.description ?? "")}</div>
@@ -502,6 +946,7 @@ function paintTransport(n: HTMLElement) {
   const p = store.project;
   const pb = p.playback;
   const exp = p.exportSettings;
+  const busy = store.state.ui.exporting;
   const dur = Math.max(p.duration, 0.1);
   const pct = (pb.time / dur) * 100;
   n.innerHTML = `
@@ -536,18 +981,30 @@ function paintTransport(n: HTMLElement) {
     <div class="t-right">
       <div class="sec">Export</div>
       <div class="row">
-        <input id="exp-w" type="number" style="width:70px" value="${exp.width}" />
-        <span>×</span>
-        <input id="exp-h" type="number" style="width:70px" value="${exp.height}" />
-        <select id="exp-format">
-          ${["png","jpg","webm","sequence"].map((f) => `<option ${exp.format===f?"selected":""} value="${f}">${f}</option>`).join("")}
-        </select>
+        <span class="status">shape</span>
+        ${EXPORT_ASPECTS.map((a) => {
+          const on = matchAspectId(exp.width, exp.height) === a.id;
+          return `<button class="btn tiny ${on ? "acid" : ""}" data-act="exp-aspect" data-id="${a.id}">${a.label}</button>`;
+        }).join("")}
+        <button class="btn tiny" data-act="exp-aspect-src">match src</button>
       </div>
       <div class="row" style="margin-top:4px">
-        <input id="exp-fps" type="number" style="width:54px" value="${exp.fps}" title="fps" />
-        <input id="exp-dur" type="number" style="width:54px" value="${exp.duration}" title="seconds" />
-        <input id="exp-name" type="text" style="width:90px" value="${esc(exp.filename)}" />
-        <button class="btn tiny acid" data-act="export">Export</button>
+        <span class="status">size</span>
+        <input id="exp-w" type="number" style="width:64px" value="${exp.width}" title="width" />
+        <span>×</span>
+        <input id="exp-h" type="number" style="width:64px" value="${exp.height}" title="height" />
+        <select id="exp-format">
+          ${["png","jpg","webm","mp4","sequence"].map((f) => `<option ${exp.format===f?"selected":""} value="${f}">${f}</option>`).join("")}
+        </select>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <span class="status">length</span>
+        ${[2, 4, 6, 8, 16, 32].map((s) => `<button class="btn tiny ${Number(exp.duration) === s ? "acid" : ""}" data-act="clip" data-secs="${s}" ${busy ? "disabled" : ""}>${s}s</button>`).join("")}
+        <span class="status">sec</span>
+        <input id="exp-dur" type="number" min="1" max="32" step="1" style="width:48px" value="${exp.duration}" title="seconds" />
+        <label class="check"><input type="checkbox" id="loop-close" ${exp.loopClose !== false ? "checked" : ""}/> close loop</label>
+        <span class="sp"></span>
+        <button class="btn acid export" data-act="export" ${busy ? "disabled" : ""}>${busy ? "exporting…" : "Export"}</button>
       </div>
     </div>
   `;
@@ -565,6 +1022,72 @@ function num(id: string, label: string, value: number, min: number, max: number,
     <span></span></div>`;
 }
 
+function selectedCollageSource(): MediaSource | undefined {
+  const p = store.project;
+  const picked = p.sources.find((s) => s.id === store.state.ui.selectedSourceId);
+  if (picked && isHeraldry(picked.generator)) return picked;
+  const layer = selectedLayer(p);
+  const fromLayer = p.sources.find((s) => s.id === layer?.sourceId);
+  if (fromLayer && isHeraldry(fromLayer.generator)) return fromLayer;
+  return p.sources.find((s) => isHeraldry(s.generator));
+}
+
+function extrasFrom(src?: MediaSource, keepWash = true) {
+  if (!src) return undefined;
+  return {
+    kitB: src.collageKitB,
+    night: src.collageNight,
+    scale: src.collageScale,
+    density: src.collageDensity,
+    pace: src.collagePace,
+    chainTravel: src.collageChainTravel,
+    chainMorph: src.collageChainMorph,
+    chainVary: src.collageChainVary,
+    chainSmooth: src.collageChainSmooth,
+    springStrength: src.collageSpringStrength,
+    springDamp: src.collageSpringDamp,
+    springDist: src.collageSpringDist,
+    springElast: src.collageSpringElast,
+    springBreak: src.collageSpringBreak,
+    flowScale: src.collageFlowScale,
+    flowTurb: src.collageFlowTurb,
+    flowEvolve: src.collageFlowEvolve,
+    flowForce: src.collageFlowForce,
+    flowDepth: src.collageFlowDepth,
+    boidCohere: src.collageBoidCohere,
+    boidSep: src.collageBoidSep,
+    boidAlign: src.collageBoidAlign,
+    boidRadius: src.collageBoidRadius,
+    boidSpeed: src.collageBoidSpeed,
+    poleCount: src.collagePoleCount,
+    poleAttract: src.collagePoleAttract,
+    poleRepel: src.collagePoleRepel,
+    poleSpeed: src.collagePoleSpeed,
+    poleFalloff: src.collagePoleFalloff,
+    poleSwitch: src.collagePoleSwitch,
+    wash: keepWash ? src.colorA : undefined,
+  };
+}
+
+function renameCollage(src: MediaSource): MediaSource {
+  if (!src.collageKit || !src.collageMove) return src;
+  return { ...src, name: collageName(src.collageMove, src.collageKit, src.collageKitB) };
+}
+
+function patchCollage(mut: (src: MediaSource) => MediaSource, status?: string, live = false): boolean {
+  const current = selectedCollageSource();
+  if (!current) return false;
+  store.setProject(
+    (p) => ({
+      ...p,
+      sources: p.sources.map((s) => (s.id === current.id ? mut(s) : s)),
+    }),
+    !live,
+  );
+  if (status) store.patchUi({ status }, !live);
+  return true;
+}
+
 function esc(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }
@@ -576,7 +1099,8 @@ function fmtTime(t: number) {
 }
 
 export function resizeCanvas(canvas: HTMLCanvasElement, host: HTMLElement) {
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (store.state.ui.exporting) return;
+  const dpr = 1;
   const r = host.getBoundingClientRect();
   const w = Math.max(16, Math.floor(r.width * dpr));
   const h = Math.max(16, Math.floor(r.height * dpr));

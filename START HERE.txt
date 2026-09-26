@@ -1,0 +1,97 @@
+PHOSPHENE v2
+============
+
+This folder is the collage instrument (five stamp kits).
+It is not the older idol / fabric Phosphene.
+
+Do NOT open the files inside Cursor.
+Cursor will show the code instead of running the program.
+
+
+WHY CHROME WAS CRASHING
+------------------------
+
+Phosphene needs WebGL. Your everyday Chrome window uses the graphics
+card. On this PC that driver kills the tab.
+
+Start Phosphene.bat now opens a PRIVATE Chrome/Edge window that does
+not use that graphics card. Do not open PHOSPHENE.html by itself.
+
+
+HOW TO OPEN IT (Windows)
+------------------------
+
+1. Delete any OLD unzipped folder (Downloads names like "... (25)"
+   are stale).
+2. Download a NEW ZIP and unzip the WHOLE folder. You must see
+   PHOSPHENE.html AND phosphene.js sitting next to each other.
+3. Open File Explorer (folder icon on the taskbar, or Windows key + E).
+4. Double-click:
+
+      Start Phosphene.bat
+
+   A black command window flashes, then a NEW Chrome or Edge window
+   opens. THAT window is the program.
+
+   You should see a colored-ground collage flying at the camera (not idols).
+
+   If that window crashes: double-click  Start Phosphene Safe.bat
+   instead. The picture will be softer, but Chrome should stay up.
+
+
+HOW TO OPEN IT (Mac)
+--------------------
+
+1. Open Finder (not Cursor).
+2. Go to the Phosphene folder.
+3. Right-click  Start Phosphene.command  → Open.
+
+
+HOW TO USE IT
+-------------
+
+- Pick a kit on the left: Sailor / Circus / Fruit / Grove / Love /
+  Space / Sweet / Music
+- Then pick ONE move. That clip stays on that move. Toward the camera:
+  Rush, Tunnel, Spiral, Helix. Looping patterns: Tide, Rings, Loom,
+  Petal, Flock, Wheel, Silk. Music moves: Bars, Ripple, Swing, Burst,
+  Halo, Clap, Wave, Drop, Spot — they stay on a smooth path and punch
+  glow on the beat, not the travel. Drum / illusion moves lock to the
+  tempo like a drum pattern: Pong (wall bounce), Fall (drop and
+  bounce), Snap (left-right on the kick), Step (zoetrope steps),
+  Moire (counter-spin rings), Poly (3 against 4), Grid and Zip
+  (sliding rows), Liss (figure-8), Ghost (afterimage). Drop holds
+  still until a big chorus hit. Spot lights one stamp each hit.
+  Mix rolls a locked move. Chain is a freeform 3D conga line —
+  stamps follow one another along a path that keeps curling,
+  folding, and wandering through depth instead of riding a
+  fixed circle. Chain has its own sliders: Movement Speed,
+  Shape Change Speed, Shape Variation, and Shape Smoothness.
+  Matter moves are a spring mesh (Spring), a changing 3D
+  current (Flow), a flock with local rules (Boids), and
+  wandering magnets (Poles). Each has its own sliders.
+  New stamp packs: Kitchen, Sky, Street, Arcade.
+- Mash mixes a second kit's stamps onto the same ground (Love on Music,
+  and so on). Wash taps a kit color without rolling a new move. Night
+  is a darker club wash that breathes on bass. Size / Storm sliders
+  go from a few giants to a sticker storm.
+- Grounds are warm colored washes — each kit has a bigger set of
+  colors now. Kits also have more stamp shapes (crabs, roses, guitars,
+  aliens, and so on). Kit buttons keep the last move.
+- Rand all / Rand wacky rolls a new kit and a calmer move.
+  Stamps stay smaller and slower so a roll does not fill the
+  screen or fly off too fast.
+- Cut edit is the other randomizer. Drop an MP3, then hit
+  Cut edit. It cuts on the beat through music-reactive looks.
+  Some shots hold. Some are two quick hits that settle. It
+  should feel edited, not shuffled. Export keeps those cuts.
+- Drag a photo, video, or MP3 onto the big area
+- Hit MP3 (or drop a clip) to use it as a soundtrack. Playback
+  starts and the collage punches on the beat.
+- Click Print frame to turn the live picture into a still
+- Click New at the top to start over
+- Move the sliders. Click Export to save.
+- Click 2s / 4s / 8s / 16s / 32s mp4 for a video clip. Wait until
+  the status says saved.
+  If an MP3 is loaded, the MP4 keeps the music. Stills stay silent.
+  Check "close loop" so the last beats fade into the first frame.

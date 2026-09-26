@@ -12,6 +12,28 @@
       }
     },
     {
+      "label": "phosphene: open",
+      "type": "shell",
+      "windows": {
+        "command": "cmd",
+        "args": ["/c", "Start Phosphene.bat"]
+      },
+      "osx": {
+        "command": "bash",
+        "args": ["Start Phosphene.command"]
+      },
+      "linux": {
+        "command": "bash",
+        "args": ["Start Phosphene.command"]
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
       "label": "phosphene: serve",
       "type": "npm",
       "script": "dev",

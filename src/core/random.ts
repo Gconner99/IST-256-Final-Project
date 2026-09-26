@@ -22,6 +22,17 @@ export function clamp(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v));
 }
 
+/** H.264 needs even frame sizes. */
+export function evenSize(n: number, min = 16): number {
+  return Math.max(min, Math.round(n) & ~1);
+}
+
+/** Shrink a frame size to fit a box while staying even. */
+export function fitEven(width: number, height: number, maxW: number, maxH: number) {
+  const s = Math.min(1, maxW / Math.max(width, 1), maxH / Math.max(height, 1));
+  return { width: evenSize(width * s), height: evenSize(height * s) };
+}
+
 export function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
     <title>PHOSPHENE</title>
+    <link rel="stylesheet" href="./phosphene.css" />
     <script>
       window.__phospheneMark = false;
       setTimeout(function () {
@@ -61,8 +62,16 @@
           requestAnimationFrame(tick);
         }
         requestAnimationFrame(tick);
+        setTimeout(function () {
+          var s = document.createElement("script");
+          s.src = "./phosphene.js";
+          s.onerror = function () {
+            var note = document.getElementById("boot-note");
+            if (note) note.textContent = "PHOSPHENE · missing phosphene.js — unzip the WHOLE folder";
+          };
+          document.body.appendChild(s);
+        }, 400);
       })();
     </script>
-    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
