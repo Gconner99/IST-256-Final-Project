@@ -58,7 +58,8 @@ Requires a browser (or Electron) with **WebGL2**.
 - Simple keyframe automation
 - JSON project files (`.phos.json`) and source-independent presets
 - Export: PNG, JPG, **MP4 clips up to 32s** (optional close-loop fade, song kept when loaded), WebM, PNG image sequence (zip)
-- Collage mash (two kits), live ground wash, night/neon wash, Drop / Spot music moves, stamp size / density / pace, and a freeform 3D Chain move with its own speed / shape sliders
+- Collage mash (two kits), live ground wash, night/neon wash, Drop / Spot music moves, stamp size / density / pace, a freeform 3D Chain move, and Matter moves (Spring / Flow / Boids / Poles) with their own sliders
+- Extra stamp packs: Kitchen, Sky, Street, Arcade, plus more icons in Circus / Fruit / Grove / Sweet
 - Calmer randomizer (smaller, slower rolls) and **Cut edit** (beat-synced cuts through music-reactive looks)
 
 ## Architecture

@@ -67,6 +67,10 @@ HOW TO USE IT
   folding, and wandering through depth instead of riding a
   fixed circle. Chain has its own sliders: Movement Speed,
   Shape Change Speed, Shape Variation, and Shape Smoothness.
+  Matter moves are a spring mesh (Spring), a changing 3D
+  current (Flow), a flock with local rules (Boids), and
+  wandering magnets (Poles). Each has its own sliders.
+  New stamp packs: Kitchen, Sky, Street, Arcade.
 - Mash mixes a second kit's stamps onto the same ground (Love on Music,
   and so on). Wash taps a kit color without rolling a new move. Night
   is a darker club wash that breathes on bass. Size / Storm sliders

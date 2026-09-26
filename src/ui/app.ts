@@ -41,6 +41,11 @@ import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/regi
 import { collageName, defaultGeneratorSource } from "../core/defaults";
 import {
   COLLAGE_KITS,
+  clampBoidAlign,
+  clampBoidCohere,
+  clampBoidRadius,
+  clampBoidSep,
+  clampBoidSpeed,
   clampCollageChainMorph,
   clampCollageChainSmooth,
   clampCollageChainTravel,
@@ -48,8 +53,25 @@ import {
   clampCollageDensity,
   clampCollagePace,
   clampCollageScale,
+  clampFlowDepth,
+  clampFlowEvolve,
+  clampFlowForce,
+  clampFlowScale,
+  clampFlowTurb,
+  clampPoleAttract,
+  clampPoleCount,
+  clampPoleFalloff,
+  clampPoleRepel,
+  clampPoleSpeed,
+  clampPoleSwitch,
+  clampSpringBreak,
+  clampSpringDamp,
+  clampSpringDist,
+  clampSpringElast,
+  clampSpringStrength,
   groundsForKit,
   isHeraldry,
+  kitButtonLabel,
   kitFromUnknown,
   moveFromUnknown,
   type CollageKit,
@@ -453,6 +475,27 @@ function bind(root: HTMLElement) {
     if (t.id === "collage-chain-smooth") {
       patchCollage((s) => ({ ...s, collageChainSmooth: clampCollageChainSmooth(Number(t.value)) }), undefined, true);
     }
+    if (t.id === "collage-spring-strength") patchCollage((s) => ({ ...s, collageSpringStrength: clampSpringStrength(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-spring-damp") patchCollage((s) => ({ ...s, collageSpringDamp: clampSpringDamp(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-spring-dist") patchCollage((s) => ({ ...s, collageSpringDist: clampSpringDist(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-spring-elast") patchCollage((s) => ({ ...s, collageSpringElast: clampSpringElast(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-spring-break") patchCollage((s) => ({ ...s, collageSpringBreak: clampSpringBreak(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-flow-scale") patchCollage((s) => ({ ...s, collageFlowScale: clampFlowScale(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-flow-turb") patchCollage((s) => ({ ...s, collageFlowTurb: clampFlowTurb(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-flow-evolve") patchCollage((s) => ({ ...s, collageFlowEvolve: clampFlowEvolve(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-flow-force") patchCollage((s) => ({ ...s, collageFlowForce: clampFlowForce(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-flow-depth") patchCollage((s) => ({ ...s, collageFlowDepth: clampFlowDepth(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-boid-cohere") patchCollage((s) => ({ ...s, collageBoidCohere: clampBoidCohere(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-boid-sep") patchCollage((s) => ({ ...s, collageBoidSep: clampBoidSep(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-boid-align") patchCollage((s) => ({ ...s, collageBoidAlign: clampBoidAlign(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-boid-radius") patchCollage((s) => ({ ...s, collageBoidRadius: clampBoidRadius(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-boid-speed") patchCollage((s) => ({ ...s, collageBoidSpeed: clampBoidSpeed(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-pole-count") patchCollage((s) => ({ ...s, collagePoleCount: clampPoleCount(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-pole-attract") patchCollage((s) => ({ ...s, collagePoleAttract: clampPoleAttract(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-pole-repel") patchCollage((s) => ({ ...s, collagePoleRepel: clampPoleRepel(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-pole-speed") patchCollage((s) => ({ ...s, collagePoleSpeed: clampPoleSpeed(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-pole-falloff") patchCollage((s) => ({ ...s, collagePoleFalloff: clampPoleFalloff(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-pole-switch") patchCollage((s) => ({ ...s, collagePoleSwitch: clampPoleSwitch(Number(t.value)) }), undefined, true);
     if (t.id === "exp-q") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, quality: Number(t.value) } }), false);
     if (t.id === "exp-br") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, bitrate: Number(t.value) } }), false);
     if (t.id === "exp-name") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, filename: t.value } }), false);
@@ -579,12 +622,17 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="sweet">Sweet</button>
       <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="music">Music</button>
     </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="kitchen">Kitchen</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="weather">Sky</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="city">Street</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="arcade">Arcade</button>
+    </div>
     <div class="sec">Mash</div>
     <div class="row">
       ${COLLAGE_KITS.map((k) => {
         const on = collage?.collageKitB === k;
-        const label = k === "nature" ? "Grove" : k[0].toUpperCase() + k.slice(1);
-        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="mash" data-kit="${k}">${label}</button>`;
+        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="mash" data-kit="${k}">${kitButtonLabel(k)}</button>`;
       }).join("")}
     </div>
     <div class="sec">Wash</div>
@@ -649,6 +697,45 @@ function paintRail(n: HTMLElement) {
       <span></span></div>`
         : ""
     }
+    <div class="sec">Matter</div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="spring">Spring</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="flow">Flow</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="boids">Boids</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="poles">Poles</button>
+    </div>
+    ${
+      collage?.collageMove === "spring"
+        ? `<div class="sec">Spring</div>
+    ${num("collage-spring-strength", "Spring Strength", clampSpringStrength(collage.collageSpringStrength), 0.2, 2.2, 0.05)}
+    ${num("collage-spring-damp", "Damping", clampSpringDamp(collage.collageSpringDamp), 0.08, 1, 0.02)}
+    ${num("collage-spring-dist", "Connection Distance", clampSpringDist(collage.collageSpringDist), 0.12, 0.72, 0.02)}
+    ${num("collage-spring-elast", "Elasticity", clampSpringElast(collage.collageSpringElast), 0.2, 2.2, 0.05)}
+    ${num("collage-spring-break", "Break / Reconnect", clampSpringBreak(collage.collageSpringBreak), 1.15, 3.6, 0.05)}`
+        : collage?.collageMove === "flow"
+          ? `<div class="sec">Flow</div>
+    ${num("collage-flow-scale", "Field Scale", clampFlowScale(collage.collageFlowScale), 0.28, 2.4, 0.05)}
+    ${num("collage-flow-turb", "Turbulence", clampFlowTurb(collage.collageFlowTurb), 0, 2, 0.05)}
+    ${num("collage-flow-evolve", "Evolution Speed", clampFlowEvolve(collage.collageFlowEvolve), 0.08, 2.2, 0.05)}
+    ${num("collage-flow-force", "Force", clampFlowForce(collage.collageFlowForce), 0.2, 2.2, 0.05)}
+    ${num("collage-flow-depth", "Depth Influence", clampFlowDepth(collage.collageFlowDepth), 0, 1.6, 0.05)}`
+          : collage?.collageMove === "boids"
+            ? `<div class="sec">Boids</div>
+    ${num("collage-boid-cohere", "Cohesion", clampBoidCohere(collage.collageBoidCohere), 0.1, 2.2, 0.05)}
+    ${num("collage-boid-sep", "Separation", clampBoidSep(collage.collageBoidSep), 0.15, 2.4, 0.05)}
+    ${num("collage-boid-align", "Alignment", clampBoidAlign(collage.collageBoidAlign), 0.1, 2.2, 0.05)}
+    ${num("collage-boid-radius", "Perception Radius", clampBoidRadius(collage.collageBoidRadius), 0.08, 0.55, 0.01)}
+    ${num("collage-boid-speed", "Speed", clampBoidSpeed(collage.collageBoidSpeed), 0.25, 2.2, 0.05)}`
+            : collage?.collageMove === "poles"
+              ? `<div class="sec">Poles</div>
+    ${num("collage-pole-count", "Pole Count", clampPoleCount(collage.collagePoleCount), 1, 5, 1)}
+    ${num("collage-pole-attract", "Attraction", clampPoleAttract(collage.collagePoleAttract), 0.15, 2.2, 0.05)}
+    ${num("collage-pole-repel", "Repulsion", clampPoleRepel(collage.collagePoleRepel), 0.1, 2.2, 0.05)}
+    ${num("collage-pole-speed", "Pole Speed", clampPoleSpeed(collage.collagePoleSpeed), 0.12, 2.2, 0.05)}
+    ${num("collage-pole-falloff", "Falloff", clampPoleFalloff(collage.collagePoleFalloff), 0.6, 2.8, 0.05)}
+    ${num("collage-pole-switch", "Polarity Switching", clampPoleSwitch(collage.collagePoleSwitch), 0, 2, 0.05)}`
+              : ""
+    }
     <div class="sec">Music</div>
     <div class="row">
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="bars">Bars</button>
@@ -695,7 +782,7 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
       <button class="btn tiny ${p.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit">Cut edit</button>
     </div>
-    <div class="status" style="margin-top:4px">Each clip keeps one move. Chain is a freeform 3D conga line with its own speed and shape sliders. Drum / illusion moves lock to the tempo grid. Music punches glow, not the path. Cut edit still cuts on the beat. Drop an MP3 first.</div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move. Matter moves are a spring mesh, a flowing current, a flock, or wandering magnets — each with its own sliders. Chain is a freeform 3D conga line. Drum / illusion locks to the tempo grid. Music punches glow, not the path.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
@@ -957,6 +1044,27 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     chainMorph: src.collageChainMorph,
     chainVary: src.collageChainVary,
     chainSmooth: src.collageChainSmooth,
+    springStrength: src.collageSpringStrength,
+    springDamp: src.collageSpringDamp,
+    springDist: src.collageSpringDist,
+    springElast: src.collageSpringElast,
+    springBreak: src.collageSpringBreak,
+    flowScale: src.collageFlowScale,
+    flowTurb: src.collageFlowTurb,
+    flowEvolve: src.collageFlowEvolve,
+    flowForce: src.collageFlowForce,
+    flowDepth: src.collageFlowDepth,
+    boidCohere: src.collageBoidCohere,
+    boidSep: src.collageBoidSep,
+    boidAlign: src.collageBoidAlign,
+    boidRadius: src.collageBoidRadius,
+    boidSpeed: src.collageBoidSpeed,
+    poleCount: src.collagePoleCount,
+    poleAttract: src.collagePoleAttract,
+    poleRepel: src.collagePoleRepel,
+    poleSpeed: src.collagePoleSpeed,
+    poleFalloff: src.collagePoleFalloff,
+    poleSwitch: src.collagePoleSwitch,
     wash: keepWash ? src.colorA : undefined,
   };
 }

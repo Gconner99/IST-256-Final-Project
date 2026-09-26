@@ -156,9 +156,9 @@ export interface MediaSource {
   colorA?: string;
   colorB?: string;
   /** Collage stamp drawer. */
-  collageKit?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music";
+  collageKit?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music" | "kitchen" | "weather" | "city" | "arcade";
   /** Second kit mixed into odd stamps. */
-  collageKitB?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music";
+  collageKitB?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music" | "kitchen" | "weather" | "city" | "arcade";
   /** Dark club wash that breathes on bass. */
   collageNight?: boolean;
   /** Stamp size multiplier. */
@@ -175,6 +175,27 @@ export interface MediaSource {
   collageChainVary?: number;
   /** Chain: how fluid versus active those shape changes are. */
   collageChainSmooth?: number;
+  collageSpringStrength?: number;
+  collageSpringDamp?: number;
+  collageSpringDist?: number;
+  collageSpringElast?: number;
+  collageSpringBreak?: number;
+  collageFlowScale?: number;
+  collageFlowTurb?: number;
+  collageFlowEvolve?: number;
+  collageFlowForce?: number;
+  collageFlowDepth?: number;
+  collageBoidCohere?: number;
+  collageBoidSep?: number;
+  collageBoidAlign?: number;
+  collageBoidRadius?: number;
+  collageBoidSpeed?: number;
+  collagePoleCount?: number;
+  collagePoleAttract?: number;
+  collagePoleRepel?: number;
+  collagePoleSpeed?: number;
+  collagePoleFalloff?: number;
+  collagePoleSwitch?: number;
   /** Locked camera move for this clip. */
   collageMove?:
     | "rush"
@@ -216,7 +237,11 @@ export interface MediaSource {
     | "fall"
     | "liss"
     | "snap"
-    | "chain";
+    | "chain"
+    | "spring"
+    | "flow"
+    | "boids"
+    | "poles";
 }
 
 export interface Keyframe {

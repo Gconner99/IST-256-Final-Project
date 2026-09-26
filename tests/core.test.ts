@@ -6,7 +6,8 @@ import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaul
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
 import { buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
-import { buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isHeraldry, isMusicMove, isPleasingMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -290,6 +291,11 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("heraldry", "space", "liss").name).toBe("LISS · SPACE");
     expect(defaultGeneratorSource("heraldry", "love", "snap").name).toBe("SNAP · LOVE");
     expect(defaultGeneratorSource("heraldry", "space", "chain").name).toBe("CHAIN · SPACE");
+    expect(defaultGeneratorSource("heraldry", "kitchen", "spring").name).toBe("SPRING · KITCHEN");
+    expect(defaultGeneratorSource("heraldry", "weather", "flow").name).toBe("FLOW · SKY");
+    expect(defaultGeneratorSource("heraldry", "city", "boids").name).toBe("BOIDS · STREET");
+    expect(defaultGeneratorSource("heraldry", "arcade", "poles").name).toBe("POLES · ARCADE");
+    expect(defaultGeneratorSource("heraldry", "sailor", "spring", { springStrength: 1.7 }).collageSpringStrength).toBeCloseTo(1.7);
     expect(defaultGeneratorSource("heraldry", "sailor", "chain", { chainTravel: 1.8, chainMorph: 0.2, chainVary: 1.6, chainSmooth: 0.3 }).collageChainTravel).toBeCloseTo(1.8);
     expect(defaultGeneratorSource("heraldry", "sailor", "chain", { chainTravel: 1.8, chainMorph: 0.2, chainVary: 1.6, chainSmooth: 0.3 }).collageChainMorph).toBeCloseTo(0.2);
     expect(defaultGeneratorSource("heraldry", "sailor", "chain", { chainTravel: 1.8, chainMorph: 0.2, chainVary: 1.6, chainSmooth: 0.3 }).collageChainVary).toBeCloseTo(1.6);
@@ -913,6 +919,10 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("heraldry", "liss")).toBe("liss");
     expect(sceneFromGenerator("heraldry", "snap")).toBe("snap");
     expect(sceneFromGenerator("heraldry", "chain")).toBe("chain");
+    expect(sceneFromGenerator("heraldry", "spring")).toBe("spring");
+    expect(sceneFromGenerator("heraldry", "flow")).toBe("flow");
+    expect(sceneFromGenerator("heraldry", "boids")).toBe("boids");
+    expect(sceneFromGenerator("heraldry", "poles")).toBe("poles");
     expect(sceneFromGenerator("heraldry", "helix")).toBe("helix");
     expect(sceneFromGenerator("heraldry", "prism")).toBe("prism");
     expect(sceneAt(0.2, 8, "tour")).toBe("rush");
@@ -962,6 +972,10 @@ describe("heraldry collage", () => {
       "liss",
       "snap",
       "chain",
+      "spring",
+      "flow",
+      "boids",
+      "poles",
     ]);
     expect(isMusicMove("bars")).toBe(true);
     expect(isMusicMove("wave")).toBe(true);
@@ -973,6 +987,13 @@ describe("heraldry collage", () => {
     expect(isMusicMove("snap")).toBe(true);
     expect(isMusicMove("chain")).toBe(false);
     expect(isPleasingMove("chain")).toBe(true);
+    expect(isSimMove("spring")).toBe(true);
+    expect(isSimMove("flow")).toBe(true);
+    expect(isSimMove("boids")).toBe(true);
+    expect(isSimMove("poles")).toBe(true);
+    expect(isSimMove("rush")).toBe(false);
+    expect(isMusicMove("boids")).toBe(false);
+    expect(isPleasingMove("poles")).toBe(true);
     expect(isMusicMove("rush")).toBe(false);
     expect(isMusicMove("silk")).toBe(false);
     expect(dropSlam(0.2)).toBe(0);
@@ -988,6 +1009,8 @@ describe("heraldry collage", () => {
     expect(clampCollageChainMorph(undefined)).toBeCloseTo(0.7);
     expect(clampCollageChainVary(0)).toBe(0.2);
     expect(clampCollageChainSmooth(2)).toBe(1);
+    expect(clampSpringStrength(9)).toBe(2.2);
+    expect(clampPoleCount(8)).toBe(5);
     const a = chainPath(0.12, 0.4, 1, 0.72);
     const b = chainPath(0.13, 0.4, 1, 0.72);
     const c = chainPath(0.12, 1.8, 1.6, 0.2);
@@ -1017,7 +1040,7 @@ describe("heraldry collage", () => {
   });
 
   it("gives each kit its own stamp drawer", () => {
-    expect(COLLAGE_KITS).toEqual(["sailor", "circus", "fruit", "nature", "love", "space", "sweet", "music"]);
+    expect(COLLAGE_KITS).toEqual(["sailor", "circus", "fruit", "nature", "love", "space", "sweet", "music", "kitchen", "weather", "city", "arcade"]);
     expect(kindsForKit("sailor")).toContain("fish");
     expect(kindsForKit("sailor")).toContain("crab");
     expect(kindsForKit("sailor")).not.toContain("elephant");
@@ -1036,6 +1059,13 @@ describe("heraldry collage", () => {
     expect(kindsForKit("sweet")).toContain("waffle");
     expect(kindsForKit("music")).toContain("vinyl");
     expect(kindsForKit("music")).toContain("guitar");
+    expect(kindsForKit("kitchen")).toContain("kettle");
+    expect(kindsForKit("weather")).toContain("rainbow");
+    expect(kindsForKit("city")).toContain("taxi");
+    expect(kindsForKit("arcade")).toContain("stick");
+    expect(kindsForKit("fruit")).toContain("chili");
+    expect(kindsForKit("nature")).toContain("flake");
+    expect(kindsForKit("circus")).toContain("dice");
     expect(kindsForKit("sailor").length).toBeGreaterThanOrEqual(12);
     expect(kindsForKit("music").length).toBeGreaterThanOrEqual(10);
     const sailor = new Set(buildField(7, "#1c4db8", "sailor").map((p) => p.charge.kind));
@@ -1064,6 +1094,42 @@ describe("heraldry collage", () => {
     expect(p.layers[0].effects).toHaveLength(0);
     expect(isHeraldry("heraldry")).toBe(true);
     expect(isHeraldry("plasma")).toBe(false);
+  });
+});
+
+describe("field sim", () => {
+  const seeds = Array.from({ length: 16 }, (_, i) => ({
+    x: (i % 4) / 4,
+    y: Math.floor(i / 4) / 4,
+    z: (i * 0.13) % 1,
+    vx: 0.4,
+    vy: 0.6,
+  }));
+
+  it("keeps flow samples unit-length and locally coherent", () => {
+    const a = flowAt(0.1, 0.05, 0, 0.4, 1, 0.6, 0.7);
+    const b = flowAt(0.12, 0.06, 0, 0.4, 1, 0.6, 0.7);
+    expect(Math.hypot(...a)).toBeCloseTo(1, 5);
+    expect(a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).toBeGreaterThan(0.7);
+  });
+
+  it("connects nearby spring neighbors and can break a stretched link", () => {
+    const sim = initFieldSim("spring", seeds, 0, simParamsFrom());
+    const links = rebuildLinks(sim, 0.4);
+    expect(links.length).toBeGreaterThan(8);
+    expect(links.every((l) => l.on && l.rest > 0)).toBe(true);
+    const far = stepFieldSim(sim, "spring", seeds, 0.2, simParamsFrom({ springBreak: 1.2, springStrength: 0.3 }));
+    expect(far.n).toBe(16);
+  });
+
+  it("moves a flock and flips pole polarity", () => {
+    const boids = stepFieldSim(null, "boids", seeds, 0.3, simParamsFrom({ boidSpeed: 1.4 }));
+    const moved = Math.hypot(boids.px[0] - seeds[0].x + 0.5, boids.py[0] - seeds[0].y + 0.5);
+    expect(boids.n).toBe(16);
+    expect(Number.isFinite(moved)).toBe(true);
+    const a = poleState(0, 0, 0.8, 1);
+    const b = poleState(0, 6, 0.8, 1);
+    expect(a.sign).not.toBe(b.sign);
   });
 });
 

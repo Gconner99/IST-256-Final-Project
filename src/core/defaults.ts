@@ -1,4 +1,9 @@
 import {
+  clampBoidAlign,
+  clampBoidCohere,
+  clampBoidRadius,
+  clampBoidSep,
+  clampBoidSpeed,
   clampCollageChainMorph,
   clampCollageChainSmooth,
   clampCollageChainTravel,
@@ -6,6 +11,22 @@ import {
   clampCollageDensity,
   clampCollagePace,
   clampCollageScale,
+  clampFlowDepth,
+  clampFlowEvolve,
+  clampFlowForce,
+  clampFlowScale,
+  clampFlowTurb,
+  clampPoleAttract,
+  clampPoleCount,
+  clampPoleFalloff,
+  clampPoleRepel,
+  clampPoleSpeed,
+  clampPoleSwitch,
+  clampSpringBreak,
+  clampSpringDamp,
+  clampSpringDist,
+  clampSpringElast,
+  clampSpringStrength,
   generatorForMove,
   inkForKit,
   isHeraldry,
@@ -131,6 +152,10 @@ const KIT_LABEL: Record<CollageKit, string> = {
   space: "SPACE",
   sweet: "SWEET",
   music: "MUSIC",
+  kitchen: "KITCHEN",
+  weather: "SKY",
+  city: "STREET",
+  arcade: "ARCADE",
 };
 
 const PLACE_LABEL: Record<string, string> = {
@@ -151,6 +176,27 @@ export interface CollageExtras {
   chainMorph?: number;
   chainVary?: number;
   chainSmooth?: number;
+  springStrength?: number;
+  springDamp?: number;
+  springDist?: number;
+  springElast?: number;
+  springBreak?: number;
+  flowScale?: number;
+  flowTurb?: number;
+  flowEvolve?: number;
+  flowForce?: number;
+  flowDepth?: number;
+  boidCohere?: number;
+  boidSep?: number;
+  boidAlign?: number;
+  boidRadius?: number;
+  boidSpeed?: number;
+  poleCount?: number;
+  poleAttract?: number;
+  poleRepel?: number;
+  poleSpeed?: number;
+  poleFalloff?: number;
+  poleSwitch?: number;
 }
 
 export function collageName(move: CollageMove, kit: CollageKit, kitB?: CollageKit | null): string {
@@ -210,6 +256,27 @@ export function defaultGeneratorSource(
     collageChainMorph: collageKit ? clampCollageChainMorph(extras?.chainMorph) : undefined,
     collageChainVary: collageKit ? clampCollageChainVary(extras?.chainVary) : undefined,
     collageChainSmooth: collageKit ? clampCollageChainSmooth(extras?.chainSmooth) : undefined,
+    collageSpringStrength: collageKit ? clampSpringStrength(extras?.springStrength) : undefined,
+    collageSpringDamp: collageKit ? clampSpringDamp(extras?.springDamp) : undefined,
+    collageSpringDist: collageKit ? clampSpringDist(extras?.springDist) : undefined,
+    collageSpringElast: collageKit ? clampSpringElast(extras?.springElast) : undefined,
+    collageSpringBreak: collageKit ? clampSpringBreak(extras?.springBreak) : undefined,
+    collageFlowScale: collageKit ? clampFlowScale(extras?.flowScale) : undefined,
+    collageFlowTurb: collageKit ? clampFlowTurb(extras?.flowTurb) : undefined,
+    collageFlowEvolve: collageKit ? clampFlowEvolve(extras?.flowEvolve) : undefined,
+    collageFlowForce: collageKit ? clampFlowForce(extras?.flowForce) : undefined,
+    collageFlowDepth: collageKit ? clampFlowDepth(extras?.flowDepth) : undefined,
+    collageBoidCohere: collageKit ? clampBoidCohere(extras?.boidCohere) : undefined,
+    collageBoidSep: collageKit ? clampBoidSep(extras?.boidSep) : undefined,
+    collageBoidAlign: collageKit ? clampBoidAlign(extras?.boidAlign) : undefined,
+    collageBoidRadius: collageKit ? clampBoidRadius(extras?.boidRadius) : undefined,
+    collageBoidSpeed: collageKit ? clampBoidSpeed(extras?.boidSpeed) : undefined,
+    collagePoleCount: collageKit ? clampPoleCount(extras?.poleCount) : undefined,
+    collagePoleAttract: collageKit ? clampPoleAttract(extras?.poleAttract) : undefined,
+    collagePoleRepel: collageKit ? clampPoleRepel(extras?.poleRepel) : undefined,
+    collagePoleSpeed: collageKit ? clampPoleSpeed(extras?.poleSpeed) : undefined,
+    collagePoleFalloff: collageKit ? clampPoleFalloff(extras?.poleFalloff) : undefined,
+    collagePoleSwitch: collageKit ? clampPoleSwitch(extras?.poleSwitch) : undefined,
     width: 1280,
     height: 720,
     duration: 0,
