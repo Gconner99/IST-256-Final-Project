@@ -185,8 +185,7 @@ function bind(root: HTMLElement) {
     if (act === "freeze") void freezeSelected();
     if (act === "gen") {
       const kind = (t.dataset.kind ?? "plasma") as GeneratorType;
-      const selected = store.project.sources.find((s) => s.id === store.state.ui.selectedSourceId);
-      const collage = selected && isHeraldry(selected.generator) ? selected : undefined;
+      const collage = selectedCollageSource();
       const kit = (t.dataset.kit as CollageKit | undefined) ?? (isHeraldry(kind) ? kitFromUnknown(collage?.collageKit) : undefined);
       const move = (t.dataset.move as CollageMove | "mix" | undefined) ?? (isHeraldry(kind) ? moveFromUnknown(collage?.collageMove) : undefined);
       const keepWash = !kit || !collage?.collageKit || kit === collage.collageKit;
@@ -857,6 +856,9 @@ function selectedCollageSource(): MediaSource | undefined {
   const p = store.project;
   const picked = p.sources.find((s) => s.id === store.state.ui.selectedSourceId);
   if (picked && isHeraldry(picked.generator)) return picked;
+  const layer = selectedLayer(p);
+  const fromLayer = p.sources.find((s) => s.id === layer?.sourceId);
+  if (fromLayer && isHeraldry(fromLayer.generator)) return fromLayer;
   return p.sources.find((s) => isHeraldry(s.generator));
 }
 
