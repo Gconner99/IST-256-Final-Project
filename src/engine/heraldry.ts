@@ -264,7 +264,7 @@ export function animalFromUnknown(value?: string | null): AnimalChain {
 }
 
 export function animalChainSpineCount(density?: number | null): number {
-  return Math.max(12, Math.min(22, Math.round(16 * clamp(density ?? 1, 0.35, 2))));
+  return Math.max(11, Math.min(18, Math.round(14 * clamp(density ?? 1, 0.35, 2))));
 }
 
 export function animalChainRoles(animal: AnimalChain, spine: number): AnimalRole[] {
@@ -2021,49 +2021,47 @@ function flagPath(ctx: CanvasRenderingContext2D, r: number) {
 }
 
 function aBodyPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.92, 0);
-  ctx.quadraticCurveTo(-r * 0.78, -r * 0.52, -r * 0.18, -r * 0.46);
-  ctx.quadraticCurveTo(r * 0.22, -r * 0.54, r * 0.78, -r * 0.28);
-  ctx.quadraticCurveTo(r * 0.98, 0, r * 0.78, r * 0.28);
-  ctx.quadraticCurveTo(r * 0.22, r * 0.54, -r * 0.18, r * 0.46);
-  ctx.quadraticCurveTo(-r * 0.78, r * 0.52, -r * 0.92, 0);
+  ctx.moveTo(-r * 0.7, 0);
+  ctx.quadraticCurveTo(-r * 0.58, -r * 0.58, 0, -r * 0.52);
+  ctx.quadraticCurveTo(r * 0.58, -r * 0.58, r * 0.7, 0);
+  ctx.quadraticCurveTo(r * 0.58, r * 0.58, 0, r * 0.52);
+  ctx.quadraticCurveTo(-r * 0.58, r * 0.58, -r * 0.7, 0);
   ctx.closePath();
 }
 
 function aDragHeadPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.85, -r * 0.1);
-  ctx.quadraticCurveTo(-r * 0.52, -r * 0.58, 0, -r * 0.42);
-  ctx.lineTo(r * 0.28, -r * 0.18);
-  ctx.lineTo(r * 0.95, -r * 0.06);
-  ctx.lineTo(r * 0.7, r * 0.08);
-  ctx.lineTo(r * 0.88, r * 0.3);
-  ctx.lineTo(r * 0.32, r * 0.2);
-  ctx.quadraticCurveTo(-r * 0.12, r * 0.55, -r * 0.72, r * 0.2);
+  ctx.moveTo(-r * 0.82, 0);
+  ctx.quadraticCurveTo(-r * 0.45, -r * 0.55, r * 0.08, -r * 0.32);
+  ctx.lineTo(r * 0.98, -r * 0.12);
+  ctx.lineTo(r * 0.62, r * 0.06);
+  ctx.lineTo(r * 0.88, r * 0.38);
+  ctx.lineTo(r * 0.22, r * 0.22);
+  ctx.quadraticCurveTo(-r * 0.2, r * 0.52, -r * 0.82, 0);
   ctx.closePath();
-  ctx.moveTo(-r * 0.12, -r * 0.4);
-  ctx.lineTo(r * 0.08, -r * 0.95);
-  ctx.lineTo(r * 0.24, -r * 0.32);
+  ctx.moveTo(-r * 0.02, -r * 0.3);
+  ctx.lineTo(r * 0.18, -r * 0.98);
+  ctx.lineTo(r * 0.38, -r * 0.22);
   ctx.closePath();
-  ctx.moveTo(-r * 0.42, -r * 0.38);
-  ctx.lineTo(-r * 0.28, -r * 0.82);
-  ctx.lineTo(-r * 0.06, -r * 0.3);
+  ctx.moveTo(-r * 0.38, -r * 0.28);
+  ctx.lineTo(-r * 0.18, -r * 0.88);
+  ctx.lineTo(r * 0.08, -r * 0.2);
   ctx.closePath();
 }
 
 function aDogHeadPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.52, r * 0.16);
-  ctx.quadraticCurveTo(-r * 0.48, -r * 0.42, r * 0.16, -r * 0.4);
-  ctx.quadraticCurveTo(r * 0.55, -r * 0.24, r * 0.9, r * 0.06);
-  ctx.quadraticCurveTo(r * 0.95, r * 0.28, r * 0.52, r * 0.38);
-  ctx.quadraticCurveTo(r * 0.08, r * 0.56, -r * 0.42, r * 0.34);
+  ctx.moveTo(-r * 0.42, r * 0.18);
+  ctx.quadraticCurveTo(-r * 0.35, -r * 0.28, r * 0.22, -r * 0.2);
+  ctx.quadraticCurveTo(r * 0.62, -r * 0.06, r * 0.95, r * 0.16);
+  ctx.quadraticCurveTo(r * 0.9, r * 0.42, r * 0.4, r * 0.42);
+  ctx.quadraticCurveTo(0, r * 0.5, -r * 0.42, r * 0.18);
   ctx.closePath();
-  ctx.moveTo(-r * 0.12, -r * 0.32);
-  ctx.quadraticCurveTo(-r * 0.55, -r * 0.95, -r * 0.88, -r * 0.12);
-  ctx.quadraticCurveTo(-r * 0.42, -r * 0.04, -r * 0.08, -r * 0.16);
+  ctx.moveTo(-r * 0.12, -r * 0.08);
+  ctx.quadraticCurveTo(-r * 0.85, -r * 0.42, -r * 0.98, r * 0.42);
+  ctx.quadraticCurveTo(-r * 0.48, r * 0.48, 0, r * 0.08);
   ctx.closePath();
-  ctx.moveTo(r * 0.14, -r * 0.36);
-  ctx.quadraticCurveTo(r * 0.02, -r * 0.88, -r * 0.32, -r * 0.7);
-  ctx.quadraticCurveTo(r * 0.28, -r * 0.52, r * 0.24, -r * 0.2);
+  ctx.moveTo(r * 0.12, -r * 0.16);
+  ctx.quadraticCurveTo(-r * 0.22, -r * 0.95, -r * 0.72, -r * 0.22);
+  ctx.quadraticCurveTo(r * 0.02, -r * 0.22, r * 0.22, 0.02 * r);
   ctx.closePath();
 }
 
@@ -2097,19 +2095,19 @@ function aCatpHeadPath(ctx: CanvasRenderingContext2D, r: number) {
 }
 
 function aZebrHeadPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.6, r * 0.12);
-  ctx.quadraticCurveTo(-r * 0.46, -r * 0.46, r * 0.1, -r * 0.3);
-  ctx.quadraticCurveTo(r * 0.55, -r * 0.06, r * 0.95, r * 0.12);
-  ctx.quadraticCurveTo(r * 0.55, r * 0.36, r * 0.08, r * 0.4);
-  ctx.quadraticCurveTo(-r * 0.4, r * 0.4, -r * 0.6, r * 0.12);
+  ctx.moveTo(-r * 0.58, r * 0.1);
+  ctx.quadraticCurveTo(-r * 0.4, -r * 0.42, r * 0.12, -r * 0.22);
+  ctx.quadraticCurveTo(r * 0.58, 0, r * 0.98, r * 0.16);
+  ctx.quadraticCurveTo(r * 0.55, r * 0.4, r * 0.08, r * 0.38);
+  ctx.quadraticCurveTo(-r * 0.38, r * 0.38, -r * 0.58, r * 0.1);
   ctx.closePath();
-  ctx.moveTo(-r * 0.1, -r * 0.26);
-  ctx.lineTo(-r * 0.2, -r * 0.9);
-  ctx.lineTo(r * 0.1, -r * 0.26);
+  ctx.moveTo(-r * 0.08, -r * 0.2);
+  ctx.lineTo(-r * 0.22, -r * 0.95);
+  ctx.lineTo(r * 0.14, -r * 0.18);
   ctx.closePath();
-  ctx.moveTo(r * 0.14, -r * 0.2);
-  ctx.lineTo(r * 0.2, -r * 0.82);
-  ctx.lineTo(r * 0.36, -r * 0.16);
+  ctx.moveTo(r * 0.16, -r * 0.14);
+  ctx.lineTo(r * 0.22, -r * 0.88);
+  ctx.lineTo(r * 0.42, -r * 0.1);
   ctx.closePath();
 }
 
@@ -2166,11 +2164,11 @@ function aZebrTailPath(ctx: CanvasRenderingContext2D, r: number) {
 }
 
 function aLegPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.9, -r * 0.16);
-  ctx.quadraticCurveTo(-r * 0.12, r * 0.22, r * 0.32, -r * 0.08);
-  ctx.quadraticCurveTo(r * 0.7, -r * 0.28, r * 0.95, r * 0.2);
-  ctx.quadraticCurveTo(r * 0.52, r * 0.42, r * 0.12, r * 0.2);
-  ctx.quadraticCurveTo(-r * 0.35, r * 0.52, -r * 0.88, r * 0.2);
+  ctx.moveTo(-r * 0.95, -r * 0.2);
+  ctx.quadraticCurveTo(-r * 0.15, r * 0.28, r * 0.28, -r * 0.12);
+  ctx.quadraticCurveTo(r * 0.68, -r * 0.38, r * 0.98, r * 0.28);
+  ctx.quadraticCurveTo(r * 0.48, r * 0.52, r * 0.08, r * 0.22);
+  ctx.quadraticCurveTo(-r * 0.38, r * 0.62, -r * 0.92, r * 0.24);
   ctx.closePath();
 }
 
@@ -2573,14 +2571,23 @@ function drawAnimalMarks(ctx: CanvasRenderingContext2D, c: Charge, r: number) {
     ctx.fill();
   };
   ctx.fillStyle = luma(c.a) > 0.55 ? "#141414" : "#f6f1e6";
-  if (c.kind === "aDragHead") eye(r * 0.2, -r * 0.06, r * 0.07);
-  if (c.kind === "aDogHead") eye(r * 0.22, -r * 0.04, r * 0.07);
+  if (c.kind === "aDragHead") eye(r * 0.18, -r * 0.04, r * 0.08);
+  if (c.kind === "aDogHead") eye(r * 0.28, 0, r * 0.075);
   if (c.kind === "aFerrHead") eye(r * 0.08, -r * 0.02, r * 0.055);
   if (c.kind === "aCatpHead") {
     eye(-r * 0.08, r * 0.02, r * 0.07);
     eye(r * 0.22, r * 0.02, r * 0.07);
   }
   if (c.kind === "aZebrHead") eye(r * 0.12, -r * 0.02, r * 0.06);
+  if (c.kind === "aBody" && c.pattern === "bar") {
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.16);
+    ctx.lineTo(r * 0.14, 0);
+    ctx.lineTo(0, r * 0.16);
+    ctx.lineTo(-r * 0.14, 0);
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 
 function drawSilhouette(ctx: CanvasRenderingContext2D, c: Charge, r: number) {
@@ -2610,7 +2617,7 @@ function makeStamp(c: Charge): HTMLCanvasElement {
 
 const ANIMAL_INK: Record<AnimalChainOn, { a: string; b: string; pattern: Pattern }> = {
   dragon: { a: "#2a7a38", b: "#e8b830", pattern: "bar" },
-  dog: { a: "#e0b24a", b: "#f3dd9c", pattern: "plain" },
+  dog: { a: "#c9922e", b: "#f2d98a", pattern: "half" },
   ferret: { a: "#c49a62", b: "#f0e2c4", pattern: "half" },
   caterpillar: { a: "#5aa84a", b: "#e8c840", pattern: "hoop" },
   zebra: { a: "#f4f4f4", b: "#141414", pattern: "stripe" },
@@ -2687,32 +2694,33 @@ function paintAnimalChain(
   density: number,
 ) {
   const n = animalChainSpineCount(density);
-  const spacing = 0.62 / n;
+  const spacing = 0.72 / n;
+  const plump = animal === "caterpillar" ? 1.08 : 1;
   const spines: ReturnType<typeof projectChainPoint>[] = [];
   for (let i = 0; i < n; i++) {
     const s = wrap01(clock * chain.travel * 0.14 - i * spacing);
     const morphT = clock * chain.morph;
-    const size = i === 0 ? 0.95 : i === n - 1 ? 0.82 : 0.68 + 0.05 * Math.sin(i * 1.7);
+    const size = i === 0 ? 1.05 : i === n - 1 ? 0.78 : 0.48 * plump;
     spines.push(projectChainPoint(s, morphT, chain.vary, chain.smooth, spacing, size));
   }
   for (const app of animalChainAppendages(animal, n)) {
     const now = spines[app.attach];
-    const lag = app.role === "nub" ? 0.07 : 0.12;
+    const lag = app.role === "nub" ? 0.07 : 0.13;
     const thenS = wrap01((clock - lag) * chain.travel * 0.14 - app.attach * spacing);
     const then = projectChainPoint(thenS, (clock - lag) * chain.morph, chain.vary, chain.smooth, spacing, 0.55);
     const vx = now.x - then.x;
     const vy = now.y - then.y;
-    const hang = app.role === "nub" ? 0.03 : 0.06;
-    const trail = app.role === "nub" ? 0.3 : 0.64;
-    const grav = app.role === "nub" ? 0.006 : 0.018;
+    const hang = app.role === "nub" ? 0.038 : 0.09;
+    const trail = app.role === "nub" ? 0.32 : 0.7;
+    const grav = app.role === "nub" ? 0.008 : 0.024;
     const x = now.x + now.nx * app.side * hang - vx * trail;
     const y = now.y + now.ny * app.side * hang - vy * trail + grav;
     draw(animalCharge(animal, app.role), {
       x,
       y,
-      px: clamp(now.px * (app.role === "nub" ? 0.46 : 0.7), 0.036, 0.17),
+      px: clamp(now.px * (app.role === "nub" ? 0.55 : 0.92), 0.04, 0.18),
       rot: Math.atan2(y - now.y, x - now.x),
-      alpha: now.alpha * 0.92,
+      alpha: now.alpha * 0.94,
     });
   }
   for (let i = n - 1; i >= 0; i--) {
@@ -2722,7 +2730,7 @@ function paintAnimalChain(
     let rot = spines[i].rot;
     if (role === "tail") {
       const thenS = wrap01((clock - 0.14) * chain.travel * 0.14 - (n - 1) * spacing);
-      const then = projectChainPoint(thenS, (clock - 0.14) * chain.morph, chain.vary, chain.smooth, spacing, 0.82);
+      const then = projectChainPoint(thenS, (clock - 0.14) * chain.morph, chain.vary, chain.smooth, spacing, 0.78);
       const vx = spines[i].x - then.x;
       const vy = spines[i].y - then.y;
       x -= vx * 0.55;
@@ -2732,7 +2740,7 @@ function paintAnimalChain(
     draw(animalCharge(animal, role), {
       x,
       y,
-      px: spines[i].px * (role === "head" ? 1.22 : role === "tail" ? 1.12 : 0.95),
+      px: spines[i].px * (role === "head" ? 1.28 : role === "tail" ? 1.18 : 1),
       rot,
       alpha: spines[i].alpha,
     });
