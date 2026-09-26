@@ -55,7 +55,7 @@ HOW TO USE IT
 - Then pick ONE move. That clip stays on that move. Toward the camera:
   Rush, Tunnel, Spiral, Helix. Looping patterns: Tide, Rings, Loom,
   Petal, Flock, Wheel, Silk. Music moves: Bars, Ripple, Swing, Burst,
-  Halo, Clap, Wave, Drop, Spot — they stay on a smooth path and punch
+  Halo, Wave, Drop, Spot — they stay on a smooth path and punch
   glow on the beat, not the travel. Drum / illusion moves lock to the
   tempo like a drum pattern: Pong (wall bounce), Fall (drop and
   bounce), Snap (left-right on the kick), Step (zoetrope steps),

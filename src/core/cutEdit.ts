@@ -34,7 +34,7 @@ const PHRASES: { beats: number[]; weight: number }[] = [
   { beats: [8, 2, 2, 4], weight: 2 },
 ];
 
-const HIT_MOVES: MusicMove[] = ["spot", "burst", "clap", "snap", "step"];
+const HIT_MOVES: MusicMove[] = ["spot", "burst", "snap", "step"];
 const FLOW_MOVES: MusicMove[] = ["ripple", "swing", "wave", "halo", "bars", "zip", "moire", "pong", "liss", "grid"];
 const HOLD_MOVES: MusicMove[] = ["drop", "halo", "bars", "wave", "poly", "ghost", "fall"];
 

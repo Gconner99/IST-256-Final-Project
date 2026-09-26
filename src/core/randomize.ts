@@ -1,5 +1,5 @@
 import { ANIMAL_CHAINS, COLLAGE_KITS, HERALDRY_ROOMS, MOVE_LABEL, generatorForMove, inkForKit, inkForSeed, isHeraldry, kitForSeed, paperForKit, paperForSeed, pleasingMoveForSeed } from "../engine/heraldry";
-import { getEffect } from "../effects/registry";
+import { allEffects, getEffect } from "../effects/registry";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
 import type { BlendMode, EffectInstance, GeneratorType, Layer, ParamDef, Project } from "./types";
@@ -313,12 +313,38 @@ function fieldLooks(): Look[] {
   );
 }
 
-function rebuildLayer(layer: Layer, _seed: number, _amount: number, _wacky = false): Layer {
+function panelEffectIds(): string[] {
+  return allEffects().map((e) => e.id).filter((id) => id !== "dancer");
+}
+
+function pickPanelStack(seed: number, wacky: boolean): string[] {
+  const rng = mulberry32(seed >>> 0);
+  const remaining = panelEffectIds();
+  const min = wacky ? 3 : 2;
+  const max = wacky ? 5 : 4;
+  const count = Math.min(remaining.length, min + Math.floor(rng() * (max - min + 1)));
+  const picked: string[] = [];
+  for (let i = 0; i < count && remaining.length; i++) {
+    const idx = Math.floor(rng() * remaining.length);
+    picked.push(remaining.splice(idx, 1)[0]);
+  }
+  return picked;
+}
+
+function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false): Layer {
+  const rng = mulberry32((seed + 17) >>> 0);
+  const mood: Mood = wacky
+    ? rng() > 0.5 ? "outsider" : "mix"
+    : rng() > 0.55 ? "lush" : rng() > 0.35 ? "mix" : "outsider";
+  const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
+  const effects = pickPanelStack(seed, wacky).map((typeId, i) =>
+    applyMood(makeFx(typeId, seed + i * 3331, amount), mood, palette, mulberry32((seed + i * 1117) >>> 0)),
+  );
   return {
     ...layer,
     blendMode: "normal",
     opacity: 1,
-    effects: [],
+    effects,
     feedback: { ...layer.feedback, amount: 0, opacity: 0.4, scale: 1, rotation: 0, distortion: 0 },
   };
 }

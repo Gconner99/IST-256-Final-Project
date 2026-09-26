@@ -126,7 +126,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <label class="status">RND</label>
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
-      <button class="btn tiny hot" data-act="rand-wacky" title="A new kit, ground color, and camera move">Rand wacky</button>
+      <button class="btn tiny hot" data-act="rand-wacky" title="A new kit, ground, move, and a fresh stack of right-panel effects">Rand wacky</button>
       <button class="btn tiny ${store.project.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit" title="Cut to the beat through music-reactive looks">Cut edit</button>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
@@ -159,7 +159,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
-          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Rolls stay small and slower now — no giant stamps, no frantic bounce/flip/flash.</li>
+          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, one locked move, and a short stack of different effects from the right panel (color, distort, analog, geometry, time, shapes). Wacky rolls a thicker stack. No dancer. Rolls stay small and slower — no giant stamps, no frantic bounce/flip/flash.</li>
           <li><strong>Cut edit</strong> is the other randomizer. It listens to the MP3 and cuts on the beat through music-reactive looks. Some shots hold a bar or two. Some are two quick hits that settle. It should feel edited, not shuffled.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music. Move buttons keep the current kit.</li>
@@ -856,7 +856,6 @@ function paintRail(n: HTMLElement) {
     </div>
     <div class="row">
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="halo">Halo</button>
-      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="clap">Clap</button>
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="wave">Wave</button>
     </div>
     <div class="row">

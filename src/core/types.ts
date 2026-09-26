@@ -243,7 +243,6 @@ export interface MediaSource {
     | "swing"
     | "burst"
     | "halo"
-    | "clap"
     | "wave"
     | "drop"
     | "spot"

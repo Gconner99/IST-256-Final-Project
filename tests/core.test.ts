@@ -276,7 +276,6 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("heraldry", "love", "swing").name).toBe("SWING · LOVE");
     expect(defaultGeneratorSource("heraldry", "space", "burst").name).toBe("BURST · SPACE");
     expect(defaultGeneratorSource("heraldry", "sweet", "halo").name).toBe("HALO · SWEET");
-    expect(defaultGeneratorSource("heraldry", "sailor", "clap").name).toBe("CLAP · SAILOR");
     expect(defaultGeneratorSource("heraldry", "fruit", "wave").name).toBe("WAVE · FRUIT");
     expect(defaultGeneratorSource("heraldry", "sailor", "drop").name).toBe("DROP · SAILOR");
     expect(defaultGeneratorSource("heraldry", "love", "spot").name).toBe("SPOT · LOVE");
@@ -596,7 +595,9 @@ describe("randomize + presets", () => {
     expect(a.sources[0].generator).toEqual(b.sources[0].generator);
     expect(a.sources[0].colorA).toEqual(b.sources[0].colorA);
     expect(a.sources[0].colorB).toEqual(b.sources[0].colorB);
-    expect(a.layers[0].effects).toEqual(b.layers[0].effects);
+    expect(a.layers[0].effects.map((e) => ({ typeId: e.typeId, enabled: e.enabled, params: e.params }))).toEqual(
+      b.layers[0].effects.map((e) => ({ typeId: e.typeId, enabled: e.enabled, params: e.params })),
+    );
   });
 
   it("extract/apply preset restores effect params without requiring sources", () => {
@@ -640,15 +641,35 @@ describe("randomize + presets", () => {
   });
 
   it("wacky rand keeps a short stack and plants a collage, not an idol", () => {
+    const panel = new Set(allEffects().map((e) => e.id).filter((id) => id !== "dancer"));
     for (const seed of [1, 7, 99, 256, 90210]) {
       const p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null, true);
       const types = p.layers[0].effects.map((e) => e.typeId);
+      expect(types.length).toBeGreaterThanOrEqual(3);
       expect(types.length).toBeLessThanOrEqual(5);
+      expect(new Set(types).size).toBe(types.length);
       expect(types).not.toContain("dancer");
+      expect(types.every((id) => panel.has(id))).toBe(true);
       expect(FIELD_ROOMS).toContain(p.sources[0].generator);
       expect(HERALDRY_ROOMS).toContain(p.sources[0].generator);
       expect(isHeraldry(p.sources[0].generator)).toBe(true);
     }
+  });
+
+  it("rand all plants a short right-panel stack, never an idol", () => {
+    const panel = new Set(allEffects().map((e) => e.id).filter((id) => id !== "dancer"));
+    const seen = new Set<string>();
+    for (const seed of [1, 7, 99, 256, 90210, 404, 777]) {
+      const p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null);
+      const types = p.layers[0].effects.map((e) => e.typeId);
+      expect(types.length).toBeGreaterThanOrEqual(2);
+      expect(types.length).toBeLessThanOrEqual(4);
+      expect(new Set(types).size).toBe(types.length);
+      expect(types).not.toContain("dancer");
+      expect(types.every((id) => panel.has(id))).toBe(true);
+      types.forEach((id) => seen.add(id));
+    }
+    expect(seen.size).toBeGreaterThan(4);
   });
 
   it("random collage rolls stay small, slow, and pleasing", () => {
@@ -911,7 +932,6 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("heraldry", "swing")).toBe("swing");
     expect(sceneFromGenerator("heraldry", "burst")).toBe("burst");
     expect(sceneFromGenerator("heraldry", "halo")).toBe("halo");
-    expect(sceneFromGenerator("heraldry", "clap")).toBe("clap");
     expect(sceneFromGenerator("heraldry", "wave")).toBe("wave");
     expect(sceneFromGenerator("heraldry", "drop")).toBe("drop");
     expect(sceneFromGenerator("heraldry", "spot")).toBe("spot");
@@ -964,7 +984,6 @@ describe("heraldry collage", () => {
       "swing",
       "burst",
       "halo",
-      "clap",
       "wave",
       "drop",
       "spot",
@@ -992,6 +1011,9 @@ describe("heraldry collage", () => {
     expect(isMusicMove("step")).toBe(true);
     expect(isMusicMove("moire")).toBe(true);
     expect(isMusicMove("snap")).toBe(true);
+    expect(isMusicMove("clap")).toBe(false);
+    expect(isPleasingMove("clap")).toBe(false);
+    expect(COLLAGE_MOVES.includes("clap" as (typeof COLLAGE_MOVES)[number])).toBe(false);
     expect(isMusicMove("chain")).toBe(false);
     expect(isPleasingMove("chain")).toBe(true);
     expect(isSimMove("spring")).toBe(true);

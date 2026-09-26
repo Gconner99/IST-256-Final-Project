@@ -101,7 +101,6 @@ export const COLLAGE_MOVES = [
   "swing",
   "burst",
   "halo",
-  "clap",
   "wave",
   "drop",
   "spot",
@@ -130,7 +129,6 @@ export const MUSIC_MOVES = [
   "swing",
   "burst",
   "halo",
-  "clap",
   "wave",
   "drop",
   "spot",
@@ -177,7 +175,6 @@ export const MOVE_LABEL: Record<CollageMove, string> = {
   swing: "SWING",
   burst: "BURST",
   halo: "HALO",
-  clap: "CLAP",
   wave: "WAVE",
   drop: "DROP",
   spot: "SPOT",
@@ -232,7 +229,6 @@ export const PLEASING_MOVES = [
   "swing",
   "burst",
   "halo",
-  "clap",
   "wave",
   "drop",
   "spot",
@@ -3042,7 +3038,6 @@ export class HeraldryField {
         scene === "swing" ||
         scene === "burst" ||
         scene === "halo" ||
-        scene === "clap" ||
         scene === "wave") &&
       beat > 0.04
     ) {
@@ -3395,21 +3390,6 @@ function poseParticle(
       rot: ang + Math.PI * 0.5,
       alpha: clamp(0.5 + lit * 0.45, 0.4, 1),
       glow: lit,
-    };
-  }
-  if (scene === "clap") {
-    const side = i & 1 ? 1 : -1;
-    const row = Math.floor(i / 2) % 8;
-    const depth = Math.floor(i / 16) % 3;
-    const gap = 0.28 - tick * 0.14;
-    return {
-      x: side * (gap + depth * 0.055),
-      y: (row / 7 - 0.5) * 0.78,
-      px: clamp(0.08 + p.size * 0.035 + punch * 0.03, 0.055, 0.18),
-      rot: p.rot * 0.15 + side * punch * 0.2,
-      alpha: 1,
-      squash: 1 - punch * 0.16,
-      glow: punch * 0.5,
     };
   }
   if (scene === "wave") {
