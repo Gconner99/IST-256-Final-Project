@@ -62,7 +62,11 @@ HOW TO USE IT
   Moire (counter-spin rings), Poly (3 against 4), Grid and Zip
   (sliding rows), Liss (figure-8), Ghost (afterimage). Drop holds
   still until a big chorus hit. Spot lights one stamp each hit.
-  Mix rolls a locked move.
+  Mix rolls a locked move. Chain is a freeform 3D conga line —
+  stamps follow one another along a path that keeps curling,
+  folding, and wandering through depth instead of riding a
+  fixed circle. Chain has its own sliders: Movement Speed,
+  Shape Change Speed, Shape Variation, and Shape Smoothness.
 - Mash mixes a second kit's stamps onto the same ground (Love on Music,
   and so on). Wash taps a kit color without rolling a new move. Night
   is a darker club wash that breathes on bass. Size / Storm sliders

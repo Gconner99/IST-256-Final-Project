@@ -41,6 +41,10 @@ import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/regi
 import { collageName, defaultGeneratorSource } from "../core/defaults";
 import {
   COLLAGE_KITS,
+  clampCollageChainMorph,
+  clampCollageChainSmooth,
+  clampCollageChainTravel,
+  clampCollageChainVary,
   clampCollageDensity,
   clampCollagePace,
   clampCollageScale,
@@ -437,6 +441,18 @@ function bind(root: HTMLElement) {
     if (t.id === "collage-pace") {
       patchCollage((s) => ({ ...s, collagePace: clampCollagePace(Number(t.value)) }), undefined, true);
     }
+    if (t.id === "collage-chain-travel") {
+      patchCollage((s) => ({ ...s, collageChainTravel: clampCollageChainTravel(Number(t.value)) }), undefined, true);
+    }
+    if (t.id === "collage-chain-morph") {
+      patchCollage((s) => ({ ...s, collageChainMorph: clampCollageChainMorph(Number(t.value)) }), undefined, true);
+    }
+    if (t.id === "collage-chain-vary") {
+      patchCollage((s) => ({ ...s, collageChainVary: clampCollageChainVary(Number(t.value)) }), undefined, true);
+    }
+    if (t.id === "collage-chain-smooth") {
+      patchCollage((s) => ({ ...s, collageChainSmooth: clampCollageChainSmooth(Number(t.value)) }), undefined, true);
+    }
     if (t.id === "exp-q") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, quality: Number(t.value) } }), false);
     if (t.id === "exp-br") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, bitrate: Number(t.value) } }), false);
     if (t.id === "exp-name") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, filename: t.value } }), false);
@@ -610,7 +626,29 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="wheel">Wheel</button>
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="silk">Silk</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="mix">Mix</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="chain">Chain</button>
     </div>
+    ${
+      collage?.collageMove === "chain"
+        ? `<div class="sec">Chain</div>
+    <div class="param"><span>Movement Speed</span>
+      <input id="collage-chain-travel" type="range" min="0.2" max="2.2" step="0.05" value="${clampCollageChainTravel(collage?.collageChainTravel)}" />
+      <input id="collage-chain-travel" type="number" min="0.2" max="2.2" step="0.05" value="${clampCollageChainTravel(collage?.collageChainTravel).toFixed(2)}" />
+      <span></span></div>
+    <div class="param"><span>Shape Change Speed</span>
+      <input id="collage-chain-morph" type="range" min="0.12" max="2" step="0.05" value="${clampCollageChainMorph(collage?.collageChainMorph)}" />
+      <input id="collage-chain-morph" type="number" min="0.12" max="2" step="0.05" value="${clampCollageChainMorph(collage?.collageChainMorph).toFixed(2)}" />
+      <span></span></div>
+    <div class="param"><span>Shape Variation</span>
+      <input id="collage-chain-vary" type="range" min="0.2" max="2" step="0.05" value="${clampCollageChainVary(collage?.collageChainVary)}" />
+      <input id="collage-chain-vary" type="number" min="0.2" max="2" step="0.05" value="${clampCollageChainVary(collage?.collageChainVary).toFixed(2)}" />
+      <span></span></div>
+    <div class="param"><span>Shape Smoothness</span>
+      <input id="collage-chain-smooth" type="range" min="0.12" max="1" step="0.02" value="${clampCollageChainSmooth(collage?.collageChainSmooth)}" />
+      <input id="collage-chain-smooth" type="number" min="0.12" max="1" step="0.02" value="${clampCollageChainSmooth(collage?.collageChainSmooth).toFixed(2)}" />
+      <span></span></div>`
+        : ""
+    }
     <div class="sec">Music</div>
     <div class="row">
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="bars">Bars</button>
@@ -657,7 +695,7 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
       <button class="btn tiny ${p.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit">Cut edit</button>
     </div>
-    <div class="status" style="margin-top:4px">Each clip keeps one move. Drum / illusion moves lock to the tempo grid — bounce, zoetrope, 3-against-4, afterimages. Music punches glow, not the path. Cut edit still cuts on the beat. Drop an MP3 first.</div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move. Chain is a freeform 3D conga line with its own speed and shape sliders. Drum / illusion moves lock to the tempo grid. Music punches glow, not the path. Cut edit still cuts on the beat. Drop an MP3 first.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
@@ -915,6 +953,10 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     scale: src.collageScale,
     density: src.collageDensity,
     pace: src.collagePace,
+    chainTravel: src.collageChainTravel,
+    chainMorph: src.collageChainMorph,
+    chainVary: src.collageChainVary,
+    chainSmooth: src.collageChainSmooth,
     wash: keepWash ? src.colorA : undefined,
   };
 }

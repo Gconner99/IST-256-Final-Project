@@ -167,6 +167,14 @@ export interface MediaSource {
   collageDensity?: number;
   /** Motion rate. Lower is calmer. */
   collagePace?: number;
+  /** Chain: how quickly stamps travel along the freeform path. */
+  collageChainTravel?: number;
+  /** Chain: how quickly the path changes shape. */
+  collageChainMorph?: number;
+  /** Chain: how dramatically the path bends and stretches. */
+  collageChainVary?: number;
+  /** Chain: how fluid versus active those shape changes are. */
+  collageChainSmooth?: number;
   /** Locked camera move for this clip. */
   collageMove?:
     | "rush"
@@ -207,7 +215,8 @@ export interface MediaSource {
     | "poly"
     | "fall"
     | "liss"
-    | "snap";
+    | "snap"
+    | "chain";
 }
 
 export interface Keyframe {

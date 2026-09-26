@@ -1,4 +1,8 @@
 import {
+  clampCollageChainMorph,
+  clampCollageChainSmooth,
+  clampCollageChainTravel,
+  clampCollageChainVary,
   clampCollageDensity,
   clampCollagePace,
   clampCollageScale,
@@ -143,6 +147,10 @@ export interface CollageExtras {
   density?: number;
   pace?: number;
   wash?: string | null;
+  chainTravel?: number;
+  chainMorph?: number;
+  chainVary?: number;
+  chainSmooth?: number;
 }
 
 export function collageName(move: CollageMove, kit: CollageKit, kitB?: CollageKit | null): string {
@@ -198,6 +206,10 @@ export function defaultGeneratorSource(
     collageScale: collageKit ? clampCollageScale(extras?.scale) : undefined,
     collageDensity: collageKit ? clampCollageDensity(extras?.density) : undefined,
     collagePace: collageKit ? clampCollagePace(extras?.pace) : undefined,
+    collageChainTravel: collageKit ? clampCollageChainTravel(extras?.chainTravel) : undefined,
+    collageChainMorph: collageKit ? clampCollageChainMorph(extras?.chainMorph) : undefined,
+    collageChainVary: collageKit ? clampCollageChainVary(extras?.chainVary) : undefined,
+    collageChainSmooth: collageKit ? clampCollageChainSmooth(extras?.chainSmooth) : undefined,
     width: 1280,
     height: 720,
     duration: 0,

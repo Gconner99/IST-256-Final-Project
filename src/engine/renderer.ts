@@ -372,6 +372,10 @@ export class Renderer {
       scale: look.collageScale,
       density: look.collageDensity,
       pace: look.collagePace,
+      chainTravel: look.collageChainTravel,
+      chainMorph: look.collageChainMorph,
+      chainVary: look.collageChainVary,
+      chainSmooth: look.collageChainSmooth,
     });
     texImage(gl, this.heraldryTex, canvas);
     if (target) {

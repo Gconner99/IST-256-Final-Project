@@ -6,7 +6,7 @@ import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaul
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
 import { buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
-import { buildField, clampCollageDensity, clampCollagePace, clampCollageScale, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isHeraldry, isMusicMove, isPleasingMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isHeraldry, isMusicMove, isPleasingMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -289,6 +289,11 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("heraldry", "nature", "fall").name).toBe("FALL · GROVE");
     expect(defaultGeneratorSource("heraldry", "space", "liss").name).toBe("LISS · SPACE");
     expect(defaultGeneratorSource("heraldry", "love", "snap").name).toBe("SNAP · LOVE");
+    expect(defaultGeneratorSource("heraldry", "space", "chain").name).toBe("CHAIN · SPACE");
+    expect(defaultGeneratorSource("heraldry", "sailor", "chain", { chainTravel: 1.8, chainMorph: 0.2, chainVary: 1.6, chainSmooth: 0.3 }).collageChainTravel).toBeCloseTo(1.8);
+    expect(defaultGeneratorSource("heraldry", "sailor", "chain", { chainTravel: 1.8, chainMorph: 0.2, chainVary: 1.6, chainSmooth: 0.3 }).collageChainMorph).toBeCloseTo(0.2);
+    expect(defaultGeneratorSource("heraldry", "sailor", "chain", { chainTravel: 1.8, chainMorph: 0.2, chainVary: 1.6, chainSmooth: 0.3 }).collageChainVary).toBeCloseTo(1.6);
+    expect(defaultGeneratorSource("heraldry", "sailor", "chain", { chainTravel: 1.8, chainMorph: 0.2, chainVary: 1.6, chainSmooth: 0.3 }).collageChainSmooth).toBeCloseTo(0.3);
     expect(defaultGeneratorSource("heraldry", "love", "spot", { kitB: "music" }).name).toBe("SPOT · LOVE · MUSIC");
     expect(defaultGeneratorSource("heraldry", "love", "spot", { kitB: "love" }).name).toBe("SPOT · LOVE");
     expect(defaultGeneratorSource("heraldry", "music", "bars", { night: true, scale: 1.4, density: 0.5 }).collageNight).toBe(true);
@@ -907,6 +912,7 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("heraldry", "fall")).toBe("fall");
     expect(sceneFromGenerator("heraldry", "liss")).toBe("liss");
     expect(sceneFromGenerator("heraldry", "snap")).toBe("snap");
+    expect(sceneFromGenerator("heraldry", "chain")).toBe("chain");
     expect(sceneFromGenerator("heraldry", "helix")).toBe("helix");
     expect(sceneFromGenerator("heraldry", "prism")).toBe("prism");
     expect(sceneAt(0.2, 8, "tour")).toBe("rush");
@@ -955,6 +961,7 @@ describe("heraldry collage", () => {
       "fall",
       "liss",
       "snap",
+      "chain",
     ]);
     expect(isMusicMove("bars")).toBe(true);
     expect(isMusicMove("wave")).toBe(true);
@@ -964,6 +971,8 @@ describe("heraldry collage", () => {
     expect(isMusicMove("step")).toBe(true);
     expect(isMusicMove("moire")).toBe(true);
     expect(isMusicMove("snap")).toBe(true);
+    expect(isMusicMove("chain")).toBe(false);
+    expect(isPleasingMove("chain")).toBe(true);
     expect(isMusicMove("rush")).toBe(false);
     expect(isMusicMove("silk")).toBe(false);
     expect(dropSlam(0.2)).toBe(0);
@@ -974,6 +983,19 @@ describe("heraldry collage", () => {
     expect(spotIndex(0, 120, 36)).not.toBe(spotIndex(0.6, 120, 36));
     expect(clampCollageScale(9)).toBe(2);
     expect(clampCollageDensity(0.1)).toBe(0.35);
+    expect(clampCollageChainTravel(9)).toBe(2.2);
+    expect(clampCollageChainTravel(0)).toBe(0.2);
+    expect(clampCollageChainMorph(undefined)).toBeCloseTo(0.7);
+    expect(clampCollageChainVary(0)).toBe(0.2);
+    expect(clampCollageChainSmooth(2)).toBe(1);
+    const a = chainPath(0.12, 0.4, 1, 0.72);
+    const b = chainPath(0.13, 0.4, 1, 0.72);
+    const c = chainPath(0.12, 1.8, 1.6, 0.2);
+    const wrap = chainPath(0, 0.4, 1, 0.72);
+    const wrapEnd = chainPath(1, 0.4, 1, 0.72);
+    expect(Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z)).toBeLessThan(0.12);
+    expect(Math.hypot(wrap.x - wrapEnd.x, wrap.y - wrapEnd.y, wrap.z - wrapEnd.z)).toBeLessThan(1e-9);
+    expect(Math.hypot(a.x - c.x, a.y - c.y, a.z - c.z)).toBeGreaterThan(0.02);
     expect(tempoTick(0, 120)).toBeCloseTo(1, 5);
     expect(tempoTick(0.25, 120)).toBe(0);
     expect(stepIndex(0, 120, 2)).toBe(0);

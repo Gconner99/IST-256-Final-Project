@@ -45,6 +45,7 @@ export const COLLAGE_MOVES = [
   "fall",
   "liss",
   "snap",
+  "chain",
 ] as const;
 export type CollageMove = (typeof COLLAGE_MOVES)[number];
 export type HeraldryScene = CollageMove | "tour" | "lattice";
@@ -116,6 +117,7 @@ export const MOVE_LABEL: Record<CollageMove, string> = {
   fall: "FALL",
   liss: "LISS",
   snap: "SNAP",
+  chain: "CHAIN",
 };
 
 export function isHeraldry(kind?: string | null): boolean {
@@ -166,6 +168,7 @@ export const PLEASING_MOVES = [
   "fall",
   "liss",
   "snap",
+  "chain",
 ] as const;
 export type PleasingMove = (typeof PLEASING_MOVES)[number];
 
@@ -179,6 +182,97 @@ export function pleasingMoveForSeed(seed: number): CollageMove {
 
 export function clampCollagePace(value?: number | null): number {
   return clamp(value ?? 1, 0.35, 1.2);
+}
+
+export function clampCollageChainTravel(value?: number | null): number {
+  return clamp(value ?? 1, 0.2, 2.2);
+}
+
+export function clampCollageChainMorph(value?: number | null): number {
+  return clamp(value ?? 0.7, 0.12, 2);
+}
+
+export function clampCollageChainVary(value?: number | null): number {
+  return clamp(value ?? 1, 0.2, 2);
+}
+
+export function clampCollageChainSmooth(value?: number | null): number {
+  return clamp(value ?? 0.72, 0.12, 1);
+}
+
+export interface ChainPoint {
+  x: number;
+  y: number;
+  z: number;
+}
+
+/** Freeform 3D ribbon. Integer harmonics keep the loop continuous while amplitudes, axes, and attitude keep changing. */
+export function chainPath(s: number, morphT: number, vary: number, smooth: number): ChainPoint {
+  const u = wrap01(s) * Math.PI * 2;
+  const v = clamp(vary, 0.2, 2);
+  const sm = clamp(smooth, 0.12, 1);
+  const live = 1 - sm;
+  const slow = morphT * 0.31;
+  const mid = morphT * (0.55 + live * 0.35);
+  const fast = morphT * (0.2 + live * 1.15);
+  const breath = (base: number, gain: number, phase: number) =>
+    (base + gain * v) * (0.42 + 0.58 * (0.5 + 0.5 * Math.sin(phase)));
+  const stretchX = 0.7 + 0.3 * Math.sin(slow + 0.4);
+  const stretchY = 0.66 + 0.34 * Math.cos(slow * 0.87 + 1.1);
+  const stretchZ = 0.52 + 0.48 * Math.sin(slow * 0.61 + 2.2);
+  const a1 = (0.17 + 0.11 * v) * stretchX;
+  const a2 = breath(0.04, 0.07, mid + 0.3) * (0.4 + sm * 0.6);
+  const a3 = breath(0.02, 0.08, fast + 1.4) * (0.18 + live * 0.95);
+  const a4 = breath(0.01, 0.06, fast * 1.3 + 0.8) * live;
+  const a5 = breath(0.008, 0.05, mid * 1.6 + 2.1) * live * live;
+  const b1 = (0.15 + 0.1 * v) * stretchY;
+  const b2 = breath(0.035, 0.065, mid + 1.7) * (0.4 + sm * 0.6);
+  const b3 = breath(0.02, 0.07, fast + 0.6) * (0.18 + live * 0.95);
+  const b4 = breath(0.01, 0.055, fast * 1.2 + 2.4) * live;
+  const b5 = breath(0.008, 0.045, mid * 1.4 + 0.5) * live * live;
+  const c1 = (0.13 + 0.11 * v) * stretchZ;
+  const c2 = breath(0.04, 0.08, mid + 2.0) * (0.45 + sm * 0.55);
+  const c3 = breath(0.02, 0.07, fast + 1.9) * (0.18 + live * 0.95);
+  const c4 = breath(0.012, 0.055, fast * 0.9 + 0.2) * live;
+  let x =
+    Math.cos(u + slow * 0.18) * a1 +
+    Math.cos(2 * u + mid * 0.14 + 0.7) * a2 +
+    Math.sin(3 * u + slow * 0.11 + 1.2) * a3 +
+    Math.cos(4 * u + fast * 0.09 + 0.4) * a4 +
+    Math.sin(5 * u + mid * 0.16 + 2.2) * a5;
+  let y =
+    Math.sin(u + slow * 0.15 + 0.5) * b1 +
+    Math.sin(2 * u + mid * 0.19 + 1.4) * b2 +
+    Math.cos(3 * u + slow * 0.09 + 0.3) * b3 +
+    Math.sin(4 * u + fast * 0.12 + 1.8) * b4 +
+    Math.cos(5 * u + mid * 0.08 + 0.9) * b5;
+  let z =
+    Math.sin(u + slow * 0.12 + 1.1) * c1 +
+    Math.cos(2 * u + mid * 0.17 + 0.6) * c2 +
+    Math.sin(3 * u + fast * 0.1 + 2.5) * c3 +
+    Math.cos(4 * u + slow * 0.13 + 1.6) * c4;
+  const fold = Math.sin(2 * u + mid * 0.22) * live * 0.12 * v;
+  z += fold;
+  const yaw = slow * 0.19 + Math.sin(mid * 0.27) * 0.55;
+  const pitch = Math.sin(slow * 0.29 + 0.8) * (0.28 + 0.18 * v);
+  const roll = Math.cos(slow * 0.23 + 1.5) * (0.2 + live * 0.4);
+  const cy = Math.cos(yaw);
+  const sy = Math.sin(yaw);
+  const x1 = x * cy - z * sy;
+  const z1 = x * sy + z * cy;
+  const cp = Math.cos(pitch);
+  const sp = Math.sin(pitch);
+  const y1 = y * cp - z1 * sp;
+  const z2 = y * sp + z1 * cp;
+  const cr = Math.cos(roll);
+  const sr = Math.sin(roll);
+  const x2 = x1 * cr - y1 * sr;
+  const y2 = x1 * sr + y1 * cr;
+  return {
+    x: x2 + Math.sin(slow * 0.47) * 0.06 * v,
+    y: y2 + Math.cos(slow * 0.39 + 1.3) * 0.05 * v,
+    z: z2 + Math.sin(mid * 0.21 + 0.6) * 0.07 * v,
+  };
 }
 
 export function tempoHz(bpm: number, subdiv = 1): number {
@@ -410,6 +504,10 @@ export interface HeraldryPaintOpts {
   scale?: number;
   density?: number;
   pace?: number;
+  chainTravel?: number;
+  chainMorph?: number;
+  chainVary?: number;
+  chainSmooth?: number;
 }
 
 const STAMP = 144;
@@ -1788,6 +1886,12 @@ export class HeraldryField {
     const scale = clampCollageScale(opts.scale);
     const density = clampCollageDensity(opts.density);
     const pace = clampCollagePace(opts.pace);
+    const chain = {
+      travel: clampCollageChainTravel(opts.chainTravel),
+      morph: clampCollageChainMorph(opts.chainMorph),
+      vary: clampCollageChainVary(opts.chainVary),
+      smooth: clampCollageChainSmooth(opts.chainSmooth),
+    };
     paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, beat, bass, !!opts.night, ink);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
@@ -1820,18 +1924,20 @@ export class HeraldryField {
                       ? 120
                       : scene === "bloom"
                         ? 140
-                        : this.particles.length;
+                        : scene === "chain"
+                          ? 56
+                          : this.particles.length;
     const count = Math.max(8, Math.min(this.particles.length, Math.round(baseCount * density)));
     const prisms = scene === "prism" ? 3 : 1;
 
     for (let i = 0; i < count; i++) {
       const p = this.particles[i];
       const stamp = this.stamp(p.charge);
-      const pose = poseParticle(p, i, scene, t, audio, bass, beat, bpm, count, clock);
+      const pose = poseParticle(p, i, scene, t, audio, bass, beat, bpm, count, clock, chain);
       if (!pose) continue;
       const cap =
         scene === "spot" ? 0.34 :
-        scene === "rush" || scene === "tunnel" || scene === "bloom" || scene === "spiral" || scene === "helix" || scene === "prism"
+        scene === "rush" || scene === "tunnel" || scene === "bloom" || scene === "spiral" || scene === "helix" || scene === "prism" || scene === "chain"
           ? 0.26
           : 0.22;
       const dim = Math.min(pose.px * scale, cap) * Math.min(w, h);
@@ -1917,6 +2023,13 @@ function screenBounce(v: number): number {
   return reflect01(v) - 0.5;
 }
 
+interface ChainOpts {
+  travel: number;
+  morph: number;
+  vary: number;
+  smooth: number;
+}
+
 function poseParticle(
   p: Particle,
   i: number,
@@ -1928,6 +2041,7 @@ function poseParticle(
   bpm: number,
   count = 48,
   clock = t,
+  chain?: ChainOpts,
 ): Pose | null {
   const music = isMusicMove(scene);
   const tick = tempoTick(clock, bpm);
@@ -2421,6 +2535,31 @@ function poseParticle(
       alpha: 1,
       glow: punch * 0.6,
       squash: 1 - punch * 0.1,
+    };
+  }
+  if (scene === "chain") {
+    const travel = chain?.travel ?? 1;
+    const morph = chain?.morph ?? 0.7;
+    const vary = chain?.vary ?? 1;
+    const smooth = chain?.smooth ?? 0.72;
+    const n = Math.max(8, count);
+    const spacing = 1 / n;
+    const s = wrap01(clock * travel * 0.14 - i * spacing);
+    const morphT = clock * morph * (0.35 + (1 - smooth) * 0.85);
+    const pt = chainPath(s, morphT, vary, smooth);
+    const nxt = chainPath(wrap01(s + spacing), morphT, vary, smooth);
+    const depth = Math.max(0.42, 1.05 - pt.z * 0.55);
+    const nd = Math.max(0.42, 1.05 - nxt.z * 0.55);
+    const x = pt.x / depth;
+    const y = pt.y / depth;
+    const rot = Math.atan2(nxt.y / nd - y, nxt.x / nd - x);
+    const near = clamp(1.12 / depth, 0.55, 1.85);
+    return {
+      x,
+      y,
+      px: clamp((0.072 + p.size * 0.028) * near, 0.05, 0.24),
+      rot,
+      alpha: clamp(0.52 + near * 0.42, 0.5, 1),
     };
   }
   if (scene === "tunnel") {
