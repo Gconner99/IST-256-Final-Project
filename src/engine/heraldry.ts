@@ -212,24 +212,24 @@ export function chainPath(s: number, morphT: number, vary: number, smooth: numbe
   const v = clamp(vary, 0.2, 2);
   const sm = clamp(smooth, 0.12, 1);
   const live = 1 - sm;
-  const slow = morphT * 0.31;
-  const mid = morphT * (0.55 + live * 0.35);
-  const fast = morphT * (0.2 + live * 1.15);
+  const slow = morphT * 0.68;
+  const mid = morphT * (0.95 + live * 0.55);
+  const fast = morphT * (0.45 + live * 1.55);
   const breath = (base: number, gain: number, phase: number) =>
     (base + gain * v) * (0.42 + 0.58 * (0.5 + 0.5 * Math.sin(phase)));
-  const stretchX = 0.7 + 0.3 * Math.sin(slow + 0.4);
-  const stretchY = 0.66 + 0.34 * Math.cos(slow * 0.87 + 1.1);
-  const stretchZ = 0.52 + 0.48 * Math.sin(slow * 0.61 + 2.2);
-  const a1 = (0.17 + 0.11 * v) * stretchX;
+  const stretchX = 0.84 + 0.22 * Math.sin(slow + 0.4);
+  const stretchY = 0.8 + 0.24 * Math.cos(slow * 0.87 + 1.1);
+  const stretchZ = 0.7 + 0.32 * Math.sin(slow * 0.61 + 2.2);
+  const a1 = (0.2 + 0.12 * v) * stretchX;
   const a2 = breath(0.04, 0.07, mid + 0.3) * (0.4 + sm * 0.6);
   const a3 = breath(0.02, 0.08, fast + 1.4) * (0.18 + live * 0.95);
   const a4 = breath(0.01, 0.06, fast * 1.3 + 0.8) * live;
-  const a5 = breath(0.008, 0.05, mid * 1.6 + 2.1) * live * live;
-  const b1 = (0.15 + 0.1 * v) * stretchY;
+  const a5 = breath(0.006, 0.035, mid * 1.6 + 2.1) * live * live;
+  const b1 = (0.17 + 0.11 * v) * stretchY;
   const b2 = breath(0.035, 0.065, mid + 1.7) * (0.4 + sm * 0.6);
   const b3 = breath(0.02, 0.07, fast + 0.6) * (0.18 + live * 0.95);
   const b4 = breath(0.01, 0.055, fast * 1.2 + 2.4) * live;
-  const b5 = breath(0.008, 0.045, mid * 1.4 + 0.5) * live * live;
+  const b5 = breath(0.006, 0.03, mid * 1.4 + 0.5) * live * live;
   const c1 = (0.13 + 0.11 * v) * stretchZ;
   const c2 = breath(0.04, 0.08, mid + 2.0) * (0.45 + sm * 0.55);
   const c3 = breath(0.02, 0.07, fast + 1.9) * (0.18 + live * 0.95);
@@ -1925,7 +1925,7 @@ export class HeraldryField {
                       : scene === "bloom"
                         ? 140
                         : scene === "chain"
-                          ? 56
+                          ? 40
                           : this.particles.length;
     const count = Math.max(8, Math.min(this.particles.length, Math.round(baseCount * density)));
     const prisms = scene === "prism" ? 3 : 1;
@@ -2543,9 +2543,9 @@ function poseParticle(
     const vary = chain?.vary ?? 1;
     const smooth = chain?.smooth ?? 0.72;
     const n = Math.max(8, count);
-    const spacing = 1 / n;
+    const spacing = 0.62 / n;
     const s = wrap01(clock * travel * 0.14 - i * spacing);
-    const morphT = clock * morph * (0.35 + (1 - smooth) * 0.85);
+    const morphT = clock * morph;
     const pt = chainPath(s, morphT, vary, smooth);
     const nxt = chainPath(wrap01(s + spacing), morphT, vary, smooth);
     const depth = Math.max(0.42, 1.05 - pt.z * 0.55);
