@@ -86,9 +86,11 @@ HOW TO USE IT
 - Grounds are warm colored washes — each kit has a bigger set of
   colors now. Kits also have more stamp shapes (crabs, roses, guitars,
   aliens, and so on). Kit buttons keep the last move.
-- Rand all / Rand wacky rolls a new kit and a calmer move.
-  Stamps stay smaller and slower so a roll does not fill the
-  screen or fly off too fast.
+- Rand all / Rand wacky rolls a new kit, a calmer move, and a
+  short stack of different effects from the right panel (color,
+  distort, analog, geometry, time, shapes). Wacky rolls a thicker
+  stack. No dancer. Stamps stay smaller and slower so a roll
+  does not fill the screen or fly off too fast.
 - Cut edit is the other randomizer. Drop an MP3, then hit
   Cut edit. It cuts on the beat through music-reactive looks.
   Some shots hold. Some are two quick hits that settle. It
