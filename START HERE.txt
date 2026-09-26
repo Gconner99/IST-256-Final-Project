@@ -67,6 +67,10 @@ HOW TO USE IT
   folding, and wandering through depth instead of riding a
   fixed circle. Chain has its own sliders: Movement Speed,
   Shape Change Speed, Shape Variation, and Shape Smoothness.
+  Animal Chain sits inside that same Chain section — Off keeps
+  the ordinary kit stamps, or pick Dragon, Dog, Ferret,
+  Caterpillar, or Zebra to dress the same path as a loose
+  modular animal (head, repeating body, tail, dangling legs).
   Matter moves are a spring mesh (Spring), a changing 3D
   current (Flow), a flock with local rules (Boids), and
   wandering magnets (Poles). Each has its own sliders.

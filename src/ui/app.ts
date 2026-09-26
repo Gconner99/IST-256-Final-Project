@@ -40,6 +40,9 @@ import { resumeAudio } from "../media/audio";
 import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
 import { collageName, defaultGeneratorSource } from "../core/defaults";
 import {
+  ANIMAL_CHAINS,
+  ANIMAL_LABEL,
+  animalFromUnknown,
   COLLAGE_KITS,
   clampBoidAlign,
   clampBoidCohere,
@@ -129,7 +132,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
+        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Chain can optionally wear Animal Chain parts (dragon, dog, ferret, caterpillar, zebra) on the same path. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -275,6 +278,13 @@ function bind(root: HTMLElement) {
         addSource(defaultGeneratorSource("wallpaper", "sailor", "rush", { night: true }), true);
         store.patchUi({ status: "night wash" });
       }
+    }
+    if (act === "chain-animal") {
+      const next = animalFromUnknown(t.dataset.animal);
+      patchCollage(
+        (s) => renameCollage({ ...s, collageChainAnimal: next }),
+        next === "off" ? "animal chain off" : `animal chain · ${next}`,
+      );
     }
     if (act === "stamp-critters") stampCritters();
     if (act === "stamp-idol") stampIdol();
@@ -694,7 +704,14 @@ function paintRail(n: HTMLElement) {
     <div class="param"><span>Shape Smoothness</span>
       <input id="collage-chain-smooth" type="range" min="0.12" max="1" step="0.02" value="${clampCollageChainSmooth(collage?.collageChainSmooth)}" />
       <input id="collage-chain-smooth" type="number" min="0.12" max="1" step="0.02" value="${clampCollageChainSmooth(collage?.collageChainSmooth).toFixed(2)}" />
-      <span></span></div>`
+      <span></span></div>
+    <div class="sec">Animal Chain</div>
+    <div class="row">
+      ${ANIMAL_CHAINS.map((id) => {
+        const on = animalFromUnknown(collage?.collageChainAnimal) === id;
+        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="chain-animal" data-animal="${id}">${ANIMAL_LABEL[id]}</button>`;
+      }).join("")}
+    </div>`
         : ""
     }
     <div class="sec">Matter</div>
@@ -1044,6 +1061,7 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     chainMorph: src.collageChainMorph,
     chainVary: src.collageChainVary,
     chainSmooth: src.collageChainSmooth,
+    chainAnimal: src.collageChainAnimal,
     springStrength: src.collageSpringStrength,
     springDamp: src.collageSpringDamp,
     springDist: src.collageSpringDist,
@@ -1071,7 +1089,7 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
 
 function renameCollage(src: MediaSource): MediaSource {
   if (!src.collageKit || !src.collageMove) return src;
-  return { ...src, name: collageName(src.collageMove, src.collageKit, src.collageKitB) };
+  return { ...src, name: collageName(src.collageMove, src.collageKit, src.collageKitB, src.collageChainAnimal) };
 }
 
 function patchCollage(mut: (src: MediaSource) => MediaSource, status?: string, live = false): boolean {

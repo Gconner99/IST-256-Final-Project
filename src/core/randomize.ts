@@ -1,4 +1,4 @@
-import { COLLAGE_KITS, HERALDRY_ROOMS, MOVE_LABEL, generatorForMove, inkForKit, inkForSeed, isHeraldry, kitForSeed, paperForKit, paperForSeed, pleasingMoveForSeed } from "../engine/heraldry";
+import { ANIMAL_CHAINS, COLLAGE_KITS, HERALDRY_ROOMS, MOVE_LABEL, generatorForMove, inkForKit, inkForSeed, isHeraldry, kitForSeed, paperForKit, paperForSeed, pleasingMoveForSeed } from "../engine/heraldry";
 import { getEffect } from "../effects/registry";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
@@ -412,6 +412,7 @@ export function randomizeProject(
         collageChainMorph: 0.35 + prng() * 0.85,
         collageChainVary: 0.65 + prng() * 0.8,
         collageChainSmooth: 0.4 + prng() * 0.45,
+        collageChainAnimal: move === "chain" && prng() > 0.55 ? ANIMAL_CHAINS[1 + Math.floor(prng() * 5)] : "off",
         colorA: paperForKit(kit, seed + i * 17),
         colorB: inkForKit(kit),
         name: kitB ? `${MOVE_LABEL[move]} · ${kit} · ${kitB}` : `${MOVE_LABEL[move]} · ${kit}`,
@@ -478,6 +479,7 @@ export function chaosStamp(project: Project): Project {
         collageChainMorph: 0.35 + rng() * 0.85,
         collageChainVary: 0.65 + rng() * 0.8,
         collageChainSmooth: 0.4 + rng() * 0.45,
+        collageChainAnimal: move === "chain" && rng() > 0.55 ? ANIMAL_CHAINS[1 + Math.floor(rng() * 5)] : "off",
         colorA: paperForKit(kit, seed + i * 13),
         colorB: inkForSeed(seed + i * 29),
         name: `${MOVE_LABEL[move]} · ${kit}`,

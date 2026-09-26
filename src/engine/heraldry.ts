@@ -245,6 +245,65 @@ export function clampCollageChainSmooth(value?: number | null): number {
   return clamp(value ?? 0.72, 0.12, 1);
 }
 
+export const ANIMAL_CHAINS = ["off", "dragon", "dog", "ferret", "caterpillar", "zebra"] as const;
+export type AnimalChain = (typeof ANIMAL_CHAINS)[number];
+export type AnimalChainOn = Exclude<AnimalChain, "off">;
+export type AnimalRole = "head" | "body" | "tail" | "leg" | "nub";
+
+export const ANIMAL_LABEL: Record<AnimalChain, string> = {
+  off: "Off",
+  dragon: "Dragon",
+  dog: "Dog",
+  ferret: "Ferret",
+  caterpillar: "Caterpillar",
+  zebra: "Zebra",
+};
+
+export function animalFromUnknown(value?: string | null): AnimalChain {
+  return ANIMAL_CHAINS.includes(value as AnimalChain) ? (value as AnimalChain) : "off";
+}
+
+export function animalChainSpineCount(density?: number | null): number {
+  return Math.max(12, Math.min(22, Math.round(16 * clamp(density ?? 1, 0.35, 2))));
+}
+
+export function animalChainRoles(animal: AnimalChain, spine: number): AnimalRole[] {
+  if (animal === "off" || spine < 2) return [];
+  return Array.from({ length: spine }, (_, i) => (i === 0 ? "head" : i === spine - 1 ? "tail" : "body"));
+}
+
+export function animalChainAppendages(
+  animal: AnimalChain,
+  spine: number,
+): { role: "leg" | "nub"; attach: number; side: number }[] {
+  if (animal === "off" || spine < 4) return [];
+  if (animal === "caterpillar") {
+    const out: { role: "nub"; attach: number; side: number }[] = [];
+    for (let i = 1; i < spine - 1; i++) {
+      out.push({ role: "nub", attach: i, side: -1 });
+      out.push({ role: "nub", attach: i, side: 1 });
+    }
+    return out;
+  }
+  const fore = Math.max(1, Math.round((spine - 1) * 0.22));
+  const hind = Math.max(fore + 2, Math.round((spine - 1) * 0.62));
+  return [
+    { role: "leg", attach: fore, side: -1 },
+    { role: "leg", attach: fore, side: 1 },
+    { role: "leg", attach: hind, side: -1 },
+    { role: "leg", attach: hind, side: 1 },
+  ];
+}
+
+export function animalChainLayout(animal: AnimalChain, density = 1) {
+  const spine = animal === "off" ? 0 : animalChainSpineCount(density);
+  return {
+    spine,
+    roles: animalChainRoles(animal, spine),
+    appendages: animalChainAppendages(animal, spine),
+  };
+}
+
 export interface ChainPoint {
   x: number;
   y: number;
@@ -508,9 +567,22 @@ type Kind =
   | "coin"
   | "pawn"
   | "cart"
-  | "flag";
+  | "flag"
+  | "aBody"
+  | "aLeg"
+  | "aNub"
+  | "aDragHead"
+  | "aDragTail"
+  | "aDogHead"
+  | "aDogTail"
+  | "aFerrHead"
+  | "aFerrTail"
+  | "aCatpHead"
+  | "aCatpTail"
+  | "aZebrHead"
+  | "aZebrTail";
 
-type Pattern = "plain" | "polka" | "hoop" | "half" | "bar";
+type Pattern = "plain" | "polka" | "hoop" | "half" | "bar" | "stripe";
 
 const KIT_PAPER: Record<CollageKit, Kind[]> = {
   sailor: ["fish", "anchor", "wave", "shell", "starfish", "boat", "tail", "swallow", "star", "moon", "crab", "helm", "lighthouse", "compass"],
@@ -601,6 +673,7 @@ export interface HeraldryPaintOpts {
   chainMorph?: number;
   chainVary?: number;
   chainSmooth?: number;
+  chainAnimal?: string | null;
   springStrength?: number;
   springDamp?: number;
   springDist?: number;
@@ -750,6 +823,13 @@ function fillPattern(ctx: CanvasRenderingContext2D, path: () => void, c: Charge,
     ctx.fillRect(0, -s, s, s * 2);
   } else if (c.pattern === "bar") {
     ctx.fillRect(-s, -r * 0.18, s * 2, r * 0.36);
+  } else if (c.pattern === "stripe") {
+    ctx.save();
+    ctx.rotate(-0.48);
+    for (let i = -6; i < 7; i++) {
+      ctx.fillRect(-s, i * r * 0.3 - r * 0.07, s * 2, r * 0.13);
+    }
+    ctx.restore();
   }
   ctx.restore();
   ctx.save();
@@ -1940,6 +2020,167 @@ function flagPath(ctx: CanvasRenderingContext2D, r: number) {
   ctx.closePath();
 }
 
+function aBodyPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.92, 0);
+  ctx.quadraticCurveTo(-r * 0.78, -r * 0.52, -r * 0.18, -r * 0.46);
+  ctx.quadraticCurveTo(r * 0.22, -r * 0.54, r * 0.78, -r * 0.28);
+  ctx.quadraticCurveTo(r * 0.98, 0, r * 0.78, r * 0.28);
+  ctx.quadraticCurveTo(r * 0.22, r * 0.54, -r * 0.18, r * 0.46);
+  ctx.quadraticCurveTo(-r * 0.78, r * 0.52, -r * 0.92, 0);
+  ctx.closePath();
+}
+
+function aDragHeadPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.85, -r * 0.1);
+  ctx.quadraticCurveTo(-r * 0.52, -r * 0.58, 0, -r * 0.42);
+  ctx.lineTo(r * 0.28, -r * 0.18);
+  ctx.lineTo(r * 0.95, -r * 0.06);
+  ctx.lineTo(r * 0.7, r * 0.08);
+  ctx.lineTo(r * 0.88, r * 0.3);
+  ctx.lineTo(r * 0.32, r * 0.2);
+  ctx.quadraticCurveTo(-r * 0.12, r * 0.55, -r * 0.72, r * 0.2);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.12, -r * 0.4);
+  ctx.lineTo(r * 0.08, -r * 0.95);
+  ctx.lineTo(r * 0.24, -r * 0.32);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.42, -r * 0.38);
+  ctx.lineTo(-r * 0.28, -r * 0.82);
+  ctx.lineTo(-r * 0.06, -r * 0.3);
+  ctx.closePath();
+}
+
+function aDogHeadPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.52, r * 0.16);
+  ctx.quadraticCurveTo(-r * 0.48, -r * 0.42, r * 0.16, -r * 0.4);
+  ctx.quadraticCurveTo(r * 0.55, -r * 0.24, r * 0.9, r * 0.06);
+  ctx.quadraticCurveTo(r * 0.95, r * 0.28, r * 0.52, r * 0.38);
+  ctx.quadraticCurveTo(r * 0.08, r * 0.56, -r * 0.42, r * 0.34);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.12, -r * 0.32);
+  ctx.quadraticCurveTo(-r * 0.55, -r * 0.95, -r * 0.88, -r * 0.12);
+  ctx.quadraticCurveTo(-r * 0.42, -r * 0.04, -r * 0.08, -r * 0.16);
+  ctx.closePath();
+  ctx.moveTo(r * 0.14, -r * 0.36);
+  ctx.quadraticCurveTo(r * 0.02, -r * 0.88, -r * 0.32, -r * 0.7);
+  ctx.quadraticCurveTo(r * 0.28, -r * 0.52, r * 0.24, -r * 0.2);
+  ctx.closePath();
+}
+
+function aFerrHeadPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.72, r * 0.08);
+  ctx.quadraticCurveTo(-r * 0.52, -r * 0.4, -r * 0.02, -r * 0.3);
+  ctx.quadraticCurveTo(r * 0.48, -r * 0.1, r * 0.98, r * 0.08);
+  ctx.quadraticCurveTo(r * 0.48, r * 0.26, 0, r * 0.3);
+  ctx.quadraticCurveTo(-r * 0.48, r * 0.4, -r * 0.72, r * 0.08);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.22, -r * 0.26);
+  ctx.lineTo(-r * 0.32, -r * 0.7);
+  ctx.lineTo(0, -r * 0.26);
+  ctx.closePath();
+  ctx.moveTo(r * 0.06, -r * 0.2);
+  ctx.lineTo(r * 0.04, -r * 0.6);
+  ctx.lineTo(r * 0.24, -r * 0.16);
+  ctx.closePath();
+}
+
+function aCatpHeadPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(r * 0.06, r * 0.08, r * 0.62, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.04, -r * 0.46);
+  ctx.quadraticCurveTo(-r * 0.32, -r * 0.95, -r * 0.55, -r * 0.52);
+  ctx.quadraticCurveTo(-r * 0.2, -r * 0.6, r * 0.02, -r * 0.38);
+  ctx.closePath();
+  ctx.moveTo(r * 0.28, -r * 0.46);
+  ctx.quadraticCurveTo(r * 0.42, -r * 0.98, r * 0.68, -r * 0.5);
+  ctx.quadraticCurveTo(r * 0.38, -r * 0.56, r * 0.22, -r * 0.36);
+  ctx.closePath();
+}
+
+function aZebrHeadPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.6, r * 0.12);
+  ctx.quadraticCurveTo(-r * 0.46, -r * 0.46, r * 0.1, -r * 0.3);
+  ctx.quadraticCurveTo(r * 0.55, -r * 0.06, r * 0.95, r * 0.12);
+  ctx.quadraticCurveTo(r * 0.55, r * 0.36, r * 0.08, r * 0.4);
+  ctx.quadraticCurveTo(-r * 0.4, r * 0.4, -r * 0.6, r * 0.12);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.1, -r * 0.26);
+  ctx.lineTo(-r * 0.2, -r * 0.9);
+  ctx.lineTo(r * 0.1, -r * 0.26);
+  ctx.closePath();
+  ctx.moveTo(r * 0.14, -r * 0.2);
+  ctx.lineTo(r * 0.2, -r * 0.82);
+  ctx.lineTo(r * 0.36, -r * 0.16);
+  ctx.closePath();
+}
+
+function aDragTailPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(r * 0.92, -r * 0.16);
+  ctx.quadraticCurveTo(r * 0.15, -r * 0.3, -r * 0.32, -r * 0.1);
+  ctx.lineTo(-r * 0.95, -r * 0.42);
+  ctx.lineTo(-r * 0.52, 0);
+  ctx.lineTo(-r * 0.95, r * 0.42);
+  ctx.lineTo(-r * 0.32, r * 0.1);
+  ctx.quadraticCurveTo(r * 0.15, r * 0.3, r * 0.92, r * 0.16);
+  ctx.closePath();
+}
+
+function aDogTailPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(r * 0.88, -r * 0.1);
+  ctx.quadraticCurveTo(r * 0.18, -r * 0.55, -r * 0.35, -r * 0.52);
+  ctx.quadraticCurveTo(-r * 0.95, -r * 0.12, -r * 0.52, r * 0.22);
+  ctx.quadraticCurveTo(-r * 0.12, r * 0.4, r * 0.48, r * 0.12);
+  ctx.quadraticCurveTo(r * 0.75, r * 0.04, r * 0.88, r * 0.1);
+  ctx.closePath();
+}
+
+function aFerrTailPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(r * 0.95, -r * 0.2);
+  ctx.quadraticCurveTo(r * 0.12, -r * 0.48, -r * 0.55, -r * 0.2);
+  ctx.quadraticCurveTo(-r * 0.98, 0, -r * 0.55, r * 0.2);
+  ctx.quadraticCurveTo(r * 0.12, r * 0.48, r * 0.95, r * 0.2);
+  ctx.closePath();
+}
+
+function aCatpTailPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(r * 0.88, 0);
+  ctx.quadraticCurveTo(r * 0.68, -r * 0.5, r * 0.08, -r * 0.46);
+  ctx.quadraticCurveTo(-r * 0.52, -r * 0.52, -r * 0.82, -r * 0.06);
+  ctx.lineTo(-r * 0.98, -r * 0.4);
+  ctx.lineTo(-r * 0.68, 0);
+  ctx.lineTo(-r * 0.98, r * 0.4);
+  ctx.lineTo(-r * 0.82, r * 0.06);
+  ctx.quadraticCurveTo(-r * 0.52, r * 0.52, r * 0.08, r * 0.46);
+  ctx.quadraticCurveTo(r * 0.68, r * 0.5, r * 0.88, 0);
+  ctx.closePath();
+}
+
+function aZebrTailPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(r * 0.92, -r * 0.08);
+  ctx.quadraticCurveTo(r * 0.18, -r * 0.16, -r * 0.22, -r * 0.06);
+  ctx.lineTo(-r * 0.85, -r * 0.4);
+  ctx.lineTo(-r * 0.52, 0);
+  ctx.lineTo(-r * 0.9, r * 0.36);
+  ctx.lineTo(-r * 0.22, r * 0.08);
+  ctx.quadraticCurveTo(r * 0.18, r * 0.16, r * 0.92, r * 0.08);
+  ctx.closePath();
+}
+
+function aLegPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.9, -r * 0.16);
+  ctx.quadraticCurveTo(-r * 0.12, r * 0.22, r * 0.32, -r * 0.08);
+  ctx.quadraticCurveTo(r * 0.7, -r * 0.28, r * 0.95, r * 0.2);
+  ctx.quadraticCurveTo(r * 0.52, r * 0.42, r * 0.12, r * 0.2);
+  ctx.quadraticCurveTo(-r * 0.35, r * 0.52, -r * 0.88, r * 0.2);
+  ctx.closePath();
+}
+
+function aNubPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.68, -r * 0.2);
+  ctx.quadraticCurveTo(r * 0.12, -r * 0.52, r * 0.85, 0);
+  ctx.quadraticCurveTo(r * 0.12, r * 0.52, -r * 0.68, r * 0.2);
+  ctx.closePath();
+}
+
 function drawKind(ctx: CanvasRenderingContext2D, kind: Kind, r: number) {
   ctx.beginPath();
   switch (kind) {
@@ -2280,10 +2521,66 @@ function drawKind(ctx: CanvasRenderingContext2D, kind: Kind, r: number) {
     case "flag":
       flagPath(ctx, r);
       break;
+    case "aBody":
+      aBodyPath(ctx, r);
+      break;
+    case "aLeg":
+      aLegPath(ctx, r);
+      break;
+    case "aNub":
+      aNubPath(ctx, r);
+      break;
+    case "aDragHead":
+      aDragHeadPath(ctx, r);
+      break;
+    case "aDragTail":
+      aDragTailPath(ctx, r);
+      break;
+    case "aDogHead":
+      aDogHeadPath(ctx, r);
+      break;
+    case "aDogTail":
+      aDogTailPath(ctx, r);
+      break;
+    case "aFerrHead":
+      aFerrHeadPath(ctx, r);
+      break;
+    case "aFerrTail":
+      aFerrTailPath(ctx, r);
+      break;
+    case "aCatpHead":
+      aCatpHeadPath(ctx, r);
+      break;
+    case "aCatpTail":
+      aCatpTailPath(ctx, r);
+      break;
+    case "aZebrHead":
+      aZebrHeadPath(ctx, r);
+      break;
+    case "aZebrTail":
+      aZebrTailPath(ctx, r);
+      break;
     default:
       housePath(ctx, r);
       break;
   }
+}
+
+function drawAnimalMarks(ctx: CanvasRenderingContext2D, c: Charge, r: number) {
+  const eye = (x: number, y: number, rad: number) => {
+    ctx.beginPath();
+    ctx.arc(x, y, rad, 0, Math.PI * 2);
+    ctx.fill();
+  };
+  ctx.fillStyle = luma(c.a) > 0.55 ? "#141414" : "#f6f1e6";
+  if (c.kind === "aDragHead") eye(r * 0.2, -r * 0.06, r * 0.07);
+  if (c.kind === "aDogHead") eye(r * 0.22, -r * 0.04, r * 0.07);
+  if (c.kind === "aFerrHead") eye(r * 0.08, -r * 0.02, r * 0.055);
+  if (c.kind === "aCatpHead") {
+    eye(-r * 0.08, r * 0.02, r * 0.07);
+    eye(r * 0.22, r * 0.02, r * 0.07);
+  }
+  if (c.kind === "aZebrHead") eye(r * 0.12, -r * 0.02, r * 0.06);
 }
 
 function drawSilhouette(ctx: CanvasRenderingContext2D, c: Charge, r: number) {
@@ -2292,10 +2589,12 @@ function drawSilhouette(ctx: CanvasRenderingContext2D, c: Charge, r: number) {
     ctx.save();
     ctx.scale(-1, 1);
     fillPattern(ctx, path, c, r);
+    drawAnimalMarks(ctx, c, r);
     ctx.restore();
     return;
   }
   fillPattern(ctx, path, c, r);
+  drawAnimalMarks(ctx, c, r);
 }
 
 function makeStamp(c: Charge): HTMLCanvasElement {
@@ -2307,6 +2606,137 @@ function makeStamp(c: Charge): HTMLCanvasElement {
   ctx.translate(STAMP / 2, STAMP / 2);
   drawSilhouette(ctx, c, STAMP * 0.38);
   return canvas;
+}
+
+const ANIMAL_INK: Record<AnimalChainOn, { a: string; b: string; pattern: Pattern }> = {
+  dragon: { a: "#2a7a38", b: "#e8b830", pattern: "bar" },
+  dog: { a: "#e0b24a", b: "#f3dd9c", pattern: "plain" },
+  ferret: { a: "#c49a62", b: "#f0e2c4", pattern: "half" },
+  caterpillar: { a: "#5aa84a", b: "#e8c840", pattern: "hoop" },
+  zebra: { a: "#f4f4f4", b: "#141414", pattern: "stripe" },
+};
+
+function animalCharge(animal: AnimalChainOn, role: AnimalRole): Charge {
+  const ink = ANIMAL_INK[animal];
+  const kind: Kind =
+    role === "body"
+      ? "aBody"
+      : role === "leg"
+        ? "aLeg"
+        : role === "nub"
+          ? "aNub"
+          : role === "head"
+            ? animal === "dragon"
+              ? "aDragHead"
+              : animal === "dog"
+                ? "aDogHead"
+                : animal === "ferret"
+                  ? "aFerrHead"
+                  : animal === "caterpillar"
+                    ? "aCatpHead"
+                    : "aZebrHead"
+            : animal === "dragon"
+              ? "aDragTail"
+              : animal === "dog"
+                ? "aDogTail"
+                : animal === "ferret"
+                  ? "aFerrTail"
+                  : animal === "caterpillar"
+                    ? "aCatpTail"
+                    : "aZebrTail";
+  return {
+    kind,
+    pattern: role === "leg" || role === "nub" ? "plain" : ink.pattern,
+    a: ink.a,
+    b: ink.b,
+    mirror: false,
+  };
+}
+
+function wrapAngle(a: number): number {
+  return Math.atan2(Math.sin(a), Math.cos(a));
+}
+
+function projectChainPoint(s: number, morphT: number, vary: number, smooth: number, spacing: number, size: number) {
+  const pt = chainPath(s, morphT, vary, smooth);
+  const nxt = chainPath(wrap01(s + spacing), morphT, vary, smooth);
+  const depth = Math.max(0.42, 1.05 - pt.z * 0.55);
+  const nd = Math.max(0.42, 1.05 - nxt.z * 0.55);
+  const x = pt.x / depth;
+  const y = pt.y / depth;
+  const rot = Math.atan2(nxt.y / nd - y, nxt.x / nd - x);
+  const near = clamp(1.12 / depth, 0.55, 1.85);
+  return {
+    x,
+    y,
+    rot,
+    ux: Math.cos(rot),
+    uy: Math.sin(rot),
+    nx: -Math.sin(rot),
+    ny: Math.cos(rot),
+    px: clamp((0.072 + size * 0.028) * near, 0.05, 0.24),
+    alpha: clamp(0.52 + near * 0.42, 0.5, 1),
+  };
+}
+
+function paintAnimalChain(
+  draw: (charge: Charge, pose: Pose) => void,
+  animal: AnimalChainOn,
+  clock: number,
+  chain: ChainOpts,
+  density: number,
+) {
+  const n = animalChainSpineCount(density);
+  const spacing = 0.62 / n;
+  const spines: ReturnType<typeof projectChainPoint>[] = [];
+  for (let i = 0; i < n; i++) {
+    const s = wrap01(clock * chain.travel * 0.14 - i * spacing);
+    const morphT = clock * chain.morph;
+    const size = i === 0 ? 0.95 : i === n - 1 ? 0.82 : 0.68 + 0.05 * Math.sin(i * 1.7);
+    spines.push(projectChainPoint(s, morphT, chain.vary, chain.smooth, spacing, size));
+  }
+  for (const app of animalChainAppendages(animal, n)) {
+    const now = spines[app.attach];
+    const lag = app.role === "nub" ? 0.07 : 0.12;
+    const thenS = wrap01((clock - lag) * chain.travel * 0.14 - app.attach * spacing);
+    const then = projectChainPoint(thenS, (clock - lag) * chain.morph, chain.vary, chain.smooth, spacing, 0.55);
+    const vx = now.x - then.x;
+    const vy = now.y - then.y;
+    const hang = app.role === "nub" ? 0.03 : 0.06;
+    const trail = app.role === "nub" ? 0.3 : 0.64;
+    const grav = app.role === "nub" ? 0.006 : 0.018;
+    const x = now.x + now.nx * app.side * hang - vx * trail;
+    const y = now.y + now.ny * app.side * hang - vy * trail + grav;
+    draw(animalCharge(animal, app.role), {
+      x,
+      y,
+      px: clamp(now.px * (app.role === "nub" ? 0.46 : 0.7), 0.036, 0.17),
+      rot: Math.atan2(y - now.y, x - now.x),
+      alpha: now.alpha * 0.92,
+    });
+  }
+  for (let i = n - 1; i >= 0; i--) {
+    const role: AnimalRole = i === 0 ? "head" : i === n - 1 ? "tail" : "body";
+    let x = spines[i].x;
+    let y = spines[i].y;
+    let rot = spines[i].rot;
+    if (role === "tail") {
+      const thenS = wrap01((clock - 0.14) * chain.travel * 0.14 - (n - 1) * spacing);
+      const then = projectChainPoint(thenS, (clock - 0.14) * chain.morph, chain.vary, chain.smooth, spacing, 0.82);
+      const vx = spines[i].x - then.x;
+      const vy = spines[i].y - then.y;
+      x -= vx * 0.55;
+      y -= vy * 0.55;
+      rot += wrapAngle(spines[i].rot - then.rot) * 0.85;
+    }
+    draw(animalCharge(animal, role), {
+      x,
+      y,
+      px: spines[i].px * (role === "head" ? 1.22 : role === "tail" ? 1.12 : 0.95),
+      rot,
+      alpha: spines[i].alpha,
+    });
+  }
 }
 
 export class HeraldryField {
@@ -2378,6 +2808,7 @@ export class HeraldryField {
       vary: clampCollageChainVary(opts.chainVary),
       smooth: clampCollageChainSmooth(opts.chainSmooth),
     };
+    const animal = animalFromUnknown(opts.chainAnimal);
     paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, beat, bass, !!opts.night, ink);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
@@ -2452,20 +2883,14 @@ export class HeraldryField {
       this.sim = null;
     }
 
-    for (let i = 0; i < count; i++) {
-      const p = this.particles[i];
-      const stamp = this.stamp(p.charge);
-      const pose = isSimMove(scene) && this.sim
-        ? simPose(this.sim, i, p.size)
-        : poseParticle(p, i, scene, t, audio, bass, beat, bpm, count, clock, chain);
-      if (!pose) continue;
-      const cap =
-        scene === "spot" ? 0.34 :
-        scene === "rush" || scene === "tunnel" || scene === "bloom" || scene === "spiral" || scene === "helix" || scene === "prism" || scene === "chain"
-          ? 0.26
-          : 0.22;
+    const cap =
+      scene === "spot" ? 0.34 :
+      scene === "rush" || scene === "tunnel" || scene === "bloom" || scene === "spiral" || scene === "helix" || scene === "prism" || scene === "chain"
+        ? 0.26
+        : 0.22;
+    const blitStamp = (stamp: HTMLCanvasElement, pose: Pose) => {
       const dim = Math.min(pose.px * scale, cap) * Math.min(w, h);
-      if (dim < 5) continue;
+      if (dim < 5) return;
       const sx = (0.5 + pose.x) * w;
       const sy = (0.5 + pose.y / aspect) * h;
       for (let pr = 0; pr < prisms; pr++) {
@@ -2490,6 +2915,19 @@ export class HeraldryField {
         ctx.globalAlpha = pose.alpha * (prisms > 1 ? 0.72 : 1);
         ctx.drawImage(stamp, -dim / 2, -dim / 2, dim, dim);
         ctx.restore();
+      }
+    };
+
+    if (scene === "chain" && animal !== "off") {
+      paintAnimalChain((charge, pose) => blitStamp(this.stamp(charge), pose), animal, clock, chain, density);
+    } else {
+      for (let i = 0; i < count; i++) {
+        const p = this.particles[i];
+        const pose = isSimMove(scene) && this.sim
+          ? simPose(this.sim, i, p.size)
+          : poseParticle(p, i, scene, t, audio, bass, beat, bpm, count, clock, chain);
+        if (!pose) continue;
+        blitStamp(this.stamp(p.charge), pose);
       }
     }
 

@@ -175,6 +175,8 @@ export interface MediaSource {
   collageChainVary?: number;
   /** Chain: how fluid versus active those shape changes are. */
   collageChainSmooth?: number;
+  /** Chain: optional animal body parts on the same path. */
+  collageChainAnimal?: "off" | "dragon" | "dog" | "ferret" | "caterpillar" | "zebra";
   collageSpringStrength?: number;
   collageSpringDamp?: number;
   collageSpringDist?: number;

@@ -4,10 +4,13 @@ import {
   clampBoidRadius,
   clampBoidSep,
   clampBoidSpeed,
+  ANIMAL_LABEL,
+  animalFromUnknown,
   clampCollageChainMorph,
   clampCollageChainSmooth,
   clampCollageChainTravel,
   clampCollageChainVary,
+  type AnimalChain,
   clampCollageDensity,
   clampCollagePace,
   clampCollageScale,
@@ -176,6 +179,7 @@ export interface CollageExtras {
   chainMorph?: number;
   chainVary?: number;
   chainSmooth?: number;
+  chainAnimal?: AnimalChain | string | null;
   springStrength?: number;
   springDamp?: number;
   springDist?: number;
@@ -199,8 +203,14 @@ export interface CollageExtras {
   poleSwitch?: number;
 }
 
-export function collageName(move: CollageMove, kit: CollageKit, kitB?: CollageKit | null): string {
-  const place = MOVE_LABEL[move];
+export function collageName(
+  move: CollageMove,
+  kit: CollageKit,
+  kitB?: CollageKit | null,
+  animal?: AnimalChain | string | null,
+): string {
+  const live = move === "chain" ? animalFromUnknown(animal) : "off";
+  const place = live !== "off" ? `CHAIN · ${ANIMAL_LABEL[live].toUpperCase()}` : MOVE_LABEL[move];
   if (kitB && kitB !== kit) return `${place} · ${KIT_LABEL[kit]} · ${KIT_LABEL[kitB]}`;
   return `${place} · ${KIT_LABEL[kit]}`;
 }
@@ -227,7 +237,7 @@ export function defaultGeneratorSource(
   const kitB = collageKit && extras?.kitB ? kitFromUnknown(extras.kitB) : undefined;
   const collageKitB = kitB && collageKit && kitB !== collageKit ? kitB : undefined;
   const name = collageKit && collageMove
-    ? collageName(collageMove, collageKit, collageKitB)
+    ? collageName(collageMove, collageKit, collageKitB, extras?.chainAnimal)
     : collageKit
       ? `${place} · ${KIT_LABEL[collageKit]}`
       : kind === "critters"
@@ -256,6 +266,7 @@ export function defaultGeneratorSource(
     collageChainMorph: collageKit ? clampCollageChainMorph(extras?.chainMorph) : undefined,
     collageChainVary: collageKit ? clampCollageChainVary(extras?.chainVary) : undefined,
     collageChainSmooth: collageKit ? clampCollageChainSmooth(extras?.chainSmooth) : undefined,
+    collageChainAnimal: collageKit ? animalFromUnknown(extras?.chainAnimal) : undefined,
     collageSpringStrength: collageKit ? clampSpringStrength(extras?.springStrength) : undefined,
     collageSpringDamp: collageKit ? clampSpringDamp(extras?.springDamp) : undefined,
     collageSpringDist: collageKit ? clampSpringDist(extras?.springDist) : undefined,

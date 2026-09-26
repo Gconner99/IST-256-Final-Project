@@ -376,6 +376,7 @@ export class Renderer {
       chainMorph: look.collageChainMorph,
       chainVary: look.collageChainVary,
       chainSmooth: look.collageChainSmooth,
+      chainAnimal: look.collageChainAnimal,
       springStrength: look.collageSpringStrength,
       springDamp: look.collageSpringDamp,
       springDist: look.collageSpringDist,
