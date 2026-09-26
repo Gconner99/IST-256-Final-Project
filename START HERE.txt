@@ -56,9 +56,13 @@ HOW TO USE IT
   Rush, Tunnel, Spiral, Helix. Looping patterns: Tide, Rings, Loom,
   Petal, Flock, Wheel, Silk. Music moves: Bars, Ripple, Swing, Burst,
   Halo, Clap, Wave, Drop, Spot — they stay on a smooth path and punch
-  scale / glow / bounce on the beat. Drop holds still until a big
-  chorus hit. Spot lights one stamp each hit. The older bounce / glow
-  / kick set is still there if you want it. Mix rolls a locked move.
+  glow on the beat, not the travel. Drum / illusion moves lock to the
+  tempo like a drum pattern: Pong (wall bounce), Fall (drop and
+  bounce), Snap (left-right on the kick), Step (zoetrope steps),
+  Moire (counter-spin rings), Poly (3 against 4), Grid and Zip
+  (sliding rows), Liss (figure-8), Ghost (afterimage). Drop holds
+  still until a big chorus hit. Spot lights one stamp each hit.
+  Mix rolls a locked move.
 - Mash mixes a second kit's stamps onto the same ground (Love on Music,
   and so on). Wash taps a kit color without rolling a new move. Night
   is a darker club wash that breathes on bass. Size / Storm sliders

@@ -103,7 +103,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Each kit has a wider drawer of shapes now. Rush is the fly-at-the-lens. Tide / rings / loom / petal / flock / wheel / silk are the slow looping patterns. Bars / ripple / swing / burst / halo / clap / wave / drop / spot are the music moves — they stay on a smooth path and punch scale, glow, and bounce on the beat. Drop holds still until a chorus hit. Spot lights one stamp each hit. Drop an MP3 and the stamps pop on the beat without jumping off their path.</p>
+        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -627,6 +627,23 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="drop">Drop</button>
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="spot">Spot</button>
     </div>
+    <div class="sec">Drum / illusion</div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="pong">Pong</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="fall">Fall</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="snap">Snap</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="step">Step</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="moire">Moire</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="poly">Poly</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="grid">Grid</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="zip">Zip</button>
+    </div>
+    <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="liss">Liss</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="ghost">Ghost</button>
+    </div>
     <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="bounce">Bounce</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="glow">Glow</button>
@@ -640,7 +657,7 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
       <button class="btn tiny ${p.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit">Cut edit</button>
     </div>
-    <div class="status" style="margin-top:4px">Each clip keeps one move. Rand all stays smaller and slower. Cut edit cuts music-reactive looks on the beat — longer holds, then a couple of quick hits, never a shuffle. Drop an MP3 first if you want it locked to the song.</div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move. Drum / illusion moves lock to the tempo grid — bounce, zoetrope, 3-against-4, afterimages. Music punches glow, not the path. Cut edit still cuts on the beat. Drop an MP3 first.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"

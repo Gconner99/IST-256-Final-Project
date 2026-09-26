@@ -34,9 +34,9 @@ const PHRASES: { beats: number[]; weight: number }[] = [
   { beats: [8, 2, 2, 4], weight: 2 },
 ];
 
-const HIT_MOVES: MusicMove[] = ["spot", "burst", "clap"];
-const FLOW_MOVES: MusicMove[] = ["ripple", "swing", "wave", "halo", "bars"];
-const HOLD_MOVES: MusicMove[] = ["drop", "halo", "bars", "wave"];
+const HIT_MOVES: MusicMove[] = ["spot", "burst", "clap", "snap", "step"];
+const FLOW_MOVES: MusicMove[] = ["ripple", "swing", "wave", "halo", "bars", "zip", "moire", "pong", "liss", "grid"];
+const HOLD_MOVES: MusicMove[] = ["drop", "halo", "bars", "wave", "poly", "ghost", "fall"];
 
 function pickWeighted<T>(rng: () => number, items: { item: T; weight: number }[]): T {
   const total = items.reduce((s, it) => s + it.weight, 0);

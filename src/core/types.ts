@@ -197,7 +197,17 @@ export interface MediaSource {
     | "clap"
     | "wave"
     | "drop"
-    | "spot";
+    | "spot"
+    | "pong"
+    | "step"
+    | "moire"
+    | "grid"
+    | "zip"
+    | "ghost"
+    | "poly"
+    | "fall"
+    | "liss"
+    | "snap";
 }
 
 export interface Keyframe {

@@ -6,7 +6,7 @@ import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaul
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
 import { buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
-import { buildField, clampCollageDensity, clampCollagePace, clampCollageScale, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isHeraldry, isMusicMove, isPleasingMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { buildField, clampCollageDensity, clampCollagePace, clampCollageScale, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isHeraldry, isMusicMove, isPleasingMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -279,6 +279,16 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("heraldry", "fruit", "wave").name).toBe("WAVE · FRUIT");
     expect(defaultGeneratorSource("heraldry", "sailor", "drop").name).toBe("DROP · SAILOR");
     expect(defaultGeneratorSource("heraldry", "love", "spot").name).toBe("SPOT · LOVE");
+    expect(defaultGeneratorSource("heraldry", "circus", "pong").name).toBe("PONG · CIRCUS");
+    expect(defaultGeneratorSource("heraldry", "space", "step").name).toBe("STEP · SPACE");
+    expect(defaultGeneratorSource("heraldry", "love", "moire").name).toBe("MOIRE · LOVE");
+    expect(defaultGeneratorSource("heraldry", "sailor", "grid").name).toBe("GRID · SAILOR");
+    expect(defaultGeneratorSource("heraldry", "music", "zip").name).toBe("ZIP · MUSIC");
+    expect(defaultGeneratorSource("heraldry", "sweet", "ghost").name).toBe("GHOST · SWEET");
+    expect(defaultGeneratorSource("heraldry", "fruit", "poly").name).toBe("POLY · FRUIT");
+    expect(defaultGeneratorSource("heraldry", "nature", "fall").name).toBe("FALL · GROVE");
+    expect(defaultGeneratorSource("heraldry", "space", "liss").name).toBe("LISS · SPACE");
+    expect(defaultGeneratorSource("heraldry", "love", "snap").name).toBe("SNAP · LOVE");
     expect(defaultGeneratorSource("heraldry", "love", "spot", { kitB: "music" }).name).toBe("SPOT · LOVE · MUSIC");
     expect(defaultGeneratorSource("heraldry", "love", "spot", { kitB: "love" }).name).toBe("SPOT · LOVE");
     expect(defaultGeneratorSource("heraldry", "music", "bars", { night: true, scale: 1.4, density: 0.5 }).collageNight).toBe(true);
@@ -632,8 +642,8 @@ describe("randomize + presets", () => {
       expect(chaotic.has(src.collageMove ?? "")).toBe(false);
       expect(src.collageScale ?? 1).toBeLessThanOrEqual(0.9);
       expect(src.collageDensity ?? 1).toBeLessThanOrEqual(1.1);
-      expect(src.collagePace ?? 1).toBeLessThanOrEqual(0.8);
-      expect(src.collagePace ?? 1).toBeGreaterThanOrEqual(0.5);
+      expect(src.collagePace ?? 1).toBeLessThanOrEqual(0.95);
+      expect(src.collagePace ?? 1).toBeGreaterThanOrEqual(0.7);
     }
   });
 
@@ -887,6 +897,16 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("heraldry", "wave")).toBe("wave");
     expect(sceneFromGenerator("heraldry", "drop")).toBe("drop");
     expect(sceneFromGenerator("heraldry", "spot")).toBe("spot");
+    expect(sceneFromGenerator("heraldry", "pong")).toBe("pong");
+    expect(sceneFromGenerator("heraldry", "step")).toBe("step");
+    expect(sceneFromGenerator("heraldry", "moire")).toBe("moire");
+    expect(sceneFromGenerator("heraldry", "grid")).toBe("grid");
+    expect(sceneFromGenerator("heraldry", "zip")).toBe("zip");
+    expect(sceneFromGenerator("heraldry", "ghost")).toBe("ghost");
+    expect(sceneFromGenerator("heraldry", "poly")).toBe("poly");
+    expect(sceneFromGenerator("heraldry", "fall")).toBe("fall");
+    expect(sceneFromGenerator("heraldry", "liss")).toBe("liss");
+    expect(sceneFromGenerator("heraldry", "snap")).toBe("snap");
     expect(sceneFromGenerator("heraldry", "helix")).toBe("helix");
     expect(sceneFromGenerator("heraldry", "prism")).toBe("prism");
     expect(sceneAt(0.2, 8, "tour")).toBe("rush");
@@ -925,11 +945,25 @@ describe("heraldry collage", () => {
       "wave",
       "drop",
       "spot",
+      "pong",
+      "step",
+      "moire",
+      "grid",
+      "zip",
+      "ghost",
+      "poly",
+      "fall",
+      "liss",
+      "snap",
     ]);
     expect(isMusicMove("bars")).toBe(true);
     expect(isMusicMove("wave")).toBe(true);
     expect(isMusicMove("drop")).toBe(true);
     expect(isMusicMove("spot")).toBe(true);
+    expect(isMusicMove("pong")).toBe(true);
+    expect(isMusicMove("step")).toBe(true);
+    expect(isMusicMove("moire")).toBe(true);
+    expect(isMusicMove("snap")).toBe(true);
     expect(isMusicMove("rush")).toBe(false);
     expect(isMusicMove("silk")).toBe(false);
     expect(dropSlam(0.2)).toBe(0);
@@ -940,6 +974,10 @@ describe("heraldry collage", () => {
     expect(spotIndex(0, 120, 36)).not.toBe(spotIndex(0.6, 120, 36));
     expect(clampCollageScale(9)).toBe(2);
     expect(clampCollageDensity(0.1)).toBe(0.35);
+    expect(tempoTick(0, 120)).toBeCloseTo(1, 5);
+    expect(tempoTick(0.25, 120)).toBe(0);
+    expect(stepIndex(0, 120, 2)).toBe(0);
+    expect(stepIndex(0.26, 120, 2)).toBe(1);
   });
 
   it("builds a seeded field of unique charges", () => {

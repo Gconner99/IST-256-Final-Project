@@ -35,11 +35,41 @@ export const COLLAGE_MOVES = [
   "wave",
   "drop",
   "spot",
+  "pong",
+  "step",
+  "moire",
+  "grid",
+  "zip",
+  "ghost",
+  "poly",
+  "fall",
+  "liss",
+  "snap",
 ] as const;
 export type CollageMove = (typeof COLLAGE_MOVES)[number];
 export type HeraldryScene = CollageMove | "tour" | "lattice";
 
-export const MUSIC_MOVES = ["bars", "ripple", "swing", "burst", "halo", "clap", "wave", "drop", "spot"] as const;
+export const MUSIC_MOVES = [
+  "bars",
+  "ripple",
+  "swing",
+  "burst",
+  "halo",
+  "clap",
+  "wave",
+  "drop",
+  "spot",
+  "pong",
+  "step",
+  "moire",
+  "grid",
+  "zip",
+  "ghost",
+  "poly",
+  "fall",
+  "liss",
+  "snap",
+] as const;
 export type MusicMove = (typeof MUSIC_MOVES)[number];
 
 export function isMusicMove(scene?: string | null): scene is MusicMove {
@@ -76,6 +106,16 @@ export const MOVE_LABEL: Record<CollageMove, string> = {
   wave: "WAVE",
   drop: "DROP",
   spot: "SPOT",
+  pong: "PONG",
+  step: "STEP",
+  moire: "MOIRE",
+  grid: "GRID",
+  zip: "ZIP",
+  ghost: "GHOST",
+  poly: "POLY",
+  fall: "FALL",
+  liss: "LISS",
+  snap: "SNAP",
 };
 
 export function isHeraldry(kind?: string | null): boolean {
@@ -116,6 +156,16 @@ export const PLEASING_MOVES = [
   "wave",
   "drop",
   "spot",
+  "pong",
+  "step",
+  "moire",
+  "grid",
+  "zip",
+  "ghost",
+  "poly",
+  "fall",
+  "liss",
+  "snap",
 ] as const;
 export type PleasingMove = (typeof PLEASING_MOVES)[number];
 
@@ -129,6 +179,23 @@ export function pleasingMoveForSeed(seed: number): CollageMove {
 
 export function clampCollagePace(value?: number | null): number {
   return clamp(value ?? 1, 0.35, 1.2);
+}
+
+export function tempoHz(bpm: number, subdiv = 1): number {
+  return (bpm > 40 ? bpm / 60 : 2) * subdiv;
+}
+
+export function tempoPhase(clock: number, bpm: number, subdiv = 1): number {
+  return wrap01(clock * tempoHz(bpm, subdiv));
+}
+
+export function tempoTick(clock: number, bpm: number, subdiv = 1): number {
+  const c = Math.cos(tempoPhase(clock, bpm, subdiv) * Math.PI * 2);
+  return c > 0 ? c * c : 0;
+}
+
+export function stepIndex(clock: number, bpm: number, subdiv = 1): number {
+  return Math.floor(Math.max(0, clock) * tempoHz(bpm, subdiv));
 }
 
 export function generatorForMove(move: CollageMove): GeneratorType {
@@ -1854,12 +1921,8 @@ function poseParticle(
   clock = t,
 ): Pose | null {
   const music = isMusicMove(scene);
-  const rate = bpm > 40 ? (bpm / 60) * Math.PI * 2 : 0;
-  const idle =
-    scene === "kick" || scene === "jelly" || music || rate > 0
-      ? Math.max(0, Math.sin(t * (rate || 6.2)))
-      : 0;
-  const punch = clamp(Math.max(beat, idle * (music ? 0.28 : rate > 0 ? 0.2 : 0.16)), 0, 1);
+  const tick = tempoTick(clock, bpm);
+  const punch = clamp(Math.max(beat * (music ? 0.48 : 0.85), tick * (music ? 0.72 : 0.22)), 0, 1);
   if (scene === "bounce") {
     const sx = 0.11 + Math.abs(p.vx) * 2.4;
     const sy = 0.09 + Math.abs(p.vy) * 2.1;
@@ -1954,10 +2017,10 @@ function poseParticle(
     const row = Math.floor(i / cols) % rows;
     const u = (col + 0.5) / cols - 0.5;
     const v = (row + 0.5) / rows - 0.5;
-    const wave = Math.sin(t * 1.05 + row * 0.72 + col * 0.18);
+    const wave = Math.sin(t * 1.7 + row * 0.72 + col * 0.18);
     return {
       x: u * 0.9 + wave * 0.07,
-      y: v * 0.74 + Math.sin(t * 0.48 + row * 0.9) * 0.035,
+      y: v * 0.74 + Math.sin(t * 0.82 + row * 0.9) * 0.035,
       px: clamp(0.085 + p.size * 0.045 + punch * 0.05, 0.06, 0.2),
       rot: p.rot + wave * 0.22,
       alpha: 1,
@@ -1970,7 +2033,7 @@ function poseParticle(
     const slot = Math.floor(i / rings);
     const n = 12;
     const dir = ring & 1 ? -1 : 1;
-    const ang = (slot / n) * Math.PI * 2 + t * (0.28 + ring * 0.05) * dir;
+    const ang = (slot / n) * Math.PI * 2 + t * (0.48 + ring * 0.08) * dir;
     const rad = 0.14 + ring * 0.11;
     return {
       x: Math.cos(ang) * rad,
@@ -1982,8 +2045,8 @@ function poseParticle(
     };
   }
   if (scene === "loom") {
-    const a = t * 0.62 + p.x * Math.PI * 2;
-    const b = t * 0.94 + p.y * Math.PI * 2;
+    const a = t * 1.05 + p.x * Math.PI * 2;
+    const b = t * 1.45 + p.y * Math.PI * 2;
     return {
       x: Math.sin(a) * 0.4 + Math.sin(b * 0.5) * 0.06,
       y: Math.sin(a * 2 + p.z * Math.PI) * 0.3,
@@ -1997,8 +2060,8 @@ function poseParticle(
     const petals = 6;
     const petal = i % petals;
     const step = Math.floor(i / petals) / 8;
-    const ang = (petal / petals) * Math.PI * 2 + t * 0.2;
-    const breath = 0.8 + 0.2 * Math.sin(t * 0.85);
+    const ang = (petal / petals) * Math.PI * 2 + t * 0.34;
+    const breath = 0.8 + 0.2 * Math.sin(t * 1.25);
     const rad = (0.1 + step * 0.32) * breath;
     return {
       x: Math.cos(ang) * rad,
@@ -2011,7 +2074,7 @@ function poseParticle(
   }
   if (scene === "flock") {
     const lane = i % 5;
-    const s = wrap01(p.z + t * (0.11 + lane * 0.015));
+    const s = wrap01(p.z + t * (0.18 + lane * 0.02));
     const ang = s * Math.PI * 2 + lane * 0.32;
     const rad = 0.2 + Math.sin(ang * 2 + lane) * 0.1 + lane * 0.028;
     return {
@@ -2028,7 +2091,7 @@ function poseParticle(
     const ring = i % rings;
     const slot = Math.floor(i / rings);
     const n = 14;
-    const ang = (slot / n) * Math.PI * 2 + t * 0.38 * (ring === 1 ? -1 : 1);
+    const ang = (slot / n) * Math.PI * 2 + t * 0.58 * (ring === 1 ? -1 : 1);
     const rad = 0.2 + ring * 0.12;
     const near = 0.5 + 0.5 * Math.sin(ang);
     return {
@@ -2043,7 +2106,7 @@ function poseParticle(
   if (scene === "silk") {
     const lane = i % 4;
     const dir = lane < 2 ? 1 : -1;
-    const s = wrap01(p.x + t * 0.075 * dir + lane * 0.08);
+    const s = wrap01(p.x + t * 0.14 * dir + lane * 0.08);
     const y = (lane / 3 - 0.5) * 0.52 + Math.sin(s * Math.PI * 3 + lane) * 0.055;
     return {
       x: s - 0.5,
@@ -2061,7 +2124,7 @@ function poseParticle(
     const row = Math.floor(i / cols) % rows;
     const u = (col + 0.5) / cols - 0.5;
     const drive = 0.32 + 0.68 * (0.5 + 0.5 * Math.sin(t * 2.15 + col * 0.85 + p.z));
-    const hgt = clamp(drive * (0.42 + audio * 0.28 + bass * 0.2 + punch * 0.52), 0.18, 1);
+    const hgt = clamp(drive * (0.42 + audio * 0.22 + bass * 0.2 + tick * 0.28), 0.18, 1);
     const y = 0.42 - (row / Math.max(rows - 1, 1)) * hgt * 0.82;
     return {
       x: u * 0.86,
@@ -2078,8 +2141,8 @@ function poseParticle(
     const ring = i % rings;
     const slot = Math.floor(i / rings);
     const n = 16;
-    const s = wrap01(t * 0.2);
-    const rad = 0.15 + ring * 0.145 + s * 0.16 + punch * 0.07;
+    const s = wrap01(t * 0.32);
+    const rad = 0.15 + ring * 0.145 + s * 0.16 + tick * 0.05;
     const ang = (slot / n) * Math.PI * 2 + t * 0.1;
     return {
       x: Math.cos(ang) * rad,
@@ -2115,7 +2178,7 @@ function poseParticle(
     const slot = Math.floor(i / rings);
     const n = 16;
     const ang = (slot / n) * Math.PI * 2 + t * 0.2 * (ring === 1 ? -1 : 1);
-    const rad = (0.14 + ring * 0.13) * (1 + punch * 0.78);
+    const rad = (0.14 + ring * 0.13) * (1 + tick * 0.42);
     return {
       x: Math.cos(ang) * rad,
       y: Math.sin(ang) * rad * 0.9,
@@ -2148,7 +2211,7 @@ function poseParticle(
     const side = i & 1 ? 1 : -1;
     const row = Math.floor(i / 2) % 8;
     const depth = Math.floor(i / 16) % 3;
-    const gap = 0.28 - punch * 0.2;
+    const gap = 0.28 - tick * 0.14;
     return {
       x: side * (gap + depth * 0.055),
       y: (row / 7 - 0.5) * 0.78,
@@ -2165,7 +2228,7 @@ function poseParticle(
     const col = i % cols;
     const row = Math.floor(i / cols) % rows;
     const u = (col + 0.5) / cols - 0.5;
-    const amp = 0.09 + audio * 0.07 + punch * 0.2;
+    const amp = 0.09 + audio * 0.05 + tick * 0.08;
     const phase = u * Math.PI * 3.4 + t * 2.15 + row * 0.55;
     return {
       x: u * 0.92,
@@ -2204,6 +2267,151 @@ function poseParticle(
       rot: p.rot * 0.35,
       alpha: mine ? 1 : 0.52,
       squash: 1 - slam * 0.14,
+    };
+  }
+  if (scene === "pong") {
+    const hz = tempoHz(bpm);
+    const x = screenBounce(p.x + (0.16 + Math.abs(p.vx) * 0.5) * clock * hz);
+    const y = screenBounce(p.y + (0.13 + Math.abs(p.vy) * 0.42) * clock * hz * 0.9);
+    const edge = Math.min(0.5 - Math.abs(x), 0.5 - Math.abs(y));
+    return {
+      x,
+      y,
+      px: clamp(0.08 + p.size * 0.04 + punch * 0.02, 0.06, 0.18),
+      glow: (edge < 0.065 ? 0.55 : 0) + punch * 0.28,
+      rot: p.rot + p.vr * t * 0.7,
+      alpha: 1,
+    };
+  }
+  if (scene === "step") {
+    const n = 16;
+    const ticks = stepIndex(clock, bpm, 2);
+    const ring = Math.floor(i / n) % 2;
+    const ang = ((i % n) / n + ticks / n) * Math.PI * 2 * (ring ? -1 : 1);
+    const rad = 0.26 + ring * 0.12;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad * 0.8,
+      px: clamp(0.07 + p.size * 0.03 + punch * 0.02, 0.05, 0.16),
+      rot: ang,
+      alpha: 1,
+      glow: punch * 0.55,
+    };
+  }
+  if (scene === "moire") {
+    const ring = i & 1;
+    const slot = Math.floor(i / 2) % 18;
+    const ang = (slot / 18) * Math.PI * 2 + t * (ring ? -0.78 : 0.62);
+    const rad = 0.2 + ring * 0.13 + tick * 0.035;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad * 0.86,
+      px: clamp(0.065 + p.size * 0.028 + punch * 0.018, 0.048, 0.14),
+      rot: ang + p.rot * 0.2,
+      alpha: ring ? 0.78 : 1,
+      glow: punch * 0.4,
+    };
+  }
+  if (scene === "grid") {
+    const cols = 8;
+    const rows = 6;
+    const col = i % cols;
+    const row = Math.floor(i / cols) % rows;
+    const dir = row & 1 ? 1 : -1;
+    const s = wrap01((col + 0.5) / cols + clock * tempoHz(bpm) * 0.28 * dir);
+    return {
+      x: (s - 0.5) * 0.92,
+      y: ((row + 0.5) / rows - 0.5) * 0.78,
+      px: clamp(0.07 + p.size * 0.03 + punch * 0.02, 0.05, 0.15),
+      rot: p.rot * 0.2,
+      alpha: 1,
+      glow: punch * 0.42,
+    };
+  }
+  if (scene === "zip") {
+    const band = i % 3;
+    const dir = band === 1 ? -1 : 1;
+    const hitch = 1 - tick * 0.16;
+    const s = wrap01(p.x + clock * tempoHz(bpm) * 0.34 * dir * hitch + band * 0.12);
+    return {
+      x: (s - 0.5) * 0.94,
+      y: (band / 2 - 0.5) * 0.52,
+      px: clamp(0.07 + p.size * 0.032 + punch * 0.02, 0.05, 0.15),
+      rot: p.rot * 0.18,
+      alpha: 1,
+      glow: punch * 0.4,
+    };
+  }
+  if (scene === "ghost") {
+    const live = (i & 1) === 0;
+    const delay = live ? 0 : 1 / tempoHz(bpm);
+    const ang = p.x * Math.PI * 2 + (clock - delay) * tempoHz(bpm) * 1.35;
+    const rad = 0.3 + Math.sin((clock - delay) * 1.1 + p.y * 6) * 0.05;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang * 0.92) * rad * 0.72,
+      px: clamp(0.075 + p.size * 0.032, 0.055, 0.16),
+      rot: ang + Math.PI * 0.5,
+      alpha: live ? 1 : 0.34,
+      glow: live ? punch * 0.5 : 0.12,
+    };
+  }
+  if (scene === "poly") {
+    const ring = i & 1;
+    const n = ring ? 8 : 12;
+    const slot = Math.floor(i / 2) % n;
+    const cycles = ring ? 3 : 4;
+    const ang = (slot / n) * Math.PI * 2 + clock * tempoHz(bpm) * (cycles / 4) * (ring ? -1 : 1);
+    const rad = 0.2 + ring * 0.15;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad * 0.84,
+      px: clamp(0.068 + p.size * 0.03 + punch * 0.018, 0.05, 0.15),
+      rot: ang,
+      alpha: 1,
+      glow: punch * 0.45,
+    };
+  }
+  if (scene === "fall") {
+    const phase = wrap01(p.z + clock * tempoHz(bpm, 0.5));
+    const u = reflect01(phase);
+    const drop = u * u;
+    const land = u > 0.82 ? (u - 0.82) / 0.18 : 0;
+    return {
+      x: (p.x - 0.5) * 0.88,
+      y: -0.42 + drop * 0.86,
+      px: clamp(0.075 + p.size * 0.035 + punch * 0.02, 0.055, 0.17),
+      rot: p.rot + drop * 0.4,
+      alpha: 1,
+      glow: punch * 0.4,
+      squash: 1 - land * 0.28,
+    };
+  }
+  if (scene === "liss") {
+    const hz = tempoHz(bpm);
+    const a = clock * hz * Math.PI * 2 * 1.5 + p.x * 6.2;
+    const b = clock * hz * Math.PI * 2 + p.y * 5.4;
+    return {
+      x: Math.sin(a) * 0.4,
+      y: Math.sin(b) * 0.32,
+      px: clamp(0.07 + p.size * 0.032 + punch * 0.02, 0.05, 0.16),
+      rot: a * 0.15 + p.rot,
+      alpha: 1,
+      glow: punch * 0.42,
+    };
+  }
+  if (scene === "snap") {
+    const side = stepIndex(clock, bpm, 1) & 1 ? 1 : -1;
+    const row = Math.floor(i / 8) % 5;
+    const col = i % 8;
+    return {
+      x: side * (0.2 + (col / 7) * 0.1),
+      y: (row / 4 - 0.5) * 0.72,
+      px: clamp(0.072 + p.size * 0.03 + punch * 0.025, 0.05, 0.16),
+      rot: p.rot * 0.2 + side * 0.08,
+      alpha: 1,
+      glow: punch * 0.6,
+      squash: 1 - punch * 0.1,
     };
   }
   if (scene === "tunnel") {
