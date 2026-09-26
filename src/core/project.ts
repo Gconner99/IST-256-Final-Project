@@ -14,7 +14,7 @@ function keepEffect(fx: EffectInstance): boolean {
   return !RETIRED_EFFECTS.has(fx.typeId);
 }
 
-const RUNTIME_KEYS = new Set(["bitmap", "video", "audio", "pcm", "beats", "bpm", "objectUrl", "frozenFrame"]);
+const RUNTIME_KEYS = new Set(["bitmap", "video", "audio", "pcm", "beats", "bpm", "beatOffset", "objectUrl", "frozenFrame"]);
 
 export function serializeProject(project: Project): string {
   const clean: Project = JSON.parse(
@@ -70,6 +70,7 @@ export function stripRuntime(source: MediaSource): MediaSource {
     pcm: null,
     beats: undefined,
     bpm: undefined,
+    beatOffset: undefined,
     objectUrl: null,
     frozenFrame: null,
   };

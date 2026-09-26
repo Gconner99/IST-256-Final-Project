@@ -5,7 +5,7 @@ import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
-import { buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
+import { beatGrid, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
 import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
 import { store } from "../src/core/store";
@@ -18,7 +18,7 @@ import { BOOT_GENERATOR_GLSL, COMIC_GENERATOR_GLSL, CONFETTI_GENERATOR_GLSL, COR
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
-import { beatEnvelope, copyWrappedChannel, detectBeats, estimateBpm, isAudioFile, sampleLevelsFromSamples, tempoPulse } from "../src/media/audio";
+import { beatEnvelope, copyWrappedChannel, detectBeats, estimateBpm, estimateTempo, isAudioFile, lockBeatsToGrid, sampleLevelsFromSamples, tempoPulse } from "../src/media/audio";
 import { setSoundtrack } from "../src/ui/actions";
 import { seekVideo } from "../src/media/sources";
 
@@ -867,6 +867,36 @@ describe("soundtrack", () => {
     expect(tempoPulse(0.5, 120)).toBeGreaterThan(0.9);
     expect(tempoPulse(0.12, 120)).toBeLessThan(0.5);
     expect(tempoPulse(0.2, 0)).toBe(0);
+    expect(tempoPulse(0.4, 120, 0.13, 0.4)).toBeGreaterThan(0.9);
+    expect(tempoPulse(0.9, 120, 0.13, 0.4)).toBeGreaterThan(0.9);
+    expect(tempoPulse(0, 120, 0.13, 0.4)).toBeLessThan(0.25);
+  });
+
+  it("locks a late first downbeat and ignores extra 8th-note onsets", () => {
+    const quarters: number[] = [];
+    for (let t = 0.4; t < 8; t += 0.5) quarters.push(t);
+    const tempo = estimateTempo(quarters, 8);
+    expect(tempo.bpm).toBeGreaterThanOrEqual(110);
+    expect(tempo.bpm).toBeLessThanOrEqual(130);
+    expect(tempo.offset).toBeCloseTo(0.4, 1);
+    const locked = lockBeatsToGrid(quarters, tempo.bpm, tempo.offset, 8);
+    expect(locked[0]).toBeCloseTo(0.4, 1);
+    expect(locked[1] - locked[0]).toBeCloseTo(0.5, 1);
+    const eighths: number[] = [];
+    for (let t = 0.4; t < 8; t += 0.25) eighths.push(t + (t % 0.5 === 0 ? 0 : 0.012));
+    const grid = beatGrid(8, 120, eighths, 0.4);
+    const gaps = grid.slice(1, -1).map((t, i) => t - grid[i]);
+    const mid = [...gaps].sort((a, b) => a - b)[Math.floor(gaps.length / 2)];
+    expect(mid).toBeGreaterThan(0.42);
+    expect(mid).toBeLessThan(0.58);
+    const reel = buildCutReel({ seed: 77, duration: 8, bpm: 120, beats: eighths, offset: 0.4 });
+    expect(reel[0].start).toBeCloseTo(0.4, 1);
+    for (const shot of reel.slice(0, -1)) {
+      const phase = (((shot.start - 0.4) % 0.5) + 0.5) % 0.5;
+      expect(Math.min(phase, 0.5 - phase)).toBeLessThan(0.06);
+    }
+    expect(shotAtTime(reel, 0.39, 8).look.move).toBe(reel[0].look.move);
+    if (reel[1]) expect(shotAtTime(reel, reel[1].start, 8).look.move).toBe(reel[1].look.move);
   });
 
   it("starts playback when an mp3 is attached", () => {
@@ -1031,6 +1061,10 @@ describe("heraldry collage", () => {
     expect(dropSlam(0.75)).toBeCloseTo(0.5);
     expect(spotIndex(0, 120, 36)).toBe(spotIndex(0.4, 120, 36));
     expect(spotIndex(0, 120, 36)).not.toBe(spotIndex(0.6, 120, 36));
+    expect(spotIndex(0.4, 120, 36, 0.4)).toBe(spotIndex(0, 120, 36));
+    expect(spotIndex(0.91, 120, 36, 0.4)).not.toBe(spotIndex(0.4, 120, 36, 0.4));
+    expect(stepIndex(0.4, 120, 1, 0.4)).toBe(0);
+    expect(stepIndex(0.91, 120, 1, 0.4)).toBe(1);
     expect(clampCollageScale(9)).toBe(2);
     expect(clampCollageDensity(0.1)).toBe(0.35);
     expect(clampCollageChainTravel(9)).toBe(2.2);

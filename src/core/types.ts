@@ -150,6 +150,8 @@ export interface MediaSource {
   beats?: number[];
   /** Estimated tempo from those onsets. */
   bpm?: number;
+  /** Seconds from t=0 to the first downbeat. Runtime only. */
+  beatOffset?: number;
   objectUrl?: string | null;
   frozenFrame?: ImageBitmap | null;
   /** Optional generator inks. */

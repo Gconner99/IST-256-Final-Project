@@ -92,9 +92,10 @@ HOW TO USE IT
   stack. No dancer. Stamps stay smaller and slower so a roll
   does not fill the screen or fly off too fast.
 - Cut edit is the other randomizer. Drop an MP3, then hit
-  Cut edit. It cuts on the beat through music-reactive looks.
-  Some shots hold. Some are two quick hits that settle. It
-  should feel edited, not shuffled. Export keeps those cuts.
+  Cut edit. It finds the first downbeat and cuts on that
+  grid — snap / step / spot flip on the same frames, not
+  leftover 8th-note onsets. Some shots hold. Some are two
+  quick hits that settle. Export keeps those cuts.
 - Drag a photo, video, or MP3 onto the big area
 - Hit MP3 (or drop a clip) to use it as a soundtrack. Playback
   starts and the collage punches on the beat.

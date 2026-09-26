@@ -416,17 +416,17 @@ export function tempoHz(bpm: number, subdiv = 1): number {
   return (bpm > 40 ? bpm / 60 : 2) * subdiv;
 }
 
-export function tempoPhase(clock: number, bpm: number, subdiv = 1): number {
-  return wrap01(clock * tempoHz(bpm, subdiv));
+export function tempoPhase(clock: number, bpm: number, subdiv = 1, offset = 0): number {
+  return wrap01((clock - offset) * tempoHz(bpm, subdiv));
 }
 
-export function tempoTick(clock: number, bpm: number, subdiv = 1): number {
-  const c = Math.cos(tempoPhase(clock, bpm, subdiv) * Math.PI * 2);
+export function tempoTick(clock: number, bpm: number, subdiv = 1, offset = 0): number {
+  const c = Math.cos(tempoPhase(clock, bpm, subdiv, offset) * Math.PI * 2);
   return c > 0 ? c * c : 0;
 }
 
-export function stepIndex(clock: number, bpm: number, subdiv = 1): number {
-  return Math.floor(Math.max(0, clock) * tempoHz(bpm, subdiv));
+export function stepIndex(clock: number, bpm: number, subdiv = 1, offset = 0): number {
+  return Math.floor(Math.max(0, clock - offset) * tempoHz(bpm, subdiv));
 }
 
 export function generatorForMove(move: CollageMove): GeneratorType {
@@ -698,6 +698,8 @@ export interface HeraldryPaintOpts {
   bass: number;
   beat: number;
   bpm: number;
+  /** Seconds from t=0 to the first downbeat. Music moves count from here. */
+  beatOffset?: number;
   night?: boolean;
   scale?: number;
   density?: number;
@@ -790,10 +792,10 @@ export function dropSlam(beat: number): number {
   return beat > 0.5 ? clamp((beat - 0.5) / 0.5, 0, 1) : 0;
 }
 
-export function spotIndex(time: number, bpm: number, count: number): number {
+export function spotIndex(time: number, bpm: number, count: number, offset = 0): number {
   const n = Math.max(1, count);
   const tempo = bpm > 40 ? bpm / 60 : 2;
-  const hit = Math.floor(Math.max(0, time) * tempo);
+  const hit = Math.floor(Math.max(0, time - offset) * tempo);
   return ((hit * 11 + 5) >>> 0) % n;
 }
 
@@ -2872,7 +2874,10 @@ export class HeraldryField {
     paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, beat, bass, !!opts.night, ink);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    const clock = opts.time;
+    const beatOffset = opts.beatOffset ?? 0;
+    const rawClock = opts.time;
+    const clock =
+      isMusicMove(scene) && bpm > 40 && beatOffset > 0.001 ? Math.max(0, rawClock - beatOffset) : rawClock;
     const t = clock * pace;
     const aspect = w / Math.max(h, 1);
     const baseCount =

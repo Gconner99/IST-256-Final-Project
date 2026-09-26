@@ -160,7 +160,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, one locked move, and a short stack of different effects from the right panel (color, distort, analog, geometry, time, shapes). Wacky rolls a thicker stack. No dancer. Rolls stay small and slower — no giant stamps, no frantic bounce/flip/flash.</li>
-          <li><strong>Cut edit</strong> is the other randomizer. It listens to the MP3 and cuts on the beat through music-reactive looks. Some shots hold a bar or two. Some are two quick hits that settle. It should feel edited, not shuffled.</li>
+          <li><strong>Cut edit</strong> is the other randomizer. It listens to the MP3, finds the first downbeat, and cuts on that grid — not every stray onset. Snap / step / spot flip on the same frames. Some shots hold a bar or two. Some are two quick hits that settle.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music. Move buttons keep the current kit.</li>
           <li><strong>Mash</strong> — mix a second kit’s stamps onto the same ground. <strong>Wash</strong> taps a kit color without rolling a new move. <strong>Night</strong> is a darker club wash that breathes on bass.</li>

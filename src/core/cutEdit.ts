@@ -66,17 +66,32 @@ export function moveForShotLength(beats: number, rng: () => number, prev?: Music
   return pickFrom(rng, family, prev);
 }
 
-export function beatGrid(duration: number, bpm: number, onsets?: number[]): number[] {
+export function beatGrid(duration: number, bpm: number, onsets?: number[], offset?: number): number[] {
   const span = Math.max(1, duration);
   const hits = (onsets ?? []).filter((t) => t >= 0 && t < span + 0.05);
-  if (hits.length >= 8) {
-    const out = hits[0] > 0.08 ? [0, ...hits] : [...hits];
-    if (out[out.length - 1] < span) out.push(span);
-    return out;
-  }
   const period = 60 / Math.max(40, bpm || 120);
+  const off = Number.isFinite(offset) && (offset as number) >= 0
+    ? (offset as number)
+    : hits.length
+      ? ((hits[0] % period) + period) % period
+      : 0;
+  const start = off > 0.04 && off < period * 1.8 ? off : hits[0] != null && hits[0] < period * 0.7 ? hits[0] : 0;
   const grid: number[] = [];
-  for (let t = 0; t <= span + period * 0.01; t += period) grid.push(t);
+  for (let t = start; t < span - period * 0.08; t += period) {
+    let at = t;
+    let best = period * 0.2;
+    for (const hit of hits) {
+      const err = Math.abs(hit - t);
+      if (err < best) {
+        best = err;
+        at = hit;
+      }
+    }
+    if (!grid.length || at - grid[grid.length - 1] > period * 0.55) grid.push(at);
+  }
+  if (!grid.length) {
+    for (let t = 0; t <= span + period * 0.01; t += period) grid.push(t);
+  }
   if (grid[grid.length - 1] < span) grid.push(span);
   return grid;
 }
@@ -86,10 +101,11 @@ export function buildCutReel(opts: {
   duration: number;
   bpm?: number;
   beats?: number[];
+  offset?: number;
 }): CutShot[] {
   const rng = mulberry32((opts.seed >>> 0) ^ 0xc0ffee);
   const duration = Math.max(1, opts.duration);
-  const grid = beatGrid(duration, opts.bpm ?? 120, opts.beats);
+  const grid = beatGrid(duration, opts.bpm ?? 120, opts.beats, opts.offset);
   const shots: CutShot[] = [];
   let i = 0;
   let prevMove: MusicMove | undefined;
@@ -150,7 +166,7 @@ export function buildCutReel(opts: {
   return shots;
 }
 
-export function shotAtTime(reel: CutShot[], time: number): CutShot {
+export function shotAtTime(reel: CutShot[], time: number, duration?: number): CutShot {
   if (!reel.length) {
     const kit = kitForSeed(1);
     return {
@@ -169,12 +185,15 @@ export function shotAtTime(reel: CutShot[], time: number): CutShot {
     };
   }
   const last = reel[reel.length - 1];
-  const end = Math.max(last.start + 0.25, reel.length > 1 ? last.start + (last.start - reel[0].start) / Math.max(1, reel.length - 1) : last.start + 2);
-  const span = Math.max(end, last.start + 0.5);
+  const span = Math.max(
+    duration && duration > last.start ? duration : 0,
+    last.start + 0.5,
+    reel.length > 1 ? last.start + (last.start - reel[0].start) / Math.max(1, reel.length - 1) : last.start + 2,
+  );
   const t = ((time % span) + span) % span;
   let picked = reel[0];
   for (const shot of reel) {
-    if (shot.start <= t) picked = shot;
+    if (shot.start <= t + 0.0005) picked = shot;
     else break;
   }
   return picked;

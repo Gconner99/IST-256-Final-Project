@@ -73,6 +73,7 @@ export class Renderer {
   private audioBass = 0;
   private audioBeat = 0;
   private audioBpm = 0;
+  private audioOffset = 0;
   private cutReel: CutShot[] | null = null;
   private cutKey = "";
   private cutLook: MediaSource | null = null;
@@ -321,17 +322,18 @@ export class Renderer {
       return;
     }
     const duration = Math.max(project.duration, project.exportSettings.duration || 0, 8);
-    const key = `${project.cutEdit.seed}|${duration}|${track?.bpm ?? 0}|${track?.beats?.length ?? 0}`;
+    const key = `${project.cutEdit.seed}|${duration}|${track?.bpm ?? 0}|${track?.beatOffset ?? 0}|${track?.beats?.length ?? 0}`;
     if (!this.cutReel || this.cutKey !== key) {
       this.cutReel = buildCutReel({
         seed: project.cutEdit.seed,
         duration,
         bpm: track?.bpm ?? 120,
         beats: track?.beats,
+        offset: track?.beatOffset,
       });
       this.cutKey = key;
     }
-    const shot = shotAtTime(this.cutReel, time);
+    const shot = shotAtTime(this.cutReel, time, duration);
     this.cutStatus = cutLabel(shot);
     this.cutLook = {
       generator: generatorForMove(shot.look.move),
@@ -368,6 +370,7 @@ export class Renderer {
       bass: this.audioBass,
       beat: this.audioBeat,
       bpm: this.audioBpm,
+      beatOffset: this.audioOffset,
       night: look.collageNight,
       scale: look.collageScale,
       density: look.collageDensity,
@@ -572,6 +575,7 @@ export class Renderer {
     this.audioBeat = mix.beat;
     const track = getSoundtrack(project);
     this.audioBpm = track?.bpm ?? 0;
+    this.audioOffset = track?.beatOffset ?? 0;
     this.resolveCut(project, time, track);
 
     if (quality !== "export" && !this.needsPipeline(project)) {

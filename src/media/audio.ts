@@ -18,6 +18,7 @@ const hooked = new WeakSet<HTMLAudioElement>();
 let energyEma = 0;
 let bassEma = 0;
 let beatHold = 0;
+let lastSampleTime = 0;
 
 function busCtx(): AudioContext | null {
   const AC =
@@ -99,7 +100,10 @@ export async function loadAudio(file: File): Promise<MediaSource> {
     new Promise<number>((resolve) => setTimeout(() => resolve(pcm?.duration ?? 0), 2500)),
   ]);
 
-  const beats = pcm ? detectBeats(pcm.getChannelData(0), pcm.sampleRate) : [];
+  const span = duration || pcm?.duration || 0;
+  const raw = pcm ? detectBeats(pcm.getChannelData(0), pcm.sampleRate) : [];
+  const tempo = estimateTempo(raw, span);
+  const beats = tempo.bpm > 40 ? lockBeatsToGrid(raw, tempo.bpm, tempo.offset, span) : raw;
   return {
     id: uid("src"),
     name: file.name,
@@ -108,11 +112,12 @@ export async function loadAudio(file: File): Promise<MediaSource> {
     mime: file.type || "audio/mpeg",
     width: 0,
     height: 0,
-    duration: duration || pcm?.duration || 0,
+    duration: span,
     audio,
     pcm,
     beats,
-    bpm: estimateBpm(beats),
+    bpm: tempo.bpm,
+    beatOffset: tempo.offset,
     objectUrl: url,
   };
 }
@@ -158,24 +163,80 @@ export function detectBeats(ch: Float32Array, sampleRate: number): number[] {
 }
 
 export function estimateBpm(beats: number[]): number {
-  if (beats.length < 4) return 0;
+  return estimateTempo(beats).bpm;
+}
+
+/** Tempo plus the delay from t=0 to the first downbeat. */
+export function estimateTempo(beats: number[], duration = 0): { bpm: number; offset: number } {
+  if (beats.length < 2) return { bpm: 0, offset: beats[0] ?? 0 };
   const gaps: number[] = [];
   for (let i = 1; i < beats.length; i++) {
     const g = beats[i] - beats[i - 1];
-    if (g >= 0.28 && g <= 0.8) gaps.push(g);
+    if (g >= 0.18 && g <= 1.2) gaps.push(g);
   }
-  if (gaps.length < 3) return 0;
-  gaps.sort((a, b) => a - b);
-  const mid = gaps[Math.floor(gaps.length / 2)];
-  return clampNum(Math.round(60 / mid), 70, 170);
+  if (gaps.length < 3 && beats.length < 4) return { bpm: 0, offset: beats[0] ?? 0 };
+  const pool = gaps.length >= 3 ? gaps : beats.slice(1).map((t, i) => t - beats[i]).filter((g) => g > 0.12 && g < 1.6);
+  if (pool.length < 2) return { bpm: 0, offset: beats[0] ?? 0 };
+  pool.sort((a, b) => a - b);
+  const mid = pool[Math.floor(pool.length / 2)];
+  let bpm = 60 / Math.max(0.18, mid);
+  while (bpm > 155) bpm /= 2;
+  while (bpm < 72 && bpm > 0) bpm *= 2;
+  bpm = clampNum(Math.round(bpm), 70, 170);
+  const period = 60 / bpm;
+  const span = duration > 0 ? duration : (beats[beats.length - 1] ?? 0) + period;
+  let bestOffset = ((beats[0] % period) + period) % period;
+  let bestScore = -1;
+  const candidates = new Set<number>([0, bestOffset]);
+  for (let i = 0; i < Math.min(beats.length, 16); i++) {
+    candidates.add(((beats[i] % period) + period) % period);
+  }
+  for (const off of candidates) {
+    let score = 0;
+    for (const t of beats) {
+      const phase = (((t - off) % period) + period) % period;
+      const err = Math.min(phase, period - phase);
+      if (err < period * 0.18) score += 1 - err / (period * 0.18);
+    }
+    if (off > 0.03 && off < span - period * 0.5) score += 0.15;
+    if (score > bestScore) {
+      bestScore = score;
+      bestOffset = off;
+    }
+  }
+  return { bpm, offset: bestOffset };
+}
+
+/** One downbeat per bar-step, snapped to a nearby onset when the kick is early/late. */
+export function lockBeatsToGrid(onsets: number[], bpm: number, offset: number, duration: number): number[] {
+  if (!(bpm > 40)) return [...onsets];
+  const period = 60 / bpm;
+  const span = Math.max(period, duration || (onsets[onsets.length - 1] ?? 0) + period);
+  const start = offset >= 0 && offset < period * 1.8 ? offset : onsets[0] ?? 0;
+  const out: number[] = [];
+  for (let t = start; t < span - period * 0.08; t += period) {
+    let best = t;
+    let bestErr = Math.min(0.05, period * 0.22);
+    for (const o of onsets) {
+      const err = Math.abs(o - t);
+      if (err < bestErr) {
+        bestErr = err;
+        best = o;
+      }
+    }
+    if (!out.length || best - out[out.length - 1] > period * 0.55) out.push(best);
+  }
+  return out;
 }
 
 /** Pulse locked to estimated tempo so hits still land when an onset is missed. */
-export function tempoPulse(time: number, bpm: number, decay = 0.13): number {
+export function tempoPulse(time: number, bpm: number, decay = 0.13, offset = 0): number {
   if (!(bpm > 40) || !Number.isFinite(time)) return 0;
   const period = 60 / bpm;
   if (!(period > 0)) return 0;
-  const phase = ((time % period) + period) % period;
+  const t = time - offset;
+  if (t < -0.02) return 0;
+  const phase = ((t % period) + period) % period;
   return Math.exp(-phase / decay);
 }
 
@@ -257,19 +318,23 @@ export function sampleAudio(
     energy = s.energy;
     bass = s.bass;
     const hits = source.beats ?? [];
-    const onset = hits.length ? beatEnvelope(hits, wrapped, 0.14) : 0;
-    const grid = tempoPulse(wrapped, source.bpm ?? 0);
+    const offset = source.beatOffset ?? 0;
+    const onset = hits.length ? beatEnvelope(hits, wrapped, 0.11) : 0;
+    const grid = tempoPulse(wrapped, source.bpm ?? 0, 0.11, offset);
     const energyHit = clampNum((energy - 0.12) * 0.75, 0, 0.6);
-    beat = Math.max(onset, grid * 0.78, hits.length ? energyHit * 0.42 : energyHit);
+    beat = Math.max(onset, grid * 0.86, hits.length ? energyHit * 0.28 : energyHit);
   } else if (source?.kind === "audio") {
     const live = analyserLevels();
     if (live) {
       energy = live.energy;
       bass = live.bass;
-      beat = Math.max(tempoPulse(time, source.bpm ?? 0) * 0.78, clampNum((energy - 0.12) * 0.55, 0, 0.5));
+      beat = Math.max(tempoPulse(time, source.bpm ?? 0, 0.11, source.beatOffset ?? 0) * 0.86, clampNum((energy - 0.12) * 0.55, 0, 0.5));
     }
   }
-  beatHold += (beat - beatHold) * (beat > beatHold ? 0.78 : 0.4);
+  if (Math.abs(time - lastSampleTime) > 0.2) beatHold = beat;
+  else if (beat >= beatHold) beatHold = beat;
+  else beatHold += (beat - beatHold) * 0.32;
+  lastSampleTime = time;
   const follow = source?.kind === "audio" ? 0.22 : 0.14;
   energyEma += (energy - energyEma) * follow;
   bassEma += (bass - bassEma) * Math.min(follow, 0.16);
@@ -355,7 +420,7 @@ export function applyTransport(
     }
     return;
   }
-  if (Number.isFinite(playback.time) && Math.abs(el.currentTime - playback.time) > 0.35) {
+  if (Number.isFinite(playback.time) && Math.abs(el.currentTime - playback.time) > 0.07) {
     try {
       el.currentTime = Math.max(0, playback.time);
     } catch {
