@@ -43,6 +43,25 @@ import {
   ANIMAL_CHAINS,
   ANIMAL_LABEL,
   animalFromUnknown,
+  CAMERA_BEHAVIORS,
+  CAMERA_FEELS,
+  HUNT_SELECTS,
+  cameraFromUnknown,
+  clampHuntFocusError,
+  clampHuntFocusSpeed,
+  clampHuntFollowMax,
+  clampHuntFollowMin,
+  clampHuntPrecision,
+  clampHuntReactMax,
+  clampHuntReactMin,
+  clampHuntSnap,
+  clampHuntTight,
+  clampHuntVariation,
+  clampHuntWideMax,
+  clampHuntWideMin,
+  clampHuntZoom,
+  feelFromUnknown,
+  huntSelectFromUnknown,
   COLLAGE_KITS,
   clampBoidAlign,
   clampBoidCohere,
@@ -132,7 +151,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Chain can optionally wear Animal Chain parts (dragon, dog, ferret, caterpillar, zebra) on the same path. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
+        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Chain can optionally wear Animal Chain parts (dragon, dog, ferret, caterpillar, zebra) on the same path. Hunt is a documentary camera on top of any move: watch wide, notice a stamp, snap in, follow, return. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -278,6 +297,23 @@ function bind(root: HTMLElement) {
         addSource(defaultGeneratorSource("wallpaper", "sailor", "rush", { night: true }), true);
         store.patchUi({ status: "night wash" });
       }
+    }
+    if (act === "camera") {
+      const next = cameraFromUnknown(t.dataset.camera);
+      patchCollage((s) => ({ ...s, collageCamera: next }), next === "hunt" ? "camera · documentary search" : "camera · fixed");
+    }
+    if (act === "camera-feel") {
+      const next = feelFromUnknown(t.dataset.feel);
+      patchCollage((s) => ({ ...s, collageCameraFeel: next }), `camera feel · ${next}`);
+    }
+    if (act === "hunt-select") {
+      const next = huntSelectFromUnknown(t.dataset.select);
+      patchCollage((s) => ({ ...s, collageHuntSelect: next }), `subject select · ${next}`);
+    }
+    if (act === "hunt-focus") {
+      const current = selectedCollageSource();
+      const next = !current?.collageHuntFocus;
+      patchCollage((s) => ({ ...s, collageHuntFocus: next }), next ? "manual focus on" : "manual focus off");
     }
     if (act === "chain-animal") {
       const next = animalFromUnknown(t.dataset.animal);
@@ -506,6 +542,19 @@ function bind(root: HTMLElement) {
     if (t.id === "collage-pole-speed") patchCollage((s) => ({ ...s, collagePoleSpeed: clampPoleSpeed(Number(t.value)) }), undefined, true);
     if (t.id === "collage-pole-falloff") patchCollage((s) => ({ ...s, collagePoleFalloff: clampPoleFalloff(Number(t.value)) }), undefined, true);
     if (t.id === "collage-pole-switch") patchCollage((s) => ({ ...s, collagePoleSwitch: clampPoleSwitch(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-wide-min") patchCollage((s) => ({ ...s, collageHuntWideMin: clampHuntWideMin(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-wide-max") patchCollage((s) => ({ ...s, collageHuntWideMax: clampHuntWideMax(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-follow-min") patchCollage((s) => ({ ...s, collageHuntFollowMin: clampHuntFollowMin(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-follow-max") patchCollage((s) => ({ ...s, collageHuntFollowMax: clampHuntFollowMax(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-snap") patchCollage((s) => ({ ...s, collageHuntSnap: clampHuntSnap(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-zoom") patchCollage((s) => ({ ...s, collageHuntZoom: clampHuntZoom(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-tight") patchCollage((s) => ({ ...s, collageHuntTight: clampHuntTight(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-react-min") patchCollage((s) => ({ ...s, collageHuntReactMin: clampHuntReactMin(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-react-max") patchCollage((s) => ({ ...s, collageHuntReactMax: clampHuntReactMax(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-precision") patchCollage((s) => ({ ...s, collageHuntPrecision: clampHuntPrecision(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-focus-speed") patchCollage((s) => ({ ...s, collageHuntFocusSpeed: clampHuntFocusSpeed(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-focus-error") patchCollage((s) => ({ ...s, collageHuntFocusError: clampHuntFocusError(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-hunt-variation") patchCollage((s) => ({ ...s, collageHuntVariation: clampHuntVariation(Number(t.value)) }), undefined, true);
     if (t.id === "exp-q") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, quality: Number(t.value) } }), false);
     if (t.id === "exp-br") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, bitrate: Number(t.value) } }), false);
     if (t.id === "exp-name") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, filename: t.value } }), false);
@@ -752,6 +801,51 @@ function paintRail(n: HTMLElement) {
     ${num("collage-pole-falloff", "Falloff", clampPoleFalloff(collage.collagePoleFalloff), 0.6, 2.8, 0.05)}
     ${num("collage-pole-switch", "Polarity Switching", clampPoleSwitch(collage.collagePoleSwitch), 0, 2, 0.05)}`
               : ""
+    }
+    <div class="sec">Camera</div>
+    <div class="row">
+      ${CAMERA_BEHAVIORS.map((id) => {
+        const on = cameraFromUnknown(collage?.collageCamera) === id;
+        const label = id === "hunt" ? "Hunt" : "Fixed";
+        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="camera" data-camera="${id}">${label}</button>`;
+      }).join("")}
+    </div>
+    ${
+      cameraFromUnknown(collage?.collageCamera) === "hunt"
+        ? `<div class="sec">Documentary Search</div>
+    <div class="row">
+      ${HUNT_SELECTS.map((id) => {
+        const on = huntSelectFromUnknown(collage?.collageHuntSelect) === id;
+        const label = id === "random" ? "Random" : id === "reactive" ? "Reactive" : "Mixed";
+        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="hunt-select" data-select="${id}">${label}</button>`;
+      }).join("")}
+    </div>
+    <div class="row">
+      ${CAMERA_FEELS.map((id) => {
+        const on = feelFromUnknown(collage?.collageCameraFeel) === id;
+        const label = id === "handheld" ? "Handheld" : "Perfect";
+        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="camera-feel" data-feel="${id}">${label}</button>`;
+      }).join("")}
+      <button class="btn tiny ${collage?.collageHuntFocus ? "acid" : ""}" data-act="hunt-focus">Manual Focus</button>
+    </div>
+    ${num("collage-hunt-wide-min", "Wide / Search Duration Min", clampHuntWideMin(collage?.collageHuntWideMin), 0.4, 12, 0.1)}
+    ${num("collage-hunt-wide-max", "Wide / Search Duration Max", clampHuntWideMax(collage?.collageHuntWideMax), 0.6, 16, 0.1)}
+    ${num("collage-hunt-follow-min", "Subject Follow Duration Min", clampHuntFollowMin(collage?.collageHuntFollowMin), 0.4, 12, 0.1)}
+    ${num("collage-hunt-follow-max", "Subject Follow Duration Max", clampHuntFollowMax(collage?.collageHuntFollowMax), 0.6, 16, 0.1)}
+    ${num("collage-hunt-snap", "Snap Zoom Speed", clampHuntSnap(collage?.collageHuntSnap), 0.35, 2.4, 0.05)}
+    ${num("collage-hunt-zoom", "Zoom Range / Close Framing", clampHuntZoom(collage?.collageHuntZoom), 0.35, 2.4, 0.05)}
+    ${num("collage-hunt-tight", "Tracking Tightness", clampHuntTight(collage?.collageHuntTight), 0.12, 1, 0.02)}
+    ${num("collage-hunt-react-min", "Reaction Time Min", clampHuntReactMin(collage?.collageHuntReactMin), 0.04, 1.4, 0.02)}
+    ${num("collage-hunt-react-max", "Reaction Time Max", clampHuntReactMax(collage?.collageHuntReactMax), 0.08, 2, 0.02)}
+    ${num("collage-hunt-precision", "Operator Precision", clampHuntPrecision(collage?.collageHuntPrecision), 0, 1, 0.02)}
+    ${num("collage-hunt-variation", "Behavior Variation", clampHuntVariation(collage?.collageHuntVariation), 0, 1, 0.02)}
+    ${
+      collage?.collageHuntFocus
+        ? `${num("collage-hunt-focus-speed", "Focus Correction Speed", clampHuntFocusSpeed(collage?.collageHuntFocusSpeed), 0.15, 2.2, 0.05)}
+    ${num("collage-hunt-focus-error", "Focus Error Amount", clampHuntFocusError(collage?.collageHuntFocusError), 0, 1.6, 0.05)}`
+        : ""
+    }`
+        : ""
     }
     <div class="sec">Music</div>
     <div class="row">
@@ -1083,6 +1177,23 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     poleSpeed: src.collagePoleSpeed,
     poleFalloff: src.collagePoleFalloff,
     poleSwitch: src.collagePoleSwitch,
+    camera: src.collageCamera,
+    cameraFeel: src.collageCameraFeel,
+    huntWideMin: src.collageHuntWideMin,
+    huntWideMax: src.collageHuntWideMax,
+    huntFollowMin: src.collageHuntFollowMin,
+    huntFollowMax: src.collageHuntFollowMax,
+    huntSnap: src.collageHuntSnap,
+    huntZoom: src.collageHuntZoom,
+    huntTight: src.collageHuntTight,
+    huntReactMin: src.collageHuntReactMin,
+    huntReactMax: src.collageHuntReactMax,
+    huntPrecision: src.collageHuntPrecision,
+    huntSelect: src.collageHuntSelect,
+    huntFocus: src.collageHuntFocus,
+    huntFocusSpeed: src.collageHuntFocusSpeed,
+    huntFocusError: src.collageHuntFocusError,
+    huntVariation: src.collageHuntVariation,
     wash: keepWash ? src.colorA : undefined,
   };
 }

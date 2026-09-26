@@ -6,7 +6,7 @@ import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaul
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
 import { buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
-import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
@@ -291,6 +291,9 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("heraldry", "space", "liss").name).toBe("LISS · SPACE");
     expect(defaultGeneratorSource("heraldry", "love", "snap").name).toBe("SNAP · LOVE");
     expect(defaultGeneratorSource("heraldry", "space", "chain").name).toBe("CHAIN · SPACE");
+    expect(defaultGeneratorSource("heraldry", "sailor", "rush").collageCamera).toBe("fixed");
+    expect(defaultGeneratorSource("heraldry", "sailor", "rush", { camera: "hunt", huntSelect: "mixed" }).collageCamera).toBe("hunt");
+    expect(defaultGeneratorSource("heraldry", "sailor", "rush", { camera: "hunt", huntSelect: "mixed" }).collageHuntSelect).toBe("mixed");
     expect(defaultGeneratorSource("heraldry", "space", "chain").collageChainAnimal).toBe("off");
     expect(defaultGeneratorSource("heraldry", "sailor", "chain", { chainAnimal: "dog" }).collageChainAnimal).toBe("dog");
     expect(defaultGeneratorSource("heraldry", "sailor", "chain", { chainAnimal: "dog" }).name).toBe("CHAIN · DOG · SAILOR");
@@ -1150,6 +1153,84 @@ describe("field sim", () => {
     const a = poleState(0, 0, 0.8, 1);
     const b = poleState(0, 6, 0.8, 1);
     expect(a.sign).not.toBe(b.sign);
+  });
+});
+
+describe("documentary search", () => {
+  it("is a camera option, not a collage move", () => {
+    expect(cameraFromUnknown(undefined)).toBe("fixed");
+    expect(cameraFromUnknown("hunt")).toBe("hunt");
+    expect(cameraFromUnknown("drone")).toBe("fixed");
+    expect(huntSelectFromUnknown(undefined)).toBe("mixed");
+    expect(COLLAGE_MOVES.includes("hunt" as (typeof COLLAGE_MOVES)[number])).toBe(false);
+    expect(clampHuntWideMin(0)).toBe(0.4);
+    expect(clampHuntWideMax(99)).toBe(16);
+    const swapped = huntParamsFrom({ huntWideMin: 8, huntWideMax: 2, huntFollowMin: 7, huntFollowMax: 1 });
+    expect(swapped.wideMin).toBeLessThanOrEqual(swapped.wideMax);
+    expect(swapped.followMin).toBeLessThanOrEqual(swapped.followMax);
+    expect(swapped.select).toBe("mixed");
+  });
+
+  it("never picks the same subject twice in a row", () => {
+    const stamps = [
+      { id: 0, x: 0, y: 0, px: 0.1 },
+      { id: 1, x: 0.2, y: 0, px: 0.1 },
+      { id: 2, x: -0.2, y: 0.1, px: 0.1 },
+    ];
+    const rng = () => 0.01;
+    for (let i = 0; i < 8; i++) {
+      const pick = pickHuntSubject(stamps, 1, "random", rng, [], 1 / 30);
+      expect(pick).not.toBe(1);
+    }
+  });
+
+  it("weights reactive picks toward fast movers", () => {
+    const stamps = [
+      { id: 0, x: 0, y: 0, px: 0.1 },
+      { id: 1, x: 0.4, y: 0, px: 0.1 },
+    ];
+    const prev = [
+      { id: 0, x: 0, y: 0, px: 0.1 },
+      { id: 1, x: 0.05, y: 0, px: 0.1 },
+    ];
+    const counts = { 0: 0, 1: 0 };
+    for (let i = 0; i < 80; i++) {
+      const pick = pickHuntSubject(stamps, -1, "reactive", () => (i + 0.5) / 80, prev, 1 / 30);
+      counts[pick as 0 | 1] += 1;
+    }
+    expect(counts[1]).toBeGreaterThan(counts[0]);
+  });
+
+  it("watches wide, then notices, snaps, and tracks", () => {
+    const stamps = (t: number) => [
+      { id: 0, x: Math.sin(t) * 0.2, y: 0, px: 0.08 },
+      { id: 1, x: 0.15, y: Math.cos(t) * 0.12, px: 0.08 },
+    ];
+    const params = huntParamsFrom({
+      huntWideMin: 0.4,
+      huntWideMax: 0.4,
+      huntFollowMin: 1.2,
+      huntFollowMax: 1.2,
+      huntReactMin: 0.12,
+      huntReactMax: 0.12,
+      huntSnap: 2,
+      huntSelect: "random",
+      huntVariation: 0,
+    });
+    let state = stepHunt(null, stamps(0), 0, params, 7);
+    expect(state.phase).toBe("wide");
+    state = stepHunt(state, stamps(0.5), 0.5, params, 7);
+    expect(state.phase).toBe("notice");
+    expect(state.subject).toBeGreaterThanOrEqual(0);
+    const first = state.subject;
+    state = stepHunt(state, stamps(0.7), 0.7, params, 7);
+    expect(["notice", "snap"]).toContain(state.phase);
+    state = stepHunt(state, stamps(1.0), 1.0, params, 7);
+    expect(["snap", "track"]).toContain(state.phase);
+    const identity = applyHuntPose({ x: 0.1, y: -0.05, px: 0.08, rot: 0.2 }, { x: 0, y: 0, zoom: 1, rot: 0, focus: 0 });
+    expect(identity.x).toBeCloseTo(0.1);
+    expect(identity.px).toBeCloseTo(0.08);
+    expect(first).not.toBe(-1);
   });
 });
 

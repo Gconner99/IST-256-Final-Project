@@ -7,6 +7,43 @@ import {
   stepFieldSim,
   type FieldSim,
 } from "./fieldSim";
+import {
+  applyHuntPose,
+  cameraFromUnknown,
+  huntParamsFrom,
+  huntView,
+  stepHunt,
+  type HuntState,
+  type HuntView,
+} from "./docSearch";
+
+export {
+  CAMERA_BEHAVIORS,
+  CAMERA_FEELS,
+  HUNT_SELECTS,
+  applyHuntPose,
+  cameraFromUnknown,
+  clampHuntFocusError,
+  clampHuntFocusSpeed,
+  clampHuntFollowMax,
+  clampHuntFollowMin,
+  clampHuntPrecision,
+  clampHuntReactMax,
+  clampHuntReactMin,
+  clampHuntSnap,
+  clampHuntTight,
+  clampHuntVariation,
+  clampHuntWideMax,
+  clampHuntWideMin,
+  clampHuntZoom,
+  feelFromUnknown,
+  huntParamsFrom,
+  huntSelectFromUnknown,
+  huntSalience,
+  pickHuntSubject,
+  stepHunt,
+} from "./docSearch";
+export type { CameraBehavior, CameraFeel, HuntSelect, HuntPhase, HuntStamp, HuntView } from "./docSearch";
 
 export {
   clampBoidAlign,
@@ -695,6 +732,23 @@ export interface HeraldryPaintOpts {
   poleSpeed?: number;
   poleFalloff?: number;
   poleSwitch?: number;
+  camera?: string | null;
+  cameraFeel?: string | null;
+  huntWideMin?: number;
+  huntWideMax?: number;
+  huntFollowMin?: number;
+  huntFollowMax?: number;
+  huntSnap?: number;
+  huntZoom?: number;
+  huntTight?: number;
+  huntReactMin?: number;
+  huntReactMax?: number;
+  huntPrecision?: number;
+  huntSelect?: string | null;
+  huntFocus?: boolean;
+  huntFocusSpeed?: number;
+  huntFocusError?: number;
+  huntVariation?: number;
 }
 
 const STAMP = 144;
@@ -2752,6 +2806,7 @@ export class HeraldryField {
   private stamps = new Map<string, HTMLCanvasElement>();
   private particles: Particle[] = [];
   private sim: FieldSim | null = null;
+  private hunt: HuntState | null = null;
   private builtSeed = -1;
   private builtInk = "";
   private builtKit: CollageKit = "sailor";
@@ -2781,6 +2836,7 @@ export class HeraldryField {
     this.particles = buildField(seed, ink, kit, mash || null);
     this.stamps.clear();
     this.sim = null;
+    this.hunt = null;
     this.builtSeed = seed;
     this.builtInk = ink;
     this.builtKit = kit;
@@ -2896,11 +2952,12 @@ export class HeraldryField {
       scene === "rush" || scene === "tunnel" || scene === "bloom" || scene === "spiral" || scene === "helix" || scene === "prism" || scene === "chain"
         ? 0.26
         : 0.22;
-    const blitStamp = (stamp: HTMLCanvasElement, pose: Pose) => {
-      const dim = Math.min(pose.px * scale, cap) * Math.min(w, h);
+    const blitStamp = (stamp: HTMLCanvasElement, pose: Pose, view?: HuntView) => {
+      const framed = view ? { ...pose, ...applyHuntPose(pose, view) } : pose;
+      const dim = Math.min(framed.px * scale, view ? 0.72 : cap) * Math.min(w, h);
       if (dim < 5) return;
-      const sx = (0.5 + pose.x) * w;
-      const sy = (0.5 + pose.y / aspect) * h;
+      const sx = (0.5 + framed.x) * w;
+      const sy = (0.5 + framed.y / aspect) * h;
       for (let pr = 0; pr < prisms; pr++) {
         ctx.save();
         const ox = prisms > 1 ? (pr - 1) * dim * 0.09 : 0;
@@ -2910,7 +2967,7 @@ export class HeraldryField {
           continue;
         }
         ctx.translate(sx + ox, sy + oy);
-        ctx.rotate(pose.rot + (prisms > 1 ? pr * 0.1 : 0));
+        ctx.rotate(framed.rot + (prisms > 1 ? pr * 0.1 : 0));
         if (pose.flip != null) ctx.scale(pose.flip, 1);
         if (pose.squash) ctx.scale(pose.squash, 1 / Math.max(0.35, pose.squash));
         if (pose.glow) {
@@ -2926,8 +2983,12 @@ export class HeraldryField {
       }
     };
 
+    const drawn: { stamp: HTMLCanvasElement; pose: Pose }[] = [];
+    const record = (stamp: HTMLCanvasElement, pose: Pose) => {
+      drawn.push({ stamp, pose });
+    };
     if (scene === "chain" && animal !== "off") {
-      paintAnimalChain((charge, pose) => blitStamp(this.stamp(charge), pose), animal, clock, chain, density);
+      paintAnimalChain((charge, pose) => record(this.stamp(charge), pose), animal, clock, chain, density);
     } else {
       for (let i = 0; i < count; i++) {
         const p = this.particles[i];
@@ -2935,9 +2996,45 @@ export class HeraldryField {
           ? simPose(this.sim, i, p.size)
           : poseParticle(p, i, scene, t, audio, bass, beat, bpm, count, clock, chain);
         if (!pose) continue;
-        blitStamp(this.stamp(p.charge), pose);
+        record(this.stamp(p.charge), pose);
       }
     }
+
+    let view: HuntView | undefined;
+    if (cameraFromUnknown(opts.camera) === "hunt") {
+      const huntOpts = huntParamsFrom({
+        huntWideMin: opts.huntWideMin,
+        huntWideMax: opts.huntWideMax,
+        huntFollowMin: opts.huntFollowMin,
+        huntFollowMax: opts.huntFollowMax,
+        huntSnap: opts.huntSnap,
+        huntZoom: opts.huntZoom,
+        huntTight: opts.huntTight,
+        huntReactMin: opts.huntReactMin,
+        huntReactMax: opts.huntReactMax,
+        huntPrecision: opts.huntPrecision,
+        huntSelect: opts.huntSelect,
+        huntFocus: opts.huntFocus,
+        huntFocusSpeed: opts.huntFocusSpeed,
+        huntFocusError: opts.huntFocusError,
+        huntVariation: opts.huntVariation,
+        cameraFeel: opts.cameraFeel,
+      });
+      this.hunt = stepHunt(
+        this.hunt,
+        drawn.map((item, id) => ({ id, x: item.pose.x, y: item.pose.y, px: item.pose.px })),
+        clock,
+        huntOpts,
+        opts.seed >>> 0,
+      );
+      view = huntView(this.hunt, huntOpts);
+      if (view.focus > 0.03) ctx.filter = `blur(${(1.1 + view.focus * 2.4).toFixed(2)}px)`;
+    } else {
+      this.hunt = null;
+    }
+
+    for (const item of drawn) blitStamp(item.stamp, item.pose, view);
+    ctx.filter = "none";
 
     if (
       (scene === "bars" ||

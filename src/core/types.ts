@@ -198,6 +198,24 @@ export interface MediaSource {
   collagePoleSpeed?: number;
   collagePoleFalloff?: number;
   collagePoleSwitch?: number;
+  /** Camera operator: fixed wide frame, or documentary subject hunt. */
+  collageCamera?: "fixed" | "hunt";
+  collageCameraFeel?: "perfect" | "handheld";
+  collageHuntWideMin?: number;
+  collageHuntWideMax?: number;
+  collageHuntFollowMin?: number;
+  collageHuntFollowMax?: number;
+  collageHuntSnap?: number;
+  collageHuntZoom?: number;
+  collageHuntTight?: number;
+  collageHuntReactMin?: number;
+  collageHuntReactMax?: number;
+  collageHuntPrecision?: number;
+  collageHuntSelect?: "random" | "reactive" | "mixed";
+  collageHuntFocus?: boolean;
+  collageHuntFocusSpeed?: number;
+  collageHuntFocusError?: number;
+  collageHuntVariation?: number;
   /** Locked camera move for this clip. */
   collageMove?:
     | "rush"

@@ -71,6 +71,10 @@ HOW TO USE IT
   the ordinary kit stamps, or pick Dragon, Dog, Ferret,
   Caterpillar, or Zebra to dress the same path as a loose
   modular animal (head, repeating body, tail, dangling legs).
+  Camera: Fixed is the ordinary wide frame. Hunt is a
+  documentary operator — it watches the whole picture, notices
+  a stamp, waits a beat, snap-zooms, follows it, then returns
+  wide and picks someone else. Mixed selection is the default.
   Matter moves are a spring mesh (Spring), a changing 3D
   current (Flow), a flock with local rules (Boids), and
   wandering magnets (Poles). Each has its own sliders.

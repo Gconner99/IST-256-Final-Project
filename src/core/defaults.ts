@@ -6,11 +6,30 @@ import {
   clampBoidSpeed,
   ANIMAL_LABEL,
   animalFromUnknown,
+  cameraFromUnknown,
+  clampHuntFocusError,
+  clampHuntFocusSpeed,
+  clampHuntFollowMax,
+  clampHuntFollowMin,
+  clampHuntPrecision,
+  clampHuntReactMax,
+  clampHuntReactMin,
+  clampHuntSnap,
+  clampHuntTight,
+  clampHuntVariation,
+  clampHuntWideMax,
+  clampHuntWideMin,
+  clampHuntZoom,
+  feelFromUnknown,
+  huntSelectFromUnknown,
   clampCollageChainMorph,
   clampCollageChainSmooth,
   clampCollageChainTravel,
   clampCollageChainVary,
   type AnimalChain,
+  type CameraBehavior,
+  type CameraFeel,
+  type HuntSelect,
   clampCollageDensity,
   clampCollagePace,
   clampCollageScale,
@@ -201,6 +220,23 @@ export interface CollageExtras {
   poleSpeed?: number;
   poleFalloff?: number;
   poleSwitch?: number;
+  camera?: CameraBehavior | string | null;
+  cameraFeel?: CameraFeel | string | null;
+  huntWideMin?: number;
+  huntWideMax?: number;
+  huntFollowMin?: number;
+  huntFollowMax?: number;
+  huntSnap?: number;
+  huntZoom?: number;
+  huntTight?: number;
+  huntReactMin?: number;
+  huntReactMax?: number;
+  huntPrecision?: number;
+  huntSelect?: HuntSelect | string | null;
+  huntFocus?: boolean;
+  huntFocusSpeed?: number;
+  huntFocusError?: number;
+  huntVariation?: number;
 }
 
 export function collageName(
@@ -288,6 +324,23 @@ export function defaultGeneratorSource(
     collagePoleSpeed: collageKit ? clampPoleSpeed(extras?.poleSpeed) : undefined,
     collagePoleFalloff: collageKit ? clampPoleFalloff(extras?.poleFalloff) : undefined,
     collagePoleSwitch: collageKit ? clampPoleSwitch(extras?.poleSwitch) : undefined,
+    collageCamera: collageKit ? cameraFromUnknown(extras?.camera) : undefined,
+    collageCameraFeel: collageKit ? feelFromUnknown(extras?.cameraFeel) : undefined,
+    collageHuntWideMin: collageKit ? clampHuntWideMin(extras?.huntWideMin) : undefined,
+    collageHuntWideMax: collageKit ? clampHuntWideMax(extras?.huntWideMax) : undefined,
+    collageHuntFollowMin: collageKit ? clampHuntFollowMin(extras?.huntFollowMin) : undefined,
+    collageHuntFollowMax: collageKit ? clampHuntFollowMax(extras?.huntFollowMax) : undefined,
+    collageHuntSnap: collageKit ? clampHuntSnap(extras?.huntSnap) : undefined,
+    collageHuntZoom: collageKit ? clampHuntZoom(extras?.huntZoom) : undefined,
+    collageHuntTight: collageKit ? clampHuntTight(extras?.huntTight) : undefined,
+    collageHuntReactMin: collageKit ? clampHuntReactMin(extras?.huntReactMin) : undefined,
+    collageHuntReactMax: collageKit ? clampHuntReactMax(extras?.huntReactMax) : undefined,
+    collageHuntPrecision: collageKit ? clampHuntPrecision(extras?.huntPrecision) : undefined,
+    collageHuntSelect: collageKit ? huntSelectFromUnknown(extras?.huntSelect) : undefined,
+    collageHuntFocus: collageKit ? !!extras?.huntFocus : undefined,
+    collageHuntFocusSpeed: collageKit ? clampHuntFocusSpeed(extras?.huntFocusSpeed) : undefined,
+    collageHuntFocusError: collageKit ? clampHuntFocusError(extras?.huntFocusError) : undefined,
+    collageHuntVariation: collageKit ? clampHuntVariation(extras?.huntVariation) : undefined,
     width: 1280,
     height: 720,
     duration: 0,

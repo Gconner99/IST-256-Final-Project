@@ -398,6 +398,23 @@ export class Renderer {
       poleSpeed: look.collagePoleSpeed,
       poleFalloff: look.collagePoleFalloff,
       poleSwitch: look.collagePoleSwitch,
+      camera: look.collageCamera,
+      cameraFeel: look.collageCameraFeel,
+      huntWideMin: look.collageHuntWideMin,
+      huntWideMax: look.collageHuntWideMax,
+      huntFollowMin: look.collageHuntFollowMin,
+      huntFollowMax: look.collageHuntFollowMax,
+      huntSnap: look.collageHuntSnap,
+      huntZoom: look.collageHuntZoom,
+      huntTight: look.collageHuntTight,
+      huntReactMin: look.collageHuntReactMin,
+      huntReactMax: look.collageHuntReactMax,
+      huntPrecision: look.collageHuntPrecision,
+      huntSelect: look.collageHuntSelect,
+      huntFocus: look.collageHuntFocus,
+      huntFocusSpeed: look.collageHuntFocusSpeed,
+      huntFocusError: look.collageHuntFocusError,
+      huntVariation: look.collageHuntVariation,
     });
     texImage(gl, this.heraldryTex, canvas);
     if (target) {
