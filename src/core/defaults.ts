@@ -1,14 +1,15 @@
 import {
   clampCollageDensity,
+  clampCollagePace,
   clampCollageScale,
   generatorForMove,
   inkForKit,
   isHeraldry,
   kitFromUnknown,
   MOVE_LABEL,
-  moveForSeed,
   moveFromUnknown,
   paperForKit,
+  pleasingMoveForSeed,
   sceneFromGenerator,
   type CollageKit,
   type CollageMove,
@@ -140,6 +141,7 @@ export interface CollageExtras {
   night?: boolean;
   scale?: number;
   density?: number;
+  pace?: number;
   wash?: string | null;
 }
 
@@ -161,7 +163,7 @@ export function defaultGeneratorSource(
   if (collageKit) {
     collageMove =
       move === "mix" || move === "tour"
-        ? moveForSeed(Date.now() + Math.floor(Math.random() * 997))
+        ? pleasingMoveForSeed(Date.now() + Math.floor(Math.random() * 997))
         : move
           ? moveFromUnknown(move)
           : (sceneFromGenerator(kind) as CollageMove);
@@ -195,6 +197,7 @@ export function defaultGeneratorSource(
     collageNight: collageKit ? !!extras?.night : undefined,
     collageScale: collageKit ? clampCollageScale(extras?.scale) : undefined,
     collageDensity: collageKit ? clampCollageDensity(extras?.density) : undefined,
+    collagePace: collageKit ? clampCollagePace(extras?.pace) : undefined,
     width: 1280,
     height: 720,
     duration: 0,

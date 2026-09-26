@@ -94,6 +94,9 @@ function frame(now: number) {
   if (!exporting) {
     try {
       renderer.render(store.project, store.project.playback.time);
+      if (renderer.cutStatus && renderer.cutStatus !== store.state.ui.status) {
+        store.patchUi({ status: renderer.cutStatus }, false);
+      }
     } catch (err) {
       store.patchUi({ status: err instanceof Error ? err.message : "render error" }, false);
     }

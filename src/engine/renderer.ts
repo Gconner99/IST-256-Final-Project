@@ -2,6 +2,7 @@ import type { EffectInstance, Layer, MediaSource, Project, QualityMode } from ".
 import { resolvedLayerParams } from "../core/timeline";
 import { dancerForCompile } from "../effects/dancer";
 import { getEffect } from "../effects/registry";
+import { buildCutReel, cutLabel, shotAtTime, type CutShot } from "../core/cutEdit";
 import { getSoundtrack, sampleAudio } from "../media/audio";
 import {
   BLEND_INDEX,
@@ -16,7 +17,7 @@ import {
   texImage,
 } from "./gl";
 import { compileEffectProgram, hexToRgb } from "./compile";
-import { HeraldryField, isHeraldry } from "./heraldry";
+import { generatorForMove, HeraldryField, isHeraldry } from "./heraldry";
 import {
   BLIT_GLSL,
   BOOT_GENERATOR_GLSL,
@@ -72,6 +73,10 @@ export class Renderer {
   private audioBass = 0;
   private audioBeat = 0;
   private audioBpm = 0;
+  private cutReel: CutShot[] | null = null;
+  private cutKey = "";
+  private cutLook: MediaSource | null = null;
+  cutStatus = "";
   private effectProg = new Map<string, Program>();
   private copy: Program | null = null;
   private blit: Program | null = null;
@@ -307,29 +312,66 @@ export class Renderer {
     drawTri(gl);
   }
 
+  private resolveCut(project: Project, time: number, track: MediaSource | undefined) {
+    if (!project.cutEdit?.enabled) {
+      this.cutLook = null;
+      this.cutReel = null;
+      this.cutKey = "";
+      this.cutStatus = "";
+      return;
+    }
+    const duration = Math.max(project.duration, project.exportSettings.duration || 0, 8);
+    const key = `${project.cutEdit.seed}|${duration}|${track?.bpm ?? 0}|${track?.beats?.length ?? 0}`;
+    if (!this.cutReel || this.cutKey !== key) {
+      this.cutReel = buildCutReel({
+        seed: project.cutEdit.seed,
+        duration,
+        bpm: track?.bpm ?? 120,
+        beats: track?.beats,
+      });
+      this.cutKey = key;
+    }
+    const shot = shotAtTime(this.cutReel, time);
+    this.cutStatus = cutLabel(shot);
+    this.cutLook = {
+      generator: generatorForMove(shot.look.move),
+      collageKit: shot.look.kit,
+      collageKitB: shot.look.kitB,
+      collageMove: shot.look.move,
+      collageNight: shot.look.night,
+      collageScale: shot.look.scale,
+      collageDensity: shot.look.density,
+      collagePace: shot.look.pace,
+      colorA: shot.look.wash,
+      colorB: shot.look.ink,
+    } as MediaSource;
+  }
+
   private drawHeraldry(target: FBO | null, src: MediaSource, time: number, seed: number, duration: number, width: number, height: number) {
     const gl = this.gl;
     this.copy ??= new Program(gl, COPY_GLSL);
     this.heraldryTex ??= createTexture(gl);
+    const look = this.cutLook ?? src;
     const canvas = this.heraldry.paint({
       width,
       height,
       time,
       duration,
       seed,
-      generator: src.generator,
-      kit: src.collageKit,
-      kitB: src.collageKitB,
-      move: src.collageMove,
-      paper: src.colorA ?? "#ffffff",
-      ink: src.colorB ?? "#c41e3a",
+      generator: look.generator,
+      kit: look.collageKit,
+      kitB: look.collageKitB,
+      move: look.collageMove,
+      paper: look.colorA ?? "#ffffff",
+      ink: look.colorB ?? "#c41e3a",
       audio: this.audioEnergy,
       bass: this.audioBass,
       beat: this.audioBeat,
       bpm: this.audioBpm,
-      night: src.collageNight,
-      scale: src.collageScale,
-      density: src.collageDensity,
+      night: look.collageNight,
+      scale: look.collageScale,
+      density: look.collageDensity,
+      pace: look.collagePace,
     });
     texImage(gl, this.heraldryTex, canvas);
     if (target) {
@@ -485,7 +527,9 @@ export class Renderer {
     this.audioEnergy = mix.energy;
     this.audioBass = mix.bass;
     this.audioBeat = mix.beat;
-    this.audioBpm = getSoundtrack(project)?.bpm ?? 0;
+    const track = getSoundtrack(project);
+    this.audioBpm = track?.bpm ?? 0;
+    this.resolveCut(project, time, track);
 
     if (quality !== "export" && !this.needsPipeline(project)) {
       this.drawLite(project, time);

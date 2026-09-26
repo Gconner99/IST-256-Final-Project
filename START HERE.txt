@@ -66,7 +66,13 @@ HOW TO USE IT
 - Grounds are warm colored washes — each kit has a bigger set of
   colors now. Kits also have more stamp shapes (crabs, roses, guitars,
   aliens, and so on). Kit buttons keep the last move.
-- Rand wacky rolls a new kit and zoom.
+- Rand all / Rand wacky rolls a new kit and a calmer move.
+  Stamps stay smaller and slower so a roll does not fill the
+  screen or fly off too fast.
+- Cut edit is the other randomizer. Drop an MP3, then hit
+  Cut edit. It cuts on the beat through music-reactive looks.
+  Some shots hold. Some are two quick hits that settle. It
+  should feel edited, not shuffled. Export keeps those cuts.
 - Drag a photo, video, or MP3 onto the big area
 - Hit MP3 (or drop a clip) to use it as a soundtrack. Playback
   starts and the collage punches on the beat.

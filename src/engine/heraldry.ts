@@ -94,6 +94,43 @@ export function moveForSeed(seed: number): CollageMove {
   return COLLAGE_MOVES[(seed >>> 0) % COLLAGE_MOVES.length];
 }
 
+/** Moves that stay readable when the randomizer rolls them. */
+export const PLEASING_MOVES = [
+  "rush",
+  "tunnel",
+  "bloom",
+  "spiral",
+  "tide",
+  "rings",
+  "loom",
+  "petal",
+  "flock",
+  "wheel",
+  "silk",
+  "bars",
+  "ripple",
+  "swing",
+  "burst",
+  "halo",
+  "clap",
+  "wave",
+  "drop",
+  "spot",
+] as const;
+export type PleasingMove = (typeof PLEASING_MOVES)[number];
+
+export function isPleasingMove(scene?: string | null): scene is PleasingMove {
+  return !!scene && (PLEASING_MOVES as readonly string[]).includes(scene);
+}
+
+export function pleasingMoveForSeed(seed: number): CollageMove {
+  return PLEASING_MOVES[(seed >>> 0) % PLEASING_MOVES.length];
+}
+
+export function clampCollagePace(value?: number | null): number {
+  return clamp(value ?? 1, 0.35, 1.2);
+}
+
 export function generatorForMove(move: CollageMove): GeneratorType {
   if (move === "rush") return "wallpaper";
   if (move === "tunnel") return "giants";
@@ -305,6 +342,7 @@ export interface HeraldryPaintOpts {
   night?: boolean;
   scale?: number;
   density?: number;
+  pace?: number;
 }
 
 const STAMP = 144;
@@ -1682,10 +1720,12 @@ export class HeraldryField {
     const bpm = opts.bpm > 40 ? opts.bpm : 0;
     const scale = clampCollageScale(opts.scale);
     const density = clampCollageDensity(opts.density);
+    const pace = clampCollagePace(opts.pace);
     paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, beat, bass, !!opts.night, ink);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    const t = opts.time;
+    const clock = opts.time;
+    const t = clock * pace;
     const aspect = w / Math.max(h, 1);
     const baseCount =
       scene === "bounce" || scene === "flip" || scene === "hop" || scene === "kick" || scene === "jelly"
@@ -1720,9 +1760,14 @@ export class HeraldryField {
     for (let i = 0; i < count; i++) {
       const p = this.particles[i];
       const stamp = this.stamp(p.charge);
-      const pose = poseParticle(p, i, scene, t, audio, bass, beat, bpm, count);
+      const pose = poseParticle(p, i, scene, t, audio, bass, beat, bpm, count, clock);
       if (!pose) continue;
-      const dim = pose.px * scale * Math.min(w, h);
+      const cap =
+        scene === "spot" ? 0.34 :
+        scene === "rush" || scene === "tunnel" || scene === "bloom" || scene === "spiral" || scene === "helix" || scene === "prism"
+          ? 0.26
+          : 0.22;
+      const dim = Math.min(pose.px * scale, cap) * Math.min(w, h);
       if (dim < 5) continue;
       const sx = (0.5 + pose.x) * w;
       const sy = (0.5 + pose.y / aspect) * h;
@@ -1806,6 +1851,7 @@ function poseParticle(
   beat: number,
   bpm: number,
   count = 48,
+  clock = t,
 ): Pose | null {
   const music = isMusicMove(scene);
   const rate = bpm > 40 ? (bpm / 60) * Math.PI * 2 : 0;
@@ -2145,7 +2191,7 @@ function poseParticle(
   }
   if (scene === "spot") {
     const n = Math.max(8, count);
-    const star = spotIndex(t, bpm, n);
+    const star = spotIndex(clock, bpm, n);
     const mine = i === star;
     const slam = mine ? clamp(Math.max(beat, punch), 0, 1) : 0;
     const ang = (i / n) * Math.PI * 2;

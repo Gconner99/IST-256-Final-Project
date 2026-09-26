@@ -58,7 +58,8 @@ Requires a browser (or Electron) with **WebGL2**.
 - Simple keyframe automation
 - JSON project files (`.phos.json`) and source-independent presets
 - Export: PNG, JPG, **MP4 clips up to 32s** (optional close-loop fade, song kept when loaded), WebM, PNG image sequence (zip)
-- Collage mash (two kits), live ground wash, night/neon wash, Drop / Spot music moves, stamp size & density
+- Collage mash (two kits), live ground wash, night/neon wash, Drop / Spot music moves, stamp size / density / pace
+- Calmer randomizer (smaller, slower rolls) and **Cut edit** (beat-synced cuts through music-reactive looks)
 
 ## Architecture
 

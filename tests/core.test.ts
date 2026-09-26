@@ -5,7 +5,8 @@ import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
-import { buildField, clampCollageDensity, clampCollageScale, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isHeraldry, isMusicMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
+import { buildField, clampCollageDensity, clampCollagePace, clampCollageScale, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isHeraldry, isMusicMove, isPleasingMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -620,6 +621,45 @@ describe("randomize + presets", () => {
       expect(HERALDRY_ROOMS).toContain(p.sources[0].generator);
       expect(isHeraldry(p.sources[0].generator)).toBe(true);
     }
+  });
+
+  it("random collage rolls stay small, slow, and pleasing", () => {
+    const chaotic = new Set(["bounce", "flip", "glow", "flash", "hop", "kick", "jelly", "helix", "prism"]);
+    for (const seed of [1, 7, 99, 256, 90210, 404, 777]) {
+      const p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null, true);
+      const src = p.sources[0];
+      expect(isPleasingMove(src.collageMove)).toBe(true);
+      expect(chaotic.has(src.collageMove ?? "")).toBe(false);
+      expect(src.collageScale ?? 1).toBeLessThanOrEqual(0.9);
+      expect(src.collageDensity ?? 1).toBeLessThanOrEqual(1.1);
+      expect(src.collagePace ?? 1).toBeLessThanOrEqual(0.8);
+      expect(src.collagePace ?? 1).toBeGreaterThanOrEqual(0.5);
+    }
+  });
+
+  it("cut edit reel feels authored, not shuffled", () => {
+    const onsets = Array.from({ length: 64 }, (_, i) => i * 0.5);
+    const reel = buildCutReel({ seed: 90210, duration: 32, bpm: 120, beats: onsets });
+    expect(reel.length).toBeGreaterThan(4);
+    const stats = reelStats(reel);
+    expect(stats.maxOneRun).toBeLessThanOrEqual(2);
+    expect(stats.repeatMoves).toBe(0);
+    expect(stats.longShare).toBeGreaterThan(0.55);
+    for (const shot of reel) {
+      expect(isMusicMove(shot.look.move)).toBe(true);
+      expect(shot.look.scale).toBeLessThanOrEqual(0.9);
+      expect(shot.look.pace).toBeLessThanOrEqual(0.8);
+      expect(shot.beats).toBeGreaterThanOrEqual(1);
+    }
+    expect(shotAtTime(reel, 0).start).toBe(reel[0].start);
+    expect(shotAtTime(reel, reel[1].start + 0.01).look.move).toBe(reel[1].look.move);
+    const again = buildCutReel({ seed: 90210, duration: 32, bpm: 120, beats: onsets });
+    expect(again.map((s) => s.look.move)).toEqual(reel.map((s) => s.look.move));
+  });
+
+  it("clamps collage pace", () => {
+    expect(clampCollagePace(9)).toBe(1.2);
+    expect(clampCollagePace(0.1)).toBe(0.35);
   });
 
   it("chaos stamp rerolls overlay seeds", () => {

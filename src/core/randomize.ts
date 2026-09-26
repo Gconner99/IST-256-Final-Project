@@ -1,4 +1,4 @@
-import { COLLAGE_KITS, HERALDRY_ROOMS, generatorForMove, inkForKit, inkForSeed, isHeraldry, kitForSeed, moveForSeed, paperForKit, paperForSeed } from "../engine/heraldry";
+import { COLLAGE_KITS, HERALDRY_ROOMS, MOVE_LABEL, generatorForMove, inkForKit, inkForSeed, isHeraldry, kitForSeed, paperForKit, paperForSeed, pleasingMoveForSeed } from "../engine/heraldry";
 import { getEffect } from "../effects/registry";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
@@ -393,21 +393,39 @@ export function randomizeProject(
     if (mode !== "all" || src.kind !== "generator") return src;
     const prng = mulberry32(seed + i * 131);
     const pal = PALETTES[Math.floor(prng() * PALETTES.length)];
-    const keep = wacky ? false : prng() > 0.35 && isHeraldry(src.generator);
+    if (isHeraldry(src.generator) || HERALDRY_ROOMS.includes(src.generator as (typeof HERALDRY_ROOMS)[number])) {
+      const kit = kitForSeed(seed + i * 41);
+      const move = pleasingMoveForSeed(seed + i * 73);
+      const mashRoll = kitForSeed(seed + i * 99);
+      const kitB = prng() > 0.74 && mashRoll !== kit ? mashRoll : undefined;
+      return {
+        ...src,
+        generator: generatorForMove(move),
+        collageKit: kit,
+        collageKitB: kitB,
+        collageMove: move,
+        collageNight: prng() > 0.8,
+        collageScale: 0.62 + prng() * 0.24,
+        collageDensity: 0.72 + prng() * 0.3,
+        collagePace: 0.5 + prng() * 0.26,
+        colorA: paperForKit(kit, seed + i * 17),
+        colorB: inkForKit(kit),
+        name: kitB ? `${MOVE_LABEL[move]} · ${kit} · ${kitB}` : `${MOVE_LABEL[move]} · ${kit}`,
+      };
+    }
+    const keep = wacky ? false : prng() > 0.35;
     const generator = pinned
       ? pinned.generator
       : keep
         ? src.generator
         : places[Math.floor(prng() * places.length)];
     const kit = kitForSeed(seed + i * 41);
-    const move = isHeraldry(generator) ? moveForSeed(seed + i * 73) : undefined;
     const paper = isHeraldry(generator) ? paperForKit(kit, seed + i * 17) : pal.inkA;
     const ink = isHeraldry(generator) ? inkForKit(kit) : pal.inkB;
     return {
       ...src,
-      generator: move ? generatorForMove(move) : generator,
+      generator,
       collageKit: isHeraldry(generator) ? kit : src.collageKit,
-      collageMove: move ?? src.collageMove,
       colorA: pinned ? pinned.a : paper,
       colorB: pinned ? inkForKit(kit) : ink,
     };
@@ -443,14 +461,18 @@ export function chaosStamp(project: Project): Project {
     sources: project.sources.map((src, i) => {
       if (!isHeraldry(src.generator)) return src;
       const kit = COLLAGE_KITS[Math.floor(rng() * COLLAGE_KITS.length)];
-      const move = moveForSeed(seed + i * 59);
+      const move = pleasingMoveForSeed(seed + i * 59);
       return {
         ...src,
         generator: generatorForMove(move),
         collageKit: kit,
         collageMove: move,
+        collageScale: 0.64 + rng() * 0.22,
+        collageDensity: 0.74 + rng() * 0.28,
+        collagePace: 0.52 + rng() * 0.24,
         colorA: paperForKit(kit, seed + i * 13),
         colorB: inkForSeed(seed + i * 29),
+        name: `${MOVE_LABEL[move]} · ${kit}`,
       };
     }),
     layers: project.layers.map((layer) => ({

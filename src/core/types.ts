@@ -165,6 +165,8 @@ export interface MediaSource {
   collageScale?: number;
   /** Stamp count multiplier. */
   collageDensity?: number;
+  /** Motion rate. Lower is calmer. */
+  collagePace?: number;
   /** Locked camera move for this clip. */
   collageMove?:
     | "rush"
@@ -267,6 +269,8 @@ export interface Project {
   globalFeedback: FeedbackSettings;
   exportSettings: ExportSettings;
   presets: Preset[];
+  /** Auto-cut reel of music-reactive looks, snapped to the beat. */
+  cutEdit?: { enabled: boolean; seed: number };
 }
 
 export interface AppUi {

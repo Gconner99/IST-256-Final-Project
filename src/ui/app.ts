@@ -42,6 +42,7 @@ import { collageName, defaultGeneratorSource } from "../core/defaults";
 import {
   COLLAGE_KITS,
   clampCollageDensity,
+  clampCollagePace,
   clampCollageScale,
   groundsForKit,
   isHeraldry,
@@ -78,6 +79,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
       <button class="btn tiny hot" data-act="rand-wacky" title="A new kit, ground color, and camera move">Rand wacky</button>
+      <button class="btn tiny ${store.project.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit" title="Cut to the beat through music-reactive looks">Cut edit</button>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
       <select id="quality">
@@ -109,7 +111,8 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
-          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move.</li>
+          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Rolls stay small and slower now — no giant stamps, no frantic bounce/flip/flash.</li>
+          <li><strong>Cut edit</strong> is the other randomizer. It listens to the MP3 and cuts on the beat through music-reactive looks. Some shots hold a bar or two. Some are two quick hits that settle. It should feel edited, not shuffled.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music. Move buttons keep the current kit.</li>
           <li><strong>Mash</strong> — mix a second kit’s stamps onto the same ground. <strong>Wash</strong> taps a kit color without rolling a new move. <strong>Night</strong> is a darker club wash that breathes on bass.</li>
@@ -161,6 +164,20 @@ function bind(root: HTMLElement) {
     if (act === "seed+") bumpSeed(1);
     if (act === "rand-all") randomize("all");
     if (act === "rand-wacky") randomize("all", true);
+    if (act === "cut-edit") {
+      const on = !store.project.cutEdit?.enabled;
+      store.setProject((p) => ({
+        ...p,
+        cutEdit: { enabled: on, seed: ((p.cutEdit?.seed ?? p.seed) + 1 + (Date.now() & 255)) >>> 0 },
+      }));
+      store.patchUi({
+        status: on
+          ? store.project.sources.some((s) => s.kind === "audio")
+            ? "cut edit · on the beat"
+            : "cut edit · 120bpm grid — drop an MP3 to lock to the song"
+          : "cut edit off",
+      });
+    }
     if (act === "stamp-chaos") stampChaos();
     if (act === "reprint") {
       if (rendererRef) void reprintFrame(rendererRef);
@@ -417,6 +434,9 @@ function bind(root: HTMLElement) {
     if (t.id === "collage-density") {
       patchCollage((s) => ({ ...s, collageDensity: clampCollageDensity(Number(t.value)) }), undefined, true);
     }
+    if (t.id === "collage-pace") {
+      patchCollage((s) => ({ ...s, collagePace: clampCollagePace(Number(t.value)) }), undefined, true);
+    }
     if (t.id === "exp-q") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, quality: Number(t.value) } }), false);
     if (t.id === "exp-br") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, bitrate: Number(t.value) } }), false);
     if (t.id === "exp-name") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, filename: t.value } }), false);
@@ -498,6 +518,9 @@ function paint(root: HTMLElement) {
   root.querySelector("#help")?.classList.toggle("on", ui.helpOpen);
   root.querySelector("#veil")?.classList.toggle("on", ui.dropActive);
   root.querySelector("#led")?.classList.toggle("hot", p.playback.playing);
+  root.querySelectorAll<HTMLElement>('[data-act="cut-edit"]').forEach((el) => {
+    el.classList.toggle("acid", !!p.cutEdit?.enabled);
+  });
 
   paintRail(root.querySelector("#rail")!);
   paintStack(root.querySelector("#stack")!);
@@ -565,6 +588,10 @@ function paintRail(n: HTMLElement) {
       <input id="collage-density" type="range" min="0.35" max="2" step="0.05" value="${clampCollageDensity(collage?.collageDensity)}" />
       <input id="collage-density" type="number" min="0.35" max="2" step="0.05" value="${clampCollageDensity(collage?.collageDensity).toFixed(2)}" />
       <span></span></div>
+    <div class="param"><span>Pace</span>
+      <input id="collage-pace" type="range" min="0.35" max="1.2" step="0.05" value="${clampCollagePace(collage?.collagePace)}" />
+      <input id="collage-pace" type="number" min="0.35" max="1.2" step="0.05" value="${clampCollagePace(collage?.collagePace).toFixed(2)}" />
+      <span></span></div>
     <div class="sec">Move</div>
     <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-move="rush">Rush</button>
@@ -611,8 +638,9 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="flash">Flash</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="hop">Hop</button>
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
+      <button class="btn tiny ${p.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit">Cut edit</button>
     </div>
-    <div class="status" style="margin-top:4px">Each clip keeps one move. Music moves punch on the beat without jumping off their path. Drop holds still until a big hit. Spot lights one stamp each hit. Mash mixes two kits. Wash / Night change the ground without rolling a new move. Rush still flies at the lens.</div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move. Rand all stays smaller and slower. Cut edit cuts music-reactive looks on the beat — longer holds, then a couple of quick hits, never a shuffle. Drop an MP3 first if you want it locked to the song.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
@@ -869,6 +897,7 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     night: src.collageNight,
     scale: src.collageScale,
     density: src.collageDensity,
+    pace: src.collagePace,
     wash: keepWash ? src.colorA : undefined,
   };
 }
