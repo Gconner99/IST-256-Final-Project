@@ -1863,7 +1863,16 @@ export class HeraldryField {
       }
     }
 
-    if (isMusicMove(scene) && scene !== "drop" && scene !== "spot" && beat > 0.04) {
+    if (
+      (scene === "bars" ||
+        scene === "ripple" ||
+        scene === "swing" ||
+        scene === "burst" ||
+        scene === "halo" ||
+        scene === "clap" ||
+        scene === "wave") &&
+      beat > 0.04
+    ) {
       ctx.save();
       ctx.translate(w * 0.5, h * 0.5);
       ctx.strokeStyle = mixHex(ink, "#fff4d8", 0.72);
