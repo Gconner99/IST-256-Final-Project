@@ -442,24 +442,45 @@ function stepPoles(sim: FieldSim, dt: number, clock: number, params: SimParams) 
       const dy = p.y - sim.py[i];
       const dz = p.z - sim.pz[i];
       const d = Math.hypot(dx, dy, dz) || 1e-4;
-      const mag = (p.sign > 0 ? params.poleAttract : params.poleRepel) / (d ** fall + 0.018);
+      const mag = (p.sign > 0 ? params.poleAttract : params.poleRepel) / (d ** fall + 0.06);
       const s = p.sign > 0 ? 1 : -1;
-      fx += (dx / d) * mag * s;
-      fy += (dy / d) * mag * s;
-      fz += (dz / d) * mag * s * 0.72;
+      fx += (dx / d) * mag * s * 0.55;
+      fy += (dy / d) * mag * s * 0.55;
+      fz += (dz / d) * mag * s * 0.32;
+      fx += (-dy / d) * mag * 0.28;
+      fy += (dx / d) * mag * 0.28;
+      if (d < 0.1) {
+        const push = (0.1 - d) * 10;
+        fx -= (dx / d) * push;
+        fy -= (dy / d) * push;
+        fz -= (dz / d) * push * 0.6;
+      }
     }
-    sim.vx[i] += fx * dt;
-    sim.vy[i] += fy * dt;
-    sim.vz[i] += fz * dt;
+    for (let j = 0; j < sim.n; j++) {
+      if (i === j) continue;
+      const dx = sim.px[i] - sim.px[j];
+      const dy = sim.py[i] - sim.py[j];
+      const dz = sim.pz[i] - sim.pz[j];
+      const d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 > 0.018 || d2 < 1e-8) continue;
+      const d = Math.sqrt(d2);
+      const push = (0.135 - d) * 2.4;
+      fx += (dx / d) * push;
+      fy += (dy / d) * push;
+      fz += (dz / d) * push * 0.5;
+    }
+    sim.vx[i] += fx * dt - sim.px[i] * 0.2 * dt;
+    sim.vy[i] += fy * dt - sim.py[i] * 0.2 * dt;
+    sim.vz[i] += fz * dt - sim.pz[i] * 0.16 * dt;
     sim.vx[i] *= 0.9;
     sim.vy[i] *= 0.9;
     sim.vz[i] *= 0.9;
-    sim.px[i] += sim.vx[i] * dt * 0.9;
-    sim.py[i] += sim.vy[i] * dt * 0.9;
-    sim.pz[i] += sim.vz[i] * dt * 0.7;
-    [sim.px[i], sim.vx[i]] = softBound(sim.px[i], sim.vx[i], 0.5);
-    [sim.py[i], sim.vy[i]] = softBound(sim.py[i], sim.vy[i], 0.42);
-    [sim.pz[i], sim.vz[i]] = softBound(sim.pz[i], sim.vz[i], 0.34);
+    sim.px[i] += sim.vx[i] * dt * 0.85;
+    sim.py[i] += sim.vy[i] * dt * 0.85;
+    sim.pz[i] += sim.vz[i] * dt * 0.6;
+    [sim.px[i], sim.vx[i]] = softBound(sim.px[i], sim.vx[i], 0.42);
+    [sim.py[i], sim.vy[i]] = softBound(sim.py[i], sim.vy[i], 0.36);
+    [sim.pz[i], sim.vz[i]] = softBound(sim.pz[i], sim.vz[i], 0.3);
   }
 }
 
@@ -495,8 +516,8 @@ export function simPose(sim: FieldSim, i: number, size: number): SimPose | null 
   const depth = Math.max(0.46, 1.06 - sim.pz[i] * 0.52);
   const near = clamp(1.1 / depth, 0.55, 1.7);
   return {
-    x: sim.px[i] / depth,
-    y: sim.py[i] / depth,
+    x: clamp(sim.px[i] / depth, -0.48, 0.48),
+    y: clamp(sim.py[i] / depth, -0.4, 0.4),
     px: clamp((0.07 + size * 0.03) * near, 0.05, 0.22),
     rot: Math.atan2(sim.vy[i], sim.vx[i]),
     alpha: clamp(0.55 + near * 0.4, 0.5, 1),
