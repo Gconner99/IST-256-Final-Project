@@ -319,6 +319,7 @@ export class Renderer {
       seed,
       generator: src.generator,
       kit: src.collageKit,
+      kitB: src.collageKitB,
       move: src.collageMove,
       paper: src.colorA ?? "#ffffff",
       ink: src.colorB ?? "#c41e3a",
@@ -326,6 +327,9 @@ export class Renderer {
       bass: this.audioBass,
       beat: this.audioBeat,
       bpm: this.audioBpm,
+      night: src.collageNight,
+      scale: src.collageScale,
+      density: src.collageDensity,
     });
     texImage(gl, this.heraldryTex, canvas);
     if (target) {

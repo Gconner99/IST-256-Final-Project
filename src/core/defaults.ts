@@ -1,4 +1,6 @@
 import {
+  clampCollageDensity,
+  clampCollageScale,
   generatorForMove,
   inkForKit,
   isHeraldry,
@@ -133,10 +135,25 @@ const PLACE_LABEL: Record<string, string> = {
   shower: "LATTICE",
 };
 
+export interface CollageExtras {
+  kitB?: CollageKit | string | null;
+  night?: boolean;
+  scale?: number;
+  density?: number;
+  wash?: string | null;
+}
+
+export function collageName(move: CollageMove, kit: CollageKit, kitB?: CollageKit | null): string {
+  const place = MOVE_LABEL[move];
+  if (kitB && kitB !== kit) return `${place} · ${KIT_LABEL[kit]} · ${KIT_LABEL[kitB]}`;
+  return `${place} · ${KIT_LABEL[kit]}`;
+}
+
 export function defaultGeneratorSource(
   kind: MediaSource["generator"] = "plasma",
   kit?: CollageKit | string | null,
   move?: CollageMove | string | null,
+  extras?: CollageExtras,
 ): MediaSource {
   const collageKit = isHeraldry(kind) ? kitFromUnknown(kit) : undefined;
   const ink = GEN_INK[kind ?? "plasma"] ?? { a: "#140c10", b: "#f0d2b0" };
@@ -151,16 +168,33 @@ export function defaultGeneratorSource(
   }
   const generator = collageMove ? generatorForMove(collageMove) : (kind ?? "plasma");
   const place = collageMove ? MOVE_LABEL[collageMove] : PLACE_LABEL[kind ?? ""] ?? (kind ? kind.toUpperCase() : "SIGNAL");
-  const name = collageKit ? `${place} · ${KIT_LABEL[collageKit]}` : kind === "critters" ? "FLOATERS" : kind === "stage" ? "STAGE" : kind === "sketch" ? "SKETCH" : place;
+  const kitB = collageKit && extras?.kitB ? kitFromUnknown(extras.kitB) : undefined;
+  const collageKitB = kitB && collageKit && kitB !== collageKit ? kitB : undefined;
+  const name = collageKit && collageMove
+    ? collageName(collageMove, collageKit, collageKitB)
+    : collageKit
+      ? `${place} · ${KIT_LABEL[collageKit]}`
+      : kind === "critters"
+        ? "FLOATERS"
+        : kind === "stage"
+          ? "STAGE"
+          : kind === "sketch"
+            ? "SKETCH"
+            : place;
+  const wash = extras?.wash && /^#[0-9a-fA-F]{6}$/.test(extras.wash) ? extras.wash : undefined;
   return {
     id: uid("src"),
     name,
     kind: "generator",
     generator,
-    colorA: collageKit ? paperForKit(collageKit, collageMove === "rush" ? 1 : collageMove === "tunnel" ? 5 : collageMove === "bounce" ? 7 : 11) : ink.a,
+    colorA: wash ?? (collageKit ? paperForKit(collageKit, collageMove === "rush" ? 1 : collageMove === "tunnel" ? 5 : collageMove === "bounce" ? 7 : 11) : ink.a),
     colorB: collageKit ? inkForKit(collageKit) : ink.b,
     collageKit,
+    collageKitB,
     collageMove,
+    collageNight: collageKit ? !!extras?.night : undefined,
+    collageScale: collageKit ? clampCollageScale(extras?.scale) : undefined,
+    collageDensity: collageKit ? clampCollageDensity(extras?.density) : undefined,
     width: 1280,
     height: 720,
     duration: 0,

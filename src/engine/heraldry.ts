@@ -33,11 +33,13 @@ export const COLLAGE_MOVES = [
   "halo",
   "clap",
   "wave",
+  "drop",
+  "spot",
 ] as const;
 export type CollageMove = (typeof COLLAGE_MOVES)[number];
 export type HeraldryScene = CollageMove | "tour" | "lattice";
 
-export const MUSIC_MOVES = ["bars", "ripple", "swing", "burst", "halo", "clap", "wave"] as const;
+export const MUSIC_MOVES = ["bars", "ripple", "swing", "burst", "halo", "clap", "wave", "drop", "spot"] as const;
 export type MusicMove = (typeof MUSIC_MOVES)[number];
 
 export function isMusicMove(scene?: string | null): scene is MusicMove {
@@ -72,6 +74,8 @@ export const MOVE_LABEL: Record<CollageMove, string> = {
   halo: "HALO",
   clap: "CLAP",
   wave: "WAVE",
+  drop: "DROP",
+  spot: "SPOT",
 };
 
 export function isHeraldry(kind?: string | null): boolean {
@@ -290,6 +294,7 @@ export interface HeraldryPaintOpts {
   seed: number;
   generator?: string | null;
   kit?: string | null;
+  kitB?: string | null;
   move?: string | null;
   paper: string;
   ink: string;
@@ -297,6 +302,9 @@ export interface HeraldryPaintOpts {
   bass: number;
   beat: number;
   bpm: number;
+  night?: boolean;
+  scale?: number;
+  density?: number;
 }
 
 const STAMP = 144;
@@ -338,12 +346,33 @@ function makeCharge(rng: () => number, scene: HeraldryScene, bias: string, kit: 
   };
 }
 
-export function buildField(seed: number, bias: string, kit: CollageKit = "sailor"): Particle[] {
+export function dropSlam(beat: number): number {
+  return beat > 0.5 ? clamp((beat - 0.5) / 0.5, 0, 1) : 0;
+}
+
+export function spotIndex(time: number, bpm: number, count: number): number {
+  const n = Math.max(1, count);
+  const tempo = bpm > 40 ? bpm / 60 : 2;
+  const hit = Math.floor(Math.max(0, time) * tempo);
+  return ((hit * 11 + 5) >>> 0) % n;
+}
+
+export function clampCollageScale(value?: number | null): number {
+  return clamp(value ?? 1, 0.5, 2);
+}
+
+export function clampCollageDensity(value?: number | null): number {
+  return clamp(value ?? 1, 0.35, 2);
+}
+
+export function buildField(seed: number, bias: string, kit: CollageKit = "sailor", kitB?: CollageKit | null): Particle[] {
   const rng = mulberry32(seed >>> 0);
   const n = 240;
+  const mash = kitB && kitB !== kit ? kitB : null;
   const out: Particle[] = [];
   for (let i = 0; i < n; i++) {
     const sceneHint: HeraldryScene = i < 70 ? "lattice" : i < 130 ? "tunnel" : "rush";
+    const drawer = mash && (i & 1) ? mash : kit;
     out.push({
       x: rng(),
       y: rng(),
@@ -353,7 +382,7 @@ export function buildField(seed: number, bias: string, kit: CollageKit = "sailor
       vx: (rng() - 0.5) * 0.06,
       vy: (rng() - 0.35) * 0.08,
       vr: (rng() - 0.5) * 0.25,
-      charge: makeCharge(rng, sceneHint, bias, kit),
+      charge: makeCharge(rng, sceneHint, bias, drawer),
     });
   }
   return out;
@@ -1600,6 +1629,7 @@ export class HeraldryField {
   private builtSeed = -1;
   private builtInk = "";
   private builtKit: CollageKit = "sailor";
+  private builtKitB = "";
 
   private stamp(c: Charge): HTMLCanvasElement {
     const key = chargeKey(c);
@@ -1611,13 +1641,23 @@ export class HeraldryField {
     return g;
   }
 
-  private ensure(seed: number, ink: string, kit: CollageKit) {
-    if (this.builtSeed === seed && this.builtInk === ink && this.builtKit === kit && this.particles.length) return;
-    this.particles = buildField(seed, ink, kit);
+  private ensure(seed: number, ink: string, kit: CollageKit, kitB?: CollageKit | null) {
+    const mash = kitB && kitB !== kit ? kitB : "";
+    if (
+      this.builtSeed === seed &&
+      this.builtInk === ink &&
+      this.builtKit === kit &&
+      this.builtKitB === mash &&
+      this.particles.length
+    ) {
+      return;
+    }
+    this.particles = buildField(seed, ink, kit, mash || null);
     this.stamps.clear();
     this.builtSeed = seed;
     this.builtInk = ink;
     this.builtKit = kit;
+    this.builtKitB = mash;
   }
 
   paint(opts: HeraldryPaintOpts): HTMLCanvasElement {
@@ -1630,51 +1670,59 @@ export class HeraldryField {
     if (!ctx) return this.canvas;
 
     const kit = kitFromUnknown(opts.kit);
+    const kitB = opts.kitB ? kitFromUnknown(opts.kitB) : null;
     const paper = hexOk(opts.paper, paperForKit(kit, opts.seed));
     const ink = hexOk(opts.ink, KIT_INK[kit]);
-    this.ensure(opts.seed >>> 0, ink, kit);
+    this.ensure(opts.seed >>> 0, ink, kit, kitB);
 
     const scene = sceneFromGenerator(opts.generator, opts.move);
     const audio = clamp(opts.audio, 0, 1);
     const bass = clamp(opts.bass, 0, 1);
     const beat = clamp(opts.beat, 0, 1);
     const bpm = opts.bpm > 40 ? opts.bpm : 0;
-    paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, beat);
+    const scale = clampCollageScale(opts.scale);
+    const density = clampCollageDensity(opts.density);
+    paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, beat, bass, !!opts.night, ink);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     const t = opts.time;
     const aspect = w / Math.max(h, 1);
-    const count =
+    const baseCount =
       scene === "bounce" || scene === "flip" || scene === "hop" || scene === "kick" || scene === "jelly"
         ? 36
-        : scene === "tide" ||
-            scene === "rings" ||
-            scene === "loom" ||
-            scene === "petal" ||
-            scene === "flock" ||
-            scene === "wheel" ||
-            scene === "silk" ||
-            isMusicMove(scene)
-          ? 48
-          : scene === "glow" || scene === "flash"
-            ? 28
-            : scene === "prism"
-              ? 64
-              : scene === "helix"
-                ? 130
-                : scene === "tunnel"
-                  ? 120
-                  : scene === "bloom"
-                    ? 140
-                    : this.particles.length;
+        : scene === "drop"
+          ? 40
+          : scene === "spot"
+            ? 36
+            : scene === "tide" ||
+                scene === "rings" ||
+                scene === "loom" ||
+                scene === "petal" ||
+                scene === "flock" ||
+                scene === "wheel" ||
+                scene === "silk" ||
+                isMusicMove(scene)
+              ? 48
+              : scene === "glow" || scene === "flash"
+                ? 28
+                : scene === "prism"
+                  ? 64
+                  : scene === "helix"
+                    ? 130
+                    : scene === "tunnel"
+                      ? 120
+                      : scene === "bloom"
+                        ? 140
+                        : this.particles.length;
+    const count = Math.max(8, Math.min(this.particles.length, Math.round(baseCount * density)));
     const prisms = scene === "prism" ? 3 : 1;
 
     for (let i = 0; i < count; i++) {
       const p = this.particles[i];
       const stamp = this.stamp(p.charge);
-      const pose = poseParticle(p, i, scene, t, audio, bass, beat, bpm);
+      const pose = poseParticle(p, i, scene, t, audio, bass, beat, bpm, count);
       if (!pose) continue;
-      const dim = pose.px * Math.min(w, h);
+      const dim = pose.px * scale * Math.min(w, h);
       if (dim < 5) continue;
       const sx = (0.5 + pose.x) * w;
       const sy = (0.5 + pose.y / aspect) * h;
@@ -1703,7 +1751,7 @@ export class HeraldryField {
       }
     }
 
-    if (isMusicMove(scene) && beat > 0.04) {
+    if (isMusicMove(scene) && scene !== "drop" && scene !== "spot" && beat > 0.04) {
       ctx.save();
       ctx.translate(w * 0.5, h * 0.5);
       ctx.strokeStyle = mixHex(ink, "#fff4d8", 0.72);
@@ -1757,6 +1805,7 @@ function poseParticle(
   bass: number,
   beat: number,
   bpm: number,
+  count = 48,
 ): Pose | null {
   const music = isMusicMove(scene);
   const rate = bpm > 40 ? (bpm / 60) * Math.PI * 2 : 0;
@@ -2081,6 +2130,36 @@ function poseParticle(
       glow: punch * 0.45,
     };
   }
+  if (scene === "drop") {
+    const slam = dropSlam(beat);
+    const hop = slam * slam;
+    return {
+      x: p.x - 0.5,
+      y: p.y - 0.5 - hop * 0.07,
+      px: clamp((0.1 + p.size * 0.075) * (1 + slam * 0.9), 0.07, 0.44),
+      glow: slam * 0.95,
+      rot: p.rot,
+      alpha: 1,
+      squash: 1 - slam * 0.2,
+    };
+  }
+  if (scene === "spot") {
+    const n = Math.max(8, count);
+    const star = spotIndex(t, bpm, n);
+    const mine = i === star;
+    const slam = mine ? clamp(Math.max(beat, punch), 0, 1) : 0;
+    const ang = (i / n) * Math.PI * 2;
+    const rad = 0.3;
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad * 0.78,
+      px: clamp((mine ? 0.2 : 0.068) + p.size * 0.028 + slam * 0.24, 0.05, 0.5),
+      glow: slam * 0.98,
+      rot: p.rot * 0.35,
+      alpha: mine ? 1 : 0.52,
+      squash: 1 - slam * 0.14,
+    };
+  }
   if (scene === "tunnel") {
     const z = wrap01(p.z - t * (0.4 + audio * 0.22 + bass * 0.1));
     const depth = 0.3 + z * 2.45;
@@ -2222,26 +2301,44 @@ function paintGround(
   time: number,
   seed: number,
   beat = 0,
+  bass = 0,
+  night = false,
+  ink = KIT_INK[kit],
 ) {
   const rng = mulberry32((seed + 4) >>> 0);
   const wash = pick(rng, KIT_GROUNDS[kit]);
   const wash2 = pick(rng, KIT_GROUNDS[kit]);
   const wash3 = pick(rng, KIT_GROUNDS[kit]);
-  ctx.fillStyle = paper;
+  const ground = night ? mixHex(paper, "#08060a", 0.68) : paper;
+  ctx.fillStyle = ground;
   ctx.fillRect(0, 0, w, h);
   const lin = ctx.createLinearGradient(0, 0, w, h);
-  lin.addColorStop(0, mixHex(paper, wash, 0.38));
-  lin.addColorStop(0.45, mixHex(paper, wash3, 0.28));
-  lin.addColorStop(1, mixHex(paper, wash2, 0.42));
+  if (night) {
+    const neon = mixHex(ink, "#ffd8a8", 0.3);
+    const breathe = 0.16 + bass * 0.4 + beat * 0.06;
+    lin.addColorStop(0, mixHex(ground, neon, breathe * 0.55));
+    lin.addColorStop(0.48, mixHex(ground, wash, 0.2));
+    lin.addColorStop(1, mixHex(ground, wash2, 0.24));
+  } else {
+    lin.addColorStop(0, mixHex(paper, wash, 0.38));
+    lin.addColorStop(0.45, mixHex(paper, wash3, 0.28));
+    lin.addColorStop(1, mixHex(paper, wash2, 0.42));
+  }
   ctx.fillStyle = lin;
   ctx.fillRect(0, 0, w, h);
   const cx = w * (0.5 + Math.sin(time * 0.17) * 0.08);
   const cy = h * (0.46 + Math.cos(time * 0.13) * 0.06);
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.72);
-  g.addColorStop(0, mixHex(paper, wash, 0.42 + beat * 0.1));
-  g.addColorStop(1, paper);
+  if (night) {
+    const neon = mixHex(ink, "#ffd8a8", 0.28);
+    g.addColorStop(0, mixHex(ground, neon, 0.22 + bass * 0.38 + beat * 0.05));
+    g.addColorStop(1, ground);
+  } else {
+    g.addColorStop(0, mixHex(paper, wash, 0.42 + beat * 0.1));
+    g.addColorStop(1, paper);
+  }
   ctx.fillStyle = g;
-  ctx.globalAlpha = 0.88;
+  ctx.globalAlpha = night ? 0.92 : 0.88;
   ctx.fillRect(0, 0, w, h);
   ctx.globalAlpha = 1;
 }

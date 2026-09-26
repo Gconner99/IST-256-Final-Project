@@ -193,6 +193,16 @@ h2, .sec {
 .btn.acid { background: var(--acid-fill); border-color: var(--acid); color: var(--acid); }
 .btn.tiny { padding: 3px 6px; font-size: 9px; }
 .btn[disabled] { opacity: 0.4; cursor: default; }
+.wash-chip {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  cursor: pointer;
+}
+.wash-chip:hover { border-color: var(--acid); }
+.wash-chip.on { outline: 1px solid var(--acid); border-color: var(--acid); }
 
 .thumb {
   display: grid;

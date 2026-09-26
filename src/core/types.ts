@@ -157,6 +157,14 @@ export interface MediaSource {
   colorB?: string;
   /** Collage stamp drawer. */
   collageKit?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music";
+  /** Second kit mixed into odd stamps. */
+  collageKitB?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music";
+  /** Dark club wash that breathes on bass. */
+  collageNight?: boolean;
+  /** Stamp size multiplier. */
+  collageScale?: number;
+  /** Stamp count multiplier. */
+  collageDensity?: number;
   /** Locked camera move for this clip. */
   collageMove?:
     | "rush"
@@ -185,7 +193,9 @@ export interface MediaSource {
     | "burst"
     | "halo"
     | "clap"
-    | "wave";
+    | "wave"
+    | "drop"
+    | "spot";
 }
 
 export interface Keyframe {

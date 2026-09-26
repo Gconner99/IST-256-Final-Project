@@ -55,9 +55,14 @@ HOW TO USE IT
 - Then pick ONE move. That clip stays on that move. Toward the camera:
   Rush, Tunnel, Spiral, Helix. Looping patterns: Tide, Rings, Loom,
   Petal, Flock, Wheel, Silk. Music moves: Bars, Ripple, Swing, Burst,
-  Halo, Clap, Wave — they stay on a smooth path and punch scale /
-  glow / bounce on the beat. The older bounce / glow / kick set is
-  still there if you want it. Mix rolls a locked move.
+  Halo, Clap, Wave, Drop, Spot — they stay on a smooth path and punch
+  scale / glow / bounce on the beat. Drop holds still until a big
+  chorus hit. Spot lights one stamp each hit. The older bounce / glow
+  / kick set is still there if you want it. Mix rolls a locked move.
+- Mash mixes a second kit's stamps onto the same ground (Love on Music,
+  and so on). Wash taps a kit color without rolling a new move. Night
+  is a darker club wash that breathes on bass. Size / Storm sliders
+  go from a few giants to a sticker storm.
 - Grounds are warm colored washes — each kit has a bigger set of
   colors now. Kits also have more stamp shapes (crabs, roses, guitars,
   aliens, and so on). Kit buttons keep the last move.
@@ -68,7 +73,7 @@ HOW TO USE IT
 - Click Print frame to turn the live picture into a still
 - Click New at the top to start over
 - Move the sliders. Click Export to save.
-- Click 2s / 4s / 8s mp4 for a short video clip. Wait until the
-  status says saved.
+- Click 2s / 4s / 8s / 16s / 32s mp4 for a video clip. Wait until
+  the status says saved.
   If an MP3 is loaded, the MP4 keeps the music. Stills stay silent.
   Check "close loop" so the last beats fade into the first frame.

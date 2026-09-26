@@ -57,7 +57,8 @@ Requires a browser (or Electron) with **WebGL2**.
 - Basic masks (rect, circle, gradient, noise)
 - Simple keyframe automation
 - JSON project files (`.phos.json`) and source-independent presets
-- Export: PNG, JPG, **short MP4 clips** (optional close-loop fade), WebM, PNG image sequence (zip)
+- Export: PNG, JPG, **MP4 clips up to 32s** (optional close-loop fade, song kept when loaded), WebM, PNG image sequence (zip)
+- Collage mash (two kits), live ground wash, night/neon wash, Drop / Spot music moves, stamp size & density
 
 ## Architecture
 

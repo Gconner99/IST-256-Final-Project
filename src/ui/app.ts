@@ -1,6 +1,6 @@
 import type { Renderer } from "../engine/renderer";
 import { store } from "../core/store";
-import { BLEND_MODES, type GeneratorType, type Layer, type ParamDef } from "../core/types";
+import { BLEND_MODES, type GeneratorType, type Layer, type MediaSource, type ParamDef } from "../core/types";
 import { runExport } from "../export/export";
 import { EXPORT_ASPECTS, matchAspectId, sizeForAspect, sizeFromSource } from "../core/exportSize";
 import {
@@ -38,8 +38,18 @@ import {
 } from "./actions";
 import { resumeAudio } from "../media/audio";
 import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
-import { defaultGeneratorSource } from "../core/defaults";
-import { isHeraldry, kitFromUnknown, moveFromUnknown, type CollageKit, type CollageMove } from "../engine/heraldry";
+import { collageName, defaultGeneratorSource } from "../core/defaults";
+import {
+  COLLAGE_KITS,
+  clampCollageDensity,
+  clampCollageScale,
+  groundsForKit,
+  isHeraldry,
+  kitFromUnknown,
+  moveFromUnknown,
+  type CollageKit,
+  type CollageMove,
+} from "../engine/heraldry";
 
 let liveScrub = false;
 let rendererRef: Renderer | null = null;
@@ -91,7 +101,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Each kit has a wider drawer of shapes now. Rush is the fly-at-the-lens. Tide / rings / loom / petal / flock / wheel / silk are the slow looping patterns. Bars / ripple / swing / burst / halo / clap / wave are the music moves — they stay on a smooth path and punch scale, glow, and bounce on the beat. Drop an MP3 and the stamps pop on the beat without jumping off their path.</p>
+        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Each kit has a wider drawer of shapes now. Rush is the fly-at-the-lens. Tide / rings / loom / petal / flock / wheel / silk are the slow looping patterns. Bars / ripple / swing / burst / halo / clap / wave / drop / spot are the music moves — they stay on a smooth path and punch scale, glow, and bounce on the beat. Drop holds still until a chorus hit. Spot lights one stamp each hit. Drop an MP3 and the stamps pop on the beat without jumping off their path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -102,8 +112,10 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music. Move buttons keep the current kit.</li>
+          <li><strong>Mash</strong> — mix a second kit’s stamps onto the same ground. <strong>Wash</strong> taps a kit color without rolling a new move. <strong>Night</strong> is a darker club wash that breathes on bass.</li>
+          <li><strong>Size / Storm</strong> — few giants or a sticker storm.</li>
           <li><strong>Soundtrack</strong> — hit <em>MP3</em> or drop a clip (mp3/wav/ogg/m4a). It does not replace your picture. Playback starts and the stamps breathe on the beat without jumping off their path. Export an MP4 while a song is loaded and the clip keeps the music (aligned from the start of the clip). Stills and PNG sequences stay silent. Check <em>close loop</em> so the last beats fade into the first frame.</li>
-          <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
+          <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s / 16s / 32s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
         <button class="btn acid" data-act="help">close</button>
@@ -174,19 +186,53 @@ function bind(root: HTMLElement) {
     if (act === "gen") {
       const kind = (t.dataset.kind ?? "plasma") as GeneratorType;
       const selected = store.project.sources.find((s) => s.id === store.state.ui.selectedSourceId);
-      const kit = (t.dataset.kit as CollageKit | undefined) ?? (isHeraldry(kind) ? kitFromUnknown(selected?.collageKit) : undefined);
-      const move = (t.dataset.move as CollageMove | "mix" | undefined) ?? (isHeraldry(kind) ? moveFromUnknown(selected?.collageMove) : undefined);
-      const src = defaultGeneratorSource(kind, kit, move);
+      const collage = selected && isHeraldry(selected.generator) ? selected : undefined;
+      const kit = (t.dataset.kit as CollageKit | undefined) ?? (isHeraldry(kind) ? kitFromUnknown(collage?.collageKit) : undefined);
+      const move = (t.dataset.move as CollageMove | "mix" | undefined) ?? (isHeraldry(kind) ? moveFromUnknown(collage?.collageMove) : undefined);
+      const keepWash = !kit || !collage?.collageKit || kit === collage.collageKit;
+      const src = defaultGeneratorSource(kind, kit, move, extrasFrom(collage, keepWash));
       addSource(src, true);
       store.patchUi({
         status: src.collageMove
-          ? `place · ${src.collageMove} · ${src.collageKit ?? ""}`
+          ? `place · ${src.collageMove} · ${src.collageKit ?? ""}${src.collageKitB ? ` · ${src.collageKitB}` : ""}`
           : src.collageKit
             ? `place · ${kind} · ${src.collageKit}`
             : kind === "critters"
               ? "floaters on this layer"
               : `place · ${kind}`,
       });
+    }
+    if (act === "mash") {
+      const kitB = (t.dataset.kit as CollageKit | undefined) ?? "love";
+      const current = selectedCollageSource();
+      if (!current) {
+        const src = defaultGeneratorSource("wallpaper", "sailor", "rush", { kitB });
+        addSource(src, true);
+        store.patchUi({ status: `mash · sailor · ${kitB}` });
+      } else {
+        const nextB = current.collageKitB === kitB || current.collageKit === kitB ? undefined : kitB;
+        patchCollage(
+          (s) => renameCollage({ ...s, collageKitB: nextB }),
+          nextB ? `mash · ${current.collageKit ?? "kit"} · ${nextB}` : "mash off",
+        );
+      }
+    }
+    if (act === "wash") {
+      const hex = t.dataset.hex;
+      if (hex) {
+        if (!patchCollage((s) => ({ ...s, colorA: hex }), `wash · ${hex}`)) {
+          addSource(defaultGeneratorSource("wallpaper", "sailor", "rush", { wash: hex }), true);
+          store.patchUi({ status: `wash · ${hex}` });
+        }
+      }
+    }
+    if (act === "night") {
+      const current = selectedCollageSource();
+      const next = !current?.collageNight;
+      if (!patchCollage((s) => ({ ...s, collageNight: next }), next ? "night wash" : "day wash")) {
+        addSource(defaultGeneratorSource("wallpaper", "sailor", "rush", { night: true }), true);
+        store.patchUi({ status: "night wash" });
+      }
     }
     if (act === "stamp-critters") stampCritters();
     if (act === "stamp-idol") stampIdol();
@@ -366,6 +412,12 @@ function bind(root: HTMLElement) {
     if (t.id === "exp-h") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, height: Number(t.value) } }), false);
     if (t.id === "exp-fps") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, fps: Number(t.value) } }), false);
     if (t.id === "exp-dur") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, duration: Number(t.value), }, duration: Number(t.value) }), false);
+    if (t.id === "collage-scale") {
+      patchCollage((s) => ({ ...s, collageScale: clampCollageScale(Number(t.value)) }), undefined, true);
+    }
+    if (t.id === "collage-density") {
+      patchCollage((s) => ({ ...s, collageDensity: clampCollageDensity(Number(t.value)) }), undefined, true);
+    }
     if (t.id === "exp-q") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, quality: Number(t.value) } }), false);
     if (t.id === "exp-br") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, bitrate: Number(t.value) } }), false);
     if (t.id === "exp-name") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, filename: t.value } }), false);
@@ -456,6 +508,9 @@ function paint(root: HTMLElement) {
 function paintRail(n: HTMLElement) {
   const p = store.project;
   const ui = store.state.ui;
+  const collage =
+    p.sources.find((s) => s.id === ui.selectedSourceId && isHeraldry(s.generator)) ??
+    p.sources.find((s) => isHeraldry(s.generator));
   n.innerHTML = `
     <div class="sec">Sources</div>
     <div class="row">
@@ -486,6 +541,31 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="sweet">Sweet</button>
       <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="music">Music</button>
     </div>
+    <div class="sec">Mash</div>
+    <div class="row">
+      ${COLLAGE_KITS.map((k) => {
+        const on = collage?.collageKitB === k;
+        const label = k === "nature" ? "Grove" : k[0].toUpperCase() + k.slice(1);
+        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="mash" data-kit="${k}">${label}</button>`;
+      }).join("")}
+    </div>
+    <div class="sec">Wash</div>
+    <div class="row">
+      ${groundsForKit(kitFromUnknown(collage?.collageKit)).map((hex) => {
+        const on = (collage?.colorA ?? "").toLowerCase() === hex.toLowerCase();
+        return `<button class="wash-chip ${on ? "on" : ""}" data-act="wash" data-hex="${hex}" style="background:${hex}" title="${hex}"></button>`;
+      }).join("")}
+      <button class="btn tiny ${collage?.collageNight ? "acid" : ""}" data-act="night">Night</button>
+    </div>
+    <div class="sec">Stamp</div>
+    <div class="param"><span>Size</span>
+      <input id="collage-scale" type="range" min="0.5" max="2" step="0.05" value="${clampCollageScale(collage?.collageScale)}" />
+      <input id="collage-scale" type="number" min="0.5" max="2" step="0.05" value="${clampCollageScale(collage?.collageScale).toFixed(2)}" />
+      <span></span></div>
+    <div class="param"><span>Storm</span>
+      <input id="collage-density" type="range" min="0.35" max="2" step="0.05" value="${clampCollageDensity(collage?.collageDensity)}" />
+      <input id="collage-density" type="number" min="0.35" max="2" step="0.05" value="${clampCollageDensity(collage?.collageDensity).toFixed(2)}" />
+      <span></span></div>
     <div class="sec">Move</div>
     <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="wallpaper" data-move="rush">Rush</button>
@@ -518,6 +598,10 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="wave">Wave</button>
     </div>
     <div class="row">
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="drop">Drop</button>
+      <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="spot">Spot</button>
+    </div>
+    <div class="row">
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="bounce">Bounce</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="glow">Glow</button>
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="kick">Kick</button>
@@ -529,7 +613,7 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="hop">Hop</button>
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
     </div>
-    <div class="status" style="margin-top:4px">Each clip keeps one move. Music moves (bars, ripple, swing, burst, halo, clap, wave) punch on the beat without jumping off their path. Rush still flies at the lens. Kit buttons keep the last move.</div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move. Music moves punch on the beat without jumping off their path. Drop holds still until a big hit. Spot lights one stamp each hit. Mash mixes two kits. Wash / Night change the ground without rolling a new move. Rush still flies at the lens.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
@@ -746,9 +830,9 @@ function paintTransport(n: HTMLElement) {
       </div>
       <div class="row" style="margin-top:6px">
         <span class="status">length</span>
-        ${[2, 4, 6, 8].map((s) => `<button class="btn tiny ${Number(exp.duration) === s ? "acid" : ""}" data-act="clip" data-secs="${s}" ${busy ? "disabled" : ""}>${s}s</button>`).join("")}
+        ${[2, 4, 6, 8, 16, 32].map((s) => `<button class="btn tiny ${Number(exp.duration) === s ? "acid" : ""}" data-act="clip" data-secs="${s}" ${busy ? "disabled" : ""}>${s}s</button>`).join("")}
         <span class="status">sec</span>
-        <input id="exp-dur" type="number" min="1" max="8" step="1" style="width:48px" value="${exp.duration}" title="seconds" />
+        <input id="exp-dur" type="number" min="1" max="32" step="1" style="width:48px" value="${exp.duration}" title="seconds" />
         <label class="check"><input type="checkbox" id="loop-close" ${exp.loopClose !== false ? "checked" : ""}/> close loop</label>
         <span class="sp"></span>
         <button class="btn acid export" data-act="export" ${busy ? "disabled" : ""}>${busy ? "exporting…" : "Export"}</button>
@@ -767,6 +851,43 @@ function num(id: string, label: string, value: number, min: number, max: number,
     <input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${value}" />
     <input id="${id}" type="number" min="${min}" max="${max}" step="${step}" value="${Number(value.toFixed(3))}" />
     <span></span></div>`;
+}
+
+function selectedCollageSource(): MediaSource | undefined {
+  const p = store.project;
+  const picked = p.sources.find((s) => s.id === store.state.ui.selectedSourceId);
+  if (picked && isHeraldry(picked.generator)) return picked;
+  return p.sources.find((s) => isHeraldry(s.generator));
+}
+
+function extrasFrom(src?: MediaSource, keepWash = true) {
+  if (!src) return undefined;
+  return {
+    kitB: src.collageKitB,
+    night: src.collageNight,
+    scale: src.collageScale,
+    density: src.collageDensity,
+    wash: keepWash ? src.colorA : undefined,
+  };
+}
+
+function renameCollage(src: MediaSource): MediaSource {
+  if (!src.collageKit || !src.collageMove) return src;
+  return { ...src, name: collageName(src.collageMove, src.collageKit, src.collageKitB) };
+}
+
+function patchCollage(mut: (src: MediaSource) => MediaSource, status?: string, live = false): boolean {
+  const current = selectedCollageSource();
+  if (!current) return false;
+  store.setProject(
+    (p) => ({
+      ...p,
+      sources: p.sources.map((s) => (s.id === current.id ? mut(s) : s)),
+    }),
+    !live,
+  );
+  if (status) store.patchUi({ status }, !live);
+  return true;
 }
 
 function esc(s: string) {

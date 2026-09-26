@@ -103,7 +103,7 @@ async function exportMp4WebCodecs(
 ): Promise<boolean> {
   if (typeof VideoEncoder === "undefined") throw new Error("this browser has no video encoder");
   const fps = Math.min(24, Math.max(12, project.exportSettings.fps || 24));
-  const duration = Math.min(8, Math.max(1, project.exportSettings.duration || 4));
+  const duration = Math.min(32, Math.max(1, project.exportSettings.duration || 4));
   const { width, height } = videoFrameSize(project, clip);
   const quality = new Quality({ bitrate: Math.max(3, Math.min(8, project.exportSettings.bitrate)) * 1_000_000 });
   const format = new Mp4OutputFormat({ fastStart: "in-memory" });
@@ -200,7 +200,7 @@ async function recordCanvasVideo(
   clip = false,
 ): Promise<Blob> {
   const fps = Math.min(24, Math.max(12, project.exportSettings.fps || 24));
-  const duration = Math.min(8, Math.max(1, project.exportSettings.duration || 4));
+  const duration = Math.min(32, Math.max(1, project.exportSettings.duration || 4));
   const { width, height } = videoFrameSize(project, clip);
   const recCanvas = document.createElement("canvas");
   recCanvas.width = width;
