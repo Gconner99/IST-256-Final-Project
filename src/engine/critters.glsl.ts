@@ -1,0 +1,521 @@
+/** Unreal objects grown from random points, plus a toy-pop kit of music icons. */
+export const CRITTER_GLSL = `
+float crHash(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+vec2 crRot(vec2 p, float a) {
+  float s = sin(a), c = cos(a);
+  return vec2(c * p.x - s * p.y, s * p.x + c * p.y);
+}
+vec3 crHsv(vec3 c) {
+  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+float crCap(vec2 p, vec2 a, vec2 b, float r) {
+  vec2 pa = p - a, ba = b - a;
+  float h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.0001), 0.0, 1.0);
+  return length(pa - ba * h) - r;
+}
+vec2 crPt(float id, float k) {
+  return vec2(crHash(vec2(id, k)), crHash(vec2(id, k + 17.0))) * 2.0 - 1.0;
+}
+float vertexR(float id, float idx) {
+  float h = crHash(vec2(id * 0.19 + 0.07, idx + 4.2));
+  return mix(0.08, 1.55, pow(h, 0.45));
+}
+float polarPoly(vec2 p, float id, float n) {
+  float a = atan(p.y, p.x);
+  float slice = 6.2831853 / max(n, 3.0);
+  float t = (a + 3.14159265) / slice + crHash(vec2(id, 8.8)) * n;
+  float idx = floor(t);
+  float f = fract(t);
+  float i0 = mod(idx, n);
+  float i1 = mod(idx + 1.0, n);
+  float r = mix(vertexR(id, i0), vertexR(id, i1), f);
+  return length(p) - r;
+}
+float classicBody(vec2 p, float id) {
+  float n = 4.0 + floor(crHash(vec2(id, 0.7)) * 5.0);
+  float d = polarPoly(p, id, n);
+  for (int j = 0; j < 3; j++) {
+    float fj = float(j);
+    vec2 pt = vec2(
+      crHash(vec2(id, 31.0 + fj)),
+      crHash(vec2(id, 44.0 + fj))
+    ) * 2.0 - 1.0;
+    pt *= 0.95;
+    float rad = mix(0.1, 0.55, crHash(vec2(id, 58.0 + fj)));
+    d = min(d, length(p - pt) - rad);
+  }
+  vec2 a = vec2(crHash(vec2(id, 70.0)), crHash(vec2(id, 71.0))) * 2.0 - 1.0;
+  vec2 b = vec2(crHash(vec2(id, 72.0)), crHash(vec2(id, 73.0))) * 2.0 - 1.0;
+  d = min(d, crCap(p, a * 0.9, b * 0.9, mix(0.05, 0.18, crHash(vec2(id, 74.0)))));
+  float style = crHash(vec2(id, 9.9));
+  if (style > 0.62) {
+    float inner = polarPoly(p * mix(1.4, 2.2, crHash(vec2(id, 11.0))), id + 17.3, max(n - 1.0, 3.0));
+    d = max(d, -inner - mix(0.02, 0.12, crHash(vec2(id, 12.0))));
+  } else if (style > 0.38) {
+    d = abs(d) - mix(0.05, 0.14, crHash(vec2(id, 13.0)));
+  }
+  return d;
+}
+float constellation(vec2 p, float id) {
+  float d = 1e5;
+  vec2 prev = vec2(0.0);
+  float n = 4.0 + floor(crHash(vec2(id, 0.4)) * 4.0);
+  for (int i = 0; i < 7; i++) {
+    if (float(i) >= n) break;
+    vec2 pt = crPt(id, 20.0 + float(i)) * 0.95;
+    d = min(d, length(p - pt) - mix(0.08, 0.3, crHash(vec2(id, 80.0 + float(i)))));
+    if (i > 0) d = min(d, crCap(p, prev, pt, mix(0.03, 0.11, crHash(vec2(id, 90.0 + float(i))))));
+    prev = pt;
+  }
+  return d;
+}
+float spikes(vec2 p, float id) {
+  float d = length(p) - mix(0.1, 0.38, crHash(vec2(id, 3.3)));
+  float n = 5.0 + floor(crHash(vec2(id, 4.4)) * 6.0);
+  for (int i = 0; i < 10; i++) {
+    if (float(i) >= n) break;
+    float ang = (float(i) / n) * 6.2831853 + crHash(vec2(id, float(i))) * 0.45;
+    vec2 tip = vec2(cos(ang), sin(ang)) * mix(0.45, 1.55, crHash(vec2(id, 15.0 + float(i))));
+    d = min(d, crCap(p, vec2(0.0), tip, mix(0.035, 0.13, crHash(vec2(id, 25.0 + float(i))))));
+  }
+  return d;
+}
+float cloud(vec2 p, float id) {
+  float d = 1e5;
+  for (int i = 0; i < 6; i++) {
+    vec2 pt = crPt(id, 5.0 + float(i)) * 0.72;
+    d = min(d, length(p - pt) - mix(0.2, 0.68, crHash(vec2(id, 40.0 + float(i)))));
+  }
+  return d;
+}
+float crescent(vec2 p, float id) {
+  vec2 c0 = crPt(id, 1.0) * 0.18;
+  float r0 = mix(0.72, 1.25, crHash(vec2(id, 2.0)));
+  vec2 c1 = c0 + crPt(id, 3.0) * mix(0.32, 0.82, crHash(vec2(id, 4.0)));
+  float r1 = r0 * mix(0.52, 0.92, crHash(vec2(id, 5.0)));
+  return max(length(p - c0) - r0, -(length(p - c1) - r1));
+}
+float scribble(vec2 p, float id) {
+  float d = 1e5;
+  vec2 prev = crPt(id, 0.0) * 0.9;
+  for (int i = 1; i < 6; i++) {
+    vec2 pt = crPt(id, float(i) * 3.1) * 0.95;
+    d = min(d, crCap(p, prev, pt, mix(0.055, 0.2, crHash(vec2(id, 10.0 + float(i))))));
+    prev = pt;
+  }
+  return d;
+}
+float twins(vec2 p, float id) {
+  vec2 off = crPt(id, 6.0) * 0.48;
+  float n = 4.0 + floor(crHash(vec2(id, 7.0)) * 3.0);
+  float d = polarPoly(p - off, id, n);
+  d = min(d, polarPoly(p + off, id + 9.1, n + 1.0));
+  d = min(d, crCap(p, off, -off, mix(0.045, 0.16, crHash(vec2(id, 8.0)))));
+  return d;
+}
+float saw(vec2 p, float id) {
+  float n = 8.0 + floor(crHash(vec2(id, 1.2)) * 5.0);
+  float a = atan(p.y, p.x);
+  float slice = 6.2831853 / n;
+  float t = (a + 3.14159265) / slice;
+  float idx = floor(t);
+  float f = fract(t);
+  float longR = mix(0.85, 1.52, crHash(vec2(id, 2.2)));
+  float shortR = mix(0.1, 0.42, crHash(vec2(id, 3.2)));
+  float r0 = mix(shortR, longR, step(0.5, mod(idx, 2.0)));
+  r0 *= mix(0.72, 1.22, crHash(vec2(id, idx + 0.2)));
+  float r1 = mix(shortR, longR, step(0.5, mod(idx + 1.0, 2.0)));
+  r1 *= mix(0.72, 1.22, crHash(vec2(id, idx + 1.2)));
+  return length(p) - mix(r0, r1, f);
+}
+float ring(vec2 p, float id) {
+  float r = mix(0.45, 1.05, crHash(vec2(id, 2.1)));
+  float w = mix(0.07, 0.26, crHash(vec2(id, 3.1)));
+  float d = abs(length(p) - r) - w;
+  vec2 bite = crPt(id, 4.1) * r;
+  if (crHash(vec2(id, 5.1)) > 0.4) {
+    d = max(d, -(length(p - bite) - mix(0.18, 0.52, crHash(vec2(id, 6.1)))));
+  }
+  return d;
+}
+float crBox2(vec2 p, vec2 b) {
+  vec2 q = abs(p) - b;
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+}
+float musicNote(vec2 p, float id) {
+  vec2 head = (p - vec2(-0.22, -0.48)) * vec2(1.4, 1.0);
+  float d = length(head) - 0.34;
+  d = min(d, crCap(p, vec2(0.14, -0.42), vec2(0.2, 0.98), 0.07));
+  d = min(d, crCap(p, vec2(0.2, 0.98), vec2(0.72, 0.62), 0.075));
+  d = min(d, crCap(p, vec2(0.72, 0.62), vec2(0.52, 0.22), 0.065));
+  if (crHash(vec2(id, 1.1)) > 0.45) {
+    vec2 head2 = (p - vec2(-0.85, -0.55)) * vec2(1.4, 1.0);
+    d = min(d, length(head2) - 0.3);
+    d = min(d, crCap(p, vec2(-0.52, -0.5), vec2(-0.48, 0.55), 0.06));
+    d = min(d, crCap(p, vec2(-0.48, 0.55), vec2(0.2, 0.7), 0.08));
+  }
+  return d;
+}
+float vinyl(vec2 p, float id) {
+  float r = mix(0.88, 1.08, crHash(vec2(id, 2.0)));
+  float d = length(p) - r;
+  d = max(d, -(length(p) - mix(0.1, 0.2, crHash(vec2(id, 3.0)))));
+  float label = abs(length(p) - mix(0.32, 0.5, crHash(vec2(id, 4.0)))) - mix(0.08, 0.14, crHash(vec2(id, 5.0)));
+  d = min(d, label);
+  return d;
+}
+float cassette(vec2 p, float id) {
+  vec2 body = vec2(mix(0.92, 1.12, crHash(vec2(id, 1.0))), mix(0.52, 0.68, crHash(vec2(id, 2.0))));
+  float d = crBox2(p, body);
+  float hole = mix(0.16, 0.24, crHash(vec2(id, 3.0)));
+  d = max(d, -(length(p - vec2(-0.38, 0.05)) - hole));
+  d = max(d, -(length(p - vec2(0.38, 0.05)) - hole));
+  d = min(d, crBox2(p - vec2(0.0, -body.y * 0.68), vec2(0.42, 0.1)));
+  return d;
+}
+float headphones(vec2 p, float id) {
+  float bandR = mix(0.7, 0.86, crHash(vec2(id, 1.0)));
+  float band = abs(length(p * vec2(1.05, 1.28)) - bandR) - 0.09;
+  band = max(band, -p.y + 0.05);
+  float cup = mix(0.28, 0.38, crHash(vec2(id, 2.0)));
+  float d = min(band, length(p - vec2(-0.72, -0.12)) - cup);
+  d = min(d, length(p - vec2(0.72, -0.12)) - cup);
+  return d;
+}
+float heart(vec2 p, float id) {
+  p.y -= 0.12;
+  float s = mix(0.9, 1.12, crHash(vec2(id, 1.0)));
+  p /= s;
+  float d = length(p - vec2(-0.34, 0.3)) - 0.44;
+  d = min(d, length(p - vec2(0.34, 0.3)) - 0.44);
+  d = min(d, crCap(p, vec2(-0.62, 0.08), vec2(0.0, -0.88), 0.3));
+  d = min(d, crCap(p, vec2(0.62, 0.08), vec2(0.0, -0.88), 0.3));
+  return d;
+}
+float sparkle(vec2 p, float id) {
+  float arm = mix(0.95, 1.28, crHash(vec2(id, 1.0)));
+  float d = crCap(p, vec2(0.0, -arm), vec2(0.0, arm), 0.075);
+  d = min(d, crCap(p, vec2(-arm, 0.0), vec2(arm, 0.0), 0.075));
+  d = min(d, crCap(p, vec2(-arm * 0.62, -arm * 0.62), vec2(arm * 0.62, arm * 0.62), 0.055));
+  d = min(d, crCap(p, vec2(-arm * 0.62, arm * 0.62), vec2(arm * 0.62, -arm * 0.62), 0.055));
+  d = min(d, length(p) - mix(0.12, 0.22, crHash(vec2(id, 2.0))));
+  return d;
+}
+float mic(vec2 p, float id) {
+  float head = mix(0.32, 0.46, crHash(vec2(id, 1.0)));
+  float d = length(p - vec2(0.0, 0.48)) - head;
+  d = min(d, crCap(p, vec2(0.0, 0.18), vec2(0.0, -0.72), mix(0.08, 0.13, crHash(vec2(id, 2.0)))));
+  d = min(d, crBox2(p - vec2(0.0, -0.88), vec2(0.3, 0.08)));
+  return d;
+}
+float speaker(vec2 p, float id) {
+  vec2 body = vec2(mix(0.62, 0.82, crHash(vec2(id, 1.0))), mix(0.78, 1.0, crHash(vec2(id, 2.0))));
+  float d = crBox2(p, body);
+  d = min(d, abs(length(p - vec2(0.0, 0.22)) - mix(0.26, 0.4, crHash(vec2(id, 3.0)))) - 0.08);
+  d = min(d, length(p - vec2(0.0, -0.48)) - mix(0.14, 0.24, crHash(vec2(id, 4.0))));
+  return d;
+}
+float clef(vec2 p, float id) {
+  p.x += mix(-0.08, 0.08, crHash(vec2(id, 1.0)));
+  float d = crCap(p, vec2(0.08, -1.0), vec2(-0.08, 1.02), 0.1);
+  d = min(d, abs(length(p - vec2(0.22, 0.52)) - mix(0.3, 0.42, crHash(vec2(id, 2.0)))) - 0.09);
+  d = min(d, length(p - vec2(-0.08, -0.58)) - 0.26);
+  d = min(d, length(p - vec2(0.38, 0.12)) - 0.15);
+  return d;
+}
+float musicPiano(vec2 p, float id) {
+  float w = mix(0.92, 1.1, crHash(vec2(id, 1.0)));
+  float d = crBox2(p - vec2(0.0, -0.08), vec2(w, 0.42));
+  d = min(d, crBox2(p - vec2(-0.1, 0.5), vec2(w * 0.72, 0.16)));
+  d = min(d, crBox2(p - vec2(-w * 0.82, -0.64), vec2(0.08, 0.22)));
+  d = min(d, crBox2(p - vec2(w * 0.82, -0.64), vec2(0.08, 0.22)));
+  d = min(d, crBox2(p - vec2(-0.48, 0.08), vec2(0.07, 0.18)));
+  d = min(d, crBox2(p - vec2(-0.16, 0.08), vec2(0.07, 0.18)));
+  d = min(d, crBox2(p - vec2(0.18, 0.08), vec2(0.07, 0.18)));
+  d = min(d, crBox2(p - vec2(0.5, 0.08), vec2(0.07, 0.18)));
+  return d;
+}
+float musicGuitar(vec2 p, float id) {
+  float s = mix(0.9, 1.14, crHash(vec2(id, 1.0)));
+  p /= s;
+  float d = length(p - vec2(0.0, -0.22)) - 0.52;
+  d = min(d, length(p - vec2(0.0, 0.2)) - 0.38);
+  d = min(d, crCap(p, vec2(0.0, 0.42), vec2(0.0, 1.14), 0.07));
+  d = min(d, crBox2(p - vec2(0.0, 1.2), vec2(0.16, 0.1)));
+  d = max(d, -(length(p - vec2(0.0, -0.16)) - 0.12));
+  return d;
+}
+float musicTrumpet(vec2 p, float id) {
+  p.x += mix(-0.08, 0.08, crHash(vec2(id, 1.0)));
+  float d = crCap(p, vec2(-0.92, 0.0), vec2(0.42, 0.0), 0.08);
+  d = min(d, length((p - vec2(0.72, 0.0)) * vec2(0.7, 1.0)) - 0.32);
+  d = min(d, crBox2(p - vec2(-0.18, 0.28), vec2(0.055, 0.22)));
+  d = min(d, crBox2(p - vec2(0.04, 0.28), vec2(0.055, 0.22)));
+  d = min(d, crBox2(p - vec2(0.26, 0.28), vec2(0.055, 0.22)));
+  d = min(d, crCap(p, vec2(-0.92, 0.0), vec2(-1.08, 0.14), 0.05));
+  return d;
+}
+float musicDrum(vec2 p, float id) {
+  float w = mix(0.55, 0.72, crHash(vec2(id, 1.0)));
+  float d = crBox2(p, vec2(w, 0.38));
+  d = min(d, length((p - vec2(0.0, 0.38)) * vec2(1.0, 1.85)) - w);
+  d = min(d, crCap(p, vec2(-w, 0.52), vec2(-w - 0.28, 1.0), 0.05));
+  d = min(d, crCap(p, vec2(w, 0.52), vec2(w + 0.28, 1.0), 0.05));
+  return d;
+}
+float musicSax(vec2 p, float id) {
+  p.x += mix(-0.06, 0.06, crHash(vec2(id, 1.0)));
+  float d = crCap(p, vec2(-0.08, 0.88), vec2(0.06, -0.12), 0.11);
+  d = min(d, length((p - vec2(0.3, -0.52)) * vec2(0.82, 1.0)) - 0.32);
+  d = min(d, crCap(p, vec2(-0.08, 0.88), vec2(-0.24, 1.08), 0.055));
+  d = min(d, crBox2(p - vec2(0.2, 0.22), vec2(0.14, 0.05)));
+  return d;
+}
+float musicBoombox(vec2 p, float id) {
+  float w = mix(0.86, 1.08, crHash(vec2(id, 1.0)));
+  float d = crBox2(p, vec2(w, 0.52));
+  d = min(d, crBox2(p - vec2(0.0, 0.64), vec2(0.32, 0.08)));
+  d = min(d, abs(length(p - vec2(-w * 0.42, -0.04)) - 0.28) - 0.08);
+  d = min(d, abs(length(p - vec2(w * 0.42, -0.04)) - 0.28) - 0.08);
+  return d;
+}
+float musicEighth(vec2 p, float id) {
+  p.x += mix(-0.06, 0.06, crHash(vec2(id, 1.0)));
+  vec2 h1 = (p - vec2(-0.38, -0.5)) * vec2(1.35, 1.0);
+  vec2 h2 = (p - vec2(0.48, -0.4)) * vec2(1.35, 1.0);
+  float d = length(h1) - 0.28;
+  d = min(d, length(h2) - 0.28);
+  d = min(d, crCap(p, vec2(-0.14, -0.45), vec2(-0.08, 0.96), 0.06));
+  d = min(d, crCap(p, vec2(0.7, -0.36), vec2(0.76, 0.9), 0.06));
+  d = min(d, crCap(p, vec2(-0.08, 0.96), vec2(0.76, 0.9), 0.07));
+  return d;
+}
+float musicFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 16.0);
+  if (k < 0.5) return musicNote(p, id);
+  if (k < 1.5) return vinyl(p, id);
+  if (k < 2.5) return cassette(p, id);
+  if (k < 3.5) return headphones(p, id);
+  if (k < 4.5) return heart(p, id);
+  if (k < 5.5) return sparkle(p, id);
+  if (k < 6.5) return mic(p, id);
+  if (k < 7.5) return speaker(p, id);
+  if (k < 8.5) return clef(p, id);
+  if (k < 9.5) return musicPiano(p, id);
+  if (k < 10.5) return musicGuitar(p, id);
+  if (k < 11.5) return musicTrumpet(p, id);
+  if (k < 12.5) return musicDrum(p, id);
+  if (k < 13.5) return musicSax(p, id);
+  if (k < 14.5) return musicBoombox(p, id);
+  return musicEighth(p, id);
+}
+float candle(vec2 p, float id) {
+  float d = crBox2(p - vec2(0.0, -0.18), vec2(mix(0.14, 0.2, crHash(vec2(id, 1.0))), 0.52));
+  vec2 fl = (p - vec2(0.0, 0.52)) * vec2(1.55, 1.0);
+  d = min(d, length(fl) - mix(0.16, 0.24, crHash(vec2(id, 2.0))));
+  return d;
+}
+float lantern(vec2 p, float id) {
+  float d = crBox2(p, vec2(mix(0.32, 0.44, crHash(vec2(id, 1.0))), mix(0.42, 0.58, crHash(vec2(id, 2.0)))));
+  d = min(d, crCap(p, vec2(0.0, 0.5), vec2(0.0, 0.88), 0.06));
+  d = min(d, length(p - vec2(0.0, 0.08)) - mix(0.16, 0.24, crHash(vec2(id, 3.0))));
+  return d;
+}
+float bell(vec2 p, float id) {
+  float d = length(p * vec2(1.0, 0.82) - vec2(0.0, 0.08)) - mix(0.42, 0.55, crHash(vec2(id, 1.0)));
+  d = min(d, crCap(p, vec2(0.0, 0.48), vec2(0.0, 0.92), 0.07));
+  d = min(d, length(p - vec2(0.0, -0.48)) - 0.1);
+  return d;
+}
+float moth(vec2 p, float id) {
+  float d = crCap(p, vec2(0.0, -0.18), vec2(0.0, 0.32), mix(0.1, 0.14, crHash(vec2(id, 1.0))));
+  d = min(d, length((p - vec2(-0.42, 0.06)) * vec2(1.0, 1.32)) - mix(0.4, 0.52, crHash(vec2(id, 2.0))));
+  d = min(d, length((p - vec2(0.42, 0.06)) * vec2(1.0, 1.32)) - mix(0.4, 0.52, crHash(vec2(id, 3.0))));
+  return d;
+}
+float beetle(vec2 p, float id) {
+  float d = length(p * vec2(1.15, 0.85)) - mix(0.42, 0.58, crHash(vec2(id, 1.0)));
+  d = min(d, crCap(p, vec2(-0.22, -0.12), vec2(-0.72, -0.55), 0.05));
+  d = min(d, crCap(p, vec2(0.22, -0.12), vec2(0.72, -0.55), 0.05));
+  d = min(d, length(p - vec2(0.0, 0.48)) - 0.16);
+  return d;
+}
+float charmKey(vec2 p, float id) {
+  float d = length(p - vec2(0.0, 0.42)) - mix(0.28, 0.36, crHash(vec2(id, 1.0)));
+  d = max(d, -(length(p - vec2(0.0, 0.42)) - 0.12));
+  d = min(d, crCap(p, vec2(0.0, 0.14), vec2(0.0, -0.72), 0.075));
+  d = min(d, crBox2(p - vec2(0.16, -0.52), vec2(0.18, 0.055)));
+  d = min(d, crBox2(p - vec2(0.14, -0.7), vec2(0.12, 0.05)));
+  return d;
+}
+float charmBow(vec2 p, float id) {
+  float d = length((p - vec2(-0.4, 0.08)) * vec2(1.0, 1.28)) - mix(0.32, 0.4, crHash(vec2(id, 1.0)));
+  d = min(d, length((p - vec2(0.4, 0.08)) * vec2(1.0, 1.28)) - mix(0.32, 0.4, crHash(vec2(id, 2.0))));
+  d = min(d, length(p) - 0.14);
+  d = min(d, crCap(p, vec2(-0.06, -0.1), vec2(-0.1, -0.62), 0.045));
+  d = min(d, crCap(p, vec2(0.06, -0.1), vec2(0.1, -0.62), 0.045));
+  return d;
+}
+float teardrop(vec2 p, float id) {
+  p.y += 0.08;
+  float d = length(p - vec2(0.0, -0.22)) - mix(0.38, 0.5, crHash(vec2(id, 1.0)));
+  d = min(d, crCap(p, vec2(0.0, -0.08), vec2(0.0, 0.82), mix(0.16, 0.24, crHash(vec2(id, 2.0)))));
+  return d;
+}
+float leaf(vec2 p, float id) {
+  float d = length((p * vec2(1.35, 0.72))) - mix(0.48, 0.62, crHash(vec2(id, 1.0)));
+  d = min(d, crCap(p, vec2(0.0, -0.55), vec2(0.0, 0.62), 0.045));
+  return d;
+}
+float votiveFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 6.0);
+  if (k < 0.5) return candle(p, id);
+  if (k < 1.5) return lantern(p, id);
+  if (k < 2.5) return bell(p, id);
+  if (k < 3.5) return crescent(p, id);
+  if (k < 4.5) return sparkle(p, id);
+  return heart(p, id);
+}
+float mothFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 6.0);
+  if (k < 0.5) return moth(p, id);
+  if (k < 1.5) return beetle(p, id);
+  if (k < 2.5) return cloud(p, id);
+  if (k < 3.5) return crescent(p, id);
+  if (k < 4.5) return twins(p, id);
+  return leaf(p, id);
+}
+float charmFam(vec2 p, float id, float fam) {
+  float k = mod(fam, 6.0);
+  if (k < 0.5) return charmKey(p, id);
+  if (k < 1.5) return charmBow(p, id);
+  if (k < 2.5) return teardrop(p, id);
+  if (k < 3.5) return ring(p, id);
+  if (k < 4.5) return heart(p, id);
+  return sparkle(p, id);
+}
+float shapeFam(vec2 p, float id, float famSlot) {
+  float fam = mod(famSlot, 9.0);
+  if (fam < 0.5) return classicBody(p, id);
+  if (fam < 1.5) return constellation(p, id);
+  if (fam < 2.5) return spikes(p, id);
+  if (fam < 3.5) return cloud(p, id);
+  if (fam < 4.5) return crescent(p, id);
+  if (fam < 5.5) return scribble(p, id);
+  if (fam < 6.5) return twins(p, id);
+  if (fam < 7.5) return saw(p, id);
+  return ring(p, id);
+}
+float weirdBody(vec2 p, float id, float famSlot, float kit) {
+  bool icon = (kit > 0.5 && kit < 1.5) || kit > 2.5 || (kit > 1.5 && kit < 2.5 && famSlot > 8.5);
+  if (icon) {
+    p *= vec2(mix(0.78, 1.22, crHash(vec2(id, 1.3))), mix(0.82, 1.24, crHash(vec2(id, 2.4))));
+  } else {
+    p *= vec2(mix(0.42, 1.65, crHash(vec2(id, 1.3))), mix(0.48, 1.7, crHash(vec2(id, 2.4))));
+  }
+  if (kit < 0.5) return shapeFam(p, id, famSlot);
+  if (kit < 1.5) return musicFam(p, id, famSlot);
+  if (kit < 2.5) {
+    if (famSlot < 8.5) return shapeFam(p, id, famSlot);
+    return musicFam(p, id, famSlot - 9.0);
+  }
+  if (kit < 3.5) return votiveFam(p, id, famSlot);
+  if (kit < 4.5) return mothFam(p, id, famSlot);
+  return charmFam(p, id, famSlot);
+}
+vec4 critterOne(vec2 uv, float id, float famSlot, float time, float sizeMul, float kit) {
+  float hx = crHash(vec2(id, 0.13));
+  float hy = crHash(vec2(id, 2.77));
+  float hz = crHash(vec2(id, 8.14));
+  float dir = crHash(vec2(id, 0.23)) > 0.5 ? 1.0 : -1.0;
+  float spd = mix(0.05, 0.22, crHash(vec2(id, 0.27)));
+  float axis = crHash(vec2(id, 0.19));
+  vec2 vel = vec2(dir * spd, (hy - 0.5) * spd * 0.5);
+  if (axis >= 0.38 && axis < 0.68) vel = vec2((hx - 0.5) * spd * 0.5, dir * spd);
+  if (axis >= 0.68) vel = vec2(dir * spd * 0.8, (hz > 0.5 ? 1.0 : -1.0) * spd * 0.7);
+  vec2 start = vec2(hx, mix(0.12, 0.88, hy));
+  float bob = mix(0.06, 0.24, hz);
+  float bobHz = mix(0.4, 1.4, crHash(vec2(id, 3.1)));
+  vec2 pos = start + vel * time;
+  pos.y += bob * sin(time * bobHz + id);
+  if (kit > 0.5 && kit < 1.5) pos.y += 0.02 * u_bass * sin(time * 10.0 + id);
+  pos = fract(pos);
+  float heading = atan(vel.y + bob * cos(time * bobHz + id) * bobHz, vel.x + 0.0001);
+  float spin = heading + time * mix(-2.2, 2.2, crHash(vec2(id, 12.1)));
+  float sz = mix(0.035, 0.17, crHash(vec2(id, 9.2))) * max(sizeMul, 0.2);
+  sz *= 1.0 + 0.08 * sin(time * 1.7 + id);
+  if (kit > 0.5 && kit < 1.5) sz *= 1.1 + 0.16 * u_bass;
+  float hue = crHash(vec2(id, 0.41));
+  if (kit > 0.5 && kit < 1.5) {
+    float candy = crHash(vec2(id, 0.47));
+    if (candy < 0.25) hue = mix(0.9, 0.02, crHash(vec2(id, 0.48)));
+    else if (candy < 0.5) hue = mix(0.1, 0.18, crHash(vec2(id, 0.48)));
+    else if (candy < 0.75) hue = mix(0.42, 0.55, crHash(vec2(id, 0.48)));
+    else hue = mix(0.72, 0.88, crHash(vec2(id, 0.48)));
+  } else if (kit > 2.5 && kit < 3.5) {
+    hue = mix(0.05, 0.13, crHash(vec2(id, 0.48)));
+  } else if (kit > 3.5 && kit < 4.5) {
+    hue = mix(0.07, 0.16, crHash(vec2(id, 0.48)));
+  } else if (kit > 4.5) {
+    hue = mix(0.88, 0.08, crHash(vec2(id, 0.48)));
+  }
+  float vibe = crHash(vec2(id, 0.74));
+  float sat = vibe < 0.22 ? mix(0.2, 0.48, crHash(vec2(id, 0.52))) : mix(0.55, 0.92, crHash(vec2(id, 0.52)));
+  if (kit > 0.5 && kit < 1.5) sat = mix(0.62, 0.92, crHash(vec2(id, 0.52)));
+  if (kit > 2.5 && kit < 3.5) sat = mix(0.32, 0.62, crHash(vec2(id, 0.52)));
+  if (kit > 3.5 && kit < 4.5) sat = mix(0.18, 0.48, crHash(vec2(id, 0.52)));
+  if (kit > 4.5) sat = mix(0.45, 0.78, crHash(vec2(id, 0.52)));
+  float val = mix(0.72, 1.0, crHash(vec2(id, 0.63)));
+  vec3 fillCol = crHsv(vec3(hue, sat, val));
+  vec3 rimCol = crHsv(vec3(fract(hue + mix(0.08, 0.52, crHash(vec2(id, 0.81)))), mix(0.28, 0.9, crHash(vec2(id, 0.82))), 1.0));
+  vec3 accCol = vec3(0.0);
+  float accA = 0.0;
+  for (int k = 0; k < 3; k++) {
+    float fk = float(k);
+    vec2 tp = fract(pos - vel * fk * 0.65);
+    vec2 dlt = uv - tp;
+    dlt -= round(dlt);
+    vec2 p = crRot(dlt, spin) / (sz * (1.0 - fk * 0.08));
+    float sd = weirdBody(p, id, famSlot, kit);
+    float fillSoft = kit > 0.5 ? 0.07 : 0.14;
+    if (kit > 0.5 && kit < 1.5) fillSoft = 0.048;
+    float fill = 1.0 - smoothstep(-0.02, fillSoft, sd);
+    float rim = 1.0 - smoothstep(0.0, 0.18, abs(sd + 0.02));
+    float glow = exp(-max(sd, 0.0) * 3.6) * 0.48;
+    if (kit > 0.5 && kit < 1.5) glow *= 1.28;
+    float hl = fill * (1.0 - smoothstep(0.45, 0.0, length(p - vec2(-0.2, -0.25))));
+    vec3 col = mix(fillCol, rimCol, rim * 0.6);
+    col = mix(col, vec3(1.0), hl * (kit > 0.5 && kit < 1.5 ? 0.42 : 0.28));
+    float a = max(fill, glow * 0.5) * (1.0 - fk * 0.34);
+    accCol = mix(accCol, col, a);
+    accA = max(accA, a);
+  }
+  return vec4(accCol, clamp(accA, 0.0, 1.0));
+}
+vec4 critterField(vec2 uv, float count, float seed, float time, float sizeMul, float kit) {
+  vec4 acc = vec4(0.0);
+  time += u_audio * 0.14;
+  sizeMul *= mix(1.0, 1.12, u_bass);
+  float nFam = 9.0;
+  if (kit > 0.5 && kit < 1.5) nFam = 16.0;
+  else if (kit > 1.5 && kit < 2.5) nFam = 25.0;
+  else if (kit > 2.5) nFam = 6.0;
+  float famSpin = floor(crHash(vec2(seed * 0.071, 4.4)) * nFam);
+  for (int i = 0; i < 8; i++) {
+    if (float(i) >= count) break;
+    float slot = float(i);
+    float floaterId = crHash(vec2(slot + 0.19, seed * 0.137 + 2.3)) * 91.0 + slot * 7.13;
+    float famSlot = mod(slot + famSpin, nFam);
+    vec4 d = critterOne(uv, floaterId, famSlot, time, sizeMul, kit);
+    acc.rgb = mix(acc.rgb, d.rgb, d.a);
+    acc.a = max(acc.a, d.a);
+  }
+  return acc;
+}
+`;

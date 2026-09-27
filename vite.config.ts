@@ -6,7 +6,8 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    sourcemap: true,
+    sourcemap: false,
+    cssCodeSplit: false,
     target: "es2022",
   },
   server: {
