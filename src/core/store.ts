@@ -18,6 +18,7 @@ function defaultUi(project: Project): AppUi {
     generating: false,
     includeCritters: false,
     includeIdol: false,
+    includeEffects: true,
     exporting: false,
   };
 }

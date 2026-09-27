@@ -331,15 +331,17 @@ function pickPanelStack(seed: number, wacky: boolean): string[] {
   return picked;
 }
 
-function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false): Layer {
+function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false, includeEffects = true): Layer {
   const rng = mulberry32((seed + 17) >>> 0);
   const mood: Mood = wacky
     ? rng() > 0.5 ? "outsider" : "mix"
     : rng() > 0.55 ? "lush" : rng() > 0.35 ? "mix" : "outsider";
   const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
-  const effects = pickPanelStack(seed, wacky).map((typeId, i) =>
-    applyMood(makeFx(typeId, seed + i * 3331, amount), mood, palette, mulberry32((seed + i * 1117) >>> 0)),
-  );
+  const effects = includeEffects
+    ? pickPanelStack(seed, wacky).map((typeId, i) =>
+        applyMood(makeFx(typeId, seed + i * 3331, amount), mood, palette, mulberry32((seed + i * 1117) >>> 0)),
+      )
+    : [];
   return {
     ...layer,
     blendMode: "normal",
@@ -356,6 +358,7 @@ export function randomizeProject(
   selectedEffectId: string | null,
   selectedParamId: string | null,
   wacky = false,
+  includeEffects = true,
 ): Project {
   const amount = Math.max(project.randomAmount, mode === "all" ? 0.75 : 0);
   const seed = project.seed >>> 0;
@@ -374,7 +377,7 @@ export function randomizeProject(
         ),
       };
     }
-    if (mode === "all") return rebuildLayer(layer, seed + li * 7919, amount, wacky);
+    if (mode === "all") return rebuildLayer(layer, seed + li * 7919, amount, wacky, includeEffects);
     return randomizeLayer(layer, seed + li * 7919, amount, true, selectedEffectId);
   });
 

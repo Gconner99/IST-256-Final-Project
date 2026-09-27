@@ -656,6 +656,16 @@ describe("randomize + presets", () => {
     }
   });
 
+  it("rand all skips the effect stack when includeEffects is off", () => {
+    for (const seed of [1, 7, 99, 256]) {
+      const p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null, false, false);
+      expect(p.layers[0].effects).toEqual([]);
+      expect(isHeraldry(p.sources[0].generator)).toBe(true);
+    }
+    const wackyOff = randomizeProject({ ...createDefaultProject(), seed: 77, randomAmount: 1 }, "all", null, null, null, true, false);
+    expect(wackyOff.layers[0].effects).toEqual([]);
+  });
+
   it("rand all plants a short right-panel stack, never an idol", () => {
     const panel = new Set(allEffects().map((e) => e.id).filter((id) => id !== "dancer"));
     const seen = new Set<string>();

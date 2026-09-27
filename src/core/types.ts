@@ -352,6 +352,8 @@ export interface AppUi {
   generating: boolean;
   includeCritters: boolean;
   includeIdol: boolean;
+  /** When on, Rand all / Rand wacky plant a short right-panel effect stack. */
+  includeEffects: boolean;
   exporting: boolean;
 }
 

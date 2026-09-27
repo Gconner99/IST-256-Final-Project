@@ -125,8 +125,11 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <button class="btn tiny" data-act="seed+">+</button>
       <label class="status">RND</label>
       <input type="range" id="rnd-amt" min="0" max="1" step="0.01" style="width:90px" />
+      <label class="check" title="When on, Rand all / Rand wacky plant a short stack from the right-panel effects. When off, the roll stays a clean collage.">
+        <input type="checkbox" id="inc-fx" /> effects
+      </label>
       <button class="btn tiny acid" data-act="rand-all">Rand all</button>
-      <button class="btn tiny hot" data-act="rand-wacky" title="A new kit, ground, move, and a fresh stack of right-panel effects">Rand wacky</button>
+      <button class="btn tiny hot" data-act="rand-wacky" title="A new kit, ground, and move. Effects only if the effects box is on.">Rand wacky</button>
       <button class="btn tiny ${store.project.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit" title="Cut to the beat through music-reactive looks">Cut edit</button>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
@@ -159,7 +162,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
-          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, one locked move, and a short stack of different effects from the right panel (color, distort, analog, geometry, time, shapes). Wacky rolls a thicker stack. No dancer. Rolls stay small and slower — no giant stamps, no frantic bounce/flip/flash.</li>
+          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Check <em>effects</em> (top bar, or under Effects on the right) if you also want a short stack from the right panel. Uncheck it for a clean collage. Wacky rolls a thicker stack when effects are on. No dancer. Rolls stay small and slower — no giant stamps, no frantic bounce/flip/flash.</li>
           <li><strong>Cut edit</strong> is the other randomizer. It listens to the MP3, finds the first downbeat, and cuts on that grid — not every stray onset. Snap / step / spot flip on the same frames. Some shots hold a bar or two. Some are two quick hits that settle.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music. Move buttons keep the current kit.</li>
@@ -444,6 +447,9 @@ function bind(root: HTMLElement) {
     if (t.id === "inc-idol" || t.id === "inc-idol-rail") {
       store.patchUi({ includeIdol: (t as HTMLInputElement).checked });
     }
+    if (t.id === "inc-fx" || t.id === "inc-fx-stack") {
+      store.patchUi({ includeEffects: (t as HTMLInputElement).checked });
+    }
   });
 
   root.addEventListener("input", (e) => {
@@ -456,6 +462,9 @@ function bind(root: HTMLElement) {
     }
     if (t.id === "inc-idol" || t.id === "inc-idol-rail") {
       store.patchUi({ includeIdol: (t as HTMLInputElement).checked });
+    }
+    if (t.id === "inc-fx" || t.id === "inc-fx-stack") {
+      store.patchUi({ includeEffects: (t as HTMLInputElement).checked });
     }
     if (t.id === "seed") store.setProject((pr) => ({ ...pr, seed: Number(t.value) || 0 }), false);
     if (t.id === "rnd-amt") store.setProject((pr) => ({ ...pr, randomAmount: Number(t.value) }), false);
@@ -633,6 +642,10 @@ function paint(root: HTMLElement) {
   if (crit) crit.checked = ui.includeCritters;
   const idol = root.querySelector<HTMLInputElement>("#inc-idol");
   if (idol) idol.checked = ui.includeIdol;
+  const fxInc = root.querySelector<HTMLInputElement>("#inc-fx");
+  if (fxInc) fxInc.checked = ui.includeEffects;
+  const fxIncStack = root.querySelector<HTMLInputElement>("#inc-fx-stack");
+  if (fxIncStack) fxIncStack.checked = ui.includeEffects;
   root.querySelector("#help")?.classList.toggle("on", ui.helpOpen);
   root.querySelector("#veil")?.classList.toggle("on", ui.dropActive);
   root.querySelector("#led")?.classList.toggle("hot", p.playback.playing);
@@ -978,6 +991,7 @@ function paintStack(n: HTMLElement) {
         <span></span><span></span>
       </div>
       <div class="sec">Effects</div>
+      <div class="check"><input type="checkbox" id="inc-fx-stack" ${store.state.ui.includeEffects ? "checked" : ""}/> include in randomizer</div>
       ${layer.effects.map((e, i) => `
         <div class="fx ${e.id === fx?.id ? "on" : ""} ${e.enabled ? "" : "bypass"}" draggable="true" data-fx-index="${i}">
           <div class="hd">

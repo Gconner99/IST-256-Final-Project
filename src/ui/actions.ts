@@ -182,7 +182,7 @@ export function randomize(mode: "all" | "selected" | "param", wacky = false) {
     store.setProject((p) => ({ ...p, seed: (p.seed + 1 + (Date.now() & 255)) >>> 0 }), false);
   }
   store.setProject((p) => {
-    const next = randomizeProject(p, mode, ui.selectedLayerId, ui.selectedEffectId, ui.selectedParam?.paramId ?? null, wacky);
+    const next = randomizeProject(p, mode, ui.selectedLayerId, ui.selectedEffectId, ui.selectedParam?.paramId ?? null, wacky, ui.includeEffects);
     let out = next;
     if (mode === "all" && ui.includeCritters) out = ensureCritters(out);
     if (mode === "all" && ui.includeIdol) out = ensureIdol(out);
