@@ -72,7 +72,7 @@ export {
 } from "./fieldSim";
 
 export const HERALDRY_ROOMS: GeneratorType[] = ["heraldry", "wallpaper", "giants", "shower"];
-export const COLLAGE_KITS = ["sailor", "circus", "fruit", "nature", "love", "space", "sweet", "music", "kitchen", "weather", "city", "arcade"] as const;
+export const COLLAGE_KITS = ["sailor", "circus", "fruit", "nature", "love", "space", "sweet", "music", "kitchen", "weather", "city", "arcade", "haunt", "sport", "school"] as const;
 export type CollageKit = (typeof COLLAGE_KITS)[number];
 
 export const COLLAGE_MOVES = [
@@ -477,6 +477,9 @@ const KIT_INK: Record<CollageKit, string> = {
   weather: "#4aa8e8",
   city: "#f0c020",
   arcade: "#7cff6a",
+  haunt: "#9a6cff",
+  sport: "#ff7a1a",
+  school: "#3a6ad8",
 };
 
 export function kitButtonLabel(kit: CollageKit): string {
@@ -601,6 +604,64 @@ type Kind =
   | "pawn"
   | "cart"
   | "flag"
+  | "buoy"
+  | "hook"
+  | "porthole"
+  | "oar"
+  | "hoop"
+  | "unicycle"
+  | "lion"
+  | "topper"
+  | "orange"
+  | "peach"
+  | "berry"
+  | "melon"
+  | "pineapple"
+  | "pine"
+  | "hedgehog"
+  | "nest"
+  | "toadstool"
+  | "locket"
+  | "dove"
+  | "kiss"
+  | "rover"
+  | "spark"
+  | "astro"
+  | "pretzel"
+  | "sundae"
+  | "choco"
+  | "sax"
+  | "trumpet"
+  | "amp"
+  | "fork"
+  | "pan"
+  | "chefhat"
+  | "tornado"
+  | "subway"
+  | "mailbox"
+  | "skyline"
+  | "ghostie"
+  | "pixel"
+  | "joystick"
+  | "shroomup"
+  | "invader"
+  | "skull"
+  | "bat"
+  | "pumpkin"
+  | "tomb"
+  | "cauldron"
+  | "web"
+  | "trophy"
+  | "whistle"
+  | "jersey"
+  | "skate"
+  | "goal"
+  | "pencil"
+  | "book"
+  | "globe"
+  | "backpack"
+  | "ruler"
+  | "bell"
   | "aBody"
   | "aLeg"
   | "aNub"
@@ -618,48 +679,57 @@ type Kind =
 type Pattern = "plain" | "polka" | "hoop" | "half" | "bar" | "stripe";
 
 const KIT_PAPER: Record<CollageKit, Kind[]> = {
-  sailor: ["fish", "anchor", "wave", "shell", "starfish", "boat", "tail", "swallow", "star", "moon", "crab", "helm", "lighthouse", "compass"],
-  circus: ["elephant", "tent", "ball", "bow", "horse", "balloon", "ticket", "moon", "star", "figure", "popcorn", "cane", "mask", "dice", "flag"],
-  fruit: ["pear", "lemon", "cherry", "leaf", "mushroom", "flower", "sun", "cloud", "bolt", "umbrella", "bird", "apple", "banana", "grape", "chili"],
-  nature: ["tree", "deer", "fox", "owl", "mushroom", "leaf", "acorn", "cone", "mountain", "drop", "moth", "bird", "rabbit", "snail", "fern", "rain", "flake"],
-  love: ["heart", "wingfig", "swan", "cat", "crown", "moon", "star", "key", "ring", "envelope", "bow", "potion", "house", "rose", "diamond", "candle"],
-  space: ["rocket", "planet", "saturn", "ufo", "comet", "satellite", "star", "moon", "alien", "asteroid", "telescope"],
-  sweet: ["lolly", "coneice", "cupcake", "donut", "candy", "cherry", "heart", "cookie", "waffle", "toast"],
-  music: ["note", "vinyl", "headphone", "mic", "speaker", "star", "heart", "guitar", "drum", "piano", "clef"],
-  kitchen: ["kettle", "mug", "whisk", "toast", "egg", "spoon", "chili", "bottle", "apple", "sun"],
-  weather: ["rain", "flake", "wind", "rainbow", "thermo", "cloud", "bolt", "sun", "umbrella", "drop", "moon"],
-  city: ["taxi", "hydrant", "bike", "lamp", "signal", "bus", "house", "key", "star"],
-  arcade: ["stick", "dice", "coin", "pawn", "cart", "flag", "star", "heart", "alien"],
+  sailor: ["fish", "anchor", "wave", "shell", "starfish", "boat", "tail", "swallow", "crab", "helm", "lighthouse", "compass", "buoy", "hook", "porthole", "oar"],
+  circus: ["elephant", "tent", "ball", "bow", "horse", "balloon", "ticket", "figure", "popcorn", "cane", "mask", "dice", "flag", "hoop", "unicycle", "lion", "topper"],
+  fruit: ["pear", "lemon", "cherry", "flower", "apple", "banana", "grape", "chili", "orange", "peach", "berry", "melon", "pineapple"],
+  nature: ["tree", "deer", "fox", "owl", "mushroom", "leaf", "acorn", "cone", "mountain", "moth", "bird", "rabbit", "snail", "fern", "pine", "hedgehog", "nest", "toadstool"],
+  love: ["heart", "wingfig", "swan", "cat", "crown", "key", "ring", "envelope", "potion", "rose", "diamond", "candle", "locket", "dove", "kiss"],
+  space: ["rocket", "planet", "saturn", "ufo", "comet", "satellite", "star", "alien", "asteroid", "telescope", "rover", "spark", "astro"],
+  sweet: ["lolly", "coneice", "cupcake", "donut", "candy", "cookie", "waffle", "pretzel", "sundae", "choco"],
+  music: ["note", "vinyl", "headphone", "mic", "speaker", "guitar", "drum", "piano", "clef", "sax", "trumpet", "amp"],
+  kitchen: ["kettle", "mug", "whisk", "toast", "egg", "spoon", "bottle", "fork", "pan", "chefhat"],
+  weather: ["rain", "flake", "wind", "rainbow", "thermo", "cloud", "bolt", "sun", "umbrella", "drop", "moon", "tornado"],
+  city: ["taxi", "hydrant", "bike", "lamp", "signal", "bus", "house", "subway", "mailbox", "skyline"],
+  arcade: ["stick", "coin", "pawn", "cart", "ghostie", "pixel", "joystick", "shroomup", "invader"],
+  haunt: ["skull", "bat", "pumpkin", "tomb", "cauldron", "web"],
+  sport: ["trophy", "whistle", "jersey", "skate", "goal"],
+  school: ["pencil", "book", "globe", "backpack", "ruler", "bell"],
 };
 
 const KIT_GIANTS: Record<CollageKit, Kind[]> = {
-  sailor: ["fish", "boat", "tail", "swallow", "anchor", "lighthouse", "helm"],
-  circus: ["elephant", "tent", "horse", "balloon", "figure", "mask"],
-  fruit: ["pear", "lemon", "mushroom", "sun", "umbrella", "apple", "banana"],
-  nature: ["tree", "deer", "owl", "fox", "mountain", "rabbit"],
-  love: ["heart", "wingfig", "swan", "cat", "house", "rose"],
-  space: ["rocket", "saturn", "ufo", "planet", "comet", "alien"],
-  sweet: ["lolly", "cupcake", "donut", "coneice", "candy", "waffle"],
-  music: ["vinyl", "headphone", "speaker", "note", "mic", "guitar", "piano"],
-  kitchen: ["kettle", "toast", "bottle", "egg", "chili"],
-  weather: ["rainbow", "umbrella", "cloud", "sun", "thermo"],
-  city: ["taxi", "bus", "house", "lamp", "signal"],
-  arcade: ["stick", "cart", "pawn", "alien", "flag"],
+  sailor: ["fish", "boat", "tail", "swallow", "anchor", "lighthouse", "helm", "buoy"],
+  circus: ["elephant", "tent", "horse", "balloon", "figure", "mask", "lion"],
+  fruit: ["pear", "lemon", "apple", "banana", "melon", "pineapple"],
+  nature: ["tree", "deer", "owl", "fox", "mountain", "rabbit", "pine"],
+  love: ["heart", "wingfig", "swan", "cat", "rose", "dove"],
+  space: ["rocket", "saturn", "ufo", "planet", "comet", "alien", "astro"],
+  sweet: ["lolly", "cupcake", "donut", "coneice", "waffle", "sundae"],
+  music: ["vinyl", "headphone", "speaker", "guitar", "piano", "sax"],
+  kitchen: ["kettle", "toast", "bottle", "pan", "chefhat"],
+  weather: ["rainbow", "umbrella", "cloud", "sun", "tornado"],
+  city: ["taxi", "bus", "house", "lamp", "skyline"],
+  arcade: ["stick", "cart", "pawn", "invader", "ghostie"],
+  haunt: ["skull", "pumpkin", "tomb", "cauldron", "bat"],
+  sport: ["trophy", "jersey", "goal", "skate"],
+  school: ["globe", "backpack", "book", "bell"],
 };
 
 const KIT_SHOWER: Record<CollageKit, Kind[]> = {
-  sailor: ["starfish", "shell", "star", "fish", "anchor", "crab", "compass"],
-  circus: ["ball", "star", "balloon", "bow", "ticket", "popcorn", "cane"],
-  fruit: ["cherry", "leaf", "star", "drop", "lemon", "grape", "apple"],
-  nature: ["leaf", "acorn", "drop", "moth", "bird", "snail", "fern"],
-  love: ["heart", "star", "key", "moon", "ring", "diamond", "candle"],
-  space: ["star", "moon", "comet", "satellite", "planet", "asteroid"],
-  sweet: ["candy", "heart", "lolly", "cherry", "donut", "cookie"],
-  music: ["note", "star", "heart", "vinyl", "mic", "clef", "drum"],
-  kitchen: ["spoon", "egg", "chili", "mug", "star"],
-  weather: ["flake", "drop", "star", "rain", "bolt"],
-  city: ["hydrant", "bike", "star", "coin", "key"],
-  arcade: ["dice", "coin", "star", "heart", "pawn"],
+  sailor: ["starfish", "shell", "fish", "anchor", "crab", "compass", "hook"],
+  circus: ["ball", "balloon", "bow", "ticket", "popcorn", "cane", "dice"],
+  fruit: ["cherry", "lemon", "grape", "apple", "berry", "chili"],
+  nature: ["leaf", "acorn", "moth", "bird", "snail", "fern", "hedgehog"],
+  love: ["heart", "key", "ring", "diamond", "candle", "kiss"],
+  space: ["star", "spark", "comet", "satellite", "planet", "asteroid"],
+  sweet: ["candy", "lolly", "donut", "cookie", "pretzel", "choco"],
+  music: ["note", "vinyl", "mic", "clef", "drum", "trumpet"],
+  kitchen: ["spoon", "egg", "mug", "fork", "whisk"],
+  weather: ["flake", "drop", "rain", "bolt", "moon"],
+  city: ["hydrant", "bike", "mailbox", "signal", "lamp"],
+  arcade: ["coin", "pawn", "pixel", "joystick", "shroomup"],
+  haunt: ["bat", "web", "skull", "pumpkin"],
+  sport: ["whistle", "skate", "trophy", "goal"],
+  school: ["pencil", "ruler", "bell", "book"],
 };
 
 interface Charge {
@@ -2072,6 +2142,494 @@ function flagPath(ctx: CanvasRenderingContext2D, r: number) {
   ctx.closePath();
 }
 
+function buoyPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, 0, r * 0.42, r * 0.85, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.42, -r * 0.08);
+  ctx.rect(-r * 0.48, -r * 0.18, r * 0.96, r * 0.22);
+}
+
+function hookPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.12, -r * 0.95);
+  ctx.lineTo(r * 0.12, -r * 0.95);
+  ctx.lineTo(r * 0.1, r * 0.15);
+  ctx.quadraticCurveTo(r * 0.55, r * 0.85, -r * 0.15, r * 0.82);
+  ctx.quadraticCurveTo(r * 0.22, r * 0.55, r * 0.08, r * 0.18);
+  ctx.lineTo(-r * 0.1, r * 0.18);
+  ctx.closePath();
+}
+
+function portholePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.55, 0);
+  ctx.arc(0, 0, r * 0.55, 0, Math.PI * 2, true);
+}
+
+function oarPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.12, -r * 0.95);
+  ctx.lineTo(r * 0.12, -r * 0.95);
+  ctx.lineTo(r * 0.1, r * 0.15);
+  ctx.lineTo(r * 0.42, r * 0.85);
+  ctx.lineTo(-r * 0.42, r * 0.85);
+  ctx.lineTo(-r * 0.1, r * 0.15);
+  ctx.closePath();
+}
+
+function hoopPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, 0, r * 0.88, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.58, 0);
+  ctx.arc(0, 0, r * 0.58, 0, Math.PI * 2, true);
+}
+
+function unicyclePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, r * 0.35, r * 0.55, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.08, r * 0.35);
+  ctx.rect(-r * 0.08, -r * 0.75, r * 0.16, r * 0.85);
+  ctx.moveTo(-r * 0.42, -r * 0.82);
+  ctx.rect(-r * 0.42, -r * 0.95, r * 0.84, r * 0.18);
+}
+
+function lionPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.85, -r * 0.35);
+  ctx.arc(-r * 0.55, -r * 0.55, r * 0.32, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.85, -r * 0.35);
+  ctx.arc(r * 0.55, -r * 0.55, r * 0.32, 0, Math.PI * 2);
+}
+
+function topperPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.42, -r * 0.85, r * 0.84, r * 0.7);
+  ctx.moveTo(-r * 0.72, -r * 0.12);
+  ctx.rect(-r * 0.78, -r * 0.18, r * 1.56, r * 0.22);
+}
+
+function orangePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, r * 0.06, r * 0.78, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.08, -r * 0.85);
+  ctx.quadraticCurveTo(0, -r * 0.55, r * 0.22, -r * 0.72);
+  ctx.quadraticCurveTo(0.05 * r, -r * 0.95, -r * 0.08, -r * 0.85);
+}
+
+function peachPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(-r * 0.12, r * 0.08, r * 0.58, r * 0.7, -0.2, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.55, 0);
+  ctx.ellipse(r * 0.12, r * 0.08, r * 0.52, r * 0.66, 0.2, 0, Math.PI * 2);
+}
+
+function berryPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(-r * 0.22, r * 0.12, r * 0.38, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.42, r * 0.18);
+  ctx.arc(r * 0.18, r * 0.18, r * 0.36, 0, Math.PI * 2);
+  ctx.moveTo(0.08 * r, -r * 0.28);
+  ctx.arc(0, -r * 0.22, r * 0.34, 0, Math.PI * 2);
+}
+
+function melonPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.9, r * 0.35);
+  ctx.quadraticCurveTo(0, -r * 1.05, r * 0.9, r * 0.35);
+  ctx.quadraticCurveTo(0, r * 0.85, -r * 0.9, r * 0.35);
+  ctx.closePath();
+}
+
+function pineapplePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, r * 0.28, r * 0.48, r * 0.62, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.22, -r * 0.28);
+  ctx.lineTo(0, -r * 0.95);
+  ctx.lineTo(r * 0.22, -r * 0.28);
+  ctx.closePath();
+}
+
+function pinePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, -r * 0.95);
+  ctx.lineTo(r * 0.62, -r * 0.15);
+  ctx.lineTo(r * 0.28, -r * 0.15);
+  ctx.lineTo(r * 0.78, r * 0.42);
+  ctx.lineTo(r * 0.16, r * 0.42);
+  ctx.lineTo(r * 0.16, r * 0.92);
+  ctx.lineTo(-r * 0.16, r * 0.92);
+  ctx.lineTo(-r * 0.16, r * 0.42);
+  ctx.lineTo(-r * 0.78, r * 0.42);
+  ctx.lineTo(-r * 0.28, -r * 0.15);
+  ctx.lineTo(-r * 0.62, -r * 0.15);
+  ctx.closePath();
+}
+
+function hedgehogPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, r * 0.18, r * 0.72, r * 0.48, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.15, -r * 0.15);
+  ctx.lineTo(-r * 0.05, -r * 0.85);
+  ctx.lineTo(r * 0.22, -r * 0.15);
+  ctx.closePath();
+  ctx.moveTo(r * 0.15, -r * 0.05);
+  ctx.lineTo(r * 0.42, -r * 0.72);
+  ctx.lineTo(r * 0.52, 0);
+  ctx.closePath();
+}
+
+function nestPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, r * 0.22, r * 0.82, r * 0.38, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.22, -r * 0.05);
+  ctx.ellipse(-r * 0.12, -r * 0.08, r * 0.22, r * 0.28, 0, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.32, 0);
+  ctx.ellipse(r * 0.16, -r * 0.02, r * 0.2, r * 0.26, 0, 0, Math.PI * 2);
+}
+
+function toadstoolPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, -r * 0.15, r * 0.82, r * 0.42, 0, Math.PI, 0, true);
+  ctx.lineTo(r * 0.82, -r * 0.05);
+  ctx.lineTo(-r * 0.82, -r * 0.05);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.22, -r * 0.02);
+  ctx.rect(-r * 0.22, -r * 0.02, r * 0.44, r * 0.88);
+}
+
+function locketPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, r * 0.18, r * 0.55, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.12, -r * 0.35);
+  ctx.rect(-r * 0.1, -r * 0.95, r * 0.2, r * 0.55);
+}
+
+function dovePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.85, r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.15, -r * 0.85, r * 0.75, -r * 0.05);
+  ctx.quadraticCurveTo(r * 0.15, r * 0.15, -r * 0.15, r * 0.35);
+  ctx.quadraticCurveTo(-r * 0.55, r * 0.55, -r * 0.85, r * 0.15);
+  ctx.closePath();
+}
+
+function kissPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.75, 0);
+  ctx.quadraticCurveTo(-r * 0.25, -r * 0.55, 0, 0);
+  ctx.quadraticCurveTo(r * 0.25, r * 0.55, r * 0.75, 0);
+  ctx.quadraticCurveTo(r * 0.25, -r * 0.55, 0, 0);
+  ctx.quadraticCurveTo(-r * 0.25, r * 0.55, -r * 0.75, 0);
+  ctx.closePath();
+}
+
+function roverPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.55, -r * 0.22, r * 1.1, r * 0.48);
+  ctx.moveTo(-r * 0.55, r * 0.42);
+  ctx.arc(-r * 0.42, r * 0.52, r * 0.22, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.62, r * 0.42);
+  ctx.arc(r * 0.42, r * 0.52, r * 0.22, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.08, -r * 0.22);
+  ctx.rect(-r * 0.08, -r * 0.75, r * 0.16, r * 0.55);
+}
+
+function sparkPath(ctx: CanvasRenderingContext2D, r: number) {
+  starPath(ctx, r * 0.72, 4, 0.32);
+}
+
+function astroPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, -r * 0.15, r * 0.55, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.42, r * 0.35);
+  ctx.rect(-r * 0.42, r * 0.22, r * 0.84, r * 0.62);
+}
+
+function pretzelPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.65, r * 0.15);
+  ctx.bezierCurveTo(-r * 0.95, -r * 0.75, r * 0.15, -r * 0.95, r * 0.15, 0);
+  ctx.bezierCurveTo(r * 0.15, r * 0.85, -r * 0.85, r * 0.65, -r * 0.25, r * 0.05);
+  ctx.bezierCurveTo(r * 0.85, -r * 0.55, r * 0.95, r * 0.75, r * 0.25, r * 0.35);
+  ctx.bezierCurveTo(-r * 0.35, 0, -r * 0.15, -r * 0.35, -r * 0.65, r * 0.15);
+  ctx.closePath();
+}
+
+function sundaePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.55, r * 0.15);
+  ctx.lineTo(-r * 0.35, r * 0.88);
+  ctx.lineTo(r * 0.35, r * 0.88);
+  ctx.lineTo(r * 0.55, r * 0.15);
+  ctx.closePath();
+  ctx.moveTo(0, -r * 0.15);
+  ctx.arc(0, -r * 0.05, r * 0.42, 0, Math.PI * 2);
+}
+
+function chocoPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.7, -r * 0.55, r * 1.4, r * 1.1);
+  ctx.moveTo(-r * 0.7, 0);
+  ctx.lineTo(r * 0.7, 0);
+  ctx.moveTo(0, -r * 0.55);
+  ctx.lineTo(0, r * 0.55);
+}
+
+function saxPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.75, -r * 0.55);
+  ctx.quadraticCurveTo(-r * 0.15, -r * 0.95, r * 0.55, -r * 0.15);
+  ctx.quadraticCurveTo(r * 0.85, r * 0.45, r * 0.15, r * 0.75);
+  ctx.quadraticCurveTo(-r * 0.45, r * 0.55, -r * 0.25, 0);
+  ctx.quadraticCurveTo(-r * 0.85, -r * 0.05, -r * 0.75, -r * 0.55);
+  ctx.closePath();
+}
+
+function trumpetPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.95, -r * 0.12);
+  ctx.lineTo(r * 0.25, -r * 0.12);
+  ctx.lineTo(r * 0.95, -r * 0.45);
+  ctx.lineTo(r * 0.95, r * 0.45);
+  ctx.lineTo(r * 0.25, r * 0.12);
+  ctx.lineTo(-r * 0.95, r * 0.12);
+  ctx.closePath();
+}
+
+function ampPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.72, -r * 0.75, r * 1.44, r * 1.5);
+  ctx.moveTo(0, 0);
+  ctx.arc(0, 0.05 * r, r * 0.38, 0, Math.PI * 2);
+}
+
+function forkPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.12, r * 0.95);
+  ctx.lineTo(r * 0.12, r * 0.95);
+  ctx.lineTo(r * 0.1, r * 0.05);
+  ctx.lineTo(r * 0.42, -r * 0.85);
+  ctx.lineTo(r * 0.22, -r * 0.85);
+  ctx.lineTo(0.08 * r, -r * 0.15);
+  ctx.lineTo(-r * 0.08, -r * 0.15);
+  ctx.lineTo(-r * 0.22, -r * 0.85);
+  ctx.lineTo(-r * 0.42, -r * 0.85);
+  ctx.lineTo(-r * 0.1, r * 0.05);
+  ctx.closePath();
+}
+
+function panPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(-r * 0.15, 0, r * 0.62, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.42, -r * 0.12);
+  ctx.rect(r * 0.38, -r * 0.12, r * 0.58, r * 0.24);
+}
+
+function chefhatPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, -r * 0.25, r * 0.72, r * 0.48, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.42, r * 0.15);
+  ctx.rect(-r * 0.42, r * 0.05, r * 0.84, r * 0.55);
+}
+
+function tornadoPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.72, -r * 0.75);
+  ctx.lineTo(r * 0.72, -r * 0.75);
+  ctx.lineTo(r * 0.28, r * 0.15);
+  ctx.lineTo(r * 0.12, r * 0.92);
+  ctx.lineTo(-r * 0.12, r * 0.92);
+  ctx.lineTo(-r * 0.28, r * 0.15);
+  ctx.closePath();
+}
+
+function subwayPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.9, -r * 0.42, r * 1.8, r * 0.72);
+  ctx.moveTo(-r * 0.7, r * 0.42);
+  ctx.arc(-r * 0.55, r * 0.52, r * 0.2, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.7, r * 0.42);
+  ctx.arc(r * 0.55, r * 0.52, r * 0.2, 0, Math.PI * 2);
+}
+
+function mailboxPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.62, -r * 0.35, r * 1.24, r * 0.7);
+  ctx.moveTo(-r * 0.08, r * 0.35);
+  ctx.rect(-r * 0.08, r * 0.32, r * 0.16, r * 0.58);
+}
+
+function skylinePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.9, r * 0.05, r * 0.38, r * 0.7);
+  ctx.moveTo(-r * 0.42, -r * 0.45);
+  ctx.rect(-r * 0.42, -r * 0.45, r * 0.32, r * 1.2);
+  ctx.moveTo(0.02 * r, -r * 0.15);
+  ctx.rect(0, -r * 0.15, r * 0.42, r * 0.9);
+  ctx.moveTo(r * 0.52, r * 0.15);
+  ctx.rect(r * 0.52, r * 0.15, r * 0.32, r * 0.6);
+}
+
+function ghostiePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.62, r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.62, -r * 0.85, 0, -r * 0.85);
+  ctx.quadraticCurveTo(r * 0.62, -r * 0.85, r * 0.62, r * 0.15);
+  ctx.lineTo(r * 0.38, r * 0.75);
+  ctx.lineTo(0.12 * r, r * 0.35);
+  ctx.lineTo(-r * 0.12, r * 0.75);
+  ctx.lineTo(-r * 0.38, r * 0.35);
+  ctx.closePath();
+}
+
+function pixelPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.55, -r * 0.55, r * 0.5, r * 0.5);
+  ctx.moveTo(r * 0.05, -r * 0.25);
+  ctx.rect(0.05 * r, -r * 0.25, r * 0.5, r * 0.5);
+  ctx.moveTo(-r * 0.25, r * 0.15);
+  ctx.rect(-r * 0.25, r * 0.15, r * 0.5, r * 0.5);
+}
+
+function joystickPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.7, r * 0.15, r * 1.4, r * 0.55);
+  ctx.moveTo(-r * 0.1, r * 0.15);
+  ctx.rect(-r * 0.1, -r * 0.55, r * 0.2, r * 0.75);
+  ctx.moveTo(0, -r * 0.72);
+  ctx.arc(0, -r * 0.72, r * 0.22, 0, Math.PI * 2);
+}
+
+function shroomupPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, -r * 0.15, r * 0.78, r * 0.42, 0, Math.PI, 0, true);
+  ctx.lineTo(r * 0.78, 0);
+  ctx.lineTo(-r * 0.78, 0);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.28, 0);
+  ctx.rect(-r * 0.28, 0, r * 0.56, r * 0.72);
+}
+
+function invaderPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.55, -r * 0.35, r * 1.1, r * 0.55);
+  ctx.moveTo(-r * 0.72, -r * 0.55);
+  ctx.rect(-r * 0.72, -r * 0.55, r * 0.22, r * 0.22);
+  ctx.moveTo(r * 0.5, -r * 0.55);
+  ctx.rect(r * 0.5, -r * 0.55, r * 0.22, r * 0.22);
+  ctx.moveTo(-r * 0.42, r * 0.28);
+  ctx.rect(-r * 0.42, r * 0.28, r * 0.22, r * 0.35);
+  ctx.moveTo(r * 0.2, r * 0.28);
+  ctx.rect(r * 0.2, r * 0.28, r * 0.22, r * 0.35);
+}
+
+function skullPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, -r * 0.12, r * 0.62, r * 0.7, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.32, r * 0.55);
+  ctx.rect(-r * 0.32, r * 0.48, r * 0.64, r * 0.32);
+}
+
+function batPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.95, r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.45, -r * 0.85, 0, -r * 0.05);
+  ctx.quadraticCurveTo(r * 0.45, -r * 0.85, r * 0.95, r * 0.15);
+  ctx.quadraticCurveTo(r * 0.25, r * 0.35, 0, r * 0.12);
+  ctx.quadraticCurveTo(-r * 0.25, r * 0.35, -r * 0.95, r * 0.15);
+  ctx.closePath();
+}
+
+function pumpkinPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(0, r * 0.12, r * 0.82, r * 0.68, 0, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.08, -r * 0.55);
+  ctx.rect(-r * 0.08, -r * 0.88, r * 0.16, r * 0.35);
+}
+
+function tombPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.55, r * 0.85);
+  ctx.lineTo(-r * 0.55, -r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.55, -r * 0.85, 0, -r * 0.85);
+  ctx.quadraticCurveTo(r * 0.55, -r * 0.85, r * 0.55, -r * 0.15);
+  ctx.lineTo(r * 0.55, r * 0.85);
+  ctx.closePath();
+}
+
+function cauldronPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.72, -r * 0.05);
+  ctx.quadraticCurveTo(-r * 0.85, r * 0.95, 0, r * 0.85);
+  ctx.quadraticCurveTo(r * 0.85, r * 0.95, r * 0.72, -r * 0.05);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.78, -r * 0.22);
+  ctx.rect(-r * 0.78, -r * 0.28, r * 1.56, r * 0.22);
+}
+
+function webPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(0, -r);
+  ctx.lineTo(r * 0.85, r * 0.55);
+  ctx.lineTo(-r * 0.85, r * 0.55);
+  ctx.closePath();
+}
+
+function trophyPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.42, -r * 0.55);
+  ctx.quadraticCurveTo(-r * 0.72, 0, -r * 0.22, r * 0.28);
+  ctx.lineTo(r * 0.22, r * 0.28);
+  ctx.quadraticCurveTo(r * 0.72, 0, r * 0.42, -r * 0.55);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.18, r * 0.28);
+  ctx.rect(-r * 0.18, r * 0.28, r * 0.36, r * 0.28);
+  ctx.moveTo(-r * 0.38, r * 0.55);
+  ctx.rect(-r * 0.38, r * 0.72, r * 0.76, r * 0.18);
+}
+
+function whistlePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.ellipse(-r * 0.15, 0, r * 0.48, r * 0.38, 0, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.28, -r * 0.12);
+  ctx.rect(r * 0.22, -r * 0.12, r * 0.58, r * 0.24);
+}
+
+function jerseyPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.85, -r * 0.55);
+  ctx.lineTo(-r * 0.28, -r * 0.35);
+  ctx.lineTo(r * 0.28, -r * 0.35);
+  ctx.lineTo(r * 0.85, -r * 0.55);
+  ctx.lineTo(r * 0.72, r * 0.85);
+  ctx.lineTo(-r * 0.72, r * 0.85);
+  ctx.closePath();
+}
+
+function skatePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.85, -r * 0.15);
+  ctx.lineTo(r * 0.75, -r * 0.35);
+  ctx.lineTo(r * 0.85, r * 0.05);
+  ctx.lineTo(-r * 0.75, r * 0.25);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.35, r * 0.22);
+  ctx.arc(-r * 0.35, r * 0.42, r * 0.18, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.42, r * 0.08);
+  ctx.arc(r * 0.42, r * 0.28, r * 0.18, 0, Math.PI * 2);
+}
+
+function goalPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.85, r * 0.75);
+  ctx.lineTo(-r * 0.85, -r * 0.55);
+  ctx.lineTo(r * 0.85, -r * 0.55);
+  ctx.lineTo(r * 0.85, r * 0.75);
+  ctx.lineTo(r * 0.65, r * 0.75);
+  ctx.lineTo(r * 0.65, -r * 0.35);
+  ctx.lineTo(-r * 0.65, -r * 0.35);
+  ctx.lineTo(-r * 0.65, r * 0.75);
+  ctx.closePath();
+}
+
+function pencilPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.18, r * 0.85);
+  ctx.lineTo(r * 0.18, r * 0.85);
+  ctx.lineTo(r * 0.18, -r * 0.45);
+  ctx.lineTo(0, -r * 0.95);
+  ctx.lineTo(-r * 0.18, -r * 0.45);
+  ctx.closePath();
+}
+
+function bookPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.05, -r * 0.75);
+  ctx.lineTo(-r * 0.78, -r * 0.55);
+  ctx.lineTo(-r * 0.78, r * 0.75);
+  ctx.lineTo(-r * 0.05, r * 0.55);
+  ctx.closePath();
+  ctx.moveTo(r * 0.05, -r * 0.75);
+  ctx.lineTo(r * 0.78, -r * 0.55);
+  ctx.lineTo(r * 0.78, r * 0.75);
+  ctx.lineTo(r * 0.05, r * 0.55);
+  ctx.closePath();
+}
+
+function globePath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.arc(0, -r * 0.08, r * 0.68, 0, Math.PI * 2);
+  ctx.moveTo(-r * 0.18, r * 0.58);
+  ctx.rect(-r * 0.18, r * 0.55, r * 0.36, r * 0.32);
+}
+
+function backpackPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.55, -r * 0.45, r * 1.1, r * 1.15);
+  ctx.moveTo(-r * 0.38, -r * 0.72);
+  ctx.rect(-r * 0.38, -r * 0.72, r * 0.76, r * 0.32);
+}
+
+function rulerPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.rect(-r * 0.85, -r * 0.22, r * 1.7, r * 0.44);
+}
+
+function bellPath(ctx: CanvasRenderingContext2D, r: number) {
+  ctx.moveTo(-r * 0.55, r * 0.15);
+  ctx.quadraticCurveTo(-r * 0.55, -r * 0.85, 0, -r * 0.85);
+  ctx.quadraticCurveTo(r * 0.55, -r * 0.85, r * 0.55, r * 0.15);
+  ctx.closePath();
+  ctx.moveTo(-r * 0.08, r * 0.15);
+  ctx.arc(0, r * 0.32, r * 0.16, 0, Math.PI * 2);
+}
+
 function aBodyPath(ctx: CanvasRenderingContext2D, r: number) {
   ctx.moveTo(-r * 0.7, 0);
   ctx.quadraticCurveTo(-r * 0.58, -r * 0.58, 0, -r * 0.52);
@@ -2570,6 +3128,180 @@ function drawKind(ctx: CanvasRenderingContext2D, kind: Kind, r: number) {
       break;
     case "flag":
       flagPath(ctx, r);
+      break;
+    case "buoy":
+      buoyPath(ctx, r);
+      break;
+    case "hook":
+      hookPath(ctx, r);
+      break;
+    case "porthole":
+      portholePath(ctx, r);
+      break;
+    case "oar":
+      oarPath(ctx, r);
+      break;
+    case "hoop":
+      hoopPath(ctx, r);
+      break;
+    case "unicycle":
+      unicyclePath(ctx, r);
+      break;
+    case "lion":
+      lionPath(ctx, r);
+      break;
+    case "topper":
+      topperPath(ctx, r);
+      break;
+    case "orange":
+      orangePath(ctx, r);
+      break;
+    case "peach":
+      peachPath(ctx, r);
+      break;
+    case "berry":
+      berryPath(ctx, r);
+      break;
+    case "melon":
+      melonPath(ctx, r);
+      break;
+    case "pineapple":
+      pineapplePath(ctx, r);
+      break;
+    case "pine":
+      pinePath(ctx, r);
+      break;
+    case "hedgehog":
+      hedgehogPath(ctx, r);
+      break;
+    case "nest":
+      nestPath(ctx, r);
+      break;
+    case "toadstool":
+      toadstoolPath(ctx, r);
+      break;
+    case "locket":
+      locketPath(ctx, r);
+      break;
+    case "dove":
+      dovePath(ctx, r);
+      break;
+    case "kiss":
+      kissPath(ctx, r);
+      break;
+    case "rover":
+      roverPath(ctx, r);
+      break;
+    case "spark":
+      sparkPath(ctx, r);
+      break;
+    case "astro":
+      astroPath(ctx, r);
+      break;
+    case "pretzel":
+      pretzelPath(ctx, r);
+      break;
+    case "sundae":
+      sundaePath(ctx, r);
+      break;
+    case "choco":
+      chocoPath(ctx, r);
+      break;
+    case "sax":
+      saxPath(ctx, r);
+      break;
+    case "trumpet":
+      trumpetPath(ctx, r);
+      break;
+    case "amp":
+      ampPath(ctx, r);
+      break;
+    case "fork":
+      forkPath(ctx, r);
+      break;
+    case "pan":
+      panPath(ctx, r);
+      break;
+    case "chefhat":
+      chefhatPath(ctx, r);
+      break;
+    case "tornado":
+      tornadoPath(ctx, r);
+      break;
+    case "subway":
+      subwayPath(ctx, r);
+      break;
+    case "mailbox":
+      mailboxPath(ctx, r);
+      break;
+    case "skyline":
+      skylinePath(ctx, r);
+      break;
+    case "ghostie":
+      ghostiePath(ctx, r);
+      break;
+    case "pixel":
+      pixelPath(ctx, r);
+      break;
+    case "joystick":
+      joystickPath(ctx, r);
+      break;
+    case "shroomup":
+      shroomupPath(ctx, r);
+      break;
+    case "invader":
+      invaderPath(ctx, r);
+      break;
+    case "skull":
+      skullPath(ctx, r);
+      break;
+    case "bat":
+      batPath(ctx, r);
+      break;
+    case "pumpkin":
+      pumpkinPath(ctx, r);
+      break;
+    case "tomb":
+      tombPath(ctx, r);
+      break;
+    case "cauldron":
+      cauldronPath(ctx, r);
+      break;
+    case "web":
+      webPath(ctx, r);
+      break;
+    case "trophy":
+      trophyPath(ctx, r);
+      break;
+    case "whistle":
+      whistlePath(ctx, r);
+      break;
+    case "jersey":
+      jerseyPath(ctx, r);
+      break;
+    case "skate":
+      skatePath(ctx, r);
+      break;
+    case "goal":
+      goalPath(ctx, r);
+      break;
+    case "pencil":
+      pencilPath(ctx, r);
+      break;
+    case "book":
+      bookPath(ctx, r);
+      break;
+    case "globe":
+      globePath(ctx, r);
+      break;
+    case "backpack":
+      backpackPath(ctx, r);
+      break;
+    case "ruler":
+      rulerPath(ctx, r);
+      break;
+    case "bell":
+      bellPath(ctx, r);
       break;
     case "aBody":
       aBodyPath(ctx, r);
@@ -3734,6 +4466,9 @@ const KIT_GROUNDS: Record<CollageKit, string[]> = {
   weather: ["#7ec8e8", "#1a3048", "#f0d878", "#0e1a28", "#c8dce8", "#4a6a88", "#ffe8a8", "#243848", "#8ab4d0", "#2a4058"],
   city: ["#1a1a1a", "#f0c020", "#3a2018", "#0c0c10", "#c45c38", "#2a2a30", "#e8d090", "#141820", "#8a8a90", "#4a3020"],
   arcade: ["#140818", "#7cff6a", "#2a1038", "#0a0a12", "#ff4ad4", "#1a0828", "#f0d86a", "#241040", "#4a1860", "#101018"],
+  haunt: ["#140818", "#2a1038", "#1a0820", "#0a0612", "#4a1860", "#9a6cff", "#241028", "#6a3088", "#101018", "#3a1848"],
+  sport: ["#1a1008", "#ff7a1a", "#2a180c", "#0c0a08", "#f0c020", "#c44a18", "#3a2010", "#e8a040", "#181008", "#8a3810"],
+  school: ["#102038", "#3a6ad8", "#f0e2c4", "#0c1424", "#d44c4c", "#2a3858", "#e8d090", "#183050", "#8aa0c8", "#241820"],
 };
 
 export function groundsForKit(kit: CollageKit): readonly string[] {

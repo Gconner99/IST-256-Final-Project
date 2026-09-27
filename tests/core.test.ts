@@ -1129,37 +1129,64 @@ describe("heraldry collage", () => {
   });
 
   it("gives each kit its own stamp drawer", () => {
-    expect(COLLAGE_KITS).toEqual(["sailor", "circus", "fruit", "nature", "love", "space", "sweet", "music", "kitchen", "weather", "city", "arcade"]);
+    expect(COLLAGE_KITS).toEqual(["sailor", "circus", "fruit", "nature", "love", "space", "sweet", "music", "kitchen", "weather", "city", "arcade", "haunt", "sport", "school"]);
     expect(kindsForKit("sailor")).toContain("fish");
     expect(kindsForKit("sailor")).toContain("crab");
+    expect(kindsForKit("sailor")).toContain("buoy");
     expect(kindsForKit("sailor")).not.toContain("elephant");
+    expect(kindsForKit("sailor")).not.toContain("star");
     expect(kindsForKit("circus")).toContain("tent");
     expect(kindsForKit("circus")).toContain("mask");
+    expect(kindsForKit("circus")).toContain("lion");
     expect(kindsForKit("fruit")).toContain("pear");
     expect(kindsForKit("fruit")).toContain("banana");
+    expect(kindsForKit("fruit")).toContain("pineapple");
     expect(kindsForKit("nature")).toContain("deer");
     expect(kindsForKit("nature")).toContain("rabbit");
+    expect(kindsForKit("nature")).toContain("pine");
     expect(kindsForKit("love")).toContain("heart");
     expect(kindsForKit("love")).toContain("rose");
+    expect(kindsForKit("love")).toContain("dove");
     expect(kindsForKit("love", "lattice")).toContain("key");
     expect(kindsForKit("space")).toContain("rocket");
     expect(kindsForKit("space")).toContain("alien");
+    expect(kindsForKit("space")).toContain("astro");
     expect(kindsForKit("sweet")).toContain("donut");
     expect(kindsForKit("sweet")).toContain("waffle");
+    expect(kindsForKit("sweet")).toContain("pretzel");
     expect(kindsForKit("music")).toContain("vinyl");
     expect(kindsForKit("music")).toContain("guitar");
+    expect(kindsForKit("music")).toContain("sax");
     expect(kindsForKit("kitchen")).toContain("kettle");
+    expect(kindsForKit("kitchen")).toContain("chefhat");
     expect(kindsForKit("weather")).toContain("rainbow");
+    expect(kindsForKit("weather")).toContain("tornado");
     expect(kindsForKit("city")).toContain("taxi");
+    expect(kindsForKit("city")).toContain("skyline");
     expect(kindsForKit("arcade")).toContain("stick");
+    expect(kindsForKit("arcade")).toContain("invader");
+    expect(kindsForKit("haunt")).toContain("skull");
+    expect(kindsForKit("sport")).toContain("trophy");
+    expect(kindsForKit("school")).toContain("pencil");
     expect(kindsForKit("fruit")).toContain("chili");
-    expect(kindsForKit("nature")).toContain("flake");
+    expect(kindsForKit("nature")).not.toContain("flake");
     expect(kindsForKit("circus")).toContain("dice");
-    expect(kindsForKit("sailor").length).toBeGreaterThanOrEqual(12);
+    expect(kindsForKit("sailor").length).toBeGreaterThanOrEqual(14);
     expect(kindsForKit("music").length).toBeGreaterThanOrEqual(10);
     const sailor = new Set(buildField(7, "#1c4db8", "sailor").map((p) => p.charge.kind));
     const love = new Set(buildField(7, "#e84a8a", "love").map((p) => p.charge.kind));
     expect([...sailor].some((k) => !love.has(k))).toBe(true);
+    expect([...sailor].every((k) => !love.has(k))).toBe(true);
+    for (let i = 0; i < COLLAGE_KITS.length; i++) {
+      for (let j = i + 1; j < COLLAGE_KITS.length; j++) {
+        const a = new Set(kindsForKit(COLLAGE_KITS[i]));
+        const b = kindsForKit(COLLAGE_KITS[j]);
+        expect(b.some((k) => a.has(k))).toBe(false);
+      }
+    }
+    const sailorField = buildField(7, "#1c4db8", "sailor").map((p) => p.charge.kind);
+    const circusField = buildField(7, "#ff2f86", "circus").map((p) => p.charge.kind);
+    expect(sailorField.every((k, i) => k !== circusField[i])).toBe(true);
   });
 
   it("gives each kit a wider wash of ground colors", () => {

@@ -158,9 +158,9 @@ export interface MediaSource {
   colorA?: string;
   colorB?: string;
   /** Collage stamp drawer. */
-  collageKit?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music" | "kitchen" | "weather" | "city" | "arcade";
+  collageKit?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music" | "kitchen" | "weather" | "city" | "arcade" | "haunt" | "sport" | "school";
   /** Second kit mixed into odd stamps. */
-  collageKitB?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music" | "kitchen" | "weather" | "city" | "arcade";
+  collageKitB?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music" | "kitchen" | "weather" | "city" | "arcade" | "haunt" | "sport" | "school";
   /** Dark club wash that breathes on bass. */
   collageNight?: boolean;
   /** Stamp size multiplier. */

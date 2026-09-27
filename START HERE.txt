@@ -51,7 +51,8 @@ HOW TO USE IT
 -------------
 
 - Pick a kit on the left: Sailor / Circus / Fruit / Grove / Love /
-  Space / Sweet / Music
+  Space / Sweet / Music / Kitchen / Sky / Street / Arcade /
+  Haunt / Sport / School. Switching a kit replaces every stamp.
 - Then pick ONE move. That clip stays on that move. Toward the camera:
   Rush, Tunnel, Spiral, Helix. Looping patterns: Tide, Rings, Loom,
   Petal, Flock, Wheel, Silk. Music moves: Bars, Ripple, Swing, Burst,
@@ -78,7 +79,9 @@ HOW TO USE IT
   Matter moves are a spring mesh (Spring), a changing 3D
   current (Flow), a flock with local rules (Boids), and
   wandering magnets (Poles). Each has its own sliders.
-  New stamp packs: Kitchen, Sky, Street, Arcade.
+  New stamp packs: Kitchen, Sky, Street, Arcade, Haunt,
+  Sport, School. Each pack has its own icons — switching
+  a kit replaces the whole stamp set.
 - Mash mixes a second kit's stamps onto the same ground (Love on Music,
   and so on). Wash taps a kit color without rolling a new move. Night
   is a darker club wash that breathes on bass. Size / Storm sliders

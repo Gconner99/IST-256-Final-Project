@@ -178,6 +178,9 @@ const KIT_LABEL: Record<CollageKit, string> = {
   weather: "SKY",
   city: "STREET",
   arcade: "ARCADE",
+  haunt: "HAUNT",
+  sport: "SPORT",
+  school: "SCHOOL",
 };
 
 const PLACE_LABEL: Record<string, string> = {
