@@ -12,6 +12,7 @@ import {
   clampFieldSparsity,
   clampFieldStrength,
   clampFieldWarp,
+  FIELD_PATTERNS,
 } from "../engine/agentField";
 import { inkForLook, paperForLook, pickColorPack, pickEffectPalette, EFFECT_PALETTES } from "./colorPacks";
 import { allEffects, getEffect } from "../effects/registry";
@@ -353,13 +354,14 @@ function rollBetween(rng: () => number, a: number, b: number) {
   return lerp(a, b, rng());
 }
 
-/** Pleasing Field-slider ranges. Keeps pack/tear readable without frantic extremes. */
+/** Pleasing Field-slider ranges. Picks one looping pattern and keeps it readable. */
 export function rollFieldParams(rng: () => number) {
   const minScale = clampFieldMinScale(rollBetween(rng, 0.45, 0.85));
   const maxScale = clampFieldMaxScale(Math.max(minScale + 0.08, rollBetween(rng, 1.3, 2.4)));
   return {
+    collageFieldPattern: FIELD_PATTERNS[Math.floor(rng() * FIELD_PATTERNS.length)],
     collageFieldEvolve: clampFieldEvolve(rollBetween(rng, 0.75, 1.35)),
-    collageFieldDamp: clampFieldDamp(rng() < 0.7 ? 0 : rollBetween(rng, 0.12, 0.45)),
+    collageFieldDamp: clampFieldDamp(0),
     collageFieldStrength: clampFieldStrength(rollBetween(rng, 0.8, 1.6)),
     collageFieldDensity: clampFieldDensity(rollBetween(rng, 0.8, 1.5)),
     collageFieldSparsity: clampFieldSparsity(rollBetween(rng, 0.4, 1.4)),

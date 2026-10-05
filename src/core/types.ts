@@ -295,6 +295,7 @@ export interface MediaSource {
   collageFieldSparsity?: number;
   collageFieldContrast?: number;
   collageFieldMotion?: number;
+  collageFieldPattern?: string;
 }
 
 export interface Keyframe {

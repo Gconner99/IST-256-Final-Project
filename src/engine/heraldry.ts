@@ -2,7 +2,7 @@ import { clamp, mulberry32 } from "../core/random";
 import type { GeneratorType } from "../core/types";
 import {
   agentParamsFrom,
-  FormationField,
+  PatternField,
   isFieldMove,
   type AgentPose,
 } from "./agentField";
@@ -75,9 +75,13 @@ export {
   clampFieldSparsity,
   clampFieldStrength,
   clampFieldWarp,
+  clampFieldPattern,
+  FIELD_PATTERNS,
+  FIELD_PATTERN_LABEL,
   isFieldMove,
   FIELD_MOVE,
 } from "./agentField";
+export type { FieldPattern, FieldPatternChoice } from "./agentField";
 export {
   clampBoidAlign,
   clampBoidCohere,
@@ -912,6 +916,7 @@ export interface HeraldryPaintOpts {
   fieldSparsity?: number;
   fieldContrast?: number;
   fieldMotion?: number;
+  fieldPattern?: string;
   camera?: string | null;
   cameraFeel?: string | null;
   huntWideMin?: number;
@@ -3648,7 +3653,7 @@ export class HeraldryField {
   private stamps = new Map<string, HTMLCanvasElement>();
   private particles: Particle[] = [];
   private sim: FieldSim | null = null;
-  private agents: FormationField | null = null;
+  private agents: PatternField | null = null;
   private fieldPoses: AgentPose[] = [];
   private hunt: HuntState | null = null;
   private builtSeed = -1;
@@ -3792,8 +3797,8 @@ export class HeraldryField {
         contrast: opts.fieldContrast,
         motion: opts.fieldMotion,
       });
-      this.agents = this.agents ?? new FormationField();
-      this.fieldPoses = this.agents.posesAt(count, clock, opts.seed >>> 0, aspect, params, bpm, beatOffset);
+      this.agents = this.agents ?? new PatternField();
+      this.fieldPoses = this.agents.posesAt(count, clock, opts.seed >>> 0, aspect, params, bpm, beatOffset, opts.fieldPattern ?? "auto");
       this.sim = null;
     } else if (isSimMove(scene)) {
       this.agents = null;
@@ -3877,9 +3882,10 @@ export class HeraldryField {
       paintAnimalChain((charge, pose) => record(this.stamp(charge), pose), animal, clock, chain, density);
     } else {
       for (let i = 0; i < count; i++) {
-        const p = this.particles[i % this.particles.length];
+        const fieldPose = isFieldMove(scene) && this.agents ? this.fieldPoses[i] ?? null : null;
+        const p = this.particles[(fieldPose?.charge ?? i) % this.particles.length];
         let pose: Pose | null = isFieldMove(scene) && this.agents
-          ? this.fieldPoses[i] ?? null
+          ? fieldPose
           : isSimMove(scene) && this.sim
             ? simPose(this.sim, i, p.size)
             : poseParticle(p, i, scene, t, audio, bass, beat, bpm, count, clock, chain);

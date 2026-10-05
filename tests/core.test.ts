@@ -9,7 +9,7 @@ import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../s
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
 import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
-import { agentParamsFrom, buildFormation, fieldCycle, FORMATION_KINDS, formationKinds, FormationField, isDenseFormation } from "../src/engine/agentField";
+import { agentParamsFrom, buildFormation, FIELD_PATTERNS, fieldLoop, FORMATION_KINDS, PatternField, resolveFieldPattern } from "../src/engine/agentField";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -750,6 +750,8 @@ describe("randomize + presets", () => {
     expect(a.collagePace).toBe(base.collagePace);
     expect(a.collageCamera).toBe("hunt");
     expect(a.collageNight).toBe(true);
+    expect(a.collageFieldPattern).toEqual(b.collageFieldPattern);
+    expect(FIELD_PATTERNS).toContain(a.collageFieldPattern);
     expect(a.collageFieldStrength).toEqual(b.collageFieldStrength);
     expect(a.collageFieldWarp).toEqual(b.collageFieldWarp);
     expect(a.collageFieldMinScale ?? 0).toBeLessThan((a.collageFieldMaxScale ?? 0) - 0.07);
@@ -1431,36 +1433,18 @@ describe("field sim", () => {
   });
 });
 
-describe("formation field", () => {
+describe("pattern field", () => {
   const aspect = 16 / 9;
   const hh = 0.5 / aspect;
+  type P = { x: number; y: number; px: number; alpha: number; charge?: number };
+  const snap = (field: PatternField, t: number, pattern: string, params = agentParamsFrom(), bpm = 0, offset = 0): P[] =>
+    field.posesAt(300, t, 3, aspect, params, bpm, offset, pattern).map((p) => ({ ...p }));
+  const onScreen = (p: P) => p.alpha > 0.5 && p.px > 0.01 && Math.abs(p.x) < 0.5 && Math.abs(p.y / (aspect * aspect)) < hh;
 
-  function occupancy(poses: { x: number; y: number; alpha: number }[]) {
-    const cells = new Set<string>();
-    for (const p of poses) {
-      if (p.alpha < 0.5) continue;
-      cells.add(`${Math.floor((p.x + 0.5) * 12)}:${Math.floor((p.y / (aspect * aspect) + hh) * 12)}`);
-    }
-    return cells.size;
-  }
-
-  it("starts as a full sheet and alternates dense and open formations", () => {
-    const params = agentParamsFrom();
-    const kinds = formationKinds(11, params, 24);
-    expect(kinds[0]).toBe("sheet");
-    expect(kinds.some((k) => !isDenseFormation(k))).toBe(true);
-    for (let i = 1; i < kinds.length; i++) {
-      if (isDenseFormation(kinds[i - 1])) expect(isDenseFormation(kinds[i])).toBe(false);
-    }
-    expect(new Set(kinds).size).toBeGreaterThan(3);
-    expect(formationKinds(11, params, 24)).toEqual(kinds);
-  });
-
-  it("every formation places every stamp inside the frame", () => {
+  it("every Shapeshift shape places every stamp inside the frame", () => {
     const params = agentParamsFrom();
     for (const kind of FORMATION_KINDS) {
       const f = buildFormation(kind, 7, 3, 300, hh, params);
-      expect(f.x.length).toBe(300);
       for (let i = 0; i < 300; i++) {
         expect(Math.abs(f.x[i])).toBeLessThanOrEqual(0.5);
         expect(Math.abs(f.y[i])).toBeLessThanOrEqual(hh + 1e-6);
@@ -1469,80 +1453,67 @@ describe("formation field", () => {
     }
   });
 
-  function snap(field: InstanceType<typeof FormationField>, t: number, params: ReturnType<typeof agentParamsFrom>, bpm = 0, offset = 0) {
-    return field.posesAt(240, t, 3, aspect, params, bpm, offset).map((p) => ({ ...p }));
+  it("auto holds one pattern per seed and explicit picks win", () => {
+    expect(resolveFieldPattern("auto", 5)).toBe(resolveFieldPattern(undefined, 5));
+    expect(resolveFieldPattern("rings", 5)).toBe("rings");
+    expect(new Set(Array.from({ length: 40 }, (_, s) => resolveFieldPattern("auto", s))).size).toBeGreaterThan(4);
+  });
+
+  for (const pattern of FIELD_PATTERNS) {
+    it(`${pattern} loops seamlessly, never cuts, and fills the frame`, () => {
+      const params = agentParamsFrom();
+      const field = new PatternField();
+      const loop = fieldLoop(params);
+      const a = snap(field, 0.37, pattern);
+      const b = snap(field, 0.37 + loop * 3, pattern);
+      for (let i = 0; i < a.length; i++) {
+        expect(b[i].x).toBeCloseTo(a[i].x, 4);
+        expect(b[i].y).toBeCloseTo(a[i].y, 4);
+        expect(b[i].px).toBeCloseTo(a[i].px, 4);
+      }
+      let prev = snap(field, 0, pattern);
+      let jump = 0;
+      let moved = 0;
+      let visible = 999;
+      for (let t = 1 / 30; t <= loop + 1e-6; t += 1 / 30) {
+        const cur = snap(field, t, pattern);
+        visible = Math.min(visible, cur.filter(onScreen).length);
+        for (let i = 0; i < cur.length; i++) {
+          if (!onScreen(prev[i]) || !onScreen(cur[i])) continue;
+          const d = Math.hypot(cur[i].x - prev[i].x, (cur[i].y - prev[i].y) / (aspect * aspect));
+          jump = Math.max(jump, d);
+          moved += d;
+        }
+        prev = cur;
+      }
+      expect(jump).toBeLessThan(0.06);
+      expect(moved / 300).toBeGreaterThan(0.08);
+      expect(visible).toBeGreaterThan(120);
+    });
   }
 
-  function maxStep(a: { x: number; y: number }[], b: { x: number; y: number }[]) {
-    let m = 0;
-    for (let i = 0; i < a.length; i++) m = Math.max(m, Math.hypot(a[i].x - b[i].x, (a[i].y - b[i].y) / (aspect * aspect)));
-    return m;
-  }
-
-  it("morphs steadily inside a segment and cuts on the bar", () => {
-    const params = agentParamsFrom({ motion: 0 });
-    const field = new FormationField();
-    const { period } = fieldCycle(params);
-    let inside = 0;
-    let moved = 0;
-    for (let t = 1 / 30; t < period - 1 / 30; t += 1 / 30) {
-      const d = maxStep(snap(field, t - 1 / 30, params), snap(field, t, params));
-      inside = Math.max(inside, d);
-      moved += d;
-    }
-    expect(moved).toBeGreaterThan(0.05);
-    expect(inside).toBeLessThan(0.08);
-    const cut = maxStep(snap(field, period - 0.01, params), snap(field, period + 0.01, params));
-    expect(cut).toBeGreaterThan(inside * 2);
+  it("repeats icons on the pattern unless Shuffle mixes them", () => {
+    const field = new PatternField();
+    const tidy = snap(field, 1, "rings", agentParamsFrom({ perturb: 0 }));
+    expect(new Set(tidy.map((p) => p.charge)).size).toBeLessThan(40);
+    const mixed = snap(field, 1, "rings", agentParamsFrom({ perturb: 2 }));
+    expect(new Set(mixed.map((p) => p.charge)).size).toBeGreaterThan(200);
   });
 
-  it("glide eases into the next layout without jumps", () => {
-    const params = agentParamsFrom({ damp: 0.4, motion: 0 });
-    const field = new FormationField();
-    let prev = snap(field, 0, params);
-    let jump = 0;
-    for (let t = 1 / 30; t < 6; t += 1 / 30) {
-      const cur = snap(field, t, params);
-      jump = Math.max(jump, maxStep(prev, cur));
-      prev = cur;
-    }
-    expect(jump).toBeLessThan(0.12);
-  });
-
-  it("locks segments to whole bars of the song tempo", () => {
+  it("spans whole bars of the song tempo", () => {
     const params = agentParamsFrom();
-    expect(fieldCycle(params, 120).period).toBeCloseTo(2, 6);
-    expect(fieldCycle(agentParamsFrom({ fieldEvolve: 2 }), 120).period).toBeCloseTo(1, 6);
-    const field = new FormationField();
-    const offset = 0.3;
-    const before = snap(field, offset + 2 - 0.01, params, 120, offset);
-    const after = snap(field, offset + 2 + 0.01, params, 120, offset);
-    const mid = snap(field, offset + 1, params, 120, offset);
-    const mid2 = snap(field, offset + 1.02, params, 120, offset);
-    expect(maxStep(before, after)).toBeGreaterThan(maxStep(mid, mid2) * 2);
-  });
-
-  it("swings between a packed frame and open negative space", () => {
-    const params = agentParamsFrom();
-    const field = new FormationField();
-    const { period } = fieldCycle(params);
-    let hi = 0;
-    let lo = 999;
-    for (let k = 0; k < 10; k++) {
-      const occ = occupancy(field.posesAt(320, k * period + 0.05, 5, aspect, params));
-      hi = Math.max(hi, occ);
-      lo = Math.min(lo, occ);
-    }
-    expect(hi).toBeGreaterThan(lo * 1.8);
+    const bar = 2;
+    const loop = fieldLoop(params, 120);
+    expect(Math.abs(loop / bar - Math.round(loop / bar))).toBeLessThan(1e-9);
+    expect(fieldLoop(agentParamsFrom({ fieldEvolve: 2 }), 120)).toBeLessThan(loop);
   });
 
   it("is a pure function of time so scrubbing back matches", () => {
-    const params = agentParamsFrom();
-    const field = new FormationField();
-    const a = field.posesAt(200, 4.2, 9, aspect, params).map((p) => ({ ...p }));
-    field.posesAt(200, 9.7, 9, aspect, params);
-    const b = new FormationField().posesAt(200, 4.2, 9, aspect, params);
-    for (let i = 0; i < 200; i++) {
+    const field = new PatternField();
+    const a = snap(field, 4.2, "shapeshift");
+    snap(field, 9.7, "shapeshift");
+    const b = snap(new PatternField(), 4.2, "shapeshift");
+    for (let i = 0; i < a.length; i++) {
       expect(b[i].x).toBeCloseTo(a[i].x, 6);
       expect(b[i].y).toBeCloseTo(a[i].y, 6);
     }

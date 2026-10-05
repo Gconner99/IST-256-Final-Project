@@ -59,6 +59,7 @@ import {
   clampFieldScale,
   clampFieldScaleAmp,
   clampFieldSparsity,
+  clampFieldPattern,
   clampFieldStrength,
   clampFieldWarp,
   clampPoleAttract,
@@ -269,6 +270,7 @@ export interface CollageExtras {
   fieldSparsity?: number;
   fieldContrast?: number;
   fieldMotion?: number;
+  fieldPattern?: string;
   camera?: CameraBehavior | string | null;
   cameraFeel?: CameraFeel | string | null;
   huntWideMin?: number;
@@ -398,6 +400,7 @@ export function defaultGeneratorSource(
     collageFieldSparsity: collageKit ? clampFieldSparsity(extras?.fieldSparsity) : undefined,
     collageFieldContrast: collageKit ? clampFieldContrast(extras?.fieldContrast) : undefined,
     collageFieldMotion: collageKit ? clampFieldMotion(extras?.fieldMotion) : undefined,
+    collageFieldPattern: collageKit ? clampFieldPattern(extras?.fieldPattern) : undefined,
     collageCamera: collageKit ? cameraFromUnknown(extras?.camera) : undefined,
     collageCameraFeel: collageKit ? feelFromUnknown(extras?.cameraFeel) : undefined,
     collageHuntWideMin: collageKit ? clampHuntWideMin(extras?.huntWideMin) : undefined,

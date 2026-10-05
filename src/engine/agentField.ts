@@ -7,18 +7,18 @@ export function isFieldMove(scene?: string | null): scene is FieldMove {
   return scene === FIELD_MOVE;
 }
 
-/** Spread: how much of the frame open formations span. */
+/** Spread: how far the pattern reaches, and how many rings or wave crests it has. */
 export function clampFieldStrength(value?: number | null): number {
   return clamp(value ?? 1.15, 0.2, 2.2);
 }
 export function clampFieldScale(value?: number | null): number {
   return clamp(value ?? 0.95, 0.28, 2.4);
 }
-/** Tempo: segments per ~2s (one bar at ~122bpm). */
+/** Tempo: loops per 6s. */
 export function clampFieldEvolve(value?: number | null): number {
   return clamp(value ?? 1, 0.08, 2.2);
 }
-/** Pack: how tightly stamps tile inside a formation. */
+/** Pack: how much neighboring stamps overlap. */
 export function clampFieldDensity(value?: number | null): number {
   return clamp(value ?? 1.15, 0, 2.2);
 }
@@ -31,7 +31,7 @@ export function clampFieldDensityEvolve(value?: number | null): number {
 export function clampFieldFlow(value?: number | null): number {
   return clamp(value ?? 0.85, 0, 2.2);
 }
-/** Swirl: how far stamps arc off the straight path between formations. */
+/** Swirl: twist — spiral arm wind, ring counter-spin, wave curl. */
 export function clampFieldCurl(value?: number | null): number {
   return clamp(value ?? 0.4, 0, 2.2);
 }
@@ -50,7 +50,7 @@ export function clampFieldRadius(value?: number | null): number {
 export function clampFieldInertia(value?: number | null): number {
   return clamp(value ?? 0.55, 0.25, 2.2);
 }
-/** Glide: share of each segment spent easing into the next layout. 0 is a hard cut on the bar. */
+/** Unused since Field became one seamless loop; kept so saved projects still load. */
 export function clampFieldDamp(value?: number | null): number {
   return clamp(value ?? 0, 0, 0.9);
 }
@@ -60,31 +60,31 @@ export function clampFieldMaxV(value?: number | null): number {
 export function clampFieldScaleAmp(value?: number | null): number {
   return clamp(value ?? 0.85, 0, 2.2);
 }
-/** Size of the dense formations (sheet, bands, lines). */
+/** Stamp size. */
 export function clampFieldMinScale(value?: number | null): number {
   return clamp(value ?? 0.62, 0.12, 1);
 }
-/** Size of the giant formation. */
+/** Size of the occasional hero stamp. */
 export function clampFieldMaxScale(value?: number | null): number {
   return clamp(value ?? 1.85, 0.6, 3.2);
 }
-/** Shuffle: how much stamps trade places and cross paths between formations. */
+/** Shuffle: 0 keeps icons on the pattern's repeat; higher mixes in random icons. */
 export function clampFieldPerturb(value?: number | null): number {
   return clamp(value ?? 0.12, 0, 2);
 }
-/** Morph: how much glyph strokes bend while they hold. */
+/** Breathe: how much the pattern swells and the shapes bend. */
 export function clampFieldWarp(value?: number | null): number {
   return clamp(value ?? 1.1, 0, 2.2);
 }
-/** Open share: how often the sequence stays in open formations. */
+/** Symmetry: lobes, folds, and petals. */
 export function clampFieldSparsity(value?: number | null): number {
   return clamp(value ?? 0.85, 0, 2);
 }
-/** Size contrast between stamps inside one formation. */
+/** Size contrast between stamps. */
 export function clampFieldContrast(value?: number | null): number {
   return clamp(value ?? 1.25, 0, 2.2);
 }
-/** Drift: slow coherent breathing while a formation holds. */
+/** Ripple: wave height running through the pattern. */
 export function clampFieldMotion(value?: number | null): number {
   return clamp(value ?? 0.45, 0, 2);
 }
@@ -152,17 +152,75 @@ export interface AgentPose {
   rot: number;
   alpha: number;
   squash?: number;
+  flip?: number;
+  /** Which kit stamp to draw. Patterns repeat icons on purpose; defaults to the slot index. */
+  charge?: number;
+}
+
+/** Stamp art leaves a margin inside its square, so a slot draws larger than its spacing. */
+const STAMP_PAD = 1.6;
+const GOLDEN = 2.399963229728653;
+const TAU = Math.PI * 2;
+/** Seconds per loop at Tempo 1. */
+const BASE_LOOP = 6;
+
+export const FIELD_PATTERNS = ["sunflower", "rings", "spiro", "ripple", "march", "kaleido", "shapeshift"] as const;
+export type FieldPattern = (typeof FIELD_PATTERNS)[number];
+export type FieldPatternChoice = FieldPattern | "auto";
+
+export const FIELD_PATTERN_LABEL: Record<FieldPatternChoice, string> = {
+  auto: "Auto",
+  sunflower: "Sunflower",
+  rings: "Rings",
+  spiro: "Spirograph",
+  ripple: "Ripple",
+  march: "March",
+  kaleido: "Kaleido",
+  shapeshift: "Shapeshift",
+};
+
+export function clampFieldPattern(value?: string | null): FieldPatternChoice {
+  return (FIELD_PATTERNS as readonly string[]).includes(value ?? "") ? (value as FieldPattern) : "auto";
+}
+
+/** Auto picks one pattern per seed; it holds for the whole clip. */
+export function resolveFieldPattern(choice: FieldPatternChoice | string | null | undefined, seed: number): FieldPattern {
+  const c = clampFieldPattern(choice);
+  if (c !== "auto") return c;
+  return FIELD_PATTERNS[(Math.imul((seed >>> 0) ^ 0x5bd1e995, 2654435761) >>> 0) % FIELD_PATTERNS.length];
+}
+
+/** Loop length in seconds. With a song tempo it snaps to whole bars so the loop lands on the downbeat. */
+export function fieldLoop(params: AgentParams, bpm = 0): number {
+  let loop = BASE_LOOP / params.fieldEvolve;
+  if (bpm > 40) {
+    const bar = 240 / bpm;
+    let best = 1;
+    for (const b of [1, 2, 4, 8, 16, 32]) {
+      if (Math.abs(Math.log((b * bar) / loop)) < Math.abs(Math.log((best * bar) / loop))) best = b;
+    }
+    loop = best * bar;
+  }
+  return loop;
+}
+
+/** 0..1 through the loop. Every pattern is periodic in this, so the clip never cuts. */
+export function loopPhase(clock: number, params: AgentParams, bpm = 0, beatOffset = 0): number {
+  const local = bpm > 40 ? clock - beatOffset : clock;
+  const c = local / fieldLoop(params, bpm);
+  return c - Math.floor(c);
 }
 
 export const FORMATION_KINDS = ["sheet", "bands", "bloom", "glyph", "clusters", "giants", "line"] as const;
 export type FormationKind = (typeof FORMATION_KINDS)[number];
 const DENSE: FormationKind[] = ["sheet", "bands", "bloom"];
+const OPEN: FormationKind[] = ["glyph", "clusters", "line", "giants"];
 
 export function isDenseFormation(kind: FormationKind): boolean {
   return DENSE.includes(kind);
 }
 
-/** One locked layout. Coordinates are isotropic: x in ±0.5 of frame width, y in ±hh. */
+/** One still layout used by Shapeshift. Coordinates are isotropic: x in ±0.5 of frame width, y in ±hh. */
 export interface Formation {
   kind: FormationKind;
   x: Float32Array;
@@ -173,42 +231,8 @@ export interface Formation {
   phase: number;
 }
 
-const BASE_SEGMENT = 1.97;
-/** Stamp art leaves a margin inside its square, so a slot draws larger than its spacing. */
-const STAMP_PAD = 1.6;
-const GOLDEN = 2.399963229728653;
-
-/** Segment length. With a known tempo it snaps to ½, 1, or 2 bars so cuts land on the bar. */
-export function fieldCycle(params: AgentParams, bpm = 0) {
-  let period = BASE_SEGMENT / params.fieldEvolve;
-  if (bpm > 40) {
-    const bar = 240 / bpm;
-    const bars = [0.5, 1, 2, 4];
-    let best = bars[0];
-    for (const b of bars) if (Math.abs(Math.log((b * bar) / period)) < Math.abs(Math.log((best * bar) / period))) best = b;
-    period = best * bar;
-  }
-  return { period, glide: params.damp };
-}
-
 function smoother(u: number): number {
   return u * u * u * (u * (u * 6 - 15) + 10);
-}
-
-/**
- * Segment k morphs steadily from its first layout to its second (m), then cuts to segment k+1.
- * With glide > 0 the last share of the segment eases into the next layout (e) instead of cutting.
- */
-export function formationClock(clock: number, params: AgentParams, bpm = 0) {
-  const { period, glide } = fieldCycle(params, bpm);
-  const c = Math.max(0, clock) / period;
-  const k = Math.floor(c);
-  const f = c - k;
-  const body = 1 - glide;
-  const raw = clamp(f / Math.max(1e-6, body), 0, 1);
-  const m = raw * 0.55 + (0.5 - 0.5 * Math.cos(Math.PI * raw)) * 0.45;
-  const e = glide > 0 && f > body ? smoother((f - body) / glide) : 0;
-  return { k, m, e };
 }
 
 function pick<T>(rng: () => number, items: readonly T[], weights: readonly number[]): T {
@@ -222,27 +246,14 @@ function pick<T>(rng: () => number, items: readonly T[], weights: readonly numbe
   return items[items.length - 1];
 }
 
-/** Starts packed, then alternates dense sheets with open structures. Glyph → glyph reads as a morph. */
-export function formationKinds(seed: number, params: AgentParams, upto: number): FormationKind[] {
-  const out: FormationKind[] = ["sheet"];
-  const stayOpen = clamp(0.28 + params.sparsity * 0.26, 0, 0.85);
-  for (let k = 1; k <= upto; k++) {
-    const rng = mulberry32(((seed >>> 0) * 31 + k * 7919 + 13) >>> 0);
-    const prev = out[k - 1];
-    let next: FormationKind;
-    if (isDenseFormation(prev) || rng() < stayOpen) {
-      next = pick(rng, ["glyph", "clusters", "giants", "line"] as const, [
-        prev === "glyph" ? 0.62 : 0.4,
-        prev === "clusters" ? 0.08 : 0.24,
-        prev === "giants" ? 0 : 0.14,
-        prev === "line" ? 0.06 : 0.22,
-      ]);
-    } else {
-      next = pick(rng, DENSE, [0.52, 0.24, 0.24]);
-    }
-    out.push(next);
-  }
-  return out;
+/** Shapeshift's three shapes: one packed, two open, visited in a ring. */
+export function shapeshiftKinds(seed: number): FormationKind[] {
+  const rng = mulberry32(((seed >>> 0) * 31 + 7) >>> 0);
+  const dense = pick(rng, DENSE, [0.5, 0.25, 0.25]);
+  const w = [0.4, 0.3, 0.15, 0.15];
+  const a = pick(rng, OPEN, w);
+  const b = pick(rng, OPEN, w.map((v, i) => (OPEN[i] === a ? 0 : v)));
+  return [dense, a, b];
 }
 
 function hilbertKey(x: number, y: number): number {
@@ -545,115 +556,320 @@ function hash01(i: number): number {
   return v - Math.floor(v);
 }
 
-function drift(f: Formation, i: number, clock: number, params: AgentParams, hh: number): [number, number] {
+function sizeScale(p: AgentParams): number {
+  return p.minScale / 0.62;
+}
+
+/** Per-stamp size spread plus the occasional hero stamp. */
+function sizeMul(i: number, p: AgentParams): number {
+  const base = 1 + (hash01(i * 3.1 + 7) - 0.5) * 0.5 * p.contrast;
+  const hero = hash01(i * 5.7 + 3) < 0.035 * p.contrast ? (p.maxScale / 1.85) * (1.5 + hash01(i * 2.3 + 1) * 0.5) : 1;
+  return base * hero;
+}
+
+/** Shuffle 0 keeps icons on the pattern's own repeat; higher trades in random icons. */
+function chargeFor(i: number, patterned: number, p: AgentParams): number {
+  return hash01(i * 9.13 + 1) < p.perturb * 0.5 ? i : patterned;
+}
+
+function tilt(i: number): number {
+  return (hash01(i + 17) - 0.5) * 0.14;
+}
+
+/** Symmetry: lobes, folds, and petal count. */
+function folds(p: AgentParams): number {
+  return Math.round(clamp(3 + p.sparsity * 2.4, 3, 9));
+}
+
+type Emit = (i: number, x: number, y: number, d: number, rot: number, charge: number, flip?: number) => void;
+
+interface LoopCtx {
+  n: number;
+  hh: number;
+  /** Half diagonal of the frame. */
+  R: number;
+  u: number;
+  th: number;
+  seed: number;
+  p: AgentParams;
+}
+
+/** Phyllotaxis disc. The divergence angle swings around golden, so the spiral arms twist and re-form. */
+function sunflower(c: LoopCtx, emit: Emit) {
+  const { n, R, th, p, seed } = c;
+  const rad = R * (0.62 + p.fieldStrength * 0.36);
+  const step = rad / Math.sqrt(n);
+  const d0 = step * 2.1 * packMul(p) * sizeScale(p);
+  const div = GOLDEN + p.curl * 0.006 * Math.sin(th);
+  const spin = seed % 2 ? th : -th;
+  const arms = [8, 13, 21][seed % 3];
+  for (let j = 0; j < n; j++) {
+    const q = (j + 0.5) / n;
+    const wave = Math.sin(th * 2 - q * TAU * 1.5);
+    const r = step * Math.sqrt(j + 0.5) * (1 + p.warp * 0.06 * wave);
+    const a = j * div + spin;
+    const d = d0 * (0.55 + 0.75 * Math.sqrt(q)) * (1 + p.motion * 0.35 * wave) * sizeMul(j, p);
+    emit(j, Math.cos(a) * r, Math.sin(a) * r, d, tilt(j), chargeFor(j, j % arms, p));
+  }
+}
+
+/** Concentric rings turning in alternate directions, with a pulse rolling outward. */
+function rings(c: LoopCtx, emit: Emit) {
+  const { n, R, th, p, seed } = c;
+  const K = Math.round(clamp(4 + p.fieldStrength * 3.5, 3, 12));
+  const rad = R * 1.02;
+  const radii = Array.from({ length: K }, (_, k) => (rad * (k + 0.75)) / (K + 0.25));
+  const sum = radii.reduce((a, b) => a + b, 0);
+  const ringGap = rad / K;
+  const d0 = Math.min((TAU * sum) / n, ringGap) * 1.25 * packMul(p) * sizeScale(p);
+  const F = folds(p);
+  const off = hash01(seed % 997) * TAU;
+  let i = 0;
+  for (let k = 0; k < K && i < n; k++) {
+    const cnt = k === K - 1 ? n - i : Math.max(3, Math.round((n * radii[k]) / sum));
+    const dir = k % 2 ? 1 : -1;
+    const turns = 1 + Math.round(p.curl * 2 * (1 - k / K));
+    const pulse = Math.sin(th - k * 0.8);
+    const rk = radii[k] * (1 + p.warp * 0.045 * pulse);
+    for (let s = 0; s < cnt && i < n; s++, i++) {
+      const a = (s / cnt) * TAU + dir * turns * th + k * off;
+      const r = rk + p.motion * ringGap * 0.35 * Math.sin(F * a - th * 2);
+      const d = d0 * (1 + p.motion * 0.2 * pulse) * sizeMul(i, p);
+      emit(i, Math.cos(a) * r, Math.sin(a) * r, d, tilt(i), chargeFor(i, k * 2 + (s % 2), p));
+    }
+  }
+}
+
+/** Nested spirograph loops; stamps march around them like beads on a wire. */
+function spiro(c: LoopCtx, emit: Emit) {
+  const { n, hh, th, u, p } = c;
+  const F = folds(p);
+  const kk = clamp(0.42 + p.warp * 0.1 * Math.sin(th), 0.1, 0.8);
+  const ry = Math.min(hh * 0.94, 0.47);
+  const rx = Math.min(0.47, ry * 1.75);
+  const scales = [1, 0.56].map((s) => s * (0.7 + p.fieldStrength * 0.26));
+  const total = scales.reduce((a, b) => a + b, 0);
+  const rows = 2;
+  const at = (t: number, sc: number): [number, number] => [
+    ((Math.cos(t) + kk * Math.cos((F - 1) * t)) / (1 + kk)) * rx * sc,
+    ((Math.sin(t) - kk * Math.sin((F - 1) * t)) / (1 + kk)) * ry * sc,
+  ];
+  let i = 0;
+  for (let s = 0; s < scales.length && i < n; s++) {
+    const sc = scales[s];
+    const cnt = s === scales.length - 1 ? n - i : Math.round((n * sc) / total);
+    const cols = Math.max(1, Math.ceil(cnt / rows));
+    let per = 0;
+    let [px, py] = at(0, sc);
+    for (let q = 1; q <= 96; q++) {
+      const [x, y] = at((q / 96) * TAU, sc);
+      per += Math.hypot(x - px, y - py);
+      px = x;
+      py = y;
+    }
+    const d = Math.min(0.09, (per / cols) * 1.35 * packMul(p) * sizeScale(p));
+    const dir = s % 2 ? -1 : 1;
+    for (let m = 0; m < cnt && i < n; m++, i++) {
+      const col = Math.floor(m / rows);
+      const row = m % rows;
+      const f = (col + row * 0.5) / cols + dir * u;
+      const t = (f - Math.floor(f)) * TAU + s * 0.7;
+      const [x, y] = at(t, sc);
+      const [x2, y2] = at(t + 0.002, sc);
+      const tl = Math.hypot(x2 - x, y2 - y) || 1;
+      const off = (row - 0.5) * d * 0.8 * (1 + p.curl * 0.6 * Math.sin(F * t + th * 2));
+      emit(i, x - ((y2 - y) / tl) * off, y + ((x2 - x) / tl) * off, d * sizeMul(i, p), tilt(i), chargeFor(i, s * 3 + (col % 3), p));
+    }
+  }
+}
+
+/** A packed lattice with waves rolling through it: from the center, across, or two interfering sources. */
+function ripple(c: LoopCtx, emit: Emit) {
+  const { n, hh, R, th, p, seed } = c;
+  const W = 1.1;
+  const H = 2 * hh * 1.1;
+  const s = Math.sqrt((W * H) / n);
+  const cols = Math.max(2, Math.round(W / s));
+  const rows = Math.max(2, Math.ceil(n / cols));
+  const sx = W / cols;
+  const sy = H / rows;
+  const d0 = Math.max(sx, sy) * 1.05 * packMul(p) * sizeScale(p);
+  const mode = seed % 3;
+  const ang = hash01(seed % 991) * TAU;
+  const sources: Array<[number, number]> = mode === 2 ? [[-0.24, 0], [0.24, 0]] : [[0, 0]];
+  const k = (TAU * (2 + p.fieldStrength * 1.3)) / R;
+  const A = Math.min(sx, sy) * (0.25 + p.motion * 0.9) / sources.length;
+  const swirl = p.curl * 0.8;
+  let i = 0;
+  for (let r = 0; r < rows && i < n; r++) {
+    for (let q = 0; q < cols && i < n; q++, i++) {
+      const x0 = -W / 2 + (q + 0.25 + (r % 2) * 0.5) * sx;
+      const y0 = -H / 2 + (r + 0.5) * sy;
+      let dx = 0;
+      let dy = 0;
+      let crest = 0;
+      const add = (dist: number, gx: number, gy: number) => {
+        const ph = k * dist - th * 2;
+        const sn = Math.sin(ph);
+        const cs = Math.cos(ph);
+        dx += A * (sn * gx - swirl * cs * gy);
+        dy += A * (sn * gy + swirl * cs * gx);
+        crest += sn / sources.length;
+      };
+      if (mode === 1) add(x0 * Math.cos(ang) + y0 * Math.sin(ang), Math.cos(ang), Math.sin(ang));
+      else {
+        for (const [cx, cy] of sources) {
+          const ex = x0 - cx;
+          const ey = y0 - cy;
+          const dd = Math.hypot(ex, ey) || 1e-6;
+          add(dd, ex / dd, ey / dd);
+        }
+      }
+      const d = d0 * (1 + 0.4 * p.warp * crest) * sizeMul(i, p);
+      emit(i, x0 + dx, y0 + dy, d, tilt(i), chargeFor(i, ((r + q) % 3) + 3 * (r % 2), p));
+    }
+  }
+}
+
+/** Rows marching in alternate directions, wrapping off-screen, with a wave riding along them. */
+function march(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, th, p, seed } = c;
+  const H = 2 * hh * 1.04;
+  const s0 = Math.sqrt((1.1 * H) / n);
+  const rows = Math.max(2, Math.round(H / s0));
+  const cols = Math.max(3, Math.ceil(n / rows));
+  const sy = H / rows;
+  const margin = sy * 1.1 * packMul(p) * sizeScale(p) * STAMP_PAD * 0.6 + 0.02;
+  const Wt = Math.max(cols * s0, 1 + 2 * margin);
+  const d0 = Math.min(sy, Wt / cols) * 1.1 * packMul(p) * sizeScale(p);
+  const lean = p.curl * 0.25 * (seed % 2 ? 1 : -1);
+  let i = 0;
+  for (let r = 0; r < rows && i < n; r++) {
+    const dir = r % 2 ? 1 : -1;
+    const y0 = -H / 2 + (r + 0.5) * sy;
+    for (let q = 0; q < cols && i < n; q++, i++) {
+      const f = (q + 0.5) / cols + dir * u;
+      const x = (f - Math.floor(f) - 0.5) * Wt;
+      const wave = Math.sin((x / Wt) * TAU * 2 + th * 2 + r * 0.6);
+      const y = y0 + wave * sy * 0.45 * p.motion + x * lean;
+      const d = d0 * (1 + p.warp * 0.18 * Math.sin((x / Wt) * TAU * 3 - th * 3)) * sizeMul(i, p);
+      emit(i, x, y, d, tilt(i), chargeFor(i, r * 2 + (q % 2), p));
+    }
+  }
+}
+
+/** Mirrored wedges like a kaleidoscope: stamps bloom out of the center and the whole star turns. */
+function kaleido(c: LoopCtx, emit: Emit) {
+  const { n, R, u, th, p, seed } = c;
+  const F = folds(p) + 1;
+  const wedge = Math.PI / F;
+  const M = Math.max(1, Math.floor(n / (2 * F)));
+  const rad = R * (0.6 + p.fieldStrength * 0.18);
+  const spin = (TAU / F) * u * (seed % 2 ? 1 : -1);
+  const d0 = rad * Math.sqrt(wedge / (2 * M)) * 1.2 * packMul(p) * sizeScale(p);
+  let i = 0;
+  for (let m = 0; m < M; m++) {
+    const f = hash01(m * 1.7 + 0.3) + u;
+    const rr = f - Math.floor(f);
+    const rho = Math.sqrt(rr) * rad;
+    const sway = Math.sin(hash01(m * 4.1 + 2) * TAU + th + rr * 5);
+    const a = wedge * (0.5 + 0.42 * sway) + p.curl * rr * 1.6;
+    const fade = smoother(clamp(rr / 0.06, 0, 1)) * smoother(clamp((1 - rr) / 0.08, 0, 1));
+    const d = d0 * (0.5 + 0.9 * rr) * fade * (1 + p.motion * 0.3 * Math.sin(th * 2 + m)) * sizeMul(m, p);
+    for (let w = 0; w < F; w++) {
+      const psi = w * 2 * wedge + spin;
+      const aA = psi + a;
+      const aB = psi - a;
+      const rot = aA + Math.PI / 2;
+      emit(i++, Math.cos(aA) * rho, Math.sin(aA) * rho, d, rot, m);
+      emit(i++, Math.cos(aB) * rho, Math.sin(aB) * rho, d, 2 * psi - rot + Math.PI, m, -1);
+    }
+  }
+}
+
+function drift(f: Formation, i: number, ang: number, params: AgentParams, hh: number): [number, number] {
   const amp = f.bend + params.motion * 0.008;
   if (amp <= 0) return [f.x[i], f.y[i]];
   const x = f.x[i];
   const y = f.y[i];
-  const t = clock * 0.9;
   return [
-    x + amp * Math.sin(y * 4.2 + t + f.phase) + amp * 0.4 * Math.sin(x * 2.3 - t * 0.7),
-    y + amp * Math.cos(x * 3.6 + t * 0.8 + f.phase * 1.3) * Math.min(1, hh * 2),
+    x + amp * Math.sin(y * 4.2 + ang + f.phase) + amp * 0.4 * Math.sin(x * 2.3 - ang),
+    y + amp * Math.cos(x * 3.6 + ang + f.phase * 1.3) * Math.min(1, hh * 2),
   ];
 }
 
-/** True when segment k barely moves, like the reference's still glyph beats. */
-export function isStillSegment(seed: number, k: number, kind: FormationKind): boolean {
-  if (k === 0 || isDenseFormation(kind)) return false;
-  return hash01(((seed >>> 0) % 9973) * 0.731 + k * 3.17) < 0.22;
+/** Three shapes visited in a ring: hold, then morph to the next, and back around to the first. */
+function shapeshift(c: LoopCtx, shapes: Formation[], emit: Emit) {
+  const { n, hh, u, th, p } = c;
+  const seg = Math.min(2, Math.floor(u * 3));
+  const e = smoother(clamp((u * 3 - seg - 0.3) / 0.7, 0, 1));
+  const a = shapes[seg];
+  const b = shapes[(seg + 1) % 3];
+  const swirl = p.curl * 0.24;
+  for (let i = 0; i < n; i++) {
+    const [ax, ay] = drift(a, i, th * 2, p, hh);
+    const [bx, by] = drift(b, i, th * 2, p, hh);
+    const dx = bx - ax;
+    const dy = by - ay;
+    const arc = swirl * Math.sin(Math.PI * e) * (hash01(i) > 0.5 ? 1 : -1);
+    emit(i, ax + dx * e - dy * arc, ay + dy * e + dx * arc, a.d[i] + (b.d[i] - a.d[i]) * e, tilt(i), i);
+  }
 }
 
-function morphPoint(a: Formation, b: Formation, i: number, m: number, swirl: number, clock: number, params: AgentParams, hh: number) {
-  const [ax, ay] = drift(a, i, clock, params, hh);
-  if (a === b || m <= 0) return { x: ax, y: ay, d: a.d[i] };
-  const [bx, by] = drift(b, i, clock, params, hh);
-  const dx = bx - ax;
-  const dy = by - ay;
-  const arc = swirl * Math.sin(Math.PI * m) * (hash01(i) > 0.5 ? 1 : -1);
-  return {
-    x: ax + dx * m - dy * arc,
-    y: ay + dy * m + dx * arc,
-    d: a.d[i] + (b.d[i] - a.d[i]) * m,
-  };
-}
-
-/** Formation sequence plus cached layouts. Poses are a pure function of the clock, so scrubbing and export stay stable. */
-export class FormationField {
+/** One locked pattern looping seamlessly. Poses are a pure function of the clock, so scrubbing and export stay stable. */
+export class PatternField {
   private sig = "";
-  private kinds: FormationKind[] = [];
-  private cache = new Map<number, Formation>();
+  private shapes: Formation[] = [];
   private poses: AgentPose[] = [];
-
-  private kindOf(k: number, seed: number, params: AgentParams): FormationKind {
-    if (this.kinds.length <= k) this.kinds = formationKinds(seed, params, k + 8);
-    return this.kinds[k];
-  }
-
-  /** Layout v of segment k: v=0 opens the segment, v=1 is where it morphs to. */
-  private layout(k: number, v: 0 | 1, seed: number, n: number, hh: number, params: AgentParams): Formation {
-    const kind = this.kindOf(k, seed, params);
-    const still = v === 1 && isStillSegment(seed, k, kind);
-    const key = k * 2 + (still ? 0 : v);
-    const hit = this.cache.get(key);
-    if (hit) return hit;
-    const f = buildFormation(kind, seed, key, n, hh, params);
-    if (this.cache.size > 8) {
-      const oldest = this.cache.keys().next().value;
-      if (oldest != null) this.cache.delete(oldest);
-    }
-    this.cache.set(key, f);
-    return f;
-  }
-
-  kindAt(clock: number, seed: number, params: AgentParams, bpm = 0): FormationKind {
-    const { k } = formationClock(clock, params, bpm);
-    return this.kindOf(k, seed, params);
-  }
-
-  private sync(seed: number, n: number, aspect: number, params: AgentParams) {
-    const sig = `${seed}|${n}|${aspect.toFixed(3)}|${Object.values(params).map((v) => v.toFixed(3)).join(",")}`;
-    if (sig !== this.sig) {
-      this.sig = sig;
-      this.kinds = [];
-      this.cache.clear();
-    }
-  }
 
   /**
    * aspect = width / height. Output y uses the collage painter's space (±aspect/2).
-   * With a song tempo, segments start on the first downbeat and cut on the bar.
+   * With a song tempo, the loop starts on the first downbeat and spans whole bars.
    */
-  posesAt(n: number, clock: number, seed: number, aspect: number, params: AgentParams, bpm = 0, beatOffset = 0): AgentPose[] {
-    this.sync(seed, n, aspect, params);
+  posesAt(
+    n: number,
+    clock: number,
+    seed: number,
+    aspect: number,
+    params: AgentParams,
+    bpm = 0,
+    beatOffset = 0,
+    choice: FieldPatternChoice | string = "auto",
+  ): AgentPose[] {
     const asp = Math.max(0.2, aspect);
     const hh = 0.5 / asp;
-    const local = bpm > 40 ? clock - beatOffset : clock;
-    const { k, m, e } = formationClock(local, params, bpm);
-    const a0 = this.layout(k, 0, seed, n, hh, params);
-    const a1 = this.layout(k, 1, seed, n, hh, params);
-    const next = e > 0 ? this.layout(k + 1, 0, seed, n, hh, params) : null;
-    const swirl = params.curl * 0.24;
+    const pattern = resolveFieldPattern(choice, seed);
+    const u = loopPhase(clock, params, bpm, beatOffset);
+    const ctx: LoopCtx = { n, hh, R: Math.hypot(0.5, hh), u, th: u * TAU, seed: seed >>> 0, p: params };
+    if (this.poses.length !== n) this.poses = Array.from({ length: n }, () => ({ x: 0, y: 0, px: 0, rot: 0, alpha: 0, squash: 1 }));
+    for (const pose of this.poses) pose.alpha = 0;
     const toPx = Math.max(1, asp);
     const toY = asp * asp;
-    if (this.poses.length !== n) this.poses = Array.from({ length: n }, () => ({ x: 0, y: 0, px: 0, rot: 0, alpha: 1, squash: 1 }));
-    for (let i = 0; i < n; i++) {
-      let { x, y, d } = morphPoint(a0, a1, i, m, swirl * 0.5, clock, params, hh);
-      if (next && e > 0) {
-        const [bx, by] = drift(next, i, clock, params, hh);
-        const dx = bx - x;
-        const dy = by - y;
-        const arc = swirl * Math.sin(Math.PI * e) * (hash01(i) > 0.5 ? 1 : -1);
-        x += dx * e - dy * arc;
-        y += dy * e + dx * arc;
-        d += (next.d[i] - d) * e;
-      }
+    const emit: Emit = (i, x, y, d, rot, charge, flip = 1) => {
       const pose = this.poses[i];
-      pose.x = clamp(x, -0.52, 0.52);
-      pose.y = clamp(y, -hh * 1.04, hh * 1.04) * toY;
-      pose.px = d * toPx * STAMP_PAD;
-      pose.rot = (hash01(i + 17) - 0.5) * 0.16;
+      if (!pose) return;
+      pose.x = x;
+      pose.y = y * toY;
+      pose.px = Math.max(0, d) * toPx * STAMP_PAD;
+      pose.rot = rot;
       pose.alpha = d > 0.004 ? 1 : 0;
       pose.squash = 1;
+      pose.flip = flip;
+      pose.charge = charge;
+    };
+    if (pattern === "sunflower") sunflower(ctx, emit);
+    else if (pattern === "rings") rings(ctx, emit);
+    else if (pattern === "spiro") spiro(ctx, emit);
+    else if (pattern === "ripple") ripple(ctx, emit);
+    else if (pattern === "march") march(ctx, emit);
+    else if (pattern === "kaleido") kaleido(ctx, emit);
+    else {
+      const sig = `${seed}|${n}|${asp.toFixed(3)}|${Object.values(params).map((v) => v.toFixed(3)).join(",")}`;
+      if (sig !== this.sig) {
+        this.sig = sig;
+        this.shapes = shapeshiftKinds(seed).map((kind, k) => buildFormation(kind, seed, k, n, hh, params));
+      }
+      shapeshift(ctx, this.shapes, emit);
     }
     return this.poses;
   }

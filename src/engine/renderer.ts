@@ -424,6 +424,7 @@ export class Renderer {
       fieldSparsity: look.collageFieldSparsity,
       fieldContrast: look.collageFieldContrast,
       fieldMotion: look.collageFieldMotion,
+      fieldPattern: look.collageFieldPattern,
       camera: look.collageCamera,
       cameraFeel: look.collageCameraFeel,
       huntWideMin: look.collageHuntWideMin,

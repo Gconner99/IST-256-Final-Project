@@ -103,6 +103,9 @@ import {
   clampFieldScale,
   clampFieldScaleAmp,
   clampFieldSparsity,
+  clampFieldPattern,
+  FIELD_PATTERNS,
+  FIELD_PATTERN_LABEL,
   clampFieldStrength,
   clampFieldWarp,
   clampPoleAttract,
@@ -179,7 +182,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tunnel / spiral / helix / bloom / prism plus Gyre, Well, Hall, Drift, Braid, and Sway are 3D fly-throughs — stamps travel in depth and around the frame so a big screen feels like you are moving through the picture. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Field is a formation edit: for one bar the stamps morph inside a pattern — a full sheet, bands, a sunflower bloom, brush-stroke glyphs, packed clusters, a few giants, or a sweeping line — then cut on the bar to the next pattern. With a song loaded the cuts land on its bars. Glide eases between patterns instead of cutting. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Chain can optionally wear Animal Chain parts (dragon, dog, ferret, caterpillar, zebra) on the same path. Hunt is a documentary camera on top of any move: watch wide, notice a stamp, snap in, follow, return. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
+        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tunnel / spiral / helix / bloom / prism plus Gyre, Well, Hall, Drift, Braid, and Sway are 3D fly-throughs — stamps travel in depth and around the frame so a big screen feels like you are moving through the picture. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Field locks one stamp pattern and loops it seamlessly — Sunflower, Rings, Spirograph, Ripple, March, Kaleido, or Shapeshift — until you change a slider, pick another pattern, or hit Rand field. With a song loaded the loop spans whole bars. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Chain can optionally wear Animal Chain parts (dragon, dog, ferret, caterpillar, zebra) on the same path. Hunt is a documentary camera on top of any move: watch wide, notice a stamp, snap in, follow, return. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -188,7 +191,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Check <em>effects</em> (top bar, or under Effects on the right) if you also want a short stack from the right panel. Uncheck it for a clean collage. Wacky rolls a thicker stack when effects are on. No dancer. Rolls stay small and slower — no giant stamps, no frantic bounce/flip/flash. When the rolled move is Field, the Field sliders roll too.</li>
-          <li><strong>Rand field</strong> rerolls only the Field sliders. Kit, mash, wash, camera, size, and pace stay. Switches the clip to Field if it is on another move.</li>
+          <li><strong>Rand field</strong> picks a new looping pattern and rerolls its sliders. Kit, mash, wash, camera, size, and pace stay. Switches the clip to Field if it is on another move.</li>
           <li><strong>Cut edit</strong> is the other randomizer. Drop an MP3 first. It finds the first downbeat (the kick, not the snare) and cuts on that metronome — bars and half-bars, not stray 8th notes. Snap / step / spot flip on the same frames as the drums. Some shots hold a bar or two. Some are two-beat fills that land back on 1.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music, Kitchen, Sky, Street, Arcade, Haunt, Sport, School. Each pack is its own stamp set — switching a kit replaces every icon. Move buttons keep the current kit.</li>
@@ -375,6 +378,10 @@ function bind(root: HTMLElement) {
         (s) => renameCollage({ ...s, collageChainAnimal: next }),
         next === "off" ? "animal chain off" : `animal chain · ${next}`,
       );
+    }
+    if (act === "field-pattern") {
+      const next = clampFieldPattern(t.dataset.pattern);
+      patchCollage((s) => ({ ...s, collageFieldPattern: next }), `field · ${FIELD_PATTERN_LABEL[next]}`);
     }
     if (act === "stamp-critters") stampCritters();
     if (act === "stamp-idol") stampIdol();
@@ -892,19 +899,24 @@ function paintRail(n: HTMLElement) {
     </div>
     ${
       collage?.collageMove === "field"
-        ? `<div class="sec">Formations</div>
+        ? `<div class="sec">Pattern</div>
+    <div class="row">
+      ${(["auto", ...FIELD_PATTERNS] as const).map((id) => {
+        const on = clampFieldPattern(collage.collageFieldPattern) === id;
+        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="field-pattern" data-pattern="${id}">${FIELD_PATTERN_LABEL[id]}</button>`;
+      }).join("")}
+    </div>
     ${num("collage-field-evolve", "Tempo", clampFieldEvolve(collage.collageFieldEvolve), 0.08, 2.2, 0.05)}
-    ${num("collage-field-damp", "Glide", clampFieldDamp(collage.collageFieldDamp), 0, 0.9, 0.02)}
     ${num("collage-field-strength", "Spread", clampFieldStrength(collage.collageFieldStrength), 0.2, 2.2, 0.05)}
     ${num("collage-field-density", "Pack", clampFieldDensity(collage.collageFieldDensity), 0, 2.2, 0.05)}
-    ${num("collage-field-sparsity", "Open Share", clampFieldSparsity(collage.collageFieldSparsity), 0, 2, 0.05)}
+    ${num("collage-field-sparsity", "Symmetry", clampFieldSparsity(collage.collageFieldSparsity), 0, 2, 0.05)}
     ${num("collage-field-perturb", "Shuffle", clampFieldPerturb(collage.collageFieldPerturb), 0, 2, 0.05)}
     ${num("collage-field-curl", "Swirl", clampFieldCurl(collage.collageFieldCurl), 0, 2.2, 0.05)}
-    ${num("collage-field-warp", "Morph", clampFieldWarp(collage.collageFieldWarp), 0, 2.2, 0.05)}
-    ${num("collage-field-motion", "Drift", clampFieldMotion(collage.collageFieldMotion), 0, 2, 0.05)}
+    ${num("collage-field-warp", "Breathe", clampFieldWarp(collage.collageFieldWarp), 0, 2.2, 0.05)}
+    ${num("collage-field-motion", "Ripple", clampFieldMotion(collage.collageFieldMotion), 0, 2, 0.05)}
     ${num("collage-field-contrast", "Size Contrast", clampFieldContrast(collage.collageFieldContrast), 0, 2.2, 0.05)}
-    ${num("collage-field-min-scale", "Dense Size", clampFieldMinScale(collage.collageFieldMinScale), 0.12, 1, 0.02)}
-    ${num("collage-field-max-scale", "Giant Size", clampFieldMaxScale(collage.collageFieldMaxScale), 0.6, 3.2, 0.05)}`
+    ${num("collage-field-min-scale", "Stamp Size", clampFieldMinScale(collage.collageFieldMinScale), 0.12, 1, 0.02)}
+    ${num("collage-field-max-scale", "Hero Size", clampFieldMaxScale(collage.collageFieldMaxScale), 0.6, 3.2, 0.05)}`
         : ""
     }
     <div class="sec">Matter</div>
@@ -1036,7 +1048,7 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
       <button class="btn tiny ${p.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit">Cut edit</button>
     </div>
-    <div class="status" style="margin-top:4px">Each clip keeps one move. Rush / tunnel / gyre / well / hall / drift / braid / sway fly through depth so a big screen feels 3D. Field is a deforming sheet, not a flock: stamps stay on, pack into a texture, tear into stretched ribbons and islands, then fill again. Matter moves are a spring mesh, a flowing current, a flock, or wandering magnets — each with its own sliders. Chain is a freeform 3D conga line. Drum / illusion locks to the tempo grid. Music punches glow, not the path.</div>
+    <div class="status" style="margin-top:4px">Each clip keeps one move. Rush / tunnel / gyre / well / hall / drift / braid / sway fly through depth so a big screen feels 3D. Field is one seamless stamp pattern on loop — no cuts. Matter moves are a spring mesh, a flowing current, a flock, or wandering magnets — each with its own sliders. Chain is a freeform 3D conga line. Drum / illusion locks to the tempo grid. Music punches glow, not the path.</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
         const meta = s.kind === "audio"
@@ -1367,6 +1379,7 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     fieldSparsity: src.collageFieldSparsity,
     fieldContrast: src.collageFieldContrast,
     fieldMotion: src.collageFieldMotion,
+    fieldPattern: src.collageFieldPattern,
     wash: keepWash ? src.colorA : undefined,
   };
 }
