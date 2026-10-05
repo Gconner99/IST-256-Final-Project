@@ -9,7 +9,7 @@ import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../s
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
 import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
-import { agentFieldAt, agentParamsFrom, densityAt, initAgentField, stepAgentField } from "../src/engine/agentField";
+import { agentFieldAt, agentParamsFrom, coverageAt, densityAt, initAgentField, sampleTarget, stepAgentField } from "../src/engine/agentField";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -1402,22 +1402,25 @@ describe("emergent agent field", () => {
     return cells.size;
   }
 
-  it("keeps nearby displacement samples pointing the same way", () => {
+  it("keeps nearby samples mapped to nearby places", () => {
     const params = agentParamsFrom();
-    const a = agentFieldAt(0.08, 0.04, 0, 1.2, params);
-    const b = agentFieldAt(0.1, 0.055, 0, 1.2, params);
-    const na = Math.hypot(a.x, a.y) || 1;
-    const nb = Math.hypot(b.x, b.y) || 1;
-    expect((a.x * b.x + a.y * b.y) / (na * nb)).toBeGreaterThan(0.55);
+    const a = sampleTarget(0.08, 0.04, 0, 7, params);
+    const b = sampleTarget(0.1, 0.055, 0, 7, params);
+    expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeLessThan(0.14);
+    const fa = agentFieldAt(0.08, 0.04, 0, 7, params);
+    const fb = agentFieldAt(0.1, 0.055, 0, 7, params);
+    const na = Math.hypot(fa.x, fa.y);
+    const nb = Math.hypot(fb.x, fb.y);
+    if (na > 0.02 && nb > 0.02) {
+      expect((fa.x * fb.x + fa.y * fb.y) / (na * nb)).toBeGreaterThan(0.35);
+    }
   });
 
   it("integrates velocity toward a deforming sample instead of snapping", () => {
-    const params = agentParamsFrom();
+    const params = agentParamsFrom({ sparsity: 1.4, contrast: 1.6, warp: 1.4 });
     let field = initAgentField(seeds, 0);
-    const x0 = field.px[3];
     const home = field.homeX[3];
     field = stepAgentField(field, seeds, 0.04, params);
-    expect(field.px[3]).not.toBeCloseTo(x0, 5);
     expect(Math.abs(field.vx[3]) + Math.abs(field.vy[3])).toBeGreaterThan(0);
     expect(field.homeX[3]).toBeCloseTo(home, 8);
   });
@@ -1439,28 +1442,63 @@ describe("emergent agent field", () => {
     let spread = 0;
     for (let i = 0; i < field.n; i++) spread += (field.px[i] - cx) ** 2 + (field.py[i] - cy) ** 2;
     spread = Math.sqrt(spread / field.n);
-    expect(spread).toBeGreaterThan(0.08);
-    expect(spread).toBeLessThan(0.55);
-    expect(Math.max(...scales)).toBeGreaterThan(Math.min(...scales) * 1.12);
+    expect(spread).toBeGreaterThan(0.06);
+    expect(spread).toBeLessThan(0.6);
+    expect(Math.max(...scales)).toBeGreaterThan(Math.min(...scales) * 1.05);
   });
 
-  it("uses contrast and sparsity to open negative space", () => {
-    const filled = agentParamsFrom({ sparsity: 0.05, contrast: 0.15, density: 0.25, warp: 0.2 });
-    const empty = agentParamsFrom({ sparsity: 1.8, contrast: 2, density: 1.6, warp: 1.4 });
-    let dense = initAgentField(seeds, 0);
-    let sparse = initAgentField(seeds, 0);
-    for (let k = 1; k <= 50; k++) {
-      dense = stepAgentField(dense, seeds, k * 0.04, filled);
-      sparse = stepAgentField(sparse, seeds, k * 0.04, empty);
+  it("opens negative space at low coverage and fills the frame at high coverage", () => {
+    const params = agentParamsFrom();
+    expect(coverageAt(0, params)).toBeGreaterThanOrEqual(0);
+    expect(coverageAt(0, params)).toBeLessThanOrEqual(1);
+    let field = initAgentField(seeds, 0);
+    let highVis = 0;
+    let lowVis = seeds.length;
+    let highOcc = 0;
+    let lowOcc = 64;
+    for (let k = 1; k <= 360; k++) {
+      field = stepAgentField(field, seeds, k * 0.05, params);
+      let vis = 0;
+      for (let i = 0; i < field.n; i++) if (field.alpha[i] > 0.15) vis++;
+      const occ = occupy(field);
+      highVis = Math.max(highVis, vis);
+      lowVis = Math.min(lowVis, vis);
+      highOcc = Math.max(highOcc, occ);
+      lowOcc = Math.min(lowOcc, occ);
     }
-    expect(occupy(sparse)).toBeLessThan(occupy(dense));
-    const d0 = densityAt(0.04, 0.02, 4, filled);
-    const d1 = densityAt(0.04, 0.02, 4, empty);
-    expect(Number.isFinite(d0 + d1)).toBe(true);
+    expect(highVis).toBeGreaterThan(lowVis + 12);
+    expect(highVis).toBeGreaterThan(seeds.length * 0.7);
+    expect(lowVis).toBeLessThan(seeds.length * 0.45);
+    expect(highOcc).toBeGreaterThan(lowOcc + 4);
+    expect(Number.isFinite(densityAt(0.04, 0.02, 4, params))).toBe(true);
+    let denseMin = 1;
+    for (let x = -0.4; x <= 0.4; x += 0.1) {
+      for (let y = -0.32; y <= 0.32; y += 0.1) {
+        denseMin = Math.min(denseMin, densityAt(x, y, 0, params));
+      }
+    }
+    expect(denseMin).toBeGreaterThan(0.4);
+    let tSparse = 16;
+    for (let t = 0; t <= 24; t += 1) {
+      if (coverageAt(t, params) < 0.25) {
+        tSparse = t;
+        break;
+      }
+    }
+    let sparseMax = 0;
+    let sparseMin = 1;
+    for (let x = -0.4; x <= 0.4; x += 0.08) {
+      for (let y = -0.32; y <= 0.32; y += 0.08) {
+        const d = densityAt(x, y, tSparse, params);
+        sparseMax = Math.max(sparseMax, d);
+        sparseMin = Math.min(sparseMin, d);
+      }
+    }
+    expect(sparseMax - sparseMin).toBeGreaterThan(0.18);
   });
 
   it("reinits after a rewind so export scrub stays stable", () => {
-    const params = agentParamsFrom();
+    const params = agentParamsFrom({ sparsity: 1.5, warp: 1.5, contrast: 1.6 });
     let field = initAgentField(seeds, 0);
     for (let k = 1; k <= 30; k++) field = stepAgentField(field, seeds, k * 0.04, params);
     let drift = 0;

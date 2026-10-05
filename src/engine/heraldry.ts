@@ -3758,7 +3758,7 @@ export class HeraldryField {
                         : scene === "chain"
                           ? 40
                           : isFieldMove(scene)
-                            ? 128
+                            ? 176
                             : isSimMove(scene)
                             ? 42
                             : this.particles.length;
@@ -3881,12 +3881,12 @@ export class HeraldryField {
             ? simPose(this.sim, i, p.size)
             : poseParticle(p, i, scene, t, audio, bass, beat, bpm, count, clock, chain);
         if (!pose) continue;
-        if (pose.alpha < 0.05) continue;
+        if (pose.alpha < 0.04) continue;
         if (isFieldMove(scene) && beat > 0.02) {
           pose = {
             ...pose,
             glow: beat * 0.38,
-            squash: 1 - beat * 0.045,
+            squash: (pose.squash ?? 1) * (1 - beat * 0.045),
             px: pose.px * (1 + beat * 0.07),
           };
         }
