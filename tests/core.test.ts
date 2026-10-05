@@ -1488,7 +1488,7 @@ describe("pattern field", () => {
       }
       expect(jump).toBeLessThan(0.06);
       expect(moved / 300).toBeGreaterThan(0.08);
-      expect(visible).toBeGreaterThan(120);
+      expect(visible).toBeGreaterThan(pattern === "snake" ? 6 : 120);
     });
   }
 
@@ -1508,14 +1508,36 @@ describe("pattern field", () => {
     expect(fieldLoop(agentParamsFrom({ fieldEvolve: 2 }), 120)).toBeLessThan(loop);
   });
 
-  it("snake morphs every stamp into a different icon while it billiard-bounces", () => {
+  it("snake fills morphing silhouettes and swaps every icon", () => {
     const params = agentParamsFrom({ warp: 1.2 });
     const field = new PatternField();
     const a = field.posesAt(240, 0.4, 3, aspect, params, 0, 0, "snake").map((p) => ({ ...p }));
     const b = field.posesAt(240, 0.4 + fieldLoop(params) * 0.35, 3, aspect, params, 0, 0, "snake").map((p) => ({ ...p }));
     expect(a.some((p) => (p.morph ?? 0) > 0.05 && (p.morph ?? 0) < 0.95)).toBe(true);
     expect(a.filter((p, i) => p.charge !== b[i].charge).length).toBeGreaterThan(40);
-    for (const p of a) expect(Math.abs(p.x)).toBeLessThan(0.5);
+    const vis = (poses: { alpha: number; px: number; x: number; y: number }[]) => poses.filter((p) => p.alpha > 0.5 && p.px > 0.02);
+    const field2 = new PatternField();
+    const period = fieldLoop(params);
+    let hi = 0;
+    let lo = 999;
+    for (let k = 0; k < 8; k++) {
+      const nVis = vis(field2.posesAt(300, k * period * 0.12, 3, aspect, params, 0, 0, "snake")).length;
+      hi = Math.max(hi, nVis);
+      lo = Math.min(lo, nVis);
+    }
+    expect(hi).toBeGreaterThan(lo * 1.4);
+    const K = 7;
+    const at = (idx: number) => vis(field2.posesAt(300, period * ((idx + 0.12) / K), 3, aspect, params, 0, 0, "snake"));
+    const giants = at(4);
+    expect(giants.length).toBeGreaterThan(6);
+    expect(giants.length).toBeLessThan(40);
+    expect(giants.filter((p) => p.px > 0.12).length).toBeGreaterThan(4);
+    const glyph = at(5);
+    const xs = glyph.map((p) => p.x);
+    const ys = glyph.map((p) => p.y / (aspect * aspect));
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(0.55);
+    expect(glyph.length).toBeGreaterThan(40);
+    expect(Math.max(...ys) - Math.min(...ys) > 0.12 || Math.max(...xs) - Math.min(...xs) > 0.7).toBe(true);
   });
 
   it("is a pure function of time so scrubbing back matches", () => {
