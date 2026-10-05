@@ -60,7 +60,12 @@ HOW TO USE IT
   and Sway (the camera weaves while stamps fly at you). These are
   3D fly-throughs — stamps travel in depth so a big screen feels
   like you are moving through the picture. Looping patterns: Tide,
-  Rings, Loom, Petal, Flock, Wheel, Silk. Music moves: Bars, Ripple,
+  Rings, Loom, Petal, Flock, Wheel, Silk. Field remaps the stamps
+  through a slow deforming current. The same icons stay themselves,
+  but the space they sit in stretches, empties, and fills again —
+  dense texture, thin streams, big holes, then a different
+  structure. Field has its own sliders (field, density, flow,
+  sparsity, scale…). Music moves: Bars, Ripple,
   Swing, Burst, Halo, Wave, Drop, Spot — they stay on a smooth path
   and punch glow on the beat, not the travel. Drum / illusion moves
   lock to the tempo like a drum pattern: Pong (wall bounce), Fall
@@ -84,6 +89,8 @@ HOW TO USE IT
   Matter moves are a spring mesh (Spring), a changing 3D
   current (Flow), a flock with local rules (Boids), and
   wandering magnets (Poles). Each has its own sliders.
+  Field is separate from Matter — a deforming spatial field,
+  not a flock or a magnet.
   New stamp packs: Kitchen, Sky, Street, Arcade, Haunt,
   Sport, School. Each pack has its own icons — switching
   a kit replaces the whole stamp set.

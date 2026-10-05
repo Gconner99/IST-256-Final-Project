@@ -1,6 +1,13 @@
 import { clamp, mulberry32 } from "../core/random";
 import type { GeneratorType } from "../core/types";
 import {
+  agentParamsFrom,
+  agentPose,
+  isFieldMove,
+  stepAgentField,
+  type AgentField,
+} from "./agentField";
+import {
   isSimMove,
   simParamsFrom,
   simPose,
@@ -45,6 +52,33 @@ export {
 } from "./docSearch";
 export type { CameraBehavior, CameraFeel, HuntSelect, HuntPhase, HuntStamp, HuntView } from "./docSearch";
 
+export {
+  clampFieldAttract,
+  clampFieldContrast,
+  clampFieldCurl,
+  clampFieldDamp,
+  clampFieldDensity,
+  clampFieldDensityEvolve,
+  clampFieldDensityScale,
+  clampFieldEvolve,
+  clampFieldFlow,
+  clampFieldFlowScale,
+  clampFieldInertia,
+  clampFieldMaxScale,
+  clampFieldMaxV,
+  clampFieldMinScale,
+  clampFieldMotion,
+  clampFieldPerturb,
+  clampFieldRadius,
+  clampFieldRepel,
+  clampFieldScale,
+  clampFieldScaleAmp,
+  clampFieldSparsity,
+  clampFieldStrength,
+  clampFieldWarp,
+  isFieldMove,
+  FIELD_MOVE,
+} from "./agentField";
 export {
   clampBoidAlign,
   clampBoidCohere,
@@ -125,6 +159,7 @@ export const COLLAGE_MOVES = [
   "flow",
   "boids",
   "poles",
+  "field",
 ] as const;
 export type CollageMove = (typeof COLLAGE_MOVES)[number];
 export type HeraldryScene = CollageMove | "tour" | "lattice";
@@ -205,6 +240,7 @@ export const MOVE_LABEL: Record<CollageMove, string> = {
   flow: "FLOW",
   boids: "BOIDS",
   poles: "POLES",
+  field: "FIELD",
 };
 
 export function isHeraldry(kind?: string | null): boolean {
@@ -288,6 +324,7 @@ export const PLEASING_MOVES = [
   "flow",
   "boids",
   "poles",
+  "field",
 ] as const;
 export type PleasingMove = (typeof PLEASING_MOVES)[number];
 
@@ -853,6 +890,29 @@ export interface HeraldryPaintOpts {
   poleSpeed?: number;
   poleFalloff?: number;
   poleSwitch?: number;
+  fieldStrength?: number;
+  fieldScale?: number;
+  fieldEvolve?: number;
+  fieldDensity?: number;
+  fieldDensityScale?: number;
+  fieldDensityEvolve?: number;
+  fieldFlow?: number;
+  fieldCurl?: number;
+  fieldFlowScale?: number;
+  fieldAttract?: number;
+  fieldRepel?: number;
+  fieldRadius?: number;
+  fieldInertia?: number;
+  fieldDamp?: number;
+  fieldMaxV?: number;
+  fieldScaleAmp?: number;
+  fieldMinScale?: number;
+  fieldMaxScale?: number;
+  fieldPerturb?: number;
+  fieldWarp?: number;
+  fieldSparsity?: number;
+  fieldContrast?: number;
+  fieldMotion?: number;
   camera?: string | null;
   cameraFeel?: string | null;
   huntWideMin?: number;
@@ -3589,6 +3649,7 @@ export class HeraldryField {
   private stamps = new Map<string, HTMLCanvasElement>();
   private particles: Particle[] = [];
   private sim: FieldSim | null = null;
+  private agents: AgentField | null = null;
   private hunt: HuntState | null = null;
   private builtSeed = -1;
   private builtInk = "";
@@ -3619,6 +3680,7 @@ export class HeraldryField {
     this.particles = buildField(seed, ink, kit, mash || null);
     this.stamps.clear();
     this.sim = null;
+    this.agents = null;
     this.hunt = null;
     this.builtSeed = seed;
     this.builtInk = ink;
@@ -3695,12 +3757,43 @@ export class HeraldryField {
                         ? 140
                         : scene === "chain"
                           ? 40
-                          : isSimMove(scene)
+                          : isFieldMove(scene)
+                            ? 128
+                            : isSimMove(scene)
                             ? 42
                             : this.particles.length;
     const count = Math.max(8, Math.min(this.particles.length, Math.round(baseCount * density)));
     const prisms = scene === "prism" ? 3 : 1;
-    if (isSimMove(scene)) {
+    if (isFieldMove(scene)) {
+      const params = agentParamsFrom({
+        fieldStrength: opts.fieldStrength,
+        fieldScale: opts.fieldScale,
+        fieldEvolve: opts.fieldEvolve,
+        density: opts.fieldDensity,
+        densityScale: opts.fieldDensityScale,
+        densityEvolve: opts.fieldDensityEvolve,
+        flow: opts.fieldFlow,
+        curl: opts.fieldCurl,
+        flowScale: opts.fieldFlowScale,
+        attract: opts.fieldAttract,
+        repel: opts.fieldRepel,
+        radius: opts.fieldRadius,
+        inertia: opts.fieldInertia,
+        damp: opts.fieldDamp,
+        maxV: opts.fieldMaxV,
+        scaleAmp: opts.fieldScaleAmp,
+        minScale: opts.fieldMinScale,
+        maxScale: opts.fieldMaxScale,
+        perturb: opts.fieldPerturb,
+        warp: opts.fieldWarp,
+        sparsity: opts.fieldSparsity,
+        contrast: opts.fieldContrast,
+        motion: opts.fieldMotion,
+      });
+      this.agents = stepAgentField(this.agents, this.particles.slice(0, count), clock, params);
+      this.sim = null;
+    } else if (isSimMove(scene)) {
+      this.agents = null;
       const params = simParamsFrom({
         springStrength: opts.springStrength,
         springDamp: opts.springDamp,
@@ -3732,11 +3825,13 @@ export class HeraldryField {
         params,
       );
     } else {
+      this.agents = null;
       this.sim = null;
     }
 
     const cap =
       scene === "spot" ? 0.34 :
+      isFieldMove(scene) ? 0.4 :
       isFlyMove(scene) || scene === "chain"
         ? 0.26
         : 0.22;
@@ -3780,10 +3875,21 @@ export class HeraldryField {
     } else {
       for (let i = 0; i < count; i++) {
         const p = this.particles[i];
-        const pose = isSimMove(scene) && this.sim
-          ? simPose(this.sim, i, p.size)
-          : poseParticle(p, i, scene, t, audio, bass, beat, bpm, count, clock, chain);
+        let pose: Pose | null = isFieldMove(scene) && this.agents
+          ? agentPose(this.agents, i, p.size)
+          : isSimMove(scene) && this.sim
+            ? simPose(this.sim, i, p.size)
+            : poseParticle(p, i, scene, t, audio, bass, beat, bpm, count, clock, chain);
         if (!pose) continue;
+        if (pose.alpha < 0.05) continue;
+        if (isFieldMove(scene) && beat > 0.02) {
+          pose = {
+            ...pose,
+            glow: beat * 0.38,
+            squash: 1 - beat * 0.045,
+            px: pose.px * (1 + beat * 0.07),
+          };
+        }
         record(this.stamp(p.charge), pose);
       }
     }

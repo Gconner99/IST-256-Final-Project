@@ -38,6 +38,29 @@ import {
   clampFlowForce,
   clampFlowScale,
   clampFlowTurb,
+  clampFieldAttract,
+  clampFieldContrast,
+  clampFieldCurl,
+  clampFieldDamp,
+  clampFieldDensity,
+  clampFieldDensityEvolve,
+  clampFieldDensityScale,
+  clampFieldEvolve,
+  clampFieldFlow,
+  clampFieldFlowScale,
+  clampFieldInertia,
+  clampFieldMaxScale,
+  clampFieldMaxV,
+  clampFieldMinScale,
+  clampFieldMotion,
+  clampFieldPerturb,
+  clampFieldRadius,
+  clampFieldRepel,
+  clampFieldScale,
+  clampFieldScaleAmp,
+  clampFieldSparsity,
+  clampFieldStrength,
+  clampFieldWarp,
   clampPoleAttract,
   clampPoleCount,
   clampPoleFalloff,
@@ -223,6 +246,29 @@ export interface CollageExtras {
   poleSpeed?: number;
   poleFalloff?: number;
   poleSwitch?: number;
+  fieldStrength?: number;
+  fieldScale?: number;
+  fieldEvolve?: number;
+  fieldDensity?: number;
+  fieldDensityScale?: number;
+  fieldDensityEvolve?: number;
+  fieldFlow?: number;
+  fieldCurl?: number;
+  fieldFlowScale?: number;
+  fieldAttract?: number;
+  fieldRepel?: number;
+  fieldRadius?: number;
+  fieldInertia?: number;
+  fieldDamp?: number;
+  fieldMaxV?: number;
+  fieldScaleAmp?: number;
+  fieldMinScale?: number;
+  fieldMaxScale?: number;
+  fieldPerturb?: number;
+  fieldWarp?: number;
+  fieldSparsity?: number;
+  fieldContrast?: number;
+  fieldMotion?: number;
   camera?: CameraBehavior | string | null;
   cameraFeel?: CameraFeel | string | null;
   huntWideMin?: number;
@@ -329,6 +375,29 @@ export function defaultGeneratorSource(
     collagePoleSpeed: collageKit ? clampPoleSpeed(extras?.poleSpeed) : undefined,
     collagePoleFalloff: collageKit ? clampPoleFalloff(extras?.poleFalloff) : undefined,
     collagePoleSwitch: collageKit ? clampPoleSwitch(extras?.poleSwitch) : undefined,
+    collageFieldStrength: collageKit ? clampFieldStrength(extras?.fieldStrength) : undefined,
+    collageFieldScale: collageKit ? clampFieldScale(extras?.fieldScale) : undefined,
+    collageFieldEvolve: collageKit ? clampFieldEvolve(extras?.fieldEvolve) : undefined,
+    collageFieldDensity: collageKit ? clampFieldDensity(extras?.fieldDensity) : undefined,
+    collageFieldDensityScale: collageKit ? clampFieldDensityScale(extras?.fieldDensityScale) : undefined,
+    collageFieldDensityEvolve: collageKit ? clampFieldDensityEvolve(extras?.fieldDensityEvolve) : undefined,
+    collageFieldFlow: collageKit ? clampFieldFlow(extras?.fieldFlow) : undefined,
+    collageFieldCurl: collageKit ? clampFieldCurl(extras?.fieldCurl) : undefined,
+    collageFieldFlowScale: collageKit ? clampFieldFlowScale(extras?.fieldFlowScale) : undefined,
+    collageFieldAttract: collageKit ? clampFieldAttract(extras?.fieldAttract) : undefined,
+    collageFieldRepel: collageKit ? clampFieldRepel(extras?.fieldRepel) : undefined,
+    collageFieldRadius: collageKit ? clampFieldRadius(extras?.fieldRadius) : undefined,
+    collageFieldInertia: collageKit ? clampFieldInertia(extras?.fieldInertia) : undefined,
+    collageFieldDamp: collageKit ? clampFieldDamp(extras?.fieldDamp) : undefined,
+    collageFieldMaxV: collageKit ? clampFieldMaxV(extras?.fieldMaxV) : undefined,
+    collageFieldScaleAmp: collageKit ? clampFieldScaleAmp(extras?.fieldScaleAmp) : undefined,
+    collageFieldMinScale: collageKit ? clampFieldMinScale(extras?.fieldMinScale) : undefined,
+    collageFieldMaxScale: collageKit ? clampFieldMaxScale(extras?.fieldMaxScale) : undefined,
+    collageFieldPerturb: collageKit ? clampFieldPerturb(extras?.fieldPerturb) : undefined,
+    collageFieldWarp: collageKit ? clampFieldWarp(extras?.fieldWarp) : undefined,
+    collageFieldSparsity: collageKit ? clampFieldSparsity(extras?.fieldSparsity) : undefined,
+    collageFieldContrast: collageKit ? clampFieldContrast(extras?.fieldContrast) : undefined,
+    collageFieldMotion: collageKit ? clampFieldMotion(extras?.fieldMotion) : undefined,
     collageCamera: collageKit ? cameraFromUnknown(extras?.camera) : undefined,
     collageCameraFeel: collageKit ? feelFromUnknown(extras?.cameraFeel) : undefined,
     collageHuntWideMin: collageKit ? clampHuntWideMin(extras?.huntWideMin) : undefined,

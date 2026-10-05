@@ -7,8 +7,9 @@ import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
 import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
-import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
+import { agentFieldAt, agentParamsFrom, densityAt, initAgentField, stepAgentField } from "../src/engine/agentField";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -1067,6 +1068,7 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("heraldry", "flow")).toBe("flow");
     expect(sceneFromGenerator("heraldry", "boids")).toBe("boids");
     expect(sceneFromGenerator("heraldry", "poles")).toBe("poles");
+    expect(sceneFromGenerator("heraldry", "field")).toBe("field");
     expect(sceneFromGenerator("heraldry", "helix")).toBe("helix");
     expect(sceneFromGenerator("heraldry", "prism")).toBe("prism");
     expect(sceneFromGenerator("heraldry", "gyre")).toBe("gyre");
@@ -1131,6 +1133,7 @@ describe("heraldry collage", () => {
       "flow",
       "boids",
       "poles",
+      "field",
     ]);
     expect(isMusicMove("bars")).toBe(true);
     expect(isMusicMove("wave")).toBe(true);
@@ -1150,6 +1153,10 @@ describe("heraldry collage", () => {
     expect(isSimMove("boids")).toBe(true);
     expect(isSimMove("poles")).toBe(true);
     expect(isSimMove("rush")).toBe(false);
+    expect(isFieldMove("field")).toBe(true);
+    expect(isFieldMove("flow")).toBe(false);
+    expect(isPleasingMove("field")).toBe(true);
+    expect(isMusicMove("field")).toBe(false);
     expect(isMusicMove("boids")).toBe(false);
     expect(isPleasingMove("poles")).toBe(true);
     expect(isMusicMove("rush")).toBe(false);
@@ -1183,6 +1190,10 @@ describe("heraldry collage", () => {
     expect(clampCollageChainSmooth(2)).toBe(1);
     expect(clampSpringStrength(9)).toBe(2.2);
     expect(clampPoleCount(8)).toBe(5);
+    expect(agentParamsFrom({ fieldStrength: 9 }).fieldStrength).toBe(2.2);
+    expect(agentParamsFrom({ minScale: 0.9, maxScale: 0.5 }).maxScale).toBeGreaterThan(
+      agentParamsFrom({ minScale: 0.9, maxScale: 0.5 }).minScale,
+    );
     const a = chainPath(0.12, 0.4, 1, 0.72);
     const b = chainPath(0.13, 0.4, 1, 0.72);
     const c = chainPath(0.12, 1.8, 1.6, 0.2);
@@ -1368,6 +1379,100 @@ describe("field sim", () => {
     const a = poleState(0, 0, 0.8, 1);
     const b = poleState(0, 6, 0.8, 1);
     expect(a.sign).not.toBe(b.sign);
+  });
+});
+
+describe("emergent agent field", () => {
+  const seeds = Array.from({ length: 36 }, (_, i) => ({
+    x: (i % 6) / 6,
+    y: Math.floor(i / 6) / 6,
+    z: (i * 0.17) % 1,
+    vx: 0.4 + (i % 5) * 0.05,
+    vy: 0.55,
+  }));
+
+  function occupy(field: { n: number; px: Float32Array; py: Float32Array; alpha: Float32Array }) {
+    const cells = new Set<string>();
+    for (let i = 0; i < field.n; i++) {
+      if (field.alpha[i] < 0.12) continue;
+      const cx = Math.floor((field.px[i] + 0.5) * 8);
+      const cy = Math.floor((field.py[i] + 0.5) * 8);
+      cells.add(`${cx}:${cy}`);
+    }
+    return cells.size;
+  }
+
+  it("keeps nearby displacement samples pointing the same way", () => {
+    const params = agentParamsFrom();
+    const a = agentFieldAt(0.08, 0.04, 0, 1.2, params);
+    const b = agentFieldAt(0.1, 0.055, 0, 1.2, params);
+    const na = Math.hypot(a.x, a.y) || 1;
+    const nb = Math.hypot(b.x, b.y) || 1;
+    expect((a.x * b.x + a.y * b.y) / (na * nb)).toBeGreaterThan(0.55);
+  });
+
+  it("integrates velocity toward a deforming sample instead of snapping", () => {
+    const params = agentParamsFrom();
+    let field = initAgentField(seeds, 0);
+    const x0 = field.px[3];
+    const home = field.homeX[3];
+    field = stepAgentField(field, seeds, 0.04, params);
+    expect(field.px[3]).not.toBeCloseTo(x0, 5);
+    expect(Math.abs(field.vx[3]) + Math.abs(field.vy[3])).toBeGreaterThan(0);
+    expect(field.homeX[3]).toBeCloseTo(home, 8);
+  });
+
+  it("redistributes density instead of collapsing, and varies scale", () => {
+    const params = agentParamsFrom();
+    let field = initAgentField(seeds, 0);
+    for (let k = 1; k <= 80; k++) field = stepAgentField(field, seeds, k * 0.04, params);
+    let cx = 0;
+    let cy = 0;
+    const scales: number[] = [];
+    for (let i = 0; i < field.n; i++) {
+      cx += field.px[i];
+      cy += field.py[i];
+      scales.push(field.scale[i]);
+    }
+    cx /= field.n;
+    cy /= field.n;
+    let spread = 0;
+    for (let i = 0; i < field.n; i++) spread += (field.px[i] - cx) ** 2 + (field.py[i] - cy) ** 2;
+    spread = Math.sqrt(spread / field.n);
+    expect(spread).toBeGreaterThan(0.08);
+    expect(spread).toBeLessThan(0.55);
+    expect(Math.max(...scales)).toBeGreaterThan(Math.min(...scales) * 1.12);
+  });
+
+  it("uses contrast and sparsity to open negative space", () => {
+    const filled = agentParamsFrom({ sparsity: 0.05, contrast: 0.15, density: 0.25, warp: 0.2 });
+    const empty = agentParamsFrom({ sparsity: 1.8, contrast: 2, density: 1.6, warp: 1.4 });
+    let dense = initAgentField(seeds, 0);
+    let sparse = initAgentField(seeds, 0);
+    for (let k = 1; k <= 50; k++) {
+      dense = stepAgentField(dense, seeds, k * 0.04, filled);
+      sparse = stepAgentField(sparse, seeds, k * 0.04, empty);
+    }
+    expect(occupy(sparse)).toBeLessThan(occupy(dense));
+    const d0 = densityAt(0.04, 0.02, 4, filled);
+    const d1 = densityAt(0.04, 0.02, 4, empty);
+    expect(Number.isFinite(d0 + d1)).toBe(true);
+  });
+
+  it("reinits after a rewind so export scrub stays stable", () => {
+    const params = agentParamsFrom();
+    let field = initAgentField(seeds, 0);
+    for (let k = 1; k <= 30; k++) field = stepAgentField(field, seeds, k * 0.04, params);
+    let drift = 0;
+    for (let i = 0; i < field.n; i++) {
+      drift = Math.max(drift, Math.abs(field.px[i] - field.homeX[i]) + Math.abs(field.py[i] - field.homeY[i]));
+    }
+    expect(drift).toBeGreaterThan(0.02);
+    const before = field.px[8];
+    field = stepAgentField(field, seeds, 0.1, params);
+    expect(field.lastClock).toBeCloseTo(0.1, 5);
+    expect(field.px[8]).toBeCloseTo(field.homeX[8], 5);
+    expect(field.px[8]).not.toBe(before);
   });
 });
 

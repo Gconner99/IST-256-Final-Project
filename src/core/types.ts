@@ -270,7 +270,31 @@ export interface MediaSource {
     | "spring"
     | "flow"
     | "boids"
-    | "poles";
+    | "poles"
+    | "field";
+  collageFieldStrength?: number;
+  collageFieldScale?: number;
+  collageFieldEvolve?: number;
+  collageFieldDensity?: number;
+  collageFieldDensityScale?: number;
+  collageFieldDensityEvolve?: number;
+  collageFieldFlow?: number;
+  collageFieldCurl?: number;
+  collageFieldFlowScale?: number;
+  collageFieldAttract?: number;
+  collageFieldRepel?: number;
+  collageFieldRadius?: number;
+  collageFieldInertia?: number;
+  collageFieldDamp?: number;
+  collageFieldMaxV?: number;
+  collageFieldScaleAmp?: number;
+  collageFieldMinScale?: number;
+  collageFieldMaxScale?: number;
+  collageFieldPerturb?: number;
+  collageFieldWarp?: number;
+  collageFieldSparsity?: number;
+  collageFieldContrast?: number;
+  collageFieldMotion?: number;
 }
 
 export interface Keyframe {
