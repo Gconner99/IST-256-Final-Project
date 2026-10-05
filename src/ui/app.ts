@@ -22,6 +22,7 @@ import {
   moveEffect,
   patchLayer,
   randomize,
+  randomizeField,
   randomPreset,
   removeEffect,
   removeLayer,
@@ -156,6 +157,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <button class="btn tiny ${store.project.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit" title="Cut to the beat through music-reactive looks">Cut edit</button>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
+      <button class="btn tiny" data-act="rand-field" title="Reroll Field sliders only. Keeps kit, mash, wash, and camera.">Rand field</button>
       <select id="quality">
         <option value="draft">Draft</option>
         <option value="preview">Preview</option>
@@ -185,7 +187,8 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
           <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
-          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Check <em>effects</em> (top bar, or under Effects on the right) if you also want a short stack from the right panel. Uncheck it for a clean collage. Wacky rolls a thicker stack when effects are on. No dancer. Rolls stay small and slower — no giant stamps, no frantic bounce/flip/flash.</li>
+          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Check <em>effects</em> (top bar, or under Effects on the right) if you also want a short stack from the right panel. Uncheck it for a clean collage. Wacky rolls a thicker stack when effects are on. No dancer. Rolls stay small and slower — no giant stamps, no frantic bounce/flip/flash. When the rolled move is Field, the Field sliders roll too.</li>
+          <li><strong>Rand field</strong> rerolls only the Field sliders. Kit, mash, wash, camera, size, and pace stay. Switches the clip to Field if it is on another move.</li>
           <li><strong>Cut edit</strong> is the other randomizer. Drop an MP3 first. It finds the first downbeat (the kick, not the snare) and cuts on that metronome — bars and half-bars, not stray 8th notes. Snap / step / spot flip on the same frames as the drums. Some shots hold a bar or two. Some are two-beat fills that land back on 1.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music, Kitchen, Sky, Street, Arcade, Haunt, Sport, School. Each pack is its own stamp set — switching a kit replaces every icon. Move buttons keep the current kit.</li>
@@ -258,6 +261,7 @@ function bind(root: HTMLElement) {
       if (rendererRef) void reprintFrame(rendererRef);
     }
     if (act === "rand-sel") randomize("selected");
+    if (act === "rand-field") randomizeField();
     if (act === "rand-param") {
       const paramId = t.dataset.paramId;
       const layer = selectedLayer(store.project);
@@ -884,6 +888,7 @@ function paintRail(n: HTMLElement) {
     <div class="sec">Field</div>
     <div class="row">
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="field">Field</button>
+      <button class="btn tiny" data-act="rand-field" title="Reroll Field sliders only. Keeps kit, mash, wash, and camera.">Rand field</button>
     </div>
     ${
       collage?.collageMove === "field"
@@ -1350,6 +1355,29 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     huntFocusSpeed: src.collageHuntFocusSpeed,
     huntFocusError: src.collageHuntFocusError,
     huntVariation: src.collageHuntVariation,
+    fieldStrength: src.collageFieldStrength,
+    fieldScale: src.collageFieldScale,
+    fieldEvolve: src.collageFieldEvolve,
+    fieldDensity: src.collageFieldDensity,
+    fieldDensityScale: src.collageFieldDensityScale,
+    fieldDensityEvolve: src.collageFieldDensityEvolve,
+    fieldFlow: src.collageFieldFlow,
+    fieldCurl: src.collageFieldCurl,
+    fieldFlowScale: src.collageFieldFlowScale,
+    fieldAttract: src.collageFieldAttract,
+    fieldRepel: src.collageFieldRepel,
+    fieldRadius: src.collageFieldRadius,
+    fieldInertia: src.collageFieldInertia,
+    fieldDamp: src.collageFieldDamp,
+    fieldMaxV: src.collageFieldMaxV,
+    fieldScaleAmp: src.collageFieldScaleAmp,
+    fieldMinScale: src.collageFieldMinScale,
+    fieldMaxScale: src.collageFieldMaxScale,
+    fieldPerturb: src.collageFieldPerturb,
+    fieldWarp: src.collageFieldWarp,
+    fieldSparsity: src.collageFieldSparsity,
+    fieldContrast: src.collageFieldContrast,
+    fieldMotion: src.collageFieldMotion,
     wash: keepWash ? src.colorA : undefined,
   };
 }

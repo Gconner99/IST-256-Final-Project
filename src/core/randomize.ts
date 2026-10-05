@@ -1,9 +1,34 @@
 import { ANIMAL_CHAINS, COLLAGE_KITS, HERALDRY_ROOMS, MOVE_LABEL, generatorForMove, inkForSeed, isHeraldry, kitForSeed, paperForSeed, pleasingMoveForSeed } from "../engine/heraldry";
+import {
+  clampFieldAttract,
+  clampFieldContrast,
+  clampFieldCurl,
+  clampFieldDamp,
+  clampFieldDensity,
+  clampFieldDensityEvolve,
+  clampFieldDensityScale,
+  clampFieldEvolve,
+  clampFieldFlow,
+  clampFieldFlowScale,
+  clampFieldInertia,
+  clampFieldMaxScale,
+  clampFieldMaxV,
+  clampFieldMinScale,
+  clampFieldMotion,
+  clampFieldPerturb,
+  clampFieldRadius,
+  clampFieldRepel,
+  clampFieldScale,
+  clampFieldScaleAmp,
+  clampFieldSparsity,
+  clampFieldStrength,
+  clampFieldWarp,
+} from "../engine/agentField";
 import { inkForLook, paperForLook, pickColorPack, pickEffectPalette, EFFECT_PALETTES } from "./colorPacks";
 import { allEffects, getEffect } from "../effects/registry";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
-import type { BlendMode, EffectInstance, GeneratorType, Layer, ParamDef, Project } from "./types";
+import type { BlendMode, EffectInstance, GeneratorType, Layer, MediaSource, ParamDef, Project } from "./types";
 
 type Mood = "lush" | "outsider" | "mix";
 
@@ -335,6 +360,56 @@ function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false,
   };
 }
 
+function rollBetween(rng: () => number, a: number, b: number) {
+  return lerp(a, b, rng());
+}
+
+/** Pleasing Field-slider ranges. Keeps pack/tear readable without frantic extremes. */
+export function rollFieldParams(rng: () => number) {
+  const minScale = clampFieldMinScale(rollBetween(rng, 0.4, 0.85));
+  const maxScale = clampFieldMaxScale(Math.max(minScale + 0.08, rollBetween(rng, 1.2, 2.4)));
+  return {
+    collageFieldStrength: clampFieldStrength(rollBetween(rng, 0.7, 1.8)),
+    collageFieldScale: clampFieldScale(rollBetween(rng, 0.55, 1.45)),
+    collageFieldEvolve: clampFieldEvolve(rollBetween(rng, 0.55, 1.7)),
+    collageFieldDensity: clampFieldDensity(rollBetween(rng, 0.7, 1.7)),
+    collageFieldDensityScale: clampFieldDensityScale(rollBetween(rng, 0.55, 1.4)),
+    collageFieldDensityEvolve: clampFieldDensityEvolve(rollBetween(rng, 0.7, 1.6)),
+    collageFieldFlow: clampFieldFlow(rollBetween(rng, 0.35, 1.45)),
+    collageFieldCurl: clampFieldCurl(rollBetween(rng, 0.35, 1.5)),
+    collageFieldFlowScale: clampFieldFlowScale(rollBetween(rng, 0.5, 1.35)),
+    collageFieldAttract: clampFieldAttract(rollBetween(rng, 0.15, 0.9)),
+    collageFieldRepel: clampFieldRepel(rollBetween(rng, 0.45, 1.45)),
+    collageFieldRadius: clampFieldRadius(rollBetween(rng, 0.04, 0.1)),
+    collageFieldInertia: clampFieldInertia(rollBetween(rng, 0.35, 0.95)),
+    collageFieldDamp: clampFieldDamp(rollBetween(rng, 0.22, 0.58)),
+    collageFieldMaxV: clampFieldMaxV(rollBetween(rng, 0.7, 1.6)),
+    collageFieldScaleAmp: clampFieldScaleAmp(rollBetween(rng, 0.45, 1.4)),
+    collageFieldMinScale: minScale,
+    collageFieldMaxScale: maxScale,
+    collageFieldPerturb: clampFieldPerturb(rollBetween(rng, 0.04, 0.35)),
+    collageFieldWarp: clampFieldWarp(rollBetween(rng, 0.55, 1.7)),
+    collageFieldSparsity: clampFieldSparsity(rollBetween(rng, 0.45, 1.4)),
+    collageFieldContrast: clampFieldContrast(rollBetween(rng, 0.7, 1.8)),
+    collageFieldMotion: clampFieldMotion(rollBetween(rng, 0.15, 0.85)),
+  };
+}
+
+/** Switch to Field and reroll only Field sliders. Kit, mash, wash, camera, size, and pace stay. */
+export function randomizeFieldSource(src: MediaSource, seed: number): MediaSource {
+  const rng = mulberry32(seed >>> 0);
+  const move = "field" as const;
+  const kit = src.collageKit;
+  const kitB = src.collageKitB;
+  return {
+    ...src,
+    generator: generatorForMove(move),
+    collageMove: move,
+    ...rollFieldParams(rng),
+    name: kit ? (kitB ? `${MOVE_LABEL[move]} · ${kit} · ${kitB}` : `${MOVE_LABEL[move]} · ${kit}`) : src.name,
+  };
+}
+
 export function randomizeProject(
   project: Project,
   mode: "all" | "selected" | "param",
@@ -428,6 +503,7 @@ export function randomizeProject(
         collageChainVary: 0.65 + prng() * 0.8,
         collageChainSmooth: 0.4 + prng() * 0.45,
         collageChainAnimal: move === "chain" && prng() > 0.55 ? ANIMAL_CHAINS[1 + Math.floor(prng() * 5)] : "off",
+        ...(move === "field" ? rollFieldParams(prng) : {}),
         collageCamera: src.collageCamera ?? "fixed",
         collageCameraFeel: src.collageCameraFeel,
         collageHuntWideMin: src.collageHuntWideMin,
@@ -516,6 +592,7 @@ export function chaosStamp(project: Project): Project {
         collageChainVary: 0.65 + rng() * 0.8,
         collageChainSmooth: 0.4 + rng() * 0.45,
         collageChainAnimal: move === "chain" && rng() > 0.55 ? ANIMAL_CHAINS[1 + Math.floor(rng() * 5)] : "off",
+        ...(move === "field" ? rollFieldParams(rng) : {}),
         collageCamera: src.collageCamera ?? "fixed",
         collageCameraFeel: src.collageCameraFeel,
         collageHuntSelect: src.collageHuntSelect,

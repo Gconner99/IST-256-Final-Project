@@ -4,7 +4,7 @@ import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade, encodeBitra
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, chaosStamp, randomizeFieldSource, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
 import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
 import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
@@ -720,6 +720,55 @@ describe("randomize + presets", () => {
       expect(src.collagePace ?? 1).toBeLessThanOrEqual(0.95);
       expect(src.collagePace ?? 1).toBeGreaterThanOrEqual(0.7);
     }
+  });
+
+  it("randomizeFieldSource rerolls Field sliders and keeps kit, wash, and camera", () => {
+    const base = defaultGeneratorSource("heraldry", "sailor", "rush", {
+      kitB: "circus",
+      wash: "#aabbcc",
+      colorPack: "candy",
+      scale: 0.7,
+      density: 0.8,
+      pace: 0.75,
+      camera: "hunt",
+      night: true,
+      fieldStrength: 0.4,
+      fieldWarp: 0.3,
+    });
+    const a = randomizeFieldSource(base, 42);
+    const b = randomizeFieldSource(base, 42);
+    const c = randomizeFieldSource(base, 99);
+    expect(a.collageMove).toBe("field");
+    expect(a.generator).toBe("heraldry");
+    expect(a.collageKit).toBe("sailor");
+    expect(a.collageKitB).toBe("circus");
+    expect(a.colorA).toBe(base.colorA);
+    expect(a.colorB).toBe(base.colorB);
+    expect(a.collageColorPack).toBe(base.collageColorPack);
+    expect(a.collageScale).toBe(base.collageScale);
+    expect(a.collageDensity).toBe(base.collageDensity);
+    expect(a.collagePace).toBe(base.collagePace);
+    expect(a.collageCamera).toBe("hunt");
+    expect(a.collageNight).toBe(true);
+    expect(a.collageFieldStrength).toEqual(b.collageFieldStrength);
+    expect(a.collageFieldWarp).toEqual(b.collageFieldWarp);
+    expect(a.collageFieldMinScale ?? 0).toBeLessThan((a.collageFieldMaxScale ?? 0) - 0.07);
+    expect(
+      a.collageFieldStrength !== c.collageFieldStrength
+        || a.collageFieldWarp !== c.collageFieldWarp
+        || a.collageFieldDensityEvolve !== c.collageFieldDensityEvolve,
+    ).toBe(true);
+  });
+
+  it("rand all rolls Field sliders when the move is field", () => {
+    const p = randomizeProject({ ...createDefaultProject(), seed: 42, randomAmount: 1 }, "all", null, null, null, false, false);
+    expect(p.sources[0].collageMove).toBe("field");
+    expect(p.sources[0].collageFieldStrength).toBeGreaterThan(0.6);
+    expect(p.sources[0].collageFieldWarp).toBeGreaterThan(0.5);
+    expect(p.sources[0].collageFieldMinScale ?? 0).toBeLessThan((p.sources[0].collageFieldMaxScale ?? 0) - 0.07);
+    const again = randomizeProject({ ...createDefaultProject(), seed: 42, randomAmount: 1 }, "all", null, null, null, false, false);
+    expect(again.sources[0].collageFieldStrength).toBe(p.sources[0].collageFieldStrength);
+    expect(again.sources[0].collageFieldContrast).toBe(p.sources[0].collageFieldContrast);
   });
 
   it("cut edit reel feels authored, not shuffled", () => {

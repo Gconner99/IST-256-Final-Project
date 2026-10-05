@@ -3,8 +3,9 @@ import { store } from "../core/store";
 import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/defaults";
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
-import { chaosStamp, ensureCritters, ensureIdol, randomizeProject } from "../core/randomize";
+import { chaosStamp, ensureCritters, ensureIdol, randomizeFieldSource, randomizeProject } from "../core/randomize";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
+import { isHeraldry } from "../engine/heraldry";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
 import { resumeAudio } from "../media/audio";
 import { buildPrompt, generateStill, samplePalette } from "../generate/imagine";
@@ -191,6 +192,32 @@ export function randomize(mode: "all" | "selected" | "param", wacky = false) {
   });
   const names = store.project.layers[0]?.effects.map((e) => e.typeId).join(" · ");
   store.patchUi({ status: `${wacky ? "wacky look" : "look"} · ${names || mode} · seed ${store.project.seed}` });
+}
+
+function selectedHeraldrySource(): MediaSource | undefined {
+  const p = store.project;
+  const picked = p.sources.find((s) => s.id === store.state.ui.selectedSourceId);
+  if (picked && isHeraldry(picked.generator)) return picked;
+  const layer = selectedLayer(p);
+  const fromLayer = p.sources.find((s) => s.id === layer?.sourceId);
+  if (fromLayer && isHeraldry(fromLayer.generator)) return fromLayer;
+  return p.sources.find((s) => isHeraldry(s.generator));
+}
+
+/** Reroll Field sliders only. Keeps kit, mash, wash, camera, size, and pace. */
+export function randomizeField() {
+  const current = selectedHeraldrySource();
+  if (!current) {
+    store.patchUi({ status: "no collage to randomize" });
+    return;
+  }
+  const seed = (store.project.seed + Date.now()) >>> 0;
+  store.setProject((p) => ({
+    ...p,
+    sources: p.sources.map((s) => (s.id === current.id ? randomizeFieldSource(s, seed) : s)),
+  }));
+  const next = store.project.sources.find((s) => s.id === current.id);
+  store.patchUi({ status: `field · ${next?.name ?? "rolled"}` });
 }
 
 export function stampCritters() {
