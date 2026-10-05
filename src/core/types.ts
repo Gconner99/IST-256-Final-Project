@@ -50,7 +50,7 @@ export type BlendMode =
   | "darken";
 export type PlaybackMode = "forward" | "reverse" | "pingpong" | "random";
 export type MaskType = "none" | "rect" | "circle" | "gradient" | "noise" | "image";
-export type EffectCategory = "color" | "distort" | "analog" | "texture" | "geometric" | "temporal" | "wacky";
+export type EffectCategory = "color" | "distort" | "analog" | "geometric" | "temporal" | "wacky";
 export type ParamKind = "float" | "int" | "bool" | "color" | "enum";
 export type Easing = "linear" | "smooth";
 
@@ -179,8 +179,6 @@ export interface MediaSource {
   collageChainVary?: number;
   /** Chain: how fluid versus active those shape changes are. */
   collageChainSmooth?: number;
-  /** Chain: optional animal body parts on the same path. */
-  collageChainAnimal?: "off" | "dragon" | "dog" | "ferret" | "caterpillar" | "zebra";
   collageSpringStrength?: number;
   collageSpringDamp?: number;
   collageSpringDist?: number;
@@ -202,24 +200,6 @@ export interface MediaSource {
   collagePoleSpeed?: number;
   collagePoleFalloff?: number;
   collagePoleSwitch?: number;
-  /** Camera operator: fixed wide frame, or documentary subject hunt. */
-  collageCamera?: "fixed" | "hunt";
-  collageCameraFeel?: "perfect" | "handheld";
-  collageHuntWideMin?: number;
-  collageHuntWideMax?: number;
-  collageHuntFollowMin?: number;
-  collageHuntFollowMax?: number;
-  collageHuntSnap?: number;
-  collageHuntZoom?: number;
-  collageHuntTight?: number;
-  collageHuntReactMin?: number;
-  collageHuntReactMax?: number;
-  collageHuntPrecision?: number;
-  collageHuntSelect?: "random" | "reactive" | "mixed";
-  collageHuntFocus?: boolean;
-  collageHuntFocusSpeed?: number;
-  collageHuntFocusError?: number;
-  collageHuntVariation?: number;
   /** Locked camera move for this clip. */
   collageMove?:
     | "rush"
@@ -234,13 +214,6 @@ export interface MediaSource {
     | "drift"
     | "braid"
     | "sway"
-    | "bounce"
-    | "flip"
-    | "glow"
-    | "flash"
-    | "hop"
-    | "kick"
-    | "jelly"
     | "tide"
     | "rings"
     | "loom"
@@ -281,12 +254,7 @@ export interface MediaSource {
   collageFieldFlow?: number;
   collageFieldCurl?: number;
   collageFieldFlowScale?: number;
-  collageFieldAttract?: number;
-  collageFieldRepel?: number;
   collageFieldRadius?: number;
-  collageFieldInertia?: number;
-  collageFieldDamp?: number;
-  collageFieldMaxV?: number;
   collageFieldScaleAmp?: number;
   collageFieldMinScale?: number;
   collageFieldMaxScale?: number;

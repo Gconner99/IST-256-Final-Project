@@ -7,9 +7,9 @@ import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeFieldSource, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
 import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
-import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
-import { agentParamsFrom, buildFormation, FIELD_PATTERNS, fieldLoop, FORMATION_KINDS, PatternField, resolveFieldPattern } from "../src/engine/agentField";
+import { agentParamsFrom, FIELD_PATTERNS, fieldLoop, PatternField, resolveFieldPattern } from "../src/engine/agentField";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -268,11 +268,9 @@ describe("place buttons", () => {
     expect(tour.collageKit).toBe("sailor");
     expect(defaultGeneratorSource("wallpaper", "love").name).toBe("RUSH · LOVE");
     expect(defaultGeneratorSource("giants", "circus").name).toBe("TUNNEL · CIRCUS");
-    expect(defaultGeneratorSource("shower", "nature").name).toBe("BOUNCE · GROVE");
+    expect(defaultGeneratorSource("shower", "nature").name).toBe("RUSH · GROVE");
     expect(defaultGeneratorSource("heraldry", "fruit", "spiral").collageKit).toBe("fruit");
     expect(defaultGeneratorSource("heraldry", "space", "spiral").name).toBe("SPIRAL · SPACE");
-    expect(defaultGeneratorSource("heraldry", "sweet", "bounce").name).toBe("BOUNCE · SWEET");
-    expect(defaultGeneratorSource("heraldry", "music", "flash").name).toBe("FLASH · MUSIC");
     expect(defaultGeneratorSource("heraldry", "circus", "helix").name).toBe("HELIX · CIRCUS");
     expect(defaultGeneratorSource("heraldry", "space", "gyre").name).toBe("GYRE · SPACE");
     expect(defaultGeneratorSource("heraldry", "love", "well").name).toBe("WELL · LOVE");
@@ -280,10 +278,6 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("heraldry", "fruit", "drift").name).toBe("DRIFT · FRUIT");
     expect(defaultGeneratorSource("heraldry", "music", "braid").name).toBe("BRAID · MUSIC");
     expect(defaultGeneratorSource("heraldry", "arcade", "sway").name).toBe("SWAY · ARCADE");
-    expect(defaultGeneratorSource("heraldry", "love", "glow").name).toBe("GLOW · LOVE");
-    expect(defaultGeneratorSource("heraldry", "music", "hop").name).toBe("HOP · MUSIC");
-    expect(defaultGeneratorSource("heraldry", "music", "kick").name).toBe("KICK · MUSIC");
-    expect(defaultGeneratorSource("heraldry", "sweet", "jelly").name).toBe("JELLY · SWEET");
     expect(defaultGeneratorSource("heraldry", "sailor", "tide").name).toBe("TIDE · SAILOR");
     expect(defaultGeneratorSource("heraldry", "love", "rings").name).toBe("RINGS · LOVE");
     expect(defaultGeneratorSource("heraldry", "fruit", "loom").name).toBe("LOOM · FRUIT");
@@ -310,13 +304,6 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("heraldry", "space", "liss").name).toBe("LISS · SPACE");
     expect(defaultGeneratorSource("heraldry", "love", "snap").name).toBe("SNAP · LOVE");
     expect(defaultGeneratorSource("heraldry", "space", "chain").name).toBe("CHAIN · SPACE");
-    expect(defaultGeneratorSource("heraldry", "sailor", "rush").collageCamera).toBe("fixed");
-    expect(defaultGeneratorSource("heraldry", "sailor", "rush", { camera: "hunt", huntSelect: "mixed" }).collageCamera).toBe("hunt");
-    expect(defaultGeneratorSource("heraldry", "sailor", "rush", { camera: "hunt", huntSelect: "mixed" }).collageHuntSelect).toBe("mixed");
-    expect(defaultGeneratorSource("heraldry", "space", "chain").collageChainAnimal).toBe("off");
-    expect(defaultGeneratorSource("heraldry", "sailor", "chain", { chainAnimal: "dog" }).collageChainAnimal).toBe("dog");
-    expect(defaultGeneratorSource("heraldry", "sailor", "chain", { chainAnimal: "dog" }).name).toBe("CHAIN · DOG · SAILOR");
-    expect(defaultGeneratorSource("heraldry", "sailor", "rush", { chainAnimal: "dragon" }).name).toBe("RUSH · SAILOR");
     expect(defaultGeneratorSource("heraldry", "kitchen", "spring").name).toBe("SPRING · KITCHEN");
     expect(defaultGeneratorSource("heraldry", "weather", "flow").name).toBe("FLOW · SKY");
     expect(defaultGeneratorSource("heraldry", "city", "boids").name).toBe("BOIDS · STREET");
@@ -337,15 +324,11 @@ describe("place buttons", () => {
 describe("effects registry", () => {
   it("ships a usable MVP library", () => {
     expect(allEffects().length).toBeGreaterThanOrEqual(15);
-    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer", "halftone", "riso", "hatch", "holo", "crackle", "nap"]) {
+    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer"]) {
       expect(getEffect(id)).toBeTruthy();
     }
-    expect(getEffect("halftone")?.category).toBe("texture");
-    expect(getEffect("riso")?.name).toBe("Riso");
-    expect(getEffect("hatch")?.name).toBe("Etching");
-    expect(getEffect("holo")?.name).toBe("Holo Foil");
-    expect(getEffect("crackle")?.name).toBe("Crackle");
-    expect(getEffect("nap")?.name).toBe("Velvet Nap");
+    expect(getEffect("halftone")).toBeUndefined();
+    expect(getEffect("riso")).toBeUndefined();
     expect(getEffect("critters")?.category).toBe("wacky");
     expect(getEffect("critters")?.name).toBe("Floaters");
     expect(getEffect("dancer")?.name).toBe("Idol");
@@ -709,12 +692,11 @@ describe("randomize + presets", () => {
   });
 
   it("random collage rolls stay small, slow, and pleasing", () => {
-    const chaotic = new Set(["bounce", "flip", "glow", "flash", "hop", "kick", "jelly"]);
     for (const seed of [1, 7, 99, 256, 90210, 404, 777]) {
       const p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null, true);
       const src = p.sources[0];
       expect(isPleasingMove(src.collageMove)).toBe(true);
-      expect(chaotic.has(src.collageMove ?? "")).toBe(false);
+      expect(["bounce", "flip", "glow", "flash", "hop", "kick", "jelly"]).not.toContain(src.collageMove);
       expect(src.collageScale ?? 1).toBeLessThanOrEqual(0.9);
       expect(src.collageDensity ?? 1).toBeLessThanOrEqual(1.1);
       expect(src.collagePace ?? 1).toBeLessThanOrEqual(0.95);
@@ -722,7 +704,7 @@ describe("randomize + presets", () => {
     }
   });
 
-  it("randomizeFieldSource rerolls Field sliders and keeps kit, wash, and camera", () => {
+  it("randomizeFieldSource rerolls Field sliders and keeps kit, wash, size, and pace", () => {
     const base = defaultGeneratorSource("heraldry", "sailor", "rush", {
       kitB: "circus",
       wash: "#aabbcc",
@@ -730,7 +712,6 @@ describe("randomize + presets", () => {
       scale: 0.7,
       density: 0.8,
       pace: 0.75,
-      camera: "hunt",
       night: true,
       fieldStrength: 0.4,
       fieldWarp: 0.3,
@@ -748,7 +729,6 @@ describe("randomize + presets", () => {
     expect(a.collageScale).toBe(base.collageScale);
     expect(a.collageDensity).toBe(base.collageDensity);
     expect(a.collagePace).toBe(base.collagePace);
-    expect(a.collageCamera).toBe("hunt");
     expect(a.collageNight).toBe(true);
     expect(a.collageFieldPattern).toEqual(b.collageFieldPattern);
     expect(FIELD_PATTERNS).toContain(a.collageFieldPattern);
@@ -1080,15 +1060,9 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("heraldry")).toBe("rush");
     expect(sceneFromGenerator("wallpaper")).toBe("rush");
     expect(sceneFromGenerator("giants")).toBe("tunnel");
-    expect(sceneFromGenerator("shower")).toBe("bounce");
+    expect(sceneFromGenerator("shower")).toBe("rush");
     expect(sceneFromGenerator("heraldry", "spiral")).toBe("spiral");
-    expect(sceneFromGenerator("heraldry", "bounce")).toBe("bounce");
-    expect(sceneFromGenerator("heraldry", "flip")).toBe("flip");
-    expect(sceneFromGenerator("heraldry", "glow")).toBe("glow");
-    expect(sceneFromGenerator("heraldry", "flash")).toBe("flash");
-    expect(sceneFromGenerator("heraldry", "hop")).toBe("hop");
-    expect(sceneFromGenerator("heraldry", "kick")).toBe("kick");
-    expect(sceneFromGenerator("heraldry", "jelly")).toBe("jelly");
+    expect(sceneFromGenerator("heraldry", "bounce")).toBe("rush");
     expect(sceneFromGenerator("heraldry", "tide")).toBe("tide");
     expect(sceneFromGenerator("heraldry", "rings")).toBe("rings");
     expect(sceneFromGenerator("heraldry", "loom")).toBe("loom");
@@ -1130,7 +1104,7 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("heraldry", "sway")).toBe("sway");
     expect(sceneAt(0.2, 8, "tour")).toBe("rush");
     expect(sceneAt(3.0, 8, "tour")).toBe("rush");
-    expect(sceneAt(5.5, 8, "bounce")).toBe("bounce");
+    expect(sceneAt(5.5, 8, "tide")).toBe("tide");
     expect(sceneAt(7.2, 8, "bloom")).toBe("bloom");
     expect(sceneAt(1, 8, "rush")).toBe("rush");
     expect(sceneAt(2, 8, "helix")).toBe("helix");
@@ -1147,13 +1121,6 @@ describe("heraldry collage", () => {
       "drift",
       "braid",
       "sway",
-      "bounce",
-      "flip",
-      "glow",
-      "flash",
-      "hop",
-      "kick",
-      "jelly",
       "tide",
       "rings",
       "loom",
@@ -1253,22 +1220,8 @@ describe("heraldry collage", () => {
     expect(Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z)).toBeLessThan(0.12);
     expect(Math.hypot(wrap.x - wrapEnd.x, wrap.y - wrapEnd.y, wrap.z - wrapEnd.z)).toBeLessThan(1e-9);
     expect(Math.hypot(a.x - c.x, a.y - c.y, a.z - c.z)).toBeGreaterThan(0.02);
-    expect(ANIMAL_CHAINS).toEqual(["off", "dragon", "dog", "ferret", "caterpillar", "zebra"]);
-    expect(animalFromUnknown(undefined)).toBe("off");
-    expect(animalFromUnknown("zebra")).toBe("zebra");
-    expect(animalFromUnknown("wolf")).toBe("off");
     expect(COLLAGE_MOVES.includes("dragon" as (typeof COLLAGE_MOVES)[number])).toBe(false);
-    const zebra = animalChainLayout("zebra");
-    expect(zebra.roles[0]).toBe("head");
-    expect(zebra.roles[zebra.roles.length - 1]).toBe("tail");
-    expect(zebra.roles.slice(1, -1).every((role) => role === "body")).toBe(true);
-    expect(zebra.appendages.filter((part) => part.role === "leg")).toHaveLength(4);
-    expect(zebra.appendages[0].attach).toBeLessThan(zebra.appendages[2].attach);
-    const catp = animalChainLayout("caterpillar");
-    expect(catp.appendages.every((part) => part.role === "nub")).toBe(true);
-    expect(catp.appendages.length).toBeGreaterThan(4);
-    expect(animalChainLayout("off").roles).toEqual([]);
-    expect(kindsForKit("sailor")).not.toContain("aBody");
+    expect((kindsForKit("sailor") as string[]).includes("aBody")).toBe(false);
     expect(tempoTick(0, 120)).toBeCloseTo(1, 5);
     expect(tempoTick(0.25, 120)).toBe(0);
     expect(stepIndex(0, 120, 2)).toBe(0);
@@ -1441,22 +1394,11 @@ describe("pattern field", () => {
     field.posesAt(300, t, 3, aspect, params, bpm, offset, pattern).map((p) => ({ ...p }));
   const onScreen = (p: P) => p.alpha > 0.5 && p.px > 0.01 && Math.abs(p.x) < 0.5 && Math.abs(p.y / (aspect * aspect)) < hh;
 
-  it("every Shapeshift shape places every stamp inside the frame", () => {
-    const params = agentParamsFrom();
-    for (const kind of FORMATION_KINDS) {
-      const f = buildFormation(kind, 7, 3, 300, hh, params);
-      for (let i = 0; i < 300; i++) {
-        expect(Math.abs(f.x[i])).toBeLessThanOrEqual(0.5);
-        expect(Math.abs(f.y[i])).toBeLessThanOrEqual(hh + 1e-6);
-        expect(Number.isFinite(f.d[i])).toBe(true);
-      }
-    }
-  });
-
   it("auto holds one pattern per seed and explicit picks win", () => {
     expect(resolveFieldPattern("auto", 5)).toBe(resolveFieldPattern(undefined, 5));
-    expect(resolveFieldPattern("rings", 5)).toBe("rings");
-    expect(new Set(Array.from({ length: 40 }, (_, s) => resolveFieldPattern("auto", s))).size).toBeGreaterThan(4);
+    expect(resolveFieldPattern("orbit", 5)).toBe("orbit");
+    expect(resolveFieldPattern("rings", 5)).toBe(resolveFieldPattern("auto", 5));
+    expect(new Set(Array.from({ length: 40 }, (_, s) => resolveFieldPattern("auto", s))).size).toBeGreaterThan(3);
   });
 
   for (const pattern of FIELD_PATTERNS) {
@@ -1494,9 +1436,9 @@ describe("pattern field", () => {
 
   it("repeats icons on the pattern unless Shuffle mixes them", () => {
     const field = new PatternField();
-    const tidy = snap(field, 1, "rings", agentParamsFrom({ perturb: 0 }));
+    const tidy = snap(field, 1, "sunflower", agentParamsFrom({ perturb: 0 }));
     expect(new Set(tidy.map((p) => p.charge)).size).toBeLessThan(40);
-    const mixed = snap(field, 1, "rings", agentParamsFrom({ perturb: 2 }));
+    const mixed = snap(field, 1, "sunflower", agentParamsFrom({ perturb: 2 }));
     expect(new Set(mixed.map((p) => p.charge)).size).toBeGreaterThan(200);
   });
 
@@ -1542,91 +1484,13 @@ describe("pattern field", () => {
 
   it("is a pure function of time so scrubbing back matches", () => {
     const field = new PatternField();
-    const a = snap(field, 4.2, "shapeshift");
-    snap(field, 9.7, "shapeshift");
-    const b = snap(new PatternField(), 4.2, "shapeshift");
+    const a = snap(field, 4.2, "sunflower");
+    snap(field, 9.7, "sunflower");
+    const b = snap(new PatternField(), 4.2, "sunflower");
     for (let i = 0; i < a.length; i++) {
       expect(b[i].x).toBeCloseTo(a[i].x, 6);
       expect(b[i].y).toBeCloseTo(a[i].y, 6);
     }
-  });
-});
-
-describe("documentary search", () => {
-  it("is a camera option, not a collage move", () => {
-    expect(cameraFromUnknown(undefined)).toBe("fixed");
-    expect(cameraFromUnknown("hunt")).toBe("hunt");
-    expect(cameraFromUnknown("drone")).toBe("fixed");
-    expect(huntSelectFromUnknown(undefined)).toBe("mixed");
-    expect(COLLAGE_MOVES.includes("hunt" as (typeof COLLAGE_MOVES)[number])).toBe(false);
-    expect(clampHuntWideMin(0)).toBe(0.4);
-    expect(clampHuntWideMax(99)).toBe(16);
-    const swapped = huntParamsFrom({ huntWideMin: 8, huntWideMax: 2, huntFollowMin: 7, huntFollowMax: 1 });
-    expect(swapped.wideMin).toBeLessThanOrEqual(swapped.wideMax);
-    expect(swapped.followMin).toBeLessThanOrEqual(swapped.followMax);
-    expect(swapped.select).toBe("mixed");
-  });
-
-  it("never picks the same subject twice in a row", () => {
-    const stamps = [
-      { id: 0, x: 0, y: 0, px: 0.1 },
-      { id: 1, x: 0.2, y: 0, px: 0.1 },
-      { id: 2, x: -0.2, y: 0.1, px: 0.1 },
-    ];
-    const rng = () => 0.01;
-    for (let i = 0; i < 8; i++) {
-      const pick = pickHuntSubject(stamps, 1, "random", rng, [], 1 / 30);
-      expect(pick).not.toBe(1);
-    }
-  });
-
-  it("weights reactive picks toward fast movers", () => {
-    const stamps = [
-      { id: 0, x: 0, y: 0, px: 0.1 },
-      { id: 1, x: 0.4, y: 0, px: 0.1 },
-    ];
-    const prev = [
-      { id: 0, x: 0, y: 0, px: 0.1 },
-      { id: 1, x: 0.05, y: 0, px: 0.1 },
-    ];
-    const counts = { 0: 0, 1: 0 };
-    for (let i = 0; i < 80; i++) {
-      const pick = pickHuntSubject(stamps, -1, "reactive", () => (i + 0.5) / 80, prev, 1 / 30);
-      counts[pick as 0 | 1] += 1;
-    }
-    expect(counts[1]).toBeGreaterThan(counts[0]);
-  });
-
-  it("watches wide, then notices, snaps, and tracks", () => {
-    const stamps = (t: number) => [
-      { id: 0, x: Math.sin(t) * 0.2, y: 0, px: 0.08 },
-      { id: 1, x: 0.15, y: Math.cos(t) * 0.12, px: 0.08 },
-    ];
-    const params = huntParamsFrom({
-      huntWideMin: 0.4,
-      huntWideMax: 0.4,
-      huntFollowMin: 1.2,
-      huntFollowMax: 1.2,
-      huntReactMin: 0.12,
-      huntReactMax: 0.12,
-      huntSnap: 2,
-      huntSelect: "random",
-      huntVariation: 0,
-    });
-    let state = stepHunt(null, stamps(0), 0, params, 7);
-    expect(state.phase).toBe("wide");
-    state = stepHunt(state, stamps(0.5), 0.5, params, 7);
-    expect(state.phase).toBe("notice");
-    expect(state.subject).toBeGreaterThanOrEqual(0);
-    const first = state.subject;
-    state = stepHunt(state, stamps(0.7), 0.7, params, 7);
-    expect(["notice", "snap"]).toContain(state.phase);
-    state = stepHunt(state, stamps(1.0), 1.0, params, 7);
-    expect(["snap", "track"]).toContain(state.phase);
-    const identity = applyHuntPose({ x: 0.1, y: -0.05, px: 0.08, rot: 0.2 }, { x: 0, y: 0, zoom: 1, rot: 0, focus: 0 });
-    expect(identity.x).toBeCloseTo(0.1);
-    expect(identity.px).toBeCloseTo(0.08);
-    expect(first).not.toBe(-1);
   });
 });
 
