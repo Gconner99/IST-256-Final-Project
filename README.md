@@ -59,7 +59,7 @@ Requires a browser (or Electron) with **WebGL2**.
 - JSON project files (`.phos.json`) and source-independent presets
 - Export: PNG, JPG, **MP4 clips up to 32s at 720p/1080p 30fps** (optional close-loop fade, song window from the live playhead), WebM, PNG image sequence (zip)
 - Collage mash (two kits), named **color packs** (Brine / Candy / Ember / Neon…), live ground wash, night/neon wash, 3D fly-throughs (Rush / Tunnel / Gyre / Well / Hall / Drift / Braid / Sway), Drop / Spot music moves, stamp size / density / pace, a freeform 3D Chain move with an optional Animal Chain dress (Dragon / Dog / Ferret / Caterpillar / Zebra), Matter moves (Spring / Flow / Boids / Poles) with their own sliders, and a Documentary Search camera (Hunt) that snap-zooms from the wide frame onto individual stamps
-- Extra stamp packs: Kitchen, Sky, Street, Arcade, plus more icons in Circus / Fruit / Grove / Sweet
+- Extra stamp packs: Kitchen, Sky, Street, Arcade, plus more icons in Circus / Fruit / Grove / Sweet. Stamps use candy primaries (magenta / yellow / cyan / lime / black / white) with nested centers, two-tone splits, round flowers, pluses, and clovers.
 - Calmer randomizer (smaller, slower rolls) and **Cut edit** (downbeat-locked cuts on bars and half-bars)
 - **Texture** effects: Dot Screen, Riso, Etching, Holo Foil, Crackle, Velvet Nap
 

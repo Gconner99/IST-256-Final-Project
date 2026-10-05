@@ -72,8 +72,8 @@ const PACKS: Record<Exclude<ColorPackId, "kit">, ColorPackDef> = {
     palette: { shadow: "#071824", highlight: "#e2d0a0", leak: "#c4a05a", inkA: "#06141c", inkB: "#d8c078" },
   },
   candy: {
-    ink: "#ff4a9a",
-    grounds: ["#3a1024", "#ff6aa8", "#ffe0f0", "#2a0818", "#ff8ab8", "#f4c4d8", "#ffd0e8", "#180810", "#e878a8", "#ffb0d0", "#4a1830", "#fff0f6"],
+    ink: "#ff2ec8",
+    grounds: ["#3a1024", "#ff2ec8", "#ffe81a", "#2a0818", "#00d4ff", "#7cff2a", "#ffffff", "#111111", "#ff6a00", "#ff7ad9", "#4a1830", "#fff0f6"],
     palette: { shadow: "#2a0818", highlight: "#ffe0f0", leak: "#ff6aa8", inkA: "#180810", inkB: "#ffb0d0" },
   },
   citrus: {

@@ -94,7 +94,10 @@ HOW TO USE IT
   Size / Storm sliders go from a few giants to a sticker storm.
 - Grounds are warm colored washes — each kit has a bigger set of
   colors, plus extra color packs that work across the whole
-  program. Kit buttons keep the last move.
+  program. Kit buttons keep the last move. Stamps are candy
+  primaries — magenta, yellow, cyan, lime, black, white —
+  with nested centers, two-tone splits, round flowers, pluses
+  and clovers.
 - Rand all / Rand wacky rolls a new kit and a calmer move.
   Check EFFECTS (top bar, or under Effects on the right) if
   you also want a short stack from the right panel. Uncheck

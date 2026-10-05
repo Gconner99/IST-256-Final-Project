@@ -1268,7 +1268,15 @@ describe("heraldry collage", () => {
     expect(kindsForKit("sport")).toContain("trophy");
     expect(kindsForKit("school")).toContain("pencil");
     expect(kindsForKit("fruit")).toContain("chili");
-    expect(kindsForKit("nature")).not.toContain("flake");
+    expect(kindsForKit("nature")).toContain("clover");
+    expect(kindsForKit("arcade")).toContain("plus");
+    expect(kindsForKit("city")).toContain("xmark");
+    expect(kindsForKit("sport")).toContain("dart");
+    expect(kindsForKit("haunt")).toContain("blob");
+    expect(kindsForKit("school")).toContain("pip");
+    expect(kindsForKit("fruit")).toContain("flower");
+    expect(kindsForKit("sailor")).not.toContain("clover");
+    expect(kindsForKit("sailor")).not.toContain("plus");
     expect(kindsForKit("circus")).toContain("dice");
     expect(kindsForKit("sailor").length).toBeGreaterThanOrEqual(14);
     expect(kindsForKit("music").length).toBeGreaterThanOrEqual(10);
@@ -1286,6 +1294,23 @@ describe("heraldry collage", () => {
     const sailorField = buildField(7, "#1c4db8", "sailor").map((p) => p.charge.kind);
     const circusField = buildField(7, "#ff2f86", "circus").map((p) => p.charge.kind);
     expect(sailorField.every((k, i) => k !== circusField[i])).toBe(true);
+  });
+
+  it("paints stamps in candy primaries with nested and split patterns", () => {
+    const patterns = new Set<string>();
+    const inks = new Set<string>();
+    for (const seed of [1, 3, 7, 11, 99, 256, 777]) {
+      for (const p of buildField(seed, "#ff2ec8", "fruit")) {
+        patterns.add(p.charge.pattern);
+        inks.add(p.charge.a);
+        inks.add(p.charge.b);
+      }
+    }
+    expect(patterns.has("half")).toBe(true);
+    expect(["core", "eye", "pip"].some((id) => patterns.has(id))).toBe(true);
+    expect(["#111111", "#ffffff", "#ff2ec8", "#ffe81a", "#00d4ff", "#7cff2a"].some((hex) => inks.has(hex))).toBe(true);
+    expect(buildField(4, "#ff2ec8", "nature").some((p) => p.charge.kind === "clover")).toBe(true);
+    expect(buildField(4, "#7cff2a", "arcade").some((p) => p.charge.kind === "plus")).toBe(true);
   });
 
   it("gives each kit a wider wash of ground colors", () => {
