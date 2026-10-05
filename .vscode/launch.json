@@ -3,31 +3,17 @@
   "configurations": [
     {
       "name": "Phosphene",
-      "type": "node",
+      "type": "chrome",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "preLaunchTask": "phosphene: install",
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "skipFiles": ["<node_internals>/**"],
-      "serverReadyAction": {
-        "pattern": "Local:",
-        "uriFormat": "http://127.0.0.1:5173",
-        "action": "openExternally"
-      }
+      "file": "${workspaceFolder}/PHOSPHENE.html",
+      "webRoot": "${workspaceFolder}"
     },
     {
-      "name": "Phosphene (desktop)",
-      "type": "node",
+      "name": "Phosphene (Edge)",
+      "type": "msedge",
       "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "desktop"],
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen",
-      "skipFiles": ["<node_internals>/**"]
+      "file": "${workspaceFolder}/PHOSPHENE.html",
+      "webRoot": "${workspaceFolder}"
     }
   ]
 }
