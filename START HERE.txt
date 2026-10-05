@@ -54,16 +54,21 @@ HOW TO USE IT
   Space / Sweet / Music / Kitchen / Sky / Street / Arcade /
   Haunt / Sport / School. Switching a kit replaces every stamp.
 - Then pick ONE move. That clip stays on that move. Toward the camera:
-  Rush, Tunnel, Spiral, Helix. Looping patterns: Tide, Rings, Loom,
-  Petal, Flock, Wheel, Silk. Music moves: Bars, Ripple, Swing, Burst,
-  Halo, Wave, Drop, Spot — they stay on a smooth path and punch
-  glow on the beat, not the travel. Drum / illusion moves lock to the
-  tempo like a drum pattern: Pong (wall bounce), Fall (drop and
-  bounce), Snap (left-right on the kick), Step (zoetrope steps),
-  Moire (counter-spin rings), Poly (3 against 4), Grid and Zip
-  (sliding rows), Liss (figure-8), Ghost (afterimage). Drop holds
-  still until a big chorus hit. Spot lights one stamp each hit.
-  Mix rolls a locked move. Chain is a freeform 3D conga line —
+  Rush, Tunnel, Spiral, Helix, Bloom, Prism, plus Gyre (orbiting
+  fly-around), Well (vortex into the lens), Hall (twisting corridor),
+  Drift (parallax streams from every edge), Braid (three strands),
+  and Sway (the camera weaves while stamps fly at you). These are
+  3D fly-throughs — stamps travel in depth so a big screen feels
+  like you are moving through the picture. Looping patterns: Tide,
+  Rings, Loom, Petal, Flock, Wheel, Silk. Music moves: Bars, Ripple,
+  Swing, Burst, Halo, Wave, Drop, Spot — they stay on a smooth path
+  and punch glow on the beat, not the travel. Drum / illusion moves
+  lock to the tempo like a drum pattern: Pong (wall bounce), Fall
+  (drop and bounce), Snap (left-right on the kick), Step (zoetrope
+  steps), Moire (counter-spin rings), Poly (3 against 4), Grid and
+  Zip (sliding rows), Liss (figure-8), Ghost (afterimage). Drop
+  holds still until a big chorus hit. Spot lights one stamp each
+  hit. Mix rolls a locked move. Chain is a freeform 3D conga line —
   stamps follow one another along a path that keeps curling,
   folding, and wandering through depth instead of riding a
   fixed circle. Chain has its own sliders: Movement Speed,

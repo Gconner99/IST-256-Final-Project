@@ -7,7 +7,7 @@ import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
 import { beatGrid, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
-import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
@@ -273,6 +273,12 @@ describe("place buttons", () => {
     expect(defaultGeneratorSource("heraldry", "sweet", "bounce").name).toBe("BOUNCE · SWEET");
     expect(defaultGeneratorSource("heraldry", "music", "flash").name).toBe("FLASH · MUSIC");
     expect(defaultGeneratorSource("heraldry", "circus", "helix").name).toBe("HELIX · CIRCUS");
+    expect(defaultGeneratorSource("heraldry", "space", "gyre").name).toBe("GYRE · SPACE");
+    expect(defaultGeneratorSource("heraldry", "love", "well").name).toBe("WELL · LOVE");
+    expect(defaultGeneratorSource("heraldry", "sailor", "hall").name).toBe("HALL · SAILOR");
+    expect(defaultGeneratorSource("heraldry", "fruit", "drift").name).toBe("DRIFT · FRUIT");
+    expect(defaultGeneratorSource("heraldry", "music", "braid").name).toBe("BRAID · MUSIC");
+    expect(defaultGeneratorSource("heraldry", "arcade", "sway").name).toBe("SWAY · ARCADE");
     expect(defaultGeneratorSource("heraldry", "love", "glow").name).toBe("GLOW · LOVE");
     expect(defaultGeneratorSource("heraldry", "music", "hop").name).toBe("HOP · MUSIC");
     expect(defaultGeneratorSource("heraldry", "music", "kick").name).toBe("KICK · MUSIC");
@@ -696,7 +702,7 @@ describe("randomize + presets", () => {
   });
 
   it("random collage rolls stay small, slow, and pleasing", () => {
-    const chaotic = new Set(["bounce", "flip", "glow", "flash", "hop", "kick", "jelly", "helix", "prism"]);
+    const chaotic = new Set(["bounce", "flip", "glow", "flash", "hop", "kick", "jelly"]);
     for (const seed of [1, 7, 99, 256, 90210, 404, 777]) {
       const p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null, true);
       const src = p.sources[0];
@@ -1005,6 +1011,12 @@ describe("heraldry collage", () => {
     expect(sceneFromGenerator("heraldry", "poles")).toBe("poles");
     expect(sceneFromGenerator("heraldry", "helix")).toBe("helix");
     expect(sceneFromGenerator("heraldry", "prism")).toBe("prism");
+    expect(sceneFromGenerator("heraldry", "gyre")).toBe("gyre");
+    expect(sceneFromGenerator("heraldry", "well")).toBe("well");
+    expect(sceneFromGenerator("heraldry", "hall")).toBe("hall");
+    expect(sceneFromGenerator("heraldry", "drift")).toBe("drift");
+    expect(sceneFromGenerator("heraldry", "braid")).toBe("braid");
+    expect(sceneFromGenerator("heraldry", "sway")).toBe("sway");
     expect(sceneAt(0.2, 8, "tour")).toBe("rush");
     expect(sceneAt(3.0, 8, "tour")).toBe("rush");
     expect(sceneAt(5.5, 8, "bounce")).toBe("bounce");
@@ -1018,6 +1030,12 @@ describe("heraldry collage", () => {
       "spiral",
       "helix",
       "prism",
+      "gyre",
+      "well",
+      "hall",
+      "drift",
+      "braid",
+      "sway",
       "bounce",
       "flip",
       "glow",
@@ -1078,6 +1096,16 @@ describe("heraldry collage", () => {
     expect(isPleasingMove("poles")).toBe(true);
     expect(isMusicMove("rush")).toBe(false);
     expect(isMusicMove("silk")).toBe(false);
+    expect(isFlyMove("rush")).toBe(true);
+    expect(isFlyMove("gyre")).toBe(true);
+    expect(isFlyMove("well")).toBe(true);
+    expect(isFlyMove("hall")).toBe(true);
+    expect(isFlyMove("drift")).toBe(true);
+    expect(isFlyMove("braid")).toBe(true);
+    expect(isFlyMove("sway")).toBe(true);
+    expect(isFlyMove("tide")).toBe(false);
+    expect(isPleasingMove("gyre")).toBe(true);
+    expect(isPleasingMove("helix")).toBe(true);
     expect(dropSlam(0.2)).toBe(0);
     expect(dropSlam(0.5)).toBe(0);
     expect(dropSlam(1)).toBe(1);

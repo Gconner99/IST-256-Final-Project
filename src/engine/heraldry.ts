@@ -82,6 +82,12 @@ export const COLLAGE_MOVES = [
   "spiral",
   "helix",
   "prism",
+  "gyre",
+  "well",
+  "hall",
+  "drift",
+  "braid",
+  "sway",
   "bounce",
   "flip",
   "glow",
@@ -156,6 +162,12 @@ export const MOVE_LABEL: Record<CollageMove, string> = {
   spiral: "SPIRAL",
   helix: "HELIX",
   prism: "PRISM",
+  gyre: "GYRE",
+  well: "WELL",
+  hall: "HALL",
+  drift: "DRIFT",
+  braid: "BRAID",
+  sway: "SWAY",
   bounce: "BOUNCE",
   flip: "FLIP",
   glow: "GLOW",
@@ -211,12 +223,41 @@ export function moveForSeed(seed: number): CollageMove {
   return COLLAGE_MOVES[(seed >>> 0) % COLLAGE_MOVES.length];
 }
 
+/** 3D fly-throughs — stamps travel in depth and fill a big screen. */
+export const FLY_MOVES = [
+  "rush",
+  "tunnel",
+  "bloom",
+  "spiral",
+  "helix",
+  "prism",
+  "gyre",
+  "well",
+  "hall",
+  "drift",
+  "braid",
+  "sway",
+] as const;
+export type FlyMove = (typeof FLY_MOVES)[number];
+
+export function isFlyMove(scene?: string | null): scene is FlyMove {
+  return !!scene && (FLY_MOVES as readonly string[]).includes(scene);
+}
+
 /** Moves that stay readable when the randomizer rolls them. */
 export const PLEASING_MOVES = [
   "rush",
   "tunnel",
   "bloom",
   "spiral",
+  "helix",
+  "prism",
+  "gyre",
+  "well",
+  "hall",
+  "drift",
+  "braid",
+  "sway",
   "tide",
   "rings",
   "loom",
@@ -3644,11 +3685,11 @@ export class HeraldryField {
                 ? 28
                 : scene === "prism"
                   ? 64
-                  : scene === "helix"
+                  : scene === "helix" || scene === "braid"
                     ? 130
-                    : scene === "tunnel"
+                    : scene === "tunnel" || scene === "well" || scene === "hall"
                       ? 120
-                      : scene === "bloom"
+                      : scene === "bloom" || scene === "gyre" || scene === "drift" || scene === "sway"
                         ? 140
                         : scene === "chain"
                           ? 40
@@ -3694,7 +3735,7 @@ export class HeraldryField {
 
     const cap =
       scene === "spot" ? 0.34 :
-      scene === "rush" || scene === "tunnel" || scene === "bloom" || scene === "spiral" || scene === "helix" || scene === "prism" || scene === "chain"
+      isFlyMove(scene) || scene === "chain"
         ? 0.26
         : 0.22;
     const blitStamp = (stamp: HTMLCanvasElement, pose: Pose, view?: HuntView) => {
@@ -3811,6 +3852,21 @@ export class HeraldryField {
 
 function wrap01(v: number): number {
   return ((v % 1) + 1) % 1;
+}
+
+function rot2(x: number, y: number, ang: number): { x: number; y: number } {
+  const c = Math.cos(ang);
+  const s = Math.sin(ang);
+  return { x: x * c - y * s, y: x * s + y * c };
+}
+
+/** Perspective z in [0,1] → camera depth. Travel is independent of the beat. */
+function flyDepth(z01: number, near = 0.28, span = 2.55): { depth: number; fade: number } | null {
+  const depth = near + wrap01(z01) * span;
+  const far = near + span;
+  const fade = clamp((far - depth) / 0.3, 0, 1) * clamp((depth - near) / 0.1, 0, 1);
+  if (fade <= 0.001) return null;
+  return { depth, fade };
 }
 
 interface Pose {
@@ -4448,6 +4504,126 @@ function poseParticle(
       glow: punch * 0.4,
       rot: p.rot + spin,
       alpha: clamp((2.7 - depth) / 0.26, 0, 1) * clamp((depth - 0.28) / 0.1, 0, 1),
+    };
+  }
+  if (scene === "gyre") {
+    const fly = flyDepth(p.z - t * 0.4, 0.28, 2.6);
+    if (!fly) return null;
+    const { depth, fade } = fly;
+    const orbit = t * 0.2 + p.x * Math.PI * 2;
+    const rad = 0.2 + p.y * 0.48;
+    const cx = Math.cos(orbit) * rad;
+    const cy = Math.sin(orbit * 0.82) * rad * 0.58;
+    const spun = rot2(cx, cy, t * 0.12);
+    return {
+      x: spun.x / depth,
+      y: spun.y / depth + Math.sin(t * 0.16) * 0.06,
+      px: clamp((0.22 * p.size * (0.93 + bass * 0.1 + punch * 0.26)) / depth, 0.04, 0.55),
+      glow: punch * 0.42,
+      rot: p.rot + orbit * 0.2 + p.vr * t * 0.08,
+      alpha: fade,
+    };
+  }
+  if (scene === "well") {
+    const fly = flyDepth(p.z - t * 0.4, 0.26, 2.65);
+    if (!fly) return null;
+    const { depth, fade } = fly;
+    const ang = p.x * Math.PI * 2 + t * 0.16 + 2.6 * Math.log(depth + 0.18);
+    const rad = (0.1 + p.y * 0.48) / Math.pow(depth, 0.82);
+    return {
+      x: Math.cos(ang) * rad,
+      y: Math.sin(ang) * rad,
+      px: clamp((0.21 * p.size * (0.93 + bass * 0.1 + punch * 0.26)) / depth, 0.04, 0.54),
+      glow: punch * 0.42,
+      rot: p.rot + ang * 0.2,
+      alpha: fade,
+    };
+  }
+  if (scene === "hall") {
+    const fly = flyDepth(p.z - t * 0.42, 0.3, 2.5);
+    if (!fly) return null;
+    const { depth, fade } = fly;
+    const wall = i % 4;
+    const along = wrap01(p.x * 0.72 + p.y * 0.28) - 0.5;
+    const bow = 0.05 / depth;
+    let x = 0;
+    let y = 0;
+    if (wall === 0) {
+      x = -0.46 / depth - bow;
+      y = along / depth;
+    } else if (wall === 1) {
+      x = 0.46 / depth + bow;
+      y = along / depth;
+    } else if (wall === 2) {
+      x = along / depth;
+      y = -0.34 / depth - bow;
+    } else {
+      x = along / depth;
+      y = 0.34 / depth + bow;
+    }
+    const twist = rot2(x, y, 0.42 / depth + t * 0.08);
+    return {
+      x: twist.x,
+      y: twist.y,
+      px: clamp((0.2 * p.size * (0.93 + bass * 0.1 + punch * 0.26)) / depth, 0.04, 0.5),
+      glow: punch * 0.4,
+      rot: p.rot + p.vr * t * 0.1,
+      alpha: fade,
+    };
+  }
+  if (scene === "drift") {
+    const fly = flyDepth(p.z - t * 0.4, 0.28, 2.58);
+    if (!fly) return null;
+    const { depth, fade } = fly;
+    const layer = i % 5;
+    const dir = layer * 1.256;
+    const slide = t * 0.09;
+    const x0 = wrap01(p.x + Math.cos(dir) * slide) - 0.5;
+    const y0 = wrap01(p.y + Math.sin(dir) * slide * 0.72) - 0.5;
+    return {
+      x: x0 / depth,
+      y: y0 / depth,
+      px: clamp((0.21 * p.size * (0.93 + bass * 0.1 + punch * 0.26)) / depth, 0.04, 0.52),
+      glow: punch * 0.42,
+      rot: p.rot + p.vr * t * 0.1,
+      alpha: fade,
+    };
+  }
+  if (scene === "braid") {
+    const fly = flyDepth(p.z - t * 0.44, 0.26, 2.68);
+    if (!fly) return null;
+    const { depth, fade } = fly;
+    const strand = i % 3;
+    const ang = t * 1.12 + p.x * Math.PI * 2 + (strand * Math.PI * 2) / 3 + 0.95 / depth;
+    const rad = (0.13 + p.y * 0.2) / depth;
+    const lean = Math.sin(t * 0.2 + strand * 2.1) * 0.07;
+    return {
+      x: Math.cos(ang) * rad + lean,
+      y: Math.sin(ang) * rad * 0.9,
+      px: clamp((0.22 * p.size * (0.93 + bass * 0.1 + punch * 0.26)) / depth, 0.04, 0.54),
+      glow: punch * 0.4,
+      rot: ang + p.rot,
+      alpha: fade,
+    };
+  }
+  if (scene === "sway") {
+    const fly = flyDepth(p.z - t * 0.46, 0.26, 2.7);
+    if (!fly) return null;
+    const { depth, fade } = fly;
+    const yaw = Math.sin(t * 0.19) * 0.48;
+    const pitch = Math.cos(t * 0.13) * 0.3;
+    const roll = Math.sin(t * 0.07) * 0.32;
+    const x0 = wrap01(p.x + p.vx * t * 0.03) - 0.5;
+    const y0 = wrap01(p.y + p.vy * t * 0.02) - 0.5;
+    const spun = rot2(x0, y0, roll);
+    const look = 1 / depth - 0.38;
+    return {
+      x: spun.x / depth + yaw * look,
+      y: spun.y / depth + pitch * look,
+      px: clamp((0.24 * p.size * (0.92 + bass * 0.1 + punch * 0.28)) / depth, 0.04, 0.58),
+      glow: punch * 0.46,
+      rot: p.rot + p.vr * t * 0.12 + roll * 0.4,
+      alpha: fade,
     };
   }
   const z = wrap01(p.z - t * (0.46 + audio * 0.24 + bass * 0.1));
