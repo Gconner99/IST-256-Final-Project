@@ -56,7 +56,7 @@ export function clampFieldScaleAmp(value?: number | null): number {
   return clamp(value ?? 0.85, 0, 2.2);
 }
 export function clampFieldMinScale(value?: number | null): number {
-  return clamp(value ?? 0.34, 0.12, 1);
+  return clamp(value ?? 0.72, 0.12, 1);
 }
 export function clampFieldMaxScale(value?: number | null): number {
   return clamp(value ?? 2.35, 0.6, 3.2);
@@ -249,11 +249,11 @@ function spaceWarp(
 
 function intoFrame(x: number, y: number): [number, number] {
   const mx = 0.47;
-  const my = 0.39;
+  const my = 0.8;
   const ax = Math.abs(x);
   const ay = Math.abs(y);
   const nx = ax > mx ? Math.sign(x) * (mx + (1 - Math.exp(-(ax - mx) * 3.2)) * 0.028) : x;
-  const ny = ay > my ? Math.sign(y) * (my + (1 - Math.exp(-(ay - my) * 3.2)) * 0.024) : y;
+  const ny = ay > my ? Math.sign(y) * (my + (1 - Math.exp(-(ay - my) * 3.2)) * 0.04) : y;
   return [nx, ny];
 }
 
@@ -385,20 +385,21 @@ export function sampleTarget(x: number, y: number, z: number, clock: number, par
   const d = displacementAt(x, y, z, clock, params);
   return {
     x: clamp(x + d.x, -0.48, 0.48),
-    y: clamp(y + d.y, -0.4, 0.4),
+    y: clamp(y + d.y, -0.82, 0.82),
     z: clamp(z + d.z, -0.32, 0.32),
   };
 }
 
 function homeOnLattice(i: number, n: number, seed: AgentSeed): [number, number, number] {
-  const cols = Math.max(2, Math.round(Math.sqrt(n * 1.35)));
+  const cols = Math.max(2, Math.round(Math.sqrt(n * 1.15)));
   const rows = Math.max(2, Math.ceil(n / cols));
   const col = i % cols;
   const row = Math.floor(i / cols);
   const jitterX = (seed.x - 0.5) * 0.7;
   const jitterY = (seed.y - 0.5) * 0.7;
-  const x = ((col + 0.5 + jitterX * 0.22) / cols - 0.5) * 0.98;
-  const y = ((row + 0.5 + jitterY * 0.22) / rows - 0.5) * 0.9;
+  const hex = (row % 2) * 0.5;
+  const x = ((col + 0.5 + hex + jitterX * 0.4) / cols - 0.5) * 0.98;
+  const y = ((row + 0.5 + jitterY * 0.36) / rows - 0.5) * 1.52;
   const z = (seed.z - 0.5) * 0.28;
   return [x, y, z];
 }
@@ -562,8 +563,8 @@ export function agentPose(field: AgentField, i: number, size: number): AgentPose
   const rot = speed > 0.01 ? Math.atan2(field.vy[i], field.vx[i]) : field.homeX[i] * 2.4 + field.bias[i];
   return {
     x: clamp(field.px[i] / depth, -0.48, 0.48),
-    y: clamp(field.py[i] / depth, -0.4, 0.4),
-    px: clamp((0.034 + size * 0.018) * near * field.scale[i], 0.018, 0.34),
+    y: clamp(field.py[i] / depth, -0.82, 0.82),
+    px: clamp((0.038 + size * 0.02) * near * field.scale[i], 0.022, 0.34),
     rot,
     alpha: clamp(field.alpha[i], 0, 1),
     squash: field.squash ? field.squash[i] : 1,

@@ -1443,7 +1443,7 @@ describe("emergent agent field", () => {
     for (let i = 0; i < field.n; i++) spread += (field.px[i] - cx) ** 2 + (field.py[i] - cy) ** 2;
     spread = Math.sqrt(spread / field.n);
     expect(spread).toBeGreaterThan(0.06);
-    expect(spread).toBeLessThan(0.6);
+    expect(spread).toBeLessThan(0.75);
     expect(Math.max(...scales)).toBeGreaterThan(Math.min(...scales) * 1.05);
   });
 

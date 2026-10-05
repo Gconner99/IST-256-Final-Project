@@ -3758,7 +3758,7 @@ export class HeraldryField {
                         : scene === "chain"
                           ? 40
                           : isFieldMove(scene)
-                            ? 176
+                            ? 200
                             : isSimMove(scene)
                             ? 42
                             : this.particles.length;
