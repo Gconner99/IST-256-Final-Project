@@ -1349,7 +1349,7 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
   const rng = mulberry32((seed >>> 0) ^ 0x9e3779b1);
   const hw = 0.47 * (0.86 + p.fieldStrength * 0.12);
   const hy = hh * 0.93 * (0.86 + p.fieldStrength * 0.12);
-  const thick = 0.072 + p.density * 0.012;
+  const thick = 0.062 + p.density * 0.01;
 
   const sheet: SnakeSil = {
     occ: (x, y) => occFrom(sdBox(x, y, 0, 0, hw, hy), 0.05),
@@ -1362,7 +1362,7 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
     occ: (x, y) => {
       const body = sdBox(x, y, 0, 0, hw, hy);
       const hole = sdBox(x, y, holeSide * hw * 0.42, holeY, hw * 0.58, hy * 0.52);
-      return occFrom(Math.max(body, -hole), 0.055);
+      return occFrom(Math.max(body, -hole), 0.03);
     },
     giants: null,
   };
@@ -1385,37 +1385,42 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
     giants: null,
   };
 
-  const cx = (rng() - 0.5) * hw * 0.2;
-  const cy = (rng() - 0.5) * hy * 0.15;
-  const bodyR = 0.2 + rng() * 0.06;
+  const cx = (rng() - 0.5) * hw * 0.18;
+  const cy = (rng() - 0.4) * hy * 0.12;
+  const bodyRad = (0.2 + rng() * 0.05) * Math.max(hw, hy) / 0.42;
   const limbs: number[][] = [];
-  const nLimb = 5 + Math.floor(rng() * 3);
+  const nLimb = 6 + Math.floor(rng() * 3);
   for (let k = 0; k < nLimb; k++) {
-    const a = (k / nLimb) * TAU + rng() * 0.4;
-    const len = (0.18 + rng() * 0.16) * Math.max(hw, hy) / 0.45;
-    limbs.push([cx, cy, cx + Math.cos(a) * len * hw * 1.6, cy + Math.sin(a) * len * hy * 1.6, 0.045 + rng() * 0.03]);
+    const a = (k / nLimb) * TAU + rng() * 0.35;
+    const reach = bodyRad + 0.16 + rng() * 0.14;
+    limbs.push([
+      cx + Math.cos(a) * bodyRad * 0.35,
+      cy + Math.sin(a) * bodyRad * 0.35,
+      cx + Math.cos(a) * reach,
+      cy + Math.sin(a) * reach,
+      0.05 + rng() * 0.03,
+    ]);
   }
   const creature: SnakeSil = {
     occ: (x, y) => {
-      let d = sdCircle(x, y, cx, cy, bodyR * Math.max(hw, hy) / 0.42);
-      d = Math.min(d, sdBox(x, y, cx, cy - hy * 0.08, hw * 0.38, hy * 0.42));
+      let d = sdCircle(x, y, cx, cy, bodyRad);
       for (const L of limbs) d = Math.min(d, sdCapsule(x, y, L[0], L[1], L[2], L[3], L[4]));
-      return occFrom(d, 0.045);
+      return occFrom(d, 0.035);
     },
     giants: null,
   };
 
-  const Ng = 9 + Math.floor(rng() * 5);
-  const gCols = Ng > 12 ? 4 : 3;
+  const Ng = 8 + Math.floor(rng() * 4);
+  const gCols = 3;
   const gRows = Math.ceil(Ng / gCols);
   const giants: GiantSite[] = [];
   for (let k = 0; k < Ng; k++) {
     const gc = k % gCols;
     const gr = Math.floor(k / gCols);
     giants.push({
-      x: -hw * 0.72 + (gc + 0.5) * (1.44 * hw) / gCols + (rng() - 0.5) * hw * 0.18,
-      y: -hy * 0.72 + (gr + 0.5) * (1.44 * hy) / gRows + (rng() - 0.5) * hy * 0.18,
-      r: 0.09 + rng() * 0.1 + (k < 4 ? 0.05 : 0),
+      x: -hw * 0.7 + (gc + 0.5) * (1.4 * hw) / gCols + (rng() - 0.5) * hw * 0.16,
+      y: -hy * 0.7 + (gr + 0.5) * (1.4 * hy) / gRows + (rng() - 0.5) * hy * 0.16,
+      r: 0.155 + rng() * 0.07,
     });
   }
   const giantSil: SnakeSil = { occ: () => 0, giants };
@@ -1444,7 +1449,7 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
     ribbonPts.push(-hw + t * 2 * hw, Math.sin(t * Math.PI * waves + phase) * amp);
   }
   const ribbon: SnakeSil = {
-    occ: (x, y) => occFrom(sdPoly(x, y, ribbonPts, thick * 1.35), 0.045),
+    occ: (x, y) => occFrom(sdPoly(x, y, ribbonPts, thick * 1.05), 0.035),
     giants: null,
   };
 
@@ -1480,7 +1485,7 @@ function snake(c: LoopCtx, emit: Emit) {
   const giantA = new Map(gA.map((g) => [g.i, g]));
   const giantB = new Map(gB.map((g) => [g.i, g]));
   const spacing = Math.sqrt((2 * hh) / Math.max(1, n));
-  const packD = spacing * 2.15 * packMul(p) * sizeScale(p);
+  const packD = spacing * 1.82 * packMul(p) * sizeScale(p);
   const rate = 1.35 + p.warp * 2.1;
   for (let i = 0; i < n; i++) {
     const lx = pts[i].x;
@@ -1500,12 +1505,13 @@ function snake(c: LoopCtx, emit: Emit) {
         d = Math.max(d, site.r * (p.maxScale / 1.85) * blend);
       }
     }
-    if (occ < 0.12 && !ga && !gb) d = 0;
+    if (occ < 0.32 && !ga && !gb) d = 0;
     const phase = rate * u + hash01(i * 3.1) * (0.35 + p.perturb * 2.2);
     const pf = phase - Math.floor(phase);
-    const morph = smoother(clamp((pf - 0.7) / 0.22, 0, 1));
+    const morph = smoother(clamp((pf - 0.78) / 0.16, 0, 1));
     const chargeA = Math.floor(phase) * 13 + i;
-    emit(i, x, y, d * sizeMul(i, p), 0, chargeA, 1, chargeA + 13, morph);
+    const sized = d * ((ga || gb) ? Math.max(0.92, sizeMul(i, p)) : sizeMul(i, p));
+    emit(i, x, y, sized, 0, chargeA, 1, chargeA + 13, morph);
   }
 }
 
