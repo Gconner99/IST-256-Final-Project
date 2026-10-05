@@ -1508,6 +1508,16 @@ describe("pattern field", () => {
     expect(fieldLoop(agentParamsFrom({ fieldEvolve: 2 }), 120)).toBeLessThan(loop);
   });
 
+  it("snake morphs every stamp into a different icon while it billiard-bounces", () => {
+    const params = agentParamsFrom({ warp: 1.2 });
+    const field = new PatternField();
+    const a = field.posesAt(240, 0.4, 3, aspect, params, 0, 0, "snake").map((p) => ({ ...p }));
+    const b = field.posesAt(240, 0.4 + fieldLoop(params) * 0.35, 3, aspect, params, 0, 0, "snake").map((p) => ({ ...p }));
+    expect(a.some((p) => (p.morph ?? 0) > 0.05 && (p.morph ?? 0) < 0.95)).toBe(true);
+    expect(a.filter((p, i) => p.charge !== b[i].charge).length).toBeGreaterThan(40);
+    for (const p of a) expect(Math.abs(p.x)).toBeLessThan(0.5);
+  });
+
   it("is a pure function of time so scrubbing back matches", () => {
     const field = new PatternField();
     const a = snap(field, 4.2, "shapeshift");

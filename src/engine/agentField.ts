@@ -155,6 +155,9 @@ export interface AgentPose {
   flip?: number;
   /** Which kit stamp to draw. Patterns repeat icons on purpose; defaults to the slot index. */
   charge?: number;
+  /** Next kit stamp while morphing. Painter crossfades charge → chargeB. */
+  chargeB?: number;
+  morph?: number;
 }
 
 /** Stamp art leaves a margin inside its square, so a slot draws larger than its spacing. */
@@ -187,6 +190,7 @@ export const FIELD_PATTERNS = [
   "checker",
   "shear",
   "scan",
+  "snake",
 ] as const;
 export type FieldPattern = (typeof FIELD_PATTERNS)[number];
 export type FieldPatternChoice = FieldPattern | "auto";
@@ -215,6 +219,7 @@ export const FIELD_PATTERN_LABEL: Record<FieldPatternChoice, string> = {
   checker: "Checker",
   shear: "Shear",
   scan: "Scan",
+  snake: "Snake",
 };
 
 export function clampFieldPattern(value?: string | null): FieldPatternChoice {
@@ -619,7 +624,7 @@ function folds(p: AgentParams): number {
   return Math.round(clamp(3 + p.sparsity * 2.4, 3, 9));
 }
 
-type Emit = (i: number, x: number, y: number, d: number, rot: number, charge: number, flip?: number) => void;
+type Emit = (i: number, x: number, y: number, d: number, rot: number, charge: number, flip?: number, chargeB?: number, morph?: number) => void;
 
 interface LoopCtx {
   n: number;
@@ -1250,6 +1255,65 @@ function scan(c: LoopCtx, emit: Emit) {
   }
 }
 
+/** Triangle-wave bounce: unfold a billiard path so it reflects off the box, like the DVD screensaver. */
+function unfoldPing(s: number, lo: number, hi: number): { v: number; dir: number } {
+  const span = hi - lo;
+  if (span <= 1e-6) return { v: lo, dir: 1 };
+  const w = 2 * span;
+  let t = ((s - lo) % w + w) % w;
+  if (t <= span) return { v: lo + t, dir: 1 };
+  return { v: hi - (t - span), dir: -1 };
+}
+
+/**
+ * A fat snake of stamps follows a DVD-screensaver billiard around the frame.
+ * Every stamp crossfades into a different kit icon as it travels.
+ */
+function snake(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, p, seed } = c;
+  const pad = 0.06 * sizeScale(p);
+  const hw = Math.max(0.2, 0.5 - pad);
+  const hy = Math.max(0.12, hh - pad);
+  const spanX = 2 * hw;
+  const spanY = 2 * hy;
+  const kx = 2;
+  const ky = 2 + (Math.round(p.curl * 1.4) % 3);
+  const x0 = (hash01(seed) - 0.5) * spanX * 0.25;
+  const y0 = (hash01(seed + 2) - 0.5) * spanY * 0.25;
+  const vx = 2 * kx * spanX;
+  const vy = 2 * ky * spanY * (seed % 2 ? 1 : -1);
+  const nLen = Math.hypot(vx, vy) || 1;
+  const nx = -vy / nLen;
+  const ny = vx / nLen;
+  const snakes = 2;
+  const thick = Math.max(3, Math.round(3 + p.density * 2.2));
+  const along = Math.max(6, Math.floor(n / (snakes * thick)));
+  const trail = clamp(0.58 + p.fieldStrength * 0.22, 0.42, 0.92);
+  const d0 = Math.min(nLen * trail / along, hy * 0.42) * 1.05 * packMul(p) * sizeScale(p);
+  const rate = 2.4 + p.warp * 3.6;
+  const at = (uu: number, off: number) => {
+    const px = unfoldPing(x0 + vx * uu + nx * off, -hw, hw);
+    const py = unfoldPing(y0 + vy * uu + ny * off, -hy, hy);
+    return { x: px.v, y: py.v };
+  };
+  let i = 0;
+  for (let s = 0; s < snakes; s++) {
+    const lag = s * 0.5;
+    for (let k = 0; k < along; k++) {
+      for (let row = 0; row < thick && i < n; row++, i++) {
+        const off = (row - (thick - 1) / 2) * d0 * 0.76;
+        const pos = at(u - (k / along) * trail + lag, off);
+        const phase = rate * u + (k / along) * 1.35 + hash01(i * 3.1) * p.perturb * 2.2;
+        const f = phase - Math.floor(phase);
+        const a = Math.floor(phase);
+        const m = smoother(clamp((f - 0.58) / 0.32, 0, 1));
+        const chargeA = a * 13 + i + s * 7;
+        emit(i, pos.x, pos.y, d0 * sizeMul(i, p), 0, chargeA, 1, chargeA + 13, m);
+      }
+    }
+  }
+}
+
 function drift(f: Formation, i: number, ang: number, params: AgentParams, hh: number): [number, number] {
   const amp = f.bend + params.motion * 0.008;
   if (amp <= 0) return [f.x[i], f.y[i]];
@@ -1308,7 +1372,7 @@ export class PatternField {
     for (const pose of this.poses) pose.alpha = 0;
     const toPx = Math.max(1, asp);
     const toY = asp * asp;
-    const emit: Emit = (i, x, y, d, rot, charge, flip = 1) => {
+    const emit: Emit = (i, x, y, d, rot, charge, flip = 1, chargeB, morph = 0) => {
       const pose = this.poses[i];
       if (!pose) return;
       pose.x = x;
@@ -1319,6 +1383,8 @@ export class PatternField {
       pose.squash = 1;
       pose.flip = flip;
       pose.charge = charge;
+      pose.chargeB = chargeB;
+      pose.morph = morph;
     };
     if (pattern === "sunflower") sunflower(ctx, emit);
     else if (pattern === "rings") rings(ctx, emit);
@@ -1341,6 +1407,7 @@ export class PatternField {
     else if (pattern === "checker") checker(ctx, emit);
     else if (pattern === "shear") shear(ctx, emit);
     else if (pattern === "scan") scan(ctx, emit);
+    else if (pattern === "snake") snake(ctx, emit);
     else {
       const sig = `${seed}|${n}|${asp.toFixed(3)}|${Object.values(params).map((v) => v.toFixed(3)).join(",")}`;
       if (sig !== this.sig) {

@@ -3883,7 +3883,10 @@ export class HeraldryField {
     } else {
       for (let i = 0; i < count; i++) {
         const fieldPose = isFieldMove(scene) && this.agents ? this.fieldPoses[i] ?? null : null;
-        const p = this.particles[(fieldPose?.charge ?? i) % this.particles.length];
+        const morph = fieldPose?.morph ?? 0;
+        const chargeA = Math.floor(fieldPose?.charge ?? i);
+        const chargeB = Math.floor(fieldPose?.chargeB ?? chargeA);
+        const p = this.particles[(chargeA % this.particles.length + this.particles.length) % this.particles.length];
         let pose: Pose | null = isFieldMove(scene) && this.agents
           ? fieldPose
           : isSimMove(scene) && this.sim
@@ -3899,7 +3902,14 @@ export class HeraldryField {
             px: pose.px * (1 + beat * 0.07),
           };
         }
-        record(this.stamp(p.charge), pose);
+        if (isFieldMove(scene) && morph > 0.03 && morph < 0.97 && chargeB !== chargeA) {
+          const pB = this.particles[(chargeB % this.particles.length + this.particles.length) % this.particles.length];
+          record(this.stamp(p.charge), { ...pose, alpha: pose.alpha * (1 - morph), px: pose.px * (1 - 0.1 * morph) });
+          record(this.stamp(pB.charge), { ...pose, alpha: pose.alpha * morph, px: pose.px * (0.9 + 0.1 * morph) });
+        } else {
+          const src = morph >= 0.97 ? this.particles[(chargeB % this.particles.length + this.particles.length) % this.particles.length] : p;
+          record(this.stamp(src.charge), pose);
+        }
       }
     }
 
