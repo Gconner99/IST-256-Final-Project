@@ -151,7 +151,7 @@ export function defaultExportSettings(): ExportSettings {
     quality: 0.97,
     bitrate: 12,
     filename: "phosphene",
-    loopClose: true,
+    loopClose: false,
   };
 }
 

@@ -132,7 +132,7 @@ async function exportMp4WebCodecs(
     if (music) await music.audioSource.add(music.buffer);
     const n = Math.max(1, Math.round(duration * fps));
     const frameDur = 1 / fps;
-    const close = project.exportSettings.loopClose !== false;
+    const close = project.exportSettings.loopClose === true;
     let first: HTMLCanvasElement | null = null;
     for (let i = 0; i < n; i++) {
       const t = origin + mediaTime(i / fps, duration, project.playback.mode, 1, true);
@@ -170,7 +170,7 @@ async function attachSoundtrack(
 ): Promise<{ audioSource: AudioBufferSource; buffer: AudioBuffer } | null> {
   const pcm = await ensureSoundtrackPcm(getSoundtrack(project));
   if (!pcm || pcm.length < 32 || pcm.duration <= 0) return null;
-  const close = project.exportSettings.loopClose !== false;
+  const close = project.exportSettings.loopClose === true;
   let sliced: AudioBuffer;
   try {
     sliced = sliceSoundtrack(pcm, duration, close, origin);
@@ -225,7 +225,7 @@ async function recordCanvasVideo(
   const origin = soundtrackExportOrigin(project);
   const n = Math.max(1, Math.round(duration * fps));
   const frame = document.createElement("canvas");
-  const close = project.exportSettings.loopClose !== false;
+  const close = project.exportSettings.loopClose === true;
   let first: HTMLCanvasElement | null = null;
   for (let i = 0; i < n; i++) {
     const t = origin + mediaTime(i / fps, duration, project.playback.mode, 1, true);

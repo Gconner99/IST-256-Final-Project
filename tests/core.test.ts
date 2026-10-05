@@ -1599,7 +1599,8 @@ describe("documentary search", () => {
 });
 
 describe("clip loop", () => {
-  it("fades only the last beats into the first frame", () => {
+  it("does not fade the tail unless close loop is on", () => {
+    expect(createDefaultProject().exportSettings.loopClose).toBe(false);
     expect(clipLoopFade(0, 24)).toBe(0);
     expect(clipLoopFade(12, 24)).toBe(0);
     expect(clipLoopFade(23, 24)).toBeGreaterThan(0.5);

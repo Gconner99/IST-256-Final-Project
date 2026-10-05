@@ -36,7 +36,7 @@ export function parseProject(json: string): Project {
   data.keyframes = data.keyframes ?? [];
   data.presets = data.presets ?? [];
   if (data.exportSettings && data.exportSettings.loopClose === undefined) {
-    data.exportSettings.loopClose = true;
+    data.exportSettings.loopClose = false;
   }
   data.sources = data.sources.map((s) => {
     const next = PLACE_FALLBACK[s.generator ?? ""];

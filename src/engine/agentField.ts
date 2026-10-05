@@ -164,7 +164,23 @@ const TAU = Math.PI * 2;
 /** Seconds per loop at Tempo 1. */
 const BASE_LOOP = 6;
 
-export const FIELD_PATTERNS = ["sunflower", "rings", "spiro", "ripple", "march", "kaleido", "shapeshift"] as const;
+export const FIELD_PATTERNS = [
+  "sunflower",
+  "rings",
+  "spiro",
+  "ripple",
+  "march",
+  "kaleido",
+  "shapeshift",
+  "vortex",
+  "orbit",
+  "weave",
+  "fan",
+  "braid",
+  "tiles",
+  "petal",
+  "coil",
+] as const;
 export type FieldPattern = (typeof FIELD_PATTERNS)[number];
 export type FieldPatternChoice = FieldPattern | "auto";
 
@@ -177,6 +193,14 @@ export const FIELD_PATTERN_LABEL: Record<FieldPatternChoice, string> = {
   march: "March",
   kaleido: "Kaleido",
   shapeshift: "Shapeshift",
+  vortex: "Vortex",
+  orbit: "Orbit",
+  weave: "Weave",
+  fan: "Fan",
+  braid: "Braid",
+  tiles: "Tiles",
+  petal: "Petal",
+  coil: "Coil",
 };
 
 export function clampFieldPattern(value?: string | null): FieldPatternChoice {
@@ -787,6 +811,199 @@ function kaleido(c: LoopCtx, emit: Emit) {
   }
 }
 
+/** Inscribed radius so polar patterns fill the frame without spilling off the short side. */
+function disc(c: LoopCtx): number {
+  return Math.min(0.48, c.hh * 0.98);
+}
+
+/** Logarithmic whirlpool: inner stamps spin faster, arms wind with Swirl. */
+function vortex(c: LoopCtx, emit: Emit) {
+  const { n, th, p, seed } = c;
+  const rad = disc(c) * (0.86 + p.fieldStrength * 0.14);
+  const step = rad / Math.sqrt(n);
+  const d0 = step * 2 * packMul(p) * sizeScale(p);
+  const wind = 0.8 + p.curl * 1.6;
+  const spin = seed % 2 ? 1 : -1;
+  for (let j = 0; j < n; j++) {
+    const q = (j + 0.5) / n;
+    const r = step * Math.sqrt(j + 0.5) * (1 + p.warp * 0.05 * Math.sin(th * 2 - q * 4));
+    const omega = 1.15 / (0.18 + r / Math.max(1e-4, rad));
+    const a = j * GOLDEN + spin * (th * omega + wind * Math.log(1 + r * 6));
+    const d = d0 * (0.55 + 0.8 * Math.sqrt(q)) * (1 + p.motion * 0.28 * Math.sin(th * 2 + q * 5)) * sizeMul(j, p);
+    emit(j, Math.cos(a) * r, Math.sin(a) * r, d, tilt(j), chargeFor(j, j % 13, p));
+  }
+}
+
+/** Nested orbits turning opposite ways, a little pulse on the radius. */
+function orbit(c: LoopCtx, emit: Emit) {
+  const { n, th, p, seed } = c;
+  const rad = disc(c);
+  const K = Math.round(clamp(3 + p.fieldStrength * 2.2, 3, 8));
+  const weights = Array.from({ length: K }, (_, k) => k + 1.2);
+  const sum = weights.reduce((a, b) => a + b, 0);
+  let i = 0;
+  for (let k = 0; k < K && i < n; k++) {
+    const cnt = k === K - 1 ? n - i : Math.max(4, Math.round((n * weights[k]) / sum));
+    const rk = rad * ((k + 0.85) / (K + 0.2));
+    const dir = (k + seed) % 2 ? 1 : -1;
+    const speed = 1 + k * 0.28 * (0.5 + p.curl * 0.5);
+    const pulse = 1 + p.motion * 0.06 * Math.sin(th * 2 + k);
+    const d = (TAU * rk / cnt) * 2.6 * packMul(p) * sizeScale(p);
+    for (let s = 0; s < cnt && i < n; s++, i++) {
+      const a = (s / cnt) * TAU + dir * speed * th;
+      const r = rk * pulse;
+      emit(i, Math.cos(a) * r, Math.sin(a) * r, d * sizeMul(i, p), tilt(i), chargeFor(i, k * 2 + (s % 2), p));
+    }
+  }
+}
+
+/** Two sliding lattices, wrap happening off-screen so the weave never jumps. */
+function weave(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, th, p } = c;
+  const half = Math.floor(n / 2);
+  const W = 1.18;
+  const H = 2 * hh * 1.18;
+  const cols = Math.max(3, Math.round(Math.sqrt(half * W / H)));
+  const rows = Math.max(2, Math.ceil(half / cols));
+  const sx = W / cols;
+  const sy = H / rows;
+  const d0 = Math.min(sx, sy) * 1.05 * packMul(p) * sizeScale(p);
+  const wave = p.motion * 0.22;
+  let i = 0;
+  const lay = (count: number, horizontal: boolean) => {
+    for (let m = 0; m < count && i < n; m++, i++) {
+      const col = m % cols;
+      const row = Math.floor(m / cols);
+      const fx = (col + 0.5) / cols + (horizontal ? u : 0);
+      const fy = (row + 0.5) / rows + (horizontal ? 0 : u);
+      const x = (fx - Math.floor(fx) - 0.5) * W;
+      const y = (fy - Math.floor(fy) - 0.5) * H;
+      const wob = wave * Math.sin((horizontal ? y : x) * 8 + th * 2);
+      emit(i, x + (horizontal ? 0 : wob * sx), y + (horizontal ? wob * sy : 0), d0 * sizeMul(i, p), tilt(i), chargeFor(i, (horizontal ? 0 : 4) + (col + row) % 3, p));
+    }
+  };
+  lay(half, true);
+  lay(n - half, false);
+}
+
+/** Radial spokes spinning like a fan, a few stamps thick. */
+function fan(c: LoopCtx, emit: Emit) {
+  const { n, th, p, seed } = c;
+  const F = folds(p);
+  const rad = disc(c);
+  const thick = 4;
+  const along = Math.max(3, Math.floor(n / (F * thick)));
+  const d0 = Math.min(rad / along, (TAU * rad) / (F * along)) * 1.55 * packMul(p) * sizeScale(p);
+  const spin = (seed % 2 ? 1 : -1) * th;
+  let i = 0;
+  for (let s = 0; s < F; s++) {
+    for (let m = 0; m < along; m++) {
+      for (let row = 0; row < thick && i < n; row++, i++) {
+        const q = (m + 0.5 + (row % 2) * 0.35) / along;
+        const flutter = p.motion * 0.1 * Math.sin(th * 3 + s + q * 4);
+        const a = (s / F) * TAU + spin + flutter + p.curl * 0.2 * q;
+        const r = q * rad * (1 + p.warp * 0.04 * Math.sin(th * 2 + s));
+        const taper = 0.45 + 0.55 * q;
+        const off = (row - (thick - 1) / 2) * d0 * 0.72 * taper;
+        emit(
+          i,
+          Math.cos(a) * r - Math.sin(a) * off,
+          Math.sin(a) * r + Math.cos(a) * off,
+          d0 * taper * sizeMul(i, p),
+          a + Math.PI / 2,
+          chargeFor(i, s, p),
+        );
+      }
+    }
+  }
+}
+
+/** Three ribbons weaving, wrapping off the sides. */
+function braid(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, th, p } = c;
+  const strands = 3;
+  const per = Math.ceil(n / strands);
+  const A = hh * 0.62 * (0.7 + p.fieldStrength * 0.28);
+  const freq = 2 + Math.round(p.warp * 1.2);
+  const d0 = 0.042 * packMul(p) * sizeScale(p);
+  const margin = d0 * STAMP_PAD * 0.7 + 0.03;
+  const Wt = 1 + 2 * margin;
+  let i = 0;
+  for (let s = 0; s < strands; s++) {
+    const phase = (s / strands) * TAU;
+    for (let j = 0; j < per && i < n; j++, i++) {
+      const f = (j + 0.5) / per + u;
+      const x = (f - Math.floor(f) - 0.5) * Wt;
+      const t = (j + 0.5) / per;
+      const y = A * Math.sin(TAU * freq * t + phase + p.curl * 0.4 * Math.sin(th)) + p.motion * hh * 0.08 * Math.sin(th * 2 + s);
+      emit(i, x, y, d0 * sizeMul(i, p), tilt(i), chargeFor(i, s * 2 + (j % 2), p));
+    }
+  }
+}
+
+/** Hex tiles, each stamp circling its cell — a packed floor of little orbits. */
+function tiles(c: LoopCtx, emit: Emit) {
+  const { n, hh, th, p } = c;
+  const W = 1.04;
+  const H = 2 * hh * 1.04;
+  const s = Math.sqrt((W * H) / n);
+  const cols = Math.max(2, Math.round(W / s));
+  const rows = Math.max(2, Math.ceil(n / cols));
+  const sx = W / cols;
+  const sy = H / rows;
+  const d0 = Math.max(sx, sy) * 0.92 * packMul(p) * sizeScale(p);
+  const orbit = Math.min(sx, sy) * (0.28 + p.motion * 0.32);
+  let i = 0;
+  for (let r = 0; r < rows && i < n; r++) {
+    for (let q = 0; q < cols && i < n; q++, i++) {
+      const cx = -W / 2 + (q + 0.25 + (r % 2) * 0.5) * sx;
+      const cy = -H / 2 + (r + 0.5) * sy;
+      const dir = (r + q) % 2 ? 1 : -1;
+      const a = dir * th + hash01(i) * TAU;
+      const d = d0 * (1 + p.warp * 0.12 * Math.sin(th * 2 + i)) * sizeMul(i, p);
+      emit(i, cx + Math.cos(a) * orbit, cy + Math.sin(a) * orbit, d, tilt(i), chargeFor(i, (r + q) % 5, p));
+    }
+  }
+}
+
+/** A spinning rose / flower. Petal count follows Symmetry. */
+function petal(c: LoopCtx, emit: Emit) {
+  const { n, th, p, seed } = c;
+  const F = folds(p);
+  const rad = disc(c);
+  const spin = (seed % 2 ? 1 : -1) * th;
+  const breath = 0.88 + 0.12 * Math.sin(th * 2) * p.warp;
+  const d0 = (rad * Math.sqrt(TAU / n)) * 1.15 * packMul(p) * sizeScale(p);
+  for (let j = 0; j < n; j++) {
+    const a0 = (j / n) * TAU;
+    const a = a0 + spin;
+    const rose = 0.22 + 0.78 * Math.abs(Math.cos(F * a0));
+    const r = rad * rose * breath * (1 + p.motion * 0.06 * Math.sin(F * a0 + th));
+    const d = d0 * (0.55 + 0.7 * rose) * sizeMul(j, p);
+    emit(j, Math.cos(a) * r, Math.sin(a) * r, d, a + Math.PI / 2, chargeFor(j, Math.floor(((a0 * F) / TAU) % F), p));
+  }
+}
+
+/** Dual Archimedean coils rotating in place. */
+function coil(c: LoopCtx, emit: Emit) {
+  const { n, th, p, seed } = c;
+  const rad = disc(c);
+  const turns = 2.2 + p.fieldStrength * 1.1;
+  const maxT = turns * TAU;
+  const spin = (seed % 2 ? 1 : -1) * th;
+  const d0 = (rad / Math.sqrt(n)) * 2 * packMul(p) * sizeScale(p);
+  const twins = 2;
+  for (let j = 0; j < n; j++) {
+    const arm = j % twins;
+    const k = Math.floor(j / twins);
+    const t = ((k + 0.5) / Math.ceil(n / twins)) * maxT;
+    const r = rad * (t / maxT);
+    const a = t + spin + arm * Math.PI + p.curl * 0.4 * Math.sin(th);
+    const d = d0 * (0.5 + 0.85 * (t / maxT)) * (1 + p.motion * 0.2 * Math.sin(th * 2 + arm)) * sizeMul(j, p);
+    emit(j, Math.cos(a) * r, Math.sin(a) * r, d, a + Math.PI / 2, chargeFor(j, arm * 3 + (k % 3), p));
+  }
+}
+
 function drift(f: Formation, i: number, ang: number, params: AgentParams, hh: number): [number, number] {
   const amp = f.bend + params.motion * 0.008;
   if (amp <= 0) return [f.x[i], f.y[i]];
@@ -863,6 +1080,14 @@ export class PatternField {
     else if (pattern === "ripple") ripple(ctx, emit);
     else if (pattern === "march") march(ctx, emit);
     else if (pattern === "kaleido") kaleido(ctx, emit);
+    else if (pattern === "vortex") vortex(ctx, emit);
+    else if (pattern === "orbit") orbit(ctx, emit);
+    else if (pattern === "weave") weave(ctx, emit);
+    else if (pattern === "fan") fan(ctx, emit);
+    else if (pattern === "braid") braid(ctx, emit);
+    else if (pattern === "tiles") tiles(ctx, emit);
+    else if (pattern === "petal") petal(ctx, emit);
+    else if (pattern === "coil") coil(ctx, emit);
     else {
       const sig = `${seed}|${n}|${asp.toFixed(3)}|${Object.values(params).map((v) => v.toFixed(3)).join(",")}`;
       if (sig !== this.sig) {

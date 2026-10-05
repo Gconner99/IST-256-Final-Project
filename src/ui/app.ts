@@ -104,7 +104,6 @@ import {
   clampFieldScaleAmp,
   clampFieldSparsity,
   clampFieldPattern,
-  FIELD_PATTERNS,
   FIELD_PATTERN_LABEL,
   clampFieldStrength,
   clampFieldWarp,
@@ -182,7 +181,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tunnel / spiral / helix / bloom / prism plus Gyre, Well, Hall, Drift, Braid, and Sway are 3D fly-throughs — stamps travel in depth and around the frame so a big screen feels like you are moving through the picture. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Field locks one stamp pattern and loops it seamlessly — Sunflower, Rings, Spirograph, Ripple, March, Kaleido, or Shapeshift — until you change a slider, pick another pattern, or hit Rand field. With a song loaded the loop spans whole bars. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Chain can optionally wear Animal Chain parts (dragon, dog, ferret, caterpillar, zebra) on the same path. Hunt is a documentary camera on top of any move: watch wide, notice a stamp, snap in, follow, return. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
+        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tunnel / spiral / helix / bloom / prism plus Gyre, Well, Hall, Drift, Braid, and Sway are 3D fly-throughs — stamps travel in depth and around the frame so a big screen feels like you are moving through the picture. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Field locks one stamp pattern and loops it seamlessly — Sunflower, Rings, Spirograph, Ripple, March, Kaleido, Shapeshift, Vortex, Orbit, Weave, Fan, Braid, Tiles, Petal, or Coil — until you change a slider, pick another pattern, or hit Rand field. With a song loaded the loop spans whole bars. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Chain can optionally wear Animal Chain parts (dragon, dog, ferret, caterpillar, zebra) on the same path. Hunt is a documentary camera on top of any move: watch wide, notice a stamp, snap in, follow, return. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -197,7 +196,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music, Kitchen, Sky, Street, Arcade, Haunt, Sport, School. Each pack is its own stamp set — switching a kit replaces every icon. Move buttons keep the current kit.</li>
           <li><strong>Mash</strong> — mix a second kit’s stamps onto the same ground. <strong>Color</strong> packs (Brine, Candy, Ember, Neon…) recast washes and inks across any kit. <strong>Wash</strong> taps a color from the active pack. <strong>Night</strong> is a darker club wash that breathes on bass.</li>
           <li><strong>Size / Storm</strong> — few giants or a sticker storm.</li>
-          <li><strong>Soundtrack</strong> — hit <em>MP3</em> or drop a clip (mp3/wav/ogg/m4a). It does not replace your picture. Playback starts and the stamps breathe on the beat without jumping off their path. Export an MP4 while a song is playing and the clip keeps that part of the song — the window you are hearing, with the visuals already synced to it. Export from the start of the track if you rewind first. Stills and PNG sequences stay silent. Check <em>close loop</em> so the last beats fade into the first frame.</li>
+          <li><strong>Soundtrack</strong> — hit <em>MP3</em> or drop a clip (mp3/wav/ogg/m4a). It does not replace your picture. Playback starts and the stamps breathe on the beat without jumping off their path. Export an MP4 while a song is playing and the clip keeps that part of the song — the window you are hearing, with the visuals already synced to it. Export from the start of the track if you rewind first. Stills and PNG sequences stay silent. Clips loop as-is. Check <em>close loop</em> only if you want the last beats to dissolve into the first frame.</li>
           <li><strong>Texture</strong> — Dot Screen, Riso, Etching, Holo Foil, Crackle, Velvet Nap sit under Effects. They print, foil, or flock the collage without replacing the stamps.</li>
           <li>Bottom-right: pick a shape, tap <strong>720</strong> or <strong>1080</strong>, pick <strong>2s / 4s / 8s / 16s / 32s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). Clips save at 30 fps in HD so they stay sharp without a long wait. The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
@@ -901,7 +900,13 @@ function paintRail(n: HTMLElement) {
       collage?.collageMove === "field"
         ? `<div class="sec">Pattern</div>
     <div class="row">
-      ${(["auto", ...FIELD_PATTERNS] as const).map((id) => {
+      ${(["auto", "sunflower", "rings", "spiro", "ripple", "march", "kaleido", "shapeshift"] as const).map((id) => {
+        const on = clampFieldPattern(collage.collageFieldPattern) === id;
+        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="field-pattern" data-pattern="${id}">${FIELD_PATTERN_LABEL[id]}</button>`;
+      }).join("")}
+    </div>
+    <div class="row">
+      ${(["vortex", "orbit", "weave", "fan", "braid", "tiles", "petal", "coil"] as const).map((id) => {
         const on = clampFieldPattern(collage.collageFieldPattern) === id;
         return `<button class="btn tiny ${on ? "acid" : ""}" data-act="field-pattern" data-pattern="${id}">${FIELD_PATTERN_LABEL[id]}</button>`;
       }).join("")}
@@ -1274,7 +1279,7 @@ function paintTransport(n: HTMLElement) {
         ${[2, 4, 6, 8, 16, 32].map((s) => `<button class="btn tiny ${Number(exp.duration) === s ? "acid" : ""}" data-act="clip" data-secs="${s}" ${busy ? "disabled" : ""}>${s}s</button>`).join("")}
         <span class="status">sec</span>
         <input id="exp-dur" type="number" min="1" max="32" step="1" style="width:48px" value="${exp.duration}" title="seconds" />
-        <label class="check"><input type="checkbox" id="loop-close" ${exp.loopClose !== false ? "checked" : ""}/> close loop</label>
+        <label class="check"><input type="checkbox" id="loop-close" ${exp.loopClose ? "checked" : ""}/> close loop</label>
         <span class="sp"></span>
         <button class="btn acid export" data-act="export" ${busy ? "disabled" : ""}>${busy ? "exporting…" : "Export"}</button>
       </div>
