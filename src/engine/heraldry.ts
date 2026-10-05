@@ -491,48 +491,48 @@ export function sceneAt(_time: number, _duration: number, locked: HeraldryScene)
 }
 
 const TINCTURES = [
-  "#ff2ec8",
-  "#ffe81a",
-  "#00d4ff",
-  "#7cff2a",
-  "#ff6a00",
-  "#111111",
-  "#ffffff",
-  "#2b5bff",
-  "#ff1e4a",
-  "#00e8a8",
-  "#ff7ad9",
-  "#b8ff3a",
-  "#4fc3ff",
-  "#ff9a00",
-  "#ff4a9a",
-  "#7a5aff",
-  "#00c8ff",
-  "#ff3d6e",
-  "#c8ff4a",
-  "#ff8a2a",
-  "#3dffd0",
-  "#ff5ad6",
-  "#1a1a1a",
+  "#c41e3a",
+  "#1c4db8",
+  "#f0c020",
+  "#1a8a3a",
+  "#141414",
   "#f4f4f4",
+  "#7a2ea0",
+  "#e84a8a",
+  "#2aa8a0",
+  "#f26a20",
+  "#6a7ad8",
+  "#2a2a2a",
+  "#d8c078",
+  "#ff4a9a",
+  "#7cff6a",
+  "#7ad8ff",
+  "#ff6a28",
+  "#c47aff",
+  "#3dffd0",
+  "#e87838",
+  "#4ad8a8",
+  "#8a6ad8",
+  "#c48a4a",
+  "#4a78ff",
 ];
 
 const KIT_INK: Record<CollageKit, string> = {
-  sailor: "#2b5bff",
-  circus: "#ff2ec8",
-  fruit: "#ffe81a",
-  nature: "#7cff2a",
-  love: "#ff2ec8",
-  space: "#00d4ff",
-  sweet: "#ff5ad6",
-  music: "#ffe81a",
-  kitchen: "#ff6a00",
-  weather: "#00d4ff",
-  city: "#ffe81a",
-  arcade: "#7cff2a",
-  haunt: "#ff2ec8",
-  sport: "#ff6a00",
-  school: "#2b5bff",
+  sailor: "#1c4db8",
+  circus: "#ff2f86",
+  fruit: "#f0c020",
+  nature: "#1a8a3a",
+  love: "#e84a8a",
+  space: "#7ad8ff",
+  sweet: "#ff6aa8",
+  music: "#ffd86a",
+  kitchen: "#e85a2a",
+  weather: "#4aa8e8",
+  city: "#f0c020",
+  arcade: "#7cff6a",
+  haunt: "#9a6cff",
+  sport: "#ff7a1a",
+  school: "#3a6ad8",
 };
 
 export function kitButtonLabel(kit: CollageKit): string {
@@ -715,12 +715,6 @@ type Kind =
   | "backpack"
   | "ruler"
   | "bell"
-  | "clover"
-  | "plus"
-  | "xmark"
-  | "dart"
-  | "blob"
-  | "pip"
   | "aBody"
   | "aLeg"
   | "aNub"
@@ -735,60 +729,60 @@ type Kind =
   | "aZebrHead"
   | "aZebrTail";
 
-type Pattern = "plain" | "polka" | "hoop" | "half" | "bar" | "stripe" | "core" | "eye" | "pip";
+type Pattern = "plain" | "polka" | "hoop" | "half" | "bar" | "stripe";
 
 const KIT_PAPER: Record<CollageKit, Kind[]> = {
   sailor: ["fish", "anchor", "wave", "shell", "starfish", "boat", "tail", "swallow", "crab", "helm", "lighthouse", "compass", "buoy", "hook", "porthole", "oar"],
   circus: ["elephant", "tent", "ball", "bow", "horse", "balloon", "ticket", "figure", "popcorn", "cane", "mask", "dice", "flag", "hoop", "unicycle", "lion", "topper"],
   fruit: ["pear", "lemon", "cherry", "flower", "apple", "banana", "grape", "chili", "orange", "peach", "berry", "melon", "pineapple"],
-  nature: ["tree", "deer", "fox", "owl", "mushroom", "leaf", "acorn", "cone", "mountain", "moth", "bird", "rabbit", "snail", "fern", "pine", "hedgehog", "nest", "toadstool", "clover"],
+  nature: ["tree", "deer", "fox", "owl", "mushroom", "leaf", "acorn", "cone", "mountain", "moth", "bird", "rabbit", "snail", "fern", "pine", "hedgehog", "nest", "toadstool"],
   love: ["heart", "wingfig", "swan", "cat", "crown", "key", "ring", "envelope", "potion", "rose", "diamond", "candle", "locket", "dove", "kiss"],
   space: ["rocket", "planet", "saturn", "ufo", "comet", "satellite", "star", "alien", "asteroid", "telescope", "rover", "spark", "astro"],
   sweet: ["lolly", "coneice", "cupcake", "donut", "candy", "cookie", "waffle", "pretzel", "sundae", "choco"],
   music: ["note", "vinyl", "headphone", "mic", "speaker", "guitar", "drum", "piano", "clef", "sax", "trumpet", "amp"],
   kitchen: ["kettle", "mug", "whisk", "toast", "egg", "spoon", "bottle", "fork", "pan", "chefhat"],
   weather: ["rain", "flake", "wind", "rainbow", "thermo", "cloud", "bolt", "sun", "umbrella", "drop", "moon", "tornado"],
-  city: ["taxi", "hydrant", "bike", "lamp", "signal", "bus", "house", "subway", "mailbox", "skyline", "xmark"],
-  arcade: ["stick", "coin", "pawn", "cart", "ghostie", "pixel", "joystick", "shroomup", "invader", "plus"],
-  haunt: ["skull", "bat", "pumpkin", "tomb", "cauldron", "web", "blob"],
-  sport: ["trophy", "whistle", "jersey", "skate", "goal", "dart"],
-  school: ["pencil", "book", "globe", "backpack", "ruler", "bell", "pip"],
+  city: ["taxi", "hydrant", "bike", "lamp", "signal", "bus", "house", "subway", "mailbox", "skyline"],
+  arcade: ["stick", "coin", "pawn", "cart", "ghostie", "pixel", "joystick", "shroomup", "invader"],
+  haunt: ["skull", "bat", "pumpkin", "tomb", "cauldron", "web"],
+  sport: ["trophy", "whistle", "jersey", "skate", "goal"],
+  school: ["pencil", "book", "globe", "backpack", "ruler", "bell"],
 };
 
 const KIT_GIANTS: Record<CollageKit, Kind[]> = {
   sailor: ["fish", "boat", "tail", "swallow", "anchor", "lighthouse", "helm", "buoy"],
   circus: ["elephant", "tent", "horse", "balloon", "figure", "mask", "lion"],
-  fruit: ["pear", "lemon", "apple", "banana", "melon", "pineapple", "flower"],
-  nature: ["tree", "deer", "owl", "fox", "mountain", "rabbit", "pine", "clover"],
+  fruit: ["pear", "lemon", "apple", "banana", "melon", "pineapple"],
+  nature: ["tree", "deer", "owl", "fox", "mountain", "rabbit", "pine"],
   love: ["heart", "wingfig", "swan", "cat", "rose", "dove"],
   space: ["rocket", "saturn", "ufo", "planet", "comet", "alien", "astro"],
   sweet: ["lolly", "cupcake", "donut", "coneice", "waffle", "sundae"],
   music: ["vinyl", "headphone", "speaker", "guitar", "piano", "sax"],
   kitchen: ["kettle", "toast", "bottle", "pan", "chefhat"],
   weather: ["rainbow", "umbrella", "cloud", "sun", "tornado"],
-  city: ["taxi", "bus", "house", "lamp", "skyline", "xmark"],
-  arcade: ["stick", "cart", "pawn", "invader", "ghostie", "plus"],
-  haunt: ["skull", "pumpkin", "tomb", "cauldron", "bat", "blob"],
-  sport: ["trophy", "jersey", "goal", "skate", "dart"],
-  school: ["globe", "backpack", "book", "bell", "pip"],
+  city: ["taxi", "bus", "house", "lamp", "skyline"],
+  arcade: ["stick", "cart", "pawn", "invader", "ghostie"],
+  haunt: ["skull", "pumpkin", "tomb", "cauldron", "bat"],
+  sport: ["trophy", "jersey", "goal", "skate"],
+  school: ["globe", "backpack", "book", "bell"],
 };
 
 const KIT_SHOWER: Record<CollageKit, Kind[]> = {
   sailor: ["starfish", "shell", "fish", "anchor", "crab", "compass", "hook"],
   circus: ["ball", "balloon", "bow", "ticket", "popcorn", "cane", "dice"],
-  fruit: ["cherry", "lemon", "grape", "apple", "berry", "chili", "flower"],
-  nature: ["leaf", "acorn", "moth", "bird", "snail", "fern", "hedgehog", "clover"],
+  fruit: ["cherry", "lemon", "grape", "apple", "berry", "chili"],
+  nature: ["leaf", "acorn", "moth", "bird", "snail", "fern", "hedgehog"],
   love: ["heart", "key", "ring", "diamond", "candle", "kiss"],
   space: ["star", "spark", "comet", "satellite", "planet", "asteroid"],
   sweet: ["candy", "lolly", "donut", "cookie", "pretzel", "choco"],
   music: ["note", "vinyl", "mic", "clef", "drum", "trumpet"],
   kitchen: ["spoon", "egg", "mug", "fork", "whisk"],
   weather: ["flake", "drop", "rain", "bolt", "moon"],
-  city: ["hydrant", "bike", "mailbox", "signal", "lamp", "xmark"],
-  arcade: ["coin", "pawn", "pixel", "joystick", "shroomup", "plus"],
-  haunt: ["bat", "web", "skull", "pumpkin", "blob"],
-  sport: ["whistle", "skate", "trophy", "goal", "dart"],
-  school: ["pencil", "ruler", "bell", "book", "pip"],
+  city: ["hydrant", "bike", "mailbox", "signal", "lamp"],
+  arcade: ["coin", "pawn", "pixel", "joystick", "shroomup"],
+  haunt: ["bat", "web", "skull", "pumpkin"],
+  sport: ["whistle", "skate", "trophy", "goal"],
+  school: ["pencil", "ruler", "bell", "book"],
 };
 
 interface Charge {
@@ -890,24 +884,8 @@ function pick<T>(rng: () => number, list: T[]): T {
 }
 
 function mixInk(rng: () => number, bias: string): string {
-  const roll = rng();
-  if (roll < 0.16) return "#111111";
-  if (roll < 0.26) return "#ffffff";
-  if (roll < 0.46) return bias;
+  if (rng() < 0.32) return bias;
   return pick(rng, TINCTURES);
-}
-
-function pickPattern(rng: () => number): Pattern {
-  const r = rng();
-  if (r < 0.2) return "plain";
-  if (r < 0.42) return "half";
-  if (r < 0.58) return "core";
-  if (r < 0.7) return "hoop";
-  if (r < 0.8) return "eye";
-  if (r < 0.88) return "pip";
-  if (r < 0.94) return "polka";
-  if (r < 0.97) return "bar";
-  return "stripe";
 }
 
 export function kindsForKit(kit: CollageKit, scene: HeraldryScene = "rush"): Kind[] {
@@ -926,7 +904,7 @@ function makeCharge(rng: () => number, scene: HeraldryScene, bias: string, kit: 
   if (b === a) b = pick(rng, TINCTURES);
   return {
     kind,
-    pattern: pickPattern(rng),
+    pattern: rng() < 0.58 ? "plain" : pick(rng, ["polka", "hoop", "half", "bar"] as Pattern[]),
     a,
     b,
     mirror: rng() > 0.5,
@@ -1027,35 +1005,6 @@ function fillPattern(ctx: CanvasRenderingContext2D, path: () => void, c: Charge,
       ctx.fillRect(-s, i * r * 0.3 - r * 0.07, s * 2, r * 0.13);
     }
     ctx.restore();
-  } else if (c.pattern === "core") {
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.44, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = a;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.18, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (c.pattern === "eye") {
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = luma(b) > 0.55 ? "#111111" : "#ffffff";
-    const t = r * 0.07;
-    const arm = r * 0.18;
-    ctx.fillRect(-t, -arm, t * 2, arm * 2);
-    ctx.fillRect(-arm, -t, arm * 2, t * 2);
-  } else if (c.pattern === "pip") {
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = a;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = b;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.12, 0, Math.PI * 2);
-    ctx.fill();
   }
   ctx.restore();
   ctx.save();
@@ -1063,8 +1012,8 @@ function fillPattern(ctx: CanvasRenderingContext2D, path: () => void, c: Charge,
   path();
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  ctx.lineWidth = Math.max(2.2, r * 0.11);
-  ctx.strokeStyle = luma(c.a) > 0.62 ? "#111111" : "#ffffff";
+  ctx.lineWidth = Math.max(1.6, r * 0.07);
+  ctx.strokeStyle = luma(c.a) > 0.55 ? "#141414" : "#f6f1e6";
   ctx.stroke();
   ctx.restore();
 }
@@ -1089,8 +1038,8 @@ function heartPath(ctx: CanvasRenderingContext2D, r: number) {
 }
 
 function moonPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.arc(0, 0, r * 0.92, 0.55, Math.PI * 2 - 0.55);
-  ctx.arc(r * 0.42, 0, r * 0.7, Math.PI * 1.12, -Math.PI * 0.12, true);
+  ctx.arc(0, 0, r, 0.55, Math.PI * 2 - 0.55);
+  ctx.arc(r * 0.38, -r * 0.08, r * 0.72, Math.PI * 0.85, -Math.PI * 0.55, true);
   ctx.closePath();
 }
 
@@ -1325,86 +1274,12 @@ function mushroomPath(ctx: CanvasRenderingContext2D, r: number) {
 }
 
 function flowerPath(ctx: CanvasRenderingContext2D, r: number) {
-  for (let i = 0; i < 4; i++) {
-    const a = Math.PI / 4 + (i * Math.PI) / 2;
-    ctx.moveTo(0, 0);
-    ctx.arc(Math.cos(a) * r * 0.42, Math.sin(a) * r * 0.42, r * 0.46, 0, Math.PI * 2);
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+    ctx.ellipse(Math.cos(a) * r * 0.45, Math.sin(a) * r * 0.45, r * 0.32, r * 0.22, a, 0, Math.PI * 2);
   }
-}
-
-function cloverPath(ctx: CanvasRenderingContext2D, r: number) {
-  for (let i = 0; i < 3; i++) {
-    const a = -Math.PI / 2 + (i * Math.PI * 2) / 3;
-    ctx.moveTo(0, 0);
-    ctx.arc(Math.cos(a) * r * 0.36, Math.sin(a) * r * 0.36, r * 0.48, 0, Math.PI * 2);
-  }
-}
-
-function plusPath(ctx: CanvasRenderingContext2D, r: number) {
-  const t = r * 0.3;
-  ctx.moveTo(-t, -r);
-  ctx.lineTo(t, -r);
-  ctx.lineTo(t, -t);
-  ctx.lineTo(r, -t);
-  ctx.lineTo(r, t);
-  ctx.lineTo(t, t);
-  ctx.lineTo(t, r);
-  ctx.lineTo(-t, r);
-  ctx.lineTo(-t, t);
-  ctx.lineTo(-r, t);
-  ctx.lineTo(-r, -t);
-  ctx.lineTo(-t, -t);
-  ctx.closePath();
-}
-
-function xmarkPath(ctx: CanvasRenderingContext2D, r: number) {
-  const t = r * 0.28;
-  const s = r * 0.95;
-  const a = Math.SQRT1_2;
-  const pts: [number, number][] = [
-    [-t, -s],
-    [t, -s],
-    [t, -t],
-    [s, -t],
-    [s, t],
-    [t, t],
-    [t, s],
-    [-t, s],
-    [-t, t],
-    [-s, t],
-    [-s, -t],
-    [-t, -t],
-  ];
-  pts.forEach(([x, y], i) => {
-    const rx = (x - y) * a;
-    const ry = (x + y) * a;
-    if (i === 0) ctx.moveTo(rx, ry);
-    else ctx.lineTo(rx, ry);
-  });
-  ctx.closePath();
-}
-
-function dartPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(0, -r);
-  ctx.lineTo(r * 0.72, r * 0.12);
-  ctx.lineTo(r * 0.26, r * 0.12);
-  ctx.lineTo(r * 0.26, r);
-  ctx.lineTo(-r * 0.26, r);
-  ctx.lineTo(-r * 0.26, r * 0.12);
-  ctx.lineTo(-r * 0.72, r * 0.12);
-  ctx.closePath();
-}
-
-function blobPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.arc(-r * 0.28, -r * 0.18, r * 0.52, 0, Math.PI * 2);
-  ctx.moveTo(r * 0.62, 0);
-  ctx.arc(r * 0.22, -r * 0.12, r * 0.5, 0, Math.PI * 2);
-  ctx.moveTo(r * 0.2, r * 0.55);
-  ctx.arc(-r * 0.04, r * 0.22, r * 0.55, 0, Math.PI * 2);
-}
-
-function pipPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.arc(0, 0, r * 0.92, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.22, 0);
+  ctx.arc(0, 0, r * 0.22, 0, Math.PI * 2);
 }
 
 function sunPath(ctx: CanvasRenderingContext2D, r: number) {
@@ -1412,13 +1287,11 @@ function sunPath(ctx: CanvasRenderingContext2D, r: number) {
 }
 
 function cloudPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.arc(-r * 0.38, r * 0.12, r * 0.48, 0, Math.PI * 2);
-  ctx.moveTo(r * 0.62, r * 0.1);
-  ctx.arc(r * 0.28, r * 0.08, r * 0.5, 0, Math.PI * 2);
-  ctx.moveTo(r * 0.12, -r * 0.28);
-  ctx.arc(-0.02 * r, -r * 0.22, r * 0.52, 0, Math.PI * 2);
-  ctx.moveTo(-r * 0.1, r * 0.45);
-  ctx.arc(-r * 0.08, r * 0.22, r * 0.42, 0, Math.PI * 2);
+  ctx.arc(-r * 0.42, r * 0.08, r * 0.42, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.55, r * 0.12);
+  ctx.arc(r * 0.32, r * 0.05, r * 0.4, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.15, -r * 0.2);
+  ctx.arc(0, -r * 0.18, r * 0.48, 0, Math.PI * 2);
 }
 
 function boltPath(ctx: CanvasRenderingContext2D, r: number) {
@@ -2973,10 +2846,8 @@ function drawKind(ctx: CanvasRenderingContext2D, kind: Kind, r: number) {
   ctx.beginPath();
   switch (kind) {
     case "star":
-      starPath(ctx, r, 4, 0.38);
-      break;
     case "starfish":
-      starPath(ctx, r, 5, 0.42);
+      starPath(ctx, r, kind === "starfish" ? 5 : 5, kind === "starfish" ? 0.42 : 0.4);
       break;
     case "heart":
       heartPath(ctx, r);
@@ -3046,24 +2917,6 @@ function drawKind(ctx: CanvasRenderingContext2D, kind: Kind, r: number) {
       break;
     case "flower":
       flowerPath(ctx, r);
-      break;
-    case "clover":
-      cloverPath(ctx, r);
-      break;
-    case "plus":
-      plusPath(ctx, r);
-      break;
-    case "xmark":
-      xmarkPath(ctx, r);
-      break;
-    case "dart":
-      dartPath(ctx, r);
-      break;
-    case "blob":
-      blobPath(ctx, r);
-      break;
-    case "pip":
-      pipPath(ctx, r);
       break;
     case "sun":
       sunPath(ctx, r);
