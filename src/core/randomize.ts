@@ -190,6 +190,9 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.mixScan = mood === "lush" ? rng() * 0.2 : 0.25 + rng() * 0.5;
     p.noise = mood === "lush" ? rng() * 0.1 : 0.12 + rng() * 0.35;
   }
+  if (fx.typeId === "halftone" || fx.typeId === "riso" || fx.typeId === "hatch" || fx.typeId === "holo" || fx.typeId === "crackle" || fx.typeId === "nap") {
+    p.amount = mood === "lush" ? 0.38 + rng() * 0.32 : 0.5 + rng() * 0.38;
+  }
   if (fx.typeId === "posterize") {
     p.levels = 3 + Math.floor(rng() * 6);
     p.dither = 0.08 + rng() * 0.35;

@@ -50,7 +50,7 @@ export type BlendMode =
   | "darken";
 export type PlaybackMode = "forward" | "reverse" | "pingpong" | "random";
 export type MaskType = "none" | "rect" | "circle" | "gradient" | "noise" | "image";
-export type EffectCategory = "color" | "distort" | "analog" | "geometric" | "temporal" | "wacky";
+export type EffectCategory = "color" | "distort" | "analog" | "texture" | "geometric" | "temporal" | "wacky";
 export type ParamKind = "float" | "int" | "bool" | "color" | "enum";
 export type Easing = "linear" | "smooth";
 

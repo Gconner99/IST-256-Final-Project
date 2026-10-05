@@ -321,7 +321,7 @@ export class Renderer {
       this.cutStatus = "";
       return;
     }
-    const duration = Math.max(project.duration, project.exportSettings.duration || 0, 8);
+    const duration = Math.max(track?.duration || 0, project.duration, project.exportSettings.duration || 0, 8);
     const key = `${project.cutEdit.seed}|${duration}|${track?.bpm ?? 0}|${track?.beatOffset ?? 0}|${track?.beats?.length ?? 0}`;
     if (!this.cutReel || this.cutKey !== key) {
       this.cutReel = buildCutReel({
@@ -333,7 +333,7 @@ export class Renderer {
       });
       this.cutKey = key;
     }
-    const shot = shotAtTime(this.cutReel, time, duration);
+    const shot = shotAtTime(this.cutReel, time, duration, track?.bpm, track?.beatOffset);
     this.cutStatus = cutLabel(shot);
     this.cutLook = {
       generator: generatorForMove(shot.look.move),

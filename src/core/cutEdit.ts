@@ -17,21 +17,23 @@ export interface CutLook {
 export interface CutShot {
   start: number;
   beats: number;
+  /** Quarter-note index from the first downbeat. Cuts stay on 1 or 3. */
+  startBeat: number;
   look: CutLook;
 }
 
 const PHRASES: { beats: number[]; weight: number }[] = [
-  { beats: [8], weight: 4 },
+  { beats: [8], weight: 5 },
   { beats: [4, 4], weight: 5 },
+  { beats: [4], weight: 4 },
+  { beats: [16], weight: 3 },
+  { beats: [8, 8], weight: 3 },
   { beats: [8, 4], weight: 3 },
-  { beats: [4, 4, 8], weight: 3 },
-  { beats: [2, 2, 4], weight: 2 },
+  { beats: [4, 4, 8], weight: 2 },
   { beats: [4, 2, 2], weight: 2 },
-  { beats: [2, 6], weight: 2 },
-  { beats: [6, 2], weight: 2 },
-  { beats: [1, 1, 6], weight: 2 },
-  { beats: [4, 1, 1, 2], weight: 1 },
-  { beats: [3, 5], weight: 1 },
+  { beats: [2, 2, 4], weight: 2 },
+  { beats: [2, 6], weight: 1 },
+  { beats: [6, 2], weight: 1 },
   { beats: [8, 2, 2, 4], weight: 2 },
 ];
 
@@ -67,34 +69,46 @@ export function moveForShotLength(beats: number, rng: () => number, prev?: Music
   return pickFrom(rng, family, prev);
 }
 
+function periodFor(bpm: number): number {
+  return 60 / Math.max(40, bpm || 120);
+}
+
+function wrapOffset(offset: number, period: number): number {
+  if (!Number.isFinite(offset) || period <= 0) return 0;
+  return ((offset % period) + period) % period;
+}
+
+/** Quarter-note metronome from the downbeat. No onset snapping — that drifted cuts off the mix. */
 export function beatGrid(duration: number, bpm: number, onsets?: number[], offset?: number): number[] {
   const span = Math.max(1, duration);
+  const period = periodFor(bpm);
   const hits = (onsets ?? []).filter((t) => t >= 0 && t < span + 0.05);
-  const period = 60 / Math.max(40, bpm || 120);
-  const off = Number.isFinite(offset) && (offset as number) >= 0
-    ? (offset as number)
-    : hits.length
-      ? ((hits[0] % period) + period) % period
-      : 0;
-  const start = off > 0.04 && off < period * 1.8 ? off : hits[0] != null && hits[0] < period * 0.7 ? hits[0] : 0;
+  let off =
+    Number.isFinite(offset) && (offset as number) >= 0
+      ? (offset as number)
+      : hits.length
+        ? wrapOffset(hits[0], period)
+        : 0;
+  if (off >= span) off = wrapOffset(off, period);
   const grid: number[] = [];
-  for (let t = start; t < span - period * 0.08; t += period) {
-    let at = t;
-    let best = period * 0.2;
-    for (const hit of hits) {
-      const err = Math.abs(hit - t);
-      if (err < best) {
-        best = err;
-        at = hit;
-      }
-    }
-    if (!grid.length || at - grid[grid.length - 1] > period * 0.55) grid.push(at);
-  }
+  for (let t = off; t < span - period * 0.02; t += period) grid.push(t);
   if (!grid.length) {
-    for (let t = 0; t <= span + period * 0.01; t += period) grid.push(t);
+    for (let t = 0; t < span; t += period) grid.push(t);
   }
-  if (grid[grid.length - 1] < span) grid.push(span);
+  if (!grid.length) grid.push(0);
+  if (grid[grid.length - 1] < span - 1e-6) grid.push(span);
   return grid;
+}
+
+/** Which quarter-note the playhead is on, from the same downbeat the reel uses. */
+export function beatIndexAt(time: number, bpm: number, offset: number, duration?: number): number {
+  const period = periodFor(bpm);
+  const off = Number.isFinite(offset) && offset > 0 ? offset : 0;
+  const span = duration && duration > 0 ? duration : 0;
+  let t = time;
+  if (span > 0) t = ((time % span) + span) % span;
+  if (!Number.isFinite(t) || t < off - 1e-6) return 0;
+  return Math.max(0, Math.floor((t - off) / period + 1e-4));
 }
 
 export function buildCutReel(opts: {
@@ -130,6 +144,7 @@ export function buildCutReel(opts: {
       shots.push({
         start,
         beats: endIdx - i,
+        startBeat: i,
         look: {
           kit: phraseKit,
           kitB,
@@ -148,11 +163,16 @@ export function buildCutReel(opts: {
     phrase++;
     if (phrase > 80) break;
   }
+  if (shots.length >= 2 && shots[shots.length - 1].beats < 2) {
+    const last = shots.pop()!;
+    shots[shots.length - 1].beats += last.beats;
+  }
   if (!shots.length) {
     const kit = kitForSeed(opts.seed);
     shots.push({
       start: 0,
       beats: 8,
+      startBeat: 0,
       look: {
         kit,
         move: "bars",
@@ -168,12 +188,13 @@ export function buildCutReel(opts: {
   return shots;
 }
 
-export function shotAtTime(reel: CutShot[], time: number, duration?: number): CutShot {
+export function shotAtTime(reel: CutShot[], time: number, duration?: number, bpm?: number, offset?: number): CutShot {
   if (!reel.length) {
     const kit = kitForSeed(1);
     return {
       start: 0,
       beats: 8,
+      startBeat: 0,
       look: {
         kit,
         move: "bars",
@@ -192,6 +213,16 @@ export function shotAtTime(reel: CutShot[], time: number, duration?: number): Cu
     last.start + 0.5,
     reel.length > 1 ? last.start + (last.start - reel[0].start) / Math.max(1, reel.length - 1) : last.start + 2,
   );
+  if (bpm && bpm > 40) {
+    const off = Number.isFinite(offset) && (offset as number) >= 0 ? (offset as number) : reel[0].start;
+    const idx = beatIndexAt(time, bpm, off, span);
+    let picked = reel[0];
+    for (const shot of reel) {
+      if (shot.startBeat <= idx) picked = shot;
+      else break;
+    }
+    return picked;
+  }
   const t = ((time % span) + span) % span;
   let picked = reel[0];
   for (const shot of reel) {

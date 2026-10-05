@@ -5,7 +5,7 @@ import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
-import { beatGrid, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
+import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
 import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
@@ -19,7 +19,7 @@ import { BOOT_GENERATOR_GLSL, COMIC_GENERATOR_GLSL, CONFETTI_GENERATOR_GLSL, COR
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
-import { beatEnvelope, copyWrappedChannel, detectBeats, estimateBpm, estimateTempo, isAudioFile, lockBeatsToGrid, sampleLevelsFromSamples, soundtrackExportOrigin, tempoPulse } from "../src/media/audio";
+import { beatEnvelope, copyWrappedChannel, detectBeats, downbeatOffset, estimateBpm, estimateTempo, isAudioFile, lockBeatsToGrid, sampleLevelsFromSamples, soundtrackExportOrigin, tempoPulse } from "../src/media/audio";
 import { setSoundtrack } from "../src/ui/actions";
 import { seekVideo } from "../src/media/sources";
 
@@ -336,9 +336,15 @@ describe("place buttons", () => {
 describe("effects registry", () => {
   it("ships a usable MVP library", () => {
     expect(allEffects().length).toBeGreaterThanOrEqual(15);
-    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer"]) {
+    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer", "halftone", "riso", "hatch", "holo", "crackle", "nap"]) {
       expect(getEffect(id)).toBeTruthy();
     }
+    expect(getEffect("halftone")?.category).toBe("texture");
+    expect(getEffect("riso")?.name).toBe("Riso");
+    expect(getEffect("hatch")?.name).toBe("Etching");
+    expect(getEffect("holo")?.name).toBe("Holo Foil");
+    expect(getEffect("crackle")?.name).toBe("Crackle");
+    expect(getEffect("nap")?.name).toBe("Velvet Nap");
     expect(getEffect("critters")?.category).toBe("wacky");
     expect(getEffect("critters")?.name).toBe("Floaters");
     expect(getEffect("dancer")?.name).toBe("Idol");
@@ -727,7 +733,8 @@ describe("randomize + presets", () => {
       expect(isMusicMove(shot.look.move)).toBe(true);
       expect(shot.look.scale).toBeLessThanOrEqual(0.9);
       expect(shot.look.pace).toBeLessThanOrEqual(0.8);
-      expect(shot.beats).toBeGreaterThanOrEqual(1);
+      expect(shot.beats).toBeGreaterThanOrEqual(2);
+      expect(shot.startBeat % 2).toBe(0);
     }
     expect(shotAtTime(reel, 0).start).toBe(reel[0].start);
     expect(shotAtTime(reel, reel[1].start + 0.01).look.move).toBe(reel[1].look.move);
@@ -910,22 +917,40 @@ describe("soundtrack", () => {
     expect(tempo.offset).toBeCloseTo(0.4, 1);
     const locked = lockBeatsToGrid(quarters, tempo.bpm, tempo.offset, 8);
     expect(locked[0]).toBeCloseTo(0.4, 1);
-    expect(locked[1] - locked[0]).toBeCloseTo(0.5, 1);
+    expect(locked[1] - locked[0]).toBeCloseTo(0.5, 5);
     const eighths: number[] = [];
     for (let t = 0.4; t < 8; t += 0.25) eighths.push(t + (t % 0.5 === 0 ? 0 : 0.012));
     const grid = beatGrid(8, 120, eighths, 0.4);
+    expect(grid[0]).toBeCloseTo(0.4, 5);
+    expect(grid[1]).toBeCloseTo(0.9, 5);
     const gaps = grid.slice(1, -1).map((t, i) => t - grid[i]);
     const mid = [...gaps].sort((a, b) => a - b)[Math.floor(gaps.length / 2)];
-    expect(mid).toBeGreaterThan(0.42);
-    expect(mid).toBeLessThan(0.58);
+    expect(mid).toBeCloseTo(0.5, 5);
     const reel = buildCutReel({ seed: 77, duration: 8, bpm: 120, beats: eighths, offset: 0.4 });
-    expect(reel[0].start).toBeCloseTo(0.4, 1);
+    expect(reel[0].start).toBeCloseTo(0.4, 5);
     for (const shot of reel.slice(0, -1)) {
+      expect(shot.startBeat % 2).toBe(0);
       const phase = (((shot.start - 0.4) % 0.5) + 0.5) % 0.5;
-      expect(Math.min(phase, 0.5 - phase)).toBeLessThan(0.06);
+      expect(Math.min(phase, 0.5 - phase)).toBeLessThan(0.001);
     }
-    expect(shotAtTime(reel, 0.39, 8).look.move).toBe(reel[0].look.move);
-    if (reel[1]) expect(shotAtTime(reel, reel[1].start, 8).look.move).toBe(reel[1].look.move);
+    expect(shotAtTime(reel, 0.39, 8, 120, 0.4).look.move).toBe(reel[0].look.move);
+    if (reel[1]) expect(shotAtTime(reel, reel[1].start, 8, 120, 0.4).look.move).toBe(reel[1].look.move);
+    expect(beatIndexAt(0.4, 120, 0.4)).toBe(0);
+    expect(beatIndexAt(2.4, 120, 0.4)).toBe(4);
+  });
+
+  it("picks the loud kick as the downbeat, not the snare", () => {
+    const sr = 8000;
+    const seconds = 8;
+    const ch = new Float32Array(sr * seconds);
+    for (let t = 0.4; t < seconds - 0.05; t += 0.5) {
+      const beat = Math.round((t - 0.4) / 0.5) % 4;
+      const amp = beat === 0 ? 1 : beat === 2 ? 0.5 : 0.18;
+      const i = Math.floor(t * sr);
+      for (let k = 0; k < 120 && i + k < ch.length; k++) ch[i + k] = (1 - k / 120) * amp;
+    }
+    const off = downbeatOffset(ch, sr, 120, 0.9, seconds);
+    expect(off).toBeCloseTo(0.4, 1);
   });
 
   it("starts playback when an mp3 is attached", () => {

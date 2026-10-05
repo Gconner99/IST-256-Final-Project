@@ -103,7 +103,10 @@ export async function loadAudio(file: File): Promise<MediaSource> {
   const span = duration || pcm?.duration || 0;
   const raw = pcm ? detectBeats(pcm.getChannelData(0), pcm.sampleRate) : [];
   const tempo = estimateTempo(raw, span);
-  const beats = tempo.bpm > 40 ? lockBeatsToGrid(raw, tempo.bpm, tempo.offset, span) : raw;
+  const offset = pcm
+    ? downbeatOffset(pcm.getChannelData(0), pcm.sampleRate, tempo.bpm, tempo.offset, span)
+    : tempo.offset;
+  const beats = tempo.bpm > 40 ? lockBeatsToGrid(raw, tempo.bpm, offset, span) : raw;
   return {
     id: uid("src"),
     name: file.name,
@@ -117,7 +120,7 @@ export async function loadAudio(file: File): Promise<MediaSource> {
     pcm,
     beats,
     bpm: tempo.bpm,
-    beatOffset: tempo.offset,
+    beatOffset: offset,
     objectUrl: url,
   };
 }
@@ -183,50 +186,90 @@ export function estimateTempo(beats: number[], duration = 0): { bpm: number; off
   while (bpm > 155) bpm /= 2;
   while (bpm < 72 && bpm > 0) bpm *= 2;
   bpm = clampNum(Math.round(bpm), 70, 170);
-  const period = 60 / bpm;
-  const span = duration > 0 ? duration : (beats[beats.length - 1] ?? 0) + period;
-  let bestOffset = ((beats[0] % period) + period) % period;
+  let bestBpm = bpm;
+  let bestOffset = 0;
   let bestScore = -1;
-  const candidates = new Set<number>([0, bestOffset]);
-  for (let i = 0; i < Math.min(beats.length, 16); i++) {
-    candidates.add(((beats[i] % period) + period) % period);
-  }
-  for (const off of candidates) {
-    let score = 0;
-    for (const t of beats) {
-      const phase = (((t - off) % period) + period) % period;
-      const err = Math.min(phase, period - phase);
-      if (err < period * 0.18) score += 1 - err / (period * 0.18);
+  const lo = Math.max(70, bpm - 8);
+  const hi = Math.min(170, bpm + 8);
+  for (let cand = lo; cand <= hi; cand++) {
+    const period = 60 / cand;
+    const span = duration > 0 ? duration : (beats[beats.length - 1] ?? 0) + period;
+    const candidates = new Set<number>([0, ((beats[0] % period) + period) % period]);
+    for (let i = 0; i < Math.min(beats.length, 16); i++) {
+      candidates.add(((beats[i] % period) + period) % period);
     }
-    if (off > 0.03 && off < span - period * 0.5) score += 0.15;
-    if (score > bestScore) {
-      bestScore = score;
-      bestOffset = off;
+    for (const off of candidates) {
+      let score = 0;
+      for (const t of beats) {
+        const phase = (((t - off) % period) + period) % period;
+        const err = Math.min(phase, period - phase);
+        if (err < period * 0.12) score += 1 - err / (period * 0.12);
+      }
+      if (off > 0.03 && off < span - period * 0.5) score += 0.15;
+      score *= 1 - Math.abs(cand - 118) / 400;
+      if (score > bestScore) {
+        bestScore = score;
+        bestBpm = cand;
+        bestOffset = off;
+      }
     }
   }
-  return { bpm, offset: bestOffset };
+  return { bpm: bestBpm, offset: bestOffset };
 }
 
-/** One downbeat per bar-step, snapped to a nearby onset when the kick is early/late. */
+/**
+ * Among the four beats of the bar, pick the loudest as beat 1.
+ * Stops cuts from starting on the snare when the quarter grid is right but the bar is flipped.
+ */
+export function downbeatOffset(
+  ch: Float32Array | undefined,
+  sampleRate: number,
+  bpm: number,
+  offset: number,
+  duration: number,
+): number {
+  if (!ch || ch.length < 64 || !(bpm > 40) || !(sampleRate > 1)) {
+    return Number.isFinite(offset) && offset >= 0 ? offset : 0;
+  }
+  const period = 60 / bpm;
+  const bar = period * 4;
+  const off0 = Number.isFinite(offset) && offset >= 0 ? offset : 0;
+  const win = Math.max(32, Math.floor(sampleRate * 0.04));
+  const scores = [0, 0, 0, 0];
+  const span = duration > 0 ? duration : ch.length / sampleRate;
+  for (let k = 0; k < 4; k++) {
+    let energy = 0;
+    let n = 0;
+    for (let t = off0 + k * period; t < span - 0.04 && n < 72; t += bar) {
+      const i = Math.max(0, Math.min(ch.length - win - 1, Math.floor(t * sampleRate)));
+      let s = 0;
+      for (let j = 0; j < win; j += 3) {
+        const v = ch[i + j];
+        s += v * v;
+      }
+      energy += s;
+      n++;
+    }
+    scores[k] = energy / Math.max(1, n);
+  }
+  let bestK = 0;
+  for (let k = 1; k < 4; k++) {
+    if (scores[k] > scores[bestK] * 1.05) bestK = k;
+    else if (scores[k] > scores[bestK] * 0.97 && k % 2 === 0 && bestK % 2 === 1) bestK = k;
+  }
+  const picked = off0 + bestK * period;
+  return ((picked % bar) + bar) % bar;
+}
+
+/** Quarter-note metronome from the downbeat. Punches and cuts share this clock. */
 export function lockBeatsToGrid(onsets: number[], bpm: number, offset: number, duration: number): number[] {
   if (!(bpm > 40)) return [...onsets];
   const period = 60 / bpm;
   const span = Math.max(period, duration || (onsets[onsets.length - 1] ?? 0) + period);
-  const start = offset >= 0 && offset < period * 1.8 ? offset : onsets[0] ?? 0;
+  const start = offset >= 0 && Number.isFinite(offset) ? offset : onsets[0] ?? 0;
   const out: number[] = [];
-  for (let t = start; t < span - period * 0.08; t += period) {
-    let best = t;
-    let bestErr = Math.min(0.05, period * 0.22);
-    for (const o of onsets) {
-      const err = Math.abs(o - t);
-      if (err < bestErr) {
-        bestErr = err;
-        best = o;
-      }
-    }
-    if (!out.length || best - out[out.length - 1] > period * 0.55) out.push(best);
-  }
-  return out;
+  for (let t = start; t < span - period * 0.08; t += period) out.push(t);
+  return out.length ? out : [...onsets];
 }
 
 /** Pulse locked to estimated tempo so hits still land when an onset is missed. */

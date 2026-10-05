@@ -2,6 +2,7 @@ import type { EffectType } from "../core/types";
 import { COLOR_EFFECTS } from "./color";
 import { DISTORT_EFFECTS } from "./distort";
 import { ANALOG_EFFECTS } from "./analog";
+import { TEXTURE_EFFECTS } from "./texture";
 import { GEOMETRIC_EFFECTS } from "./geometric";
 import { TEMPORAL_EFFECTS } from "./temporal";
 import { WACKY_EFFECTS } from "./critters";
@@ -10,6 +11,7 @@ const ALL: EffectType[] = [
   ...COLOR_EFFECTS,
   ...DISTORT_EFFECTS,
   ...ANALOG_EFFECTS,
+  ...TEXTURE_EFFECTS,
   ...GEOMETRIC_EFFECTS,
   ...TEMPORAL_EFFECTS,
   ...WACKY_EFFECTS,
@@ -37,6 +39,7 @@ export const EFFECT_CATEGORIES: { id: string; label: string }[] = [
   { id: "color", label: "Color" },
   { id: "distort", label: "Distort" },
   { id: "analog", label: "Analog" },
+  { id: "texture", label: "Texture" },
   { id: "geometric", label: "Geometry" },
   { id: "temporal", label: "Time" },
   { id: "wacky", label: "Shapes" },
