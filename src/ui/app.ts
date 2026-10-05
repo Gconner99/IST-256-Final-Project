@@ -61,6 +61,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
         <option value="preview">Preview</option>
         <option value="export">Full</option>
       </select>
+      <a class="btn tiny" href="./sampler.html">Sampler</a>
       <button class="btn tiny" data-act="help">?</button>
     </header>
     <div class="workspace">

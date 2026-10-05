@@ -29,6 +29,8 @@ npm run desktop      # optional Electron shell
 npm test
 ```
 
+The chop sampler is [Muraille](http://127.0.0.1:5173/sampler.html) (`sampler.html`). Drop in a clip, pick a preset, play, and export a wav. Audio is decoded and rendered in the browser and is not uploaded. There is also a Sampler link in the Phosphene top bar.
+
 Requires a browser (or Electron) with **WebGL2**.
 
 ## MVP
