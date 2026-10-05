@@ -8,7 +8,6 @@ import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../c
 import { isHeraldry } from "../engine/heraldry";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
 import { resumeAudio } from "../media/audio";
-import { buildPrompt, generateStill, samplePalette } from "../generate/imagine";
 import { fitEven } from "../core/random";
 import { EXPORT_FULL_LONG, EXPORT_STILL_QUALITY } from "../core/exportSize";
 import type { Renderer } from "../engine/renderer";
@@ -366,38 +365,4 @@ export function startFromScratch() {
   for (const src of store.project.sources) disposeSource(src);
   store.replace(createDefaultProject());
   store.patchUi({ status: "new piece", prompt: "", generating: false });
-}
-
-export async function generateFromPrompt() {
-  if (store.state.ui.generating) return;
-  const prompt = store.state.ui.prompt.trim();
-  if (!prompt) {
-    store.patchUi({ status: "type a prompt first" });
-    return;
-  }
-  store.patchUi({ generating: true, status: "generating new image…" });
-  try {
-    const src = store.project.sources.find((s) => s.id === store.state.ui.selectedSourceId);
-    const useSource = store.state.ui.useSourceForGen;
-    let palette: string[] = [];
-    const drawable = src?.frozenFrame || src?.bitmap || src?.video || null;
-    if (useSource && drawable) palette = samplePalette(drawable);
-    const full = buildPrompt(prompt, palette, useSource && palette.length > 0);
-    const seed = (store.project.seed + Date.now()) >>> 0;
-    const blob = await generateStill({
-      prompt: full,
-      seed,
-      width: store.project.exportSettings.width,
-      height: store.project.exportSettings.height,
-      onStatus: (msg) => store.patchUi({ generating: true, status: msg }, false),
-    });
-    const image = await loadImageFromBlob(blob, `gen_${seed}.jpg`);
-    addSource(image, true);
-    store.patchUi({ generating: false, status: useSource && palette.length ? "new image from prompt + source" : "new image from prompt" });
-  } catch (err) {
-    store.patchUi({
-      generating: false,
-      status: err instanceof Error ? err.message : "generation failed",
-    });
-  }
 }

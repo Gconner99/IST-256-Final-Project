@@ -15,7 +15,6 @@ import {
   dupPreset,
   duplicateLayer,
   freezeSelected,
-  generateFromPrompt,
   importFiles,
   loadPreset,
   loadProjectFile,
@@ -42,28 +41,6 @@ import { resumeAudio } from "../media/audio";
 import { EFFECT_CATEGORIES, effectsByCategory, getEffect } from "../effects/registry";
 import { collageName, defaultGeneratorSource } from "../core/defaults";
 import {
-  ANIMAL_CHAINS,
-  ANIMAL_LABEL,
-  animalFromUnknown,
-  CAMERA_BEHAVIORS,
-  CAMERA_FEELS,
-  HUNT_SELECTS,
-  cameraFromUnknown,
-  clampHuntFocusError,
-  clampHuntFocusSpeed,
-  clampHuntFollowMax,
-  clampHuntFollowMin,
-  clampHuntPrecision,
-  clampHuntReactMax,
-  clampHuntReactMin,
-  clampHuntSnap,
-  clampHuntTight,
-  clampHuntVariation,
-  clampHuntWideMax,
-  clampHuntWideMin,
-  clampHuntZoom,
-  feelFromUnknown,
-  huntSelectFromUnknown,
   COLLAGE_KITS,
   clampBoidAlign,
   clampBoidCohere,
@@ -82,24 +59,19 @@ import {
   clampFlowForce,
   clampFlowScale,
   clampFlowTurb,
-  clampFieldAttract,
   clampFieldContrast,
   clampFieldCurl,
-  clampFieldDamp,
   clampFieldDensity,
   clampFieldDensityEvolve,
   clampFieldDensityScale,
   clampFieldEvolve,
   clampFieldFlow,
   clampFieldFlowScale,
-  clampFieldInertia,
   clampFieldMaxScale,
-  clampFieldMaxV,
   clampFieldMinScale,
   clampFieldMotion,
   clampFieldPerturb,
   clampFieldRadius,
-  clampFieldRepel,
   clampFieldScale,
   clampFieldScaleAmp,
   clampFieldSparsity,
@@ -159,7 +131,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <button class="btn tiny ${store.project.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit" title="Cut to the beat through music-reactive looks">Cut edit</button>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
-      <button class="btn tiny" data-act="rand-field" title="Reroll Field sliders only. Keeps kit, mash, wash, and camera.">Rand field</button>
+      <button class="btn tiny" data-act="rand-field" title="Reroll Field sliders only. Keeps kit, mash, wash, size, and pace.">Rand field</button>
       <select id="quality">
         <option value="draft">Draft</option>
         <option value="preview">Preview</option>
@@ -181,23 +153,22 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tunnel / spiral / helix / bloom / prism plus Gyre, Well, Hall, Drift, Braid, and Sway are 3D fly-throughs — stamps travel in depth and around the frame so a big screen feels like you are moving through the picture. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Field locks one stamp pattern and loops it seamlessly — spinning discs, straight grid motion, or Snake (heraldic silhouettes: a packed sheet with a crawling white hole, a C, a frame of large stickers, a bouncing flock, a creature, giants, then a glyph stroke, while every icon turns into a different one) — until you change a slider, pick another pattern, or hit Rand field. With a song loaded the loop spans whole bars. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Chain can optionally wear Animal Chain parts (dragon, dog, ferret, caterpillar, zebra) on the same path. Hunt is a documentary camera on top of any move: watch wide, notice a stamp, snap in, follow, return. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
+        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tunnel / spiral / helix / bloom / prism plus Gyre, Well, Hall, Drift, Braid, and Sway are 3D fly-throughs — stamps travel in depth and around the frame so a big screen feels like you are moving through the picture. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Field locks one stamp pattern and loops it seamlessly — Sunflower, Orbit, Traffic, Cascade, Checker, Scan, or Snake (heraldic silhouettes: a packed sheet with a crawling white hole, a C, a frame of large stickers, a bouncing flock, a creature, giants, then a glyph stroke, while every icon turns into a different one) — until you change a slider, pick another pattern, or hit Rand field. With a song loaded the loop spans whole bars. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
           <li><kbd>K</kbd> keyframe selected parameter</li>
           <li><kbd>N</kbd> start from scratch</li>
           <li><kbd>?</kbd> this card</li>
-          <li>Type a prompt on the left and click Generate to make a <em>new</em> image. Check “use source as reference” to keep the mood of your upload without copying it. Drop an MP3 the same way — it becomes the soundtrack, not the picture.</li>
-          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Check <em>effects</em> (top bar, or under Effects on the right) if you also want a short stack from the right panel. Uncheck it for a clean collage. Wacky rolls a thicker stack when effects are on. No dancer. Rolls stay small and slower — no giant stamps, no frantic bounce/flip/flash. When the rolled move is Field, the Field sliders roll too.</li>
-          <li><strong>Rand field</strong> picks a new looping pattern and rerolls its sliders. Kit, mash, wash, camera, size, and pace stay. Switches the clip to Field if it is on another move.</li>
+          <li>Drop an MP3 the same way as a picture — it becomes the soundtrack, not the picture.</li>
+          <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Check <em>effects</em> (top bar, or under Effects on the right) if you also want a short stack from the right panel. Uncheck it for a clean collage. Wacky rolls a thicker stack when effects are on. No dancer. Rolls stay small and slower. When the rolled move is Field, the Field sliders roll too.</li>
+          <li><strong>Rand field</strong> picks a new looping pattern and rerolls its sliders. Kit, mash, wash, size, and pace stay. Switches the clip to Field if it is on another move.</li>
           <li><strong>Cut edit</strong> is the other randomizer. Drop an MP3 first. It finds the first downbeat (the kick, not the snare) and cuts on that metronome — bars and half-bars, not stray 8th notes. Snap / step / spot flip on the same frames as the drums. Some shots hold a bar or two. Some are two-beat fills that land back on 1.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music, Kitchen, Sky, Street, Arcade, Haunt, Sport, School. Each pack is its own stamp set — switching a kit replaces every icon. Move buttons keep the current kit.</li>
           <li><strong>Mash</strong> — mix a second kit’s stamps onto the same ground. <strong>Color</strong> packs (Brine, Candy, Ember, Neon…) recast washes and inks across any kit. <strong>Wash</strong> taps a color from the active pack. <strong>Night</strong> is a darker club wash that breathes on bass.</li>
           <li><strong>Size / Storm</strong> — few giants or a sticker storm.</li>
           <li><strong>Soundtrack</strong> — hit <em>MP3</em> or drop a clip (mp3/wav/ogg/m4a). It does not replace your picture. Playback starts and the stamps breathe on the beat without jumping off their path. Export an MP4 while a song is playing and the clip keeps that part of the song — the window you are hearing, with the visuals already synced to it. Export from the start of the track if you rewind first. Stills and PNG sequences stay silent. Clips loop as-is. Check <em>close loop</em> only if you want the last beats to dissolve into the first frame.</li>
-          <li><strong>Texture</strong> — Dot Screen, Riso, Etching, Holo Foil, Crackle, Velvet Nap sit under Effects. They print, foil, or flock the collage without replacing the stamps.</li>
           <li>Bottom-right: pick a shape, tap <strong>720</strong> or <strong>1080</strong>, pick <strong>2s / 4s / 8s / 16s / 32s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). Clips save at 30 fps in HD so they stay sharp without a long wait. The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
@@ -239,7 +210,6 @@ function bind(root: HTMLElement) {
     if (act === "save") saveProject();
     if (act === "load") root.querySelector<HTMLInputElement>("#proj-file")?.click();
     if (act === "scratch") startFromScratch();
-    if (act === "imagine") void generateFromPrompt();
     if (act === "seed-") bumpSeed(-1);
     if (act === "seed+") bumpSeed(1);
     if (act === "rand-all") randomize("all");
@@ -353,30 +323,6 @@ function bind(root: HTMLElement) {
         addSource(defaultGeneratorSource("wallpaper", "sailor", "rush", { night: true }), true);
         store.patchUi({ status: "night wash" });
       }
-    }
-    if (act === "camera") {
-      const next = cameraFromUnknown(t.dataset.camera);
-      patchCollage((s) => ({ ...s, collageCamera: next }), next === "hunt" ? "camera · documentary search" : "camera · fixed");
-    }
-    if (act === "camera-feel") {
-      const next = feelFromUnknown(t.dataset.feel);
-      patchCollage((s) => ({ ...s, collageCameraFeel: next }), `camera feel · ${next}`);
-    }
-    if (act === "hunt-select") {
-      const next = huntSelectFromUnknown(t.dataset.select);
-      patchCollage((s) => ({ ...s, collageHuntSelect: next }), `subject select · ${next}`);
-    }
-    if (act === "hunt-focus") {
-      const current = selectedCollageSource();
-      const next = !current?.collageHuntFocus;
-      patchCollage((s) => ({ ...s, collageHuntFocus: next }), next ? "manual focus on" : "manual focus off");
-    }
-    if (act === "chain-animal") {
-      const next = animalFromUnknown(t.dataset.animal);
-      patchCollage(
-        (s) => renameCollage({ ...s, collageChainAnimal: next }),
-        next === "off" ? "animal chain off" : `animal chain · ${next}`,
-      );
     }
     if (act === "field-pattern") {
       const next = clampFieldPattern(t.dataset.pattern);
@@ -523,8 +469,6 @@ function bind(root: HTMLElement) {
   root.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
     const p = store.project;
-    if (t.id === "gen-prompt") store.patchUi({ prompt: t.value }, false);
-    if (t.id === "gen-src") store.patchUi({ useSourceForGen: (t as HTMLInputElement).checked }, false);
     if (t.id === "inc-critters" || t.id === "inc-critters-rail") {
       store.patchUi({ includeCritters: (t as HTMLInputElement).checked });
     }
@@ -628,12 +572,7 @@ function bind(root: HTMLElement) {
     if (t.id === "collage-field-flow") patchCollage((s) => ({ ...s, collageFieldFlow: clampFieldFlow(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-curl") patchCollage((s) => ({ ...s, collageFieldCurl: clampFieldCurl(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-flow-scale") patchCollage((s) => ({ ...s, collageFieldFlowScale: clampFieldFlowScale(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-field-attract") patchCollage((s) => ({ ...s, collageFieldAttract: clampFieldAttract(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-field-repel") patchCollage((s) => ({ ...s, collageFieldRepel: clampFieldRepel(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-radius") patchCollage((s) => ({ ...s, collageFieldRadius: clampFieldRadius(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-field-inertia") patchCollage((s) => ({ ...s, collageFieldInertia: clampFieldInertia(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-field-damp") patchCollage((s) => ({ ...s, collageFieldDamp: clampFieldDamp(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-field-max-v") patchCollage((s) => ({ ...s, collageFieldMaxV: clampFieldMaxV(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-scale-amp") patchCollage((s) => ({ ...s, collageFieldScaleAmp: clampFieldScaleAmp(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-min-scale") patchCollage((s) => ({ ...s, collageFieldMinScale: clampFieldMinScale(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-max-scale") patchCollage((s) => ({ ...s, collageFieldMaxScale: clampFieldMaxScale(Number(t.value)) }), undefined, true);
@@ -642,19 +581,6 @@ function bind(root: HTMLElement) {
     if (t.id === "collage-field-sparsity") patchCollage((s) => ({ ...s, collageFieldSparsity: clampFieldSparsity(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-contrast") patchCollage((s) => ({ ...s, collageFieldContrast: clampFieldContrast(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-motion") patchCollage((s) => ({ ...s, collageFieldMotion: clampFieldMotion(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-wide-min") patchCollage((s) => ({ ...s, collageHuntWideMin: clampHuntWideMin(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-wide-max") patchCollage((s) => ({ ...s, collageHuntWideMax: clampHuntWideMax(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-follow-min") patchCollage((s) => ({ ...s, collageHuntFollowMin: clampHuntFollowMin(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-follow-max") patchCollage((s) => ({ ...s, collageHuntFollowMax: clampHuntFollowMax(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-snap") patchCollage((s) => ({ ...s, collageHuntSnap: clampHuntSnap(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-zoom") patchCollage((s) => ({ ...s, collageHuntZoom: clampHuntZoom(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-tight") patchCollage((s) => ({ ...s, collageHuntTight: clampHuntTight(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-react-min") patchCollage((s) => ({ ...s, collageHuntReactMin: clampHuntReactMin(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-react-max") patchCollage((s) => ({ ...s, collageHuntReactMax: clampHuntReactMax(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-precision") patchCollage((s) => ({ ...s, collageHuntPrecision: clampHuntPrecision(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-focus-speed") patchCollage((s) => ({ ...s, collageHuntFocusSpeed: clampHuntFocusSpeed(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-focus-error") patchCollage((s) => ({ ...s, collageHuntFocusError: clampHuntFocusError(Number(t.value)) }), undefined, true);
-    if (t.id === "collage-hunt-variation") patchCollage((s) => ({ ...s, collageHuntVariation: clampHuntVariation(Number(t.value)) }), undefined, true);
     if (t.id === "exp-q") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, quality: Number(t.value) } }), false);
     if (t.id === "exp-br") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, bitrate: Number(t.value) } }), false);
     if (t.id === "exp-name") store.setProject((pr) => ({ ...pr, exportSettings: { ...pr.exportSettings, filename: t.value } }), false);
@@ -767,12 +693,6 @@ function paintRail(n: HTMLElement) {
       <input id="replace-file" type="file" accept="image/*,video/*,audio/*,.tif,.tiff,.mov,.webm,.mp4,.gif,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden />
     </div>
     <hr class="div" />
-    <div class="sec">Generate new image</div>
-    <textarea id="gen-prompt" class="prompt" placeholder="describe a new image… e.g. grainy night photo of a flooded parking lot, sodium lights">${esc(ui.prompt)}</textarea>
-    <label class="check"><input type="checkbox" id="gen-src" ${ui.useSourceForGen ? "checked" : ""}/> use selected source as reference</label>
-    <button class="btn tiny acid" data-act="imagine" ${ui.generating ? "disabled" : ""}>${ui.generating ? "working…" : "Generate"}</button>
-    <button class="btn tiny" data-act="imagine" ${ui.generating || !ui.prompt.trim() ? "disabled" : ""}>Again</button>
-    <div class="status" style="margin-top:4px">Usually a few seconds. Again rolls a new seed. Does not overwrite the upload.</div>
     <div class="row" style="margin-top:6px">
       <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="sailor">Sailor</button>
       <button class="btn tiny acid" data-act="gen" data-kind="wallpaper" data-kit="circus">Circus</button>
@@ -882,37 +802,19 @@ function paintRail(n: HTMLElement) {
       <input id="collage-chain-smooth" type="range" min="0.12" max="1" step="0.02" value="${clampCollageChainSmooth(collage?.collageChainSmooth)}" />
       <input id="collage-chain-smooth" type="number" min="0.12" max="1" step="0.02" value="${clampCollageChainSmooth(collage?.collageChainSmooth).toFixed(2)}" />
       <span></span></div>
-    <div class="sec">Animal Chain</div>
-    <div class="row">
-      ${ANIMAL_CHAINS.map((id) => {
-        const on = animalFromUnknown(collage?.collageChainAnimal) === id;
-        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="chain-animal" data-animal="${id}">${ANIMAL_LABEL[id]}</button>`;
-      }).join("")}
-    </div>`
+`
         : ""
     }
     <div class="sec">Field</div>
     <div class="row">
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="field">Field</button>
-      <button class="btn tiny" data-act="rand-field" title="Reroll Field sliders only. Keeps kit, mash, wash, and camera.">Rand field</button>
+      <button class="btn tiny" data-act="rand-field" title="Reroll Field sliders only. Keeps kit, mash, wash, size, and pace.">Rand field</button>
     </div>
     ${
       collage?.collageMove === "field"
         ? `<div class="sec">Pattern</div>
     <div class="row">
-      ${(["auto", "sunflower", "rings", "spiro", "ripple", "march", "kaleido", "shapeshift"] as const).map((id) => {
-        const on = clampFieldPattern(collage.collageFieldPattern) === id;
-        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="field-pattern" data-pattern="${id}">${FIELD_PATTERN_LABEL[id]}</button>`;
-      }).join("")}
-    </div>
-    <div class="row">
-      ${(["vortex", "orbit", "weave", "fan", "braid", "tiles", "petal", "coil"] as const).map((id) => {
-        const on = clampFieldPattern(collage.collageFieldPattern) === id;
-        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="field-pattern" data-pattern="${id}">${FIELD_PATTERN_LABEL[id]}</button>`;
-      }).join("")}
-    </div>
-    <div class="row">
-      ${(["traffic", "cascade", "circuit", "chevron", "checker", "shear", "scan", "snake"] as const).map((id) => {
+      ${(["auto", "sunflower", "orbit", "traffic", "cascade", "checker", "scan", "snake"] as const).map((id) => {
         const on = clampFieldPattern(collage.collageFieldPattern) === id;
         return `<button class="btn tiny ${on ? "acid" : ""}" data-act="field-pattern" data-pattern="${id}">${FIELD_PATTERN_LABEL[id]}</button>`;
       }).join("")}
@@ -969,51 +871,6 @@ function paintRail(n: HTMLElement) {
     ${num("collage-pole-switch", "Polarity Switching", clampPoleSwitch(collage.collagePoleSwitch), 0, 2, 0.05)}`
               : ""
     }
-    <div class="sec">Camera</div>
-    <div class="row">
-      ${CAMERA_BEHAVIORS.map((id) => {
-        const on = cameraFromUnknown(collage?.collageCamera) === id;
-        const label = id === "hunt" ? "Hunt" : "Fixed";
-        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="camera" data-camera="${id}">${label}</button>`;
-      }).join("")}
-    </div>
-    ${
-      cameraFromUnknown(collage?.collageCamera) === "hunt"
-        ? `<div class="sec">Documentary Search</div>
-    <div class="row">
-      ${HUNT_SELECTS.map((id) => {
-        const on = huntSelectFromUnknown(collage?.collageHuntSelect) === id;
-        const label = id === "random" ? "Random" : id === "reactive" ? "Reactive" : "Mixed";
-        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="hunt-select" data-select="${id}">${label}</button>`;
-      }).join("")}
-    </div>
-    <div class="row">
-      ${CAMERA_FEELS.map((id) => {
-        const on = feelFromUnknown(collage?.collageCameraFeel) === id;
-        const label = id === "handheld" ? "Handheld" : "Perfect";
-        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="camera-feel" data-feel="${id}">${label}</button>`;
-      }).join("")}
-      <button class="btn tiny ${collage?.collageHuntFocus ? "acid" : ""}" data-act="hunt-focus">Manual Focus</button>
-    </div>
-    ${num("collage-hunt-wide-min", "Wide / Search Duration Min", clampHuntWideMin(collage?.collageHuntWideMin), 0.4, 12, 0.1)}
-    ${num("collage-hunt-wide-max", "Wide / Search Duration Max", clampHuntWideMax(collage?.collageHuntWideMax), 0.6, 16, 0.1)}
-    ${num("collage-hunt-follow-min", "Subject Follow Duration Min", clampHuntFollowMin(collage?.collageHuntFollowMin), 0.4, 12, 0.1)}
-    ${num("collage-hunt-follow-max", "Subject Follow Duration Max", clampHuntFollowMax(collage?.collageHuntFollowMax), 0.6, 16, 0.1)}
-    ${num("collage-hunt-snap", "Snap Zoom Speed", clampHuntSnap(collage?.collageHuntSnap), 0.35, 2.4, 0.05)}
-    ${num("collage-hunt-zoom", "Zoom Range / Close Framing", clampHuntZoom(collage?.collageHuntZoom), 0.35, 2.4, 0.05)}
-    ${num("collage-hunt-tight", "Tracking Tightness", clampHuntTight(collage?.collageHuntTight), 0.12, 1, 0.02)}
-    ${num("collage-hunt-react-min", "Reaction Time Min", clampHuntReactMin(collage?.collageHuntReactMin), 0.04, 1.4, 0.02)}
-    ${num("collage-hunt-react-max", "Reaction Time Max", clampHuntReactMax(collage?.collageHuntReactMax), 0.08, 2, 0.02)}
-    ${num("collage-hunt-precision", "Operator Precision", clampHuntPrecision(collage?.collageHuntPrecision), 0, 1, 0.02)}
-    ${num("collage-hunt-variation", "Behavior Variation", clampHuntVariation(collage?.collageHuntVariation), 0, 1, 0.02)}
-    ${
-      collage?.collageHuntFocus
-        ? `${num("collage-hunt-focus-speed", "Focus Correction Speed", clampHuntFocusSpeed(collage?.collageHuntFocusSpeed), 0.15, 2.2, 0.05)}
-    ${num("collage-hunt-focus-error", "Focus Error Amount", clampHuntFocusError(collage?.collageHuntFocusError), 0, 1.6, 0.05)}`
-        : ""
-    }`
-        : ""
-    }
     <div class="sec">Music</div>
     <div class="row">
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="bars">Bars</button>
@@ -1047,15 +904,6 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny acid" data-act="gen" data-kind="heraldry" data-move="ghost">Ghost</button>
     </div>
     <div class="row">
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="bounce">Bounce</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="glow">Glow</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="kick">Kick</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="jelly">Jelly</button>
-    </div>
-    <div class="row">
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="flip">Flip</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="flash">Flash</button>
-      <button class="btn tiny" data-act="gen" data-kind="heraldry" data-move="hop">Hop</button>
       <button class="btn tiny hot" data-act="rand-wacky">Rand wacky</button>
       <button class="btn tiny ${p.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit">Cut edit</button>
     </div>
@@ -1328,7 +1176,6 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     chainMorph: src.collageChainMorph,
     chainVary: src.collageChainVary,
     chainSmooth: src.collageChainSmooth,
-    chainAnimal: src.collageChainAnimal,
     springStrength: src.collageSpringStrength,
     springDamp: src.collageSpringDamp,
     springDist: src.collageSpringDist,
@@ -1350,23 +1197,6 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     poleSpeed: src.collagePoleSpeed,
     poleFalloff: src.collagePoleFalloff,
     poleSwitch: src.collagePoleSwitch,
-    camera: src.collageCamera,
-    cameraFeel: src.collageCameraFeel,
-    huntWideMin: src.collageHuntWideMin,
-    huntWideMax: src.collageHuntWideMax,
-    huntFollowMin: src.collageHuntFollowMin,
-    huntFollowMax: src.collageHuntFollowMax,
-    huntSnap: src.collageHuntSnap,
-    huntZoom: src.collageHuntZoom,
-    huntTight: src.collageHuntTight,
-    huntReactMin: src.collageHuntReactMin,
-    huntReactMax: src.collageHuntReactMax,
-    huntPrecision: src.collageHuntPrecision,
-    huntSelect: src.collageHuntSelect,
-    huntFocus: src.collageHuntFocus,
-    huntFocusSpeed: src.collageHuntFocusSpeed,
-    huntFocusError: src.collageHuntFocusError,
-    huntVariation: src.collageHuntVariation,
     fieldStrength: src.collageFieldStrength,
     fieldScale: src.collageFieldScale,
     fieldEvolve: src.collageFieldEvolve,
@@ -1376,12 +1206,7 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     fieldFlow: src.collageFieldFlow,
     fieldCurl: src.collageFieldCurl,
     fieldFlowScale: src.collageFieldFlowScale,
-    fieldAttract: src.collageFieldAttract,
-    fieldRepel: src.collageFieldRepel,
     fieldRadius: src.collageFieldRadius,
-    fieldInertia: src.collageFieldInertia,
-    fieldDamp: src.collageFieldDamp,
-    fieldMaxV: src.collageFieldMaxV,
     fieldScaleAmp: src.collageFieldScaleAmp,
     fieldMinScale: src.collageFieldMinScale,
     fieldMaxScale: src.collageFieldMaxScale,
@@ -1397,7 +1222,7 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
 
 function renameCollage(src: MediaSource): MediaSource {
   if (!src.collageKit || !src.collageMove) return src;
-  return { ...src, name: collageName(src.collageMove, src.collageKit, src.collageKitB, src.collageChainAnimal) };
+  return { ...src, name: collageName(src.collageMove, src.collageKit, src.collageKitB) };
 }
 
 function patchCollage(mut: (src: MediaSource) => MediaSource, status?: string, live = false): boolean {

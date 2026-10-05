@@ -4,32 +4,10 @@ import {
   clampBoidRadius,
   clampBoidSep,
   clampBoidSpeed,
-  ANIMAL_LABEL,
-  animalFromUnknown,
-  cameraFromUnknown,
-  clampHuntFocusError,
-  clampHuntFocusSpeed,
-  clampHuntFollowMax,
-  clampHuntFollowMin,
-  clampHuntPrecision,
-  clampHuntReactMax,
-  clampHuntReactMin,
-  clampHuntSnap,
-  clampHuntTight,
-  clampHuntVariation,
-  clampHuntWideMax,
-  clampHuntWideMin,
-  clampHuntZoom,
-  feelFromUnknown,
-  huntSelectFromUnknown,
   clampCollageChainMorph,
   clampCollageChainSmooth,
   clampCollageChainTravel,
   clampCollageChainVary,
-  type AnimalChain,
-  type CameraBehavior,
-  type CameraFeel,
-  type HuntSelect,
   clampCollageDensity,
   clampCollagePace,
   clampCollageScale,
@@ -38,24 +16,19 @@ import {
   clampFlowForce,
   clampFlowScale,
   clampFlowTurb,
-  clampFieldAttract,
   clampFieldContrast,
   clampFieldCurl,
-  clampFieldDamp,
   clampFieldDensity,
   clampFieldDensityEvolve,
   clampFieldDensityScale,
   clampFieldEvolve,
   clampFieldFlow,
   clampFieldFlowScale,
-  clampFieldInertia,
   clampFieldMaxScale,
-  clampFieldMaxV,
   clampFieldMinScale,
   clampFieldMotion,
   clampFieldPerturb,
   clampFieldRadius,
-  clampFieldRepel,
   clampFieldScale,
   clampFieldScaleAmp,
   clampFieldSparsity,
@@ -225,7 +198,6 @@ export interface CollageExtras {
   chainMorph?: number;
   chainVary?: number;
   chainSmooth?: number;
-  chainAnimal?: AnimalChain | string | null;
   springStrength?: number;
   springDamp?: number;
   springDist?: number;
@@ -256,12 +228,7 @@ export interface CollageExtras {
   fieldFlow?: number;
   fieldCurl?: number;
   fieldFlowScale?: number;
-  fieldAttract?: number;
-  fieldRepel?: number;
   fieldRadius?: number;
-  fieldInertia?: number;
-  fieldDamp?: number;
-  fieldMaxV?: number;
   fieldScaleAmp?: number;
   fieldMinScale?: number;
   fieldMaxScale?: number;
@@ -271,33 +238,14 @@ export interface CollageExtras {
   fieldContrast?: number;
   fieldMotion?: number;
   fieldPattern?: string;
-  camera?: CameraBehavior | string | null;
-  cameraFeel?: CameraFeel | string | null;
-  huntWideMin?: number;
-  huntWideMax?: number;
-  huntFollowMin?: number;
-  huntFollowMax?: number;
-  huntSnap?: number;
-  huntZoom?: number;
-  huntTight?: number;
-  huntReactMin?: number;
-  huntReactMax?: number;
-  huntPrecision?: number;
-  huntSelect?: HuntSelect | string | null;
-  huntFocus?: boolean;
-  huntFocusSpeed?: number;
-  huntFocusError?: number;
-  huntVariation?: number;
 }
 
 export function collageName(
   move: CollageMove,
   kit: CollageKit,
   kitB?: CollageKit | null,
-  animal?: AnimalChain | string | null,
 ): string {
-  const live = move === "chain" ? animalFromUnknown(animal) : "off";
-  const place = live !== "off" ? `CHAIN · ${ANIMAL_LABEL[live].toUpperCase()}` : MOVE_LABEL[move];
+  const place = MOVE_LABEL[move];
   if (kitB && kitB !== kit) return `${place} · ${KIT_LABEL[kit]} · ${KIT_LABEL[kitB]}`;
   return `${place} · ${KIT_LABEL[kit]}`;
 }
@@ -324,7 +272,7 @@ export function defaultGeneratorSource(
   const kitB = collageKit && extras?.kitB ? kitFromUnknown(extras.kitB) : undefined;
   const collageKitB = kitB && collageKit && kitB !== collageKit ? kitB : undefined;
   const name = collageKit && collageMove
-    ? collageName(collageMove, collageKit, collageKitB, extras?.chainAnimal)
+    ? collageName(collageMove, collageKit, collageKitB)
     : collageKit
       ? `${place} · ${KIT_LABEL[collageKit]}`
       : kind === "critters"
@@ -341,7 +289,7 @@ export function defaultGeneratorSource(
     name,
     kind: "generator",
     generator,
-    colorA: wash ?? (collageKit ? paperForLook(collageKit, collageMove === "rush" ? 1 : collageMove === "tunnel" ? 5 : collageMove === "bounce" ? 7 : 11, colorPack) : ink.a),
+    colorA: wash ?? (collageKit ? paperForLook(collageKit, collageMove === "rush" ? 1 : collageMove === "tunnel" ? 5 : 11, colorPack) : ink.a),
     colorB: collageKit ? inkForLook(collageKit, colorPack) : ink.b,
     collageColorPack: colorPack,
     collageKit,
@@ -355,7 +303,6 @@ export function defaultGeneratorSource(
     collageChainMorph: collageKit ? clampCollageChainMorph(extras?.chainMorph) : undefined,
     collageChainVary: collageKit ? clampCollageChainVary(extras?.chainVary) : undefined,
     collageChainSmooth: collageKit ? clampCollageChainSmooth(extras?.chainSmooth) : undefined,
-    collageChainAnimal: collageKit ? animalFromUnknown(extras?.chainAnimal) : undefined,
     collageSpringStrength: collageKit ? clampSpringStrength(extras?.springStrength) : undefined,
     collageSpringDamp: collageKit ? clampSpringDamp(extras?.springDamp) : undefined,
     collageSpringDist: collageKit ? clampSpringDist(extras?.springDist) : undefined,
@@ -386,12 +333,7 @@ export function defaultGeneratorSource(
     collageFieldFlow: collageKit ? clampFieldFlow(extras?.fieldFlow) : undefined,
     collageFieldCurl: collageKit ? clampFieldCurl(extras?.fieldCurl) : undefined,
     collageFieldFlowScale: collageKit ? clampFieldFlowScale(extras?.fieldFlowScale) : undefined,
-    collageFieldAttract: collageKit ? clampFieldAttract(extras?.fieldAttract) : undefined,
-    collageFieldRepel: collageKit ? clampFieldRepel(extras?.fieldRepel) : undefined,
     collageFieldRadius: collageKit ? clampFieldRadius(extras?.fieldRadius) : undefined,
-    collageFieldInertia: collageKit ? clampFieldInertia(extras?.fieldInertia) : undefined,
-    collageFieldDamp: collageKit ? clampFieldDamp(extras?.fieldDamp) : undefined,
-    collageFieldMaxV: collageKit ? clampFieldMaxV(extras?.fieldMaxV) : undefined,
     collageFieldScaleAmp: collageKit ? clampFieldScaleAmp(extras?.fieldScaleAmp) : undefined,
     collageFieldMinScale: collageKit ? clampFieldMinScale(extras?.fieldMinScale) : undefined,
     collageFieldMaxScale: collageKit ? clampFieldMaxScale(extras?.fieldMaxScale) : undefined,
@@ -401,23 +343,6 @@ export function defaultGeneratorSource(
     collageFieldContrast: collageKit ? clampFieldContrast(extras?.fieldContrast) : undefined,
     collageFieldMotion: collageKit ? clampFieldMotion(extras?.fieldMotion) : undefined,
     collageFieldPattern: collageKit ? clampFieldPattern(extras?.fieldPattern) : undefined,
-    collageCamera: collageKit ? cameraFromUnknown(extras?.camera) : undefined,
-    collageCameraFeel: collageKit ? feelFromUnknown(extras?.cameraFeel) : undefined,
-    collageHuntWideMin: collageKit ? clampHuntWideMin(extras?.huntWideMin) : undefined,
-    collageHuntWideMax: collageKit ? clampHuntWideMax(extras?.huntWideMax) : undefined,
-    collageHuntFollowMin: collageKit ? clampHuntFollowMin(extras?.huntFollowMin) : undefined,
-    collageHuntFollowMax: collageKit ? clampHuntFollowMax(extras?.huntFollowMax) : undefined,
-    collageHuntSnap: collageKit ? clampHuntSnap(extras?.huntSnap) : undefined,
-    collageHuntZoom: collageKit ? clampHuntZoom(extras?.huntZoom) : undefined,
-    collageHuntTight: collageKit ? clampHuntTight(extras?.huntTight) : undefined,
-    collageHuntReactMin: collageKit ? clampHuntReactMin(extras?.huntReactMin) : undefined,
-    collageHuntReactMax: collageKit ? clampHuntReactMax(extras?.huntReactMax) : undefined,
-    collageHuntPrecision: collageKit ? clampHuntPrecision(extras?.huntPrecision) : undefined,
-    collageHuntSelect: collageKit ? huntSelectFromUnknown(extras?.huntSelect) : undefined,
-    collageHuntFocus: collageKit ? !!extras?.huntFocus : undefined,
-    collageHuntFocusSpeed: collageKit ? clampHuntFocusSpeed(extras?.huntFocusSpeed) : undefined,
-    collageHuntFocusError: collageKit ? clampHuntFocusError(extras?.huntFocusError) : undefined,
-    collageHuntVariation: collageKit ? clampHuntVariation(extras?.huntVariation) : undefined,
     width: 1280,
     height: 720,
     duration: 0,

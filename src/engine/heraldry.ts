@@ -13,63 +13,20 @@ import {
   stepFieldSim,
   type FieldSim,
 } from "./fieldSim";
-import {
-  applyHuntPose,
-  cameraFromUnknown,
-  huntParamsFrom,
-  huntView,
-  stepHunt,
-  type HuntState,
-  type HuntView,
-} from "./docSearch";
-
 export {
-  CAMERA_BEHAVIORS,
-  CAMERA_FEELS,
-  HUNT_SELECTS,
-  applyHuntPose,
-  cameraFromUnknown,
-  clampHuntFocusError,
-  clampHuntFocusSpeed,
-  clampHuntFollowMax,
-  clampHuntFollowMin,
-  clampHuntPrecision,
-  clampHuntReactMax,
-  clampHuntReactMin,
-  clampHuntSnap,
-  clampHuntTight,
-  clampHuntVariation,
-  clampHuntWideMax,
-  clampHuntWideMin,
-  clampHuntZoom,
-  feelFromUnknown,
-  huntParamsFrom,
-  huntSelectFromUnknown,
-  huntSalience,
-  pickHuntSubject,
-  stepHunt,
-} from "./docSearch";
-export type { CameraBehavior, CameraFeel, HuntSelect, HuntPhase, HuntStamp, HuntView } from "./docSearch";
-
-export {
-  clampFieldAttract,
   clampFieldContrast,
   clampFieldCurl,
-  clampFieldDamp,
   clampFieldDensity,
   clampFieldDensityEvolve,
   clampFieldDensityScale,
   clampFieldEvolve,
   clampFieldFlow,
   clampFieldFlowScale,
-  clampFieldInertia,
   clampFieldMaxScale,
-  clampFieldMaxV,
   clampFieldMinScale,
   clampFieldMotion,
   clampFieldPerturb,
   clampFieldRadius,
-  clampFieldRepel,
   clampFieldScale,
   clampFieldScaleAmp,
   clampFieldSparsity,
@@ -125,13 +82,6 @@ export const COLLAGE_MOVES = [
   "drift",
   "braid",
   "sway",
-  "bounce",
-  "flip",
-  "glow",
-  "flash",
-  "hop",
-  "kick",
-  "jelly",
   "tide",
   "rings",
   "loom",
@@ -206,13 +156,6 @@ export const MOVE_LABEL: Record<CollageMove, string> = {
   drift: "DRIFT",
   braid: "BRAID",
   sway: "SWAY",
-  bounce: "BOUNCE",
-  flip: "FLIP",
-  glow: "GLOW",
-  flash: "FLASH",
-  hop: "HOP",
-  kick: "KICK",
-  jelly: "JELLY",
   tide: "TIDE",
   rings: "RINGS",
   loom: "LOOM",
@@ -359,65 +302,6 @@ export function clampCollageChainSmooth(value?: number | null): number {
   return clamp(value ?? 0.72, 0.12, 1);
 }
 
-export const ANIMAL_CHAINS = ["off", "dragon", "dog", "ferret", "caterpillar", "zebra"] as const;
-export type AnimalChain = (typeof ANIMAL_CHAINS)[number];
-export type AnimalChainOn = Exclude<AnimalChain, "off">;
-export type AnimalRole = "head" | "body" | "tail" | "leg" | "nub";
-
-export const ANIMAL_LABEL: Record<AnimalChain, string> = {
-  off: "Off",
-  dragon: "Dragon",
-  dog: "Dog",
-  ferret: "Ferret",
-  caterpillar: "Caterpillar",
-  zebra: "Zebra",
-};
-
-export function animalFromUnknown(value?: string | null): AnimalChain {
-  return ANIMAL_CHAINS.includes(value as AnimalChain) ? (value as AnimalChain) : "off";
-}
-
-export function animalChainSpineCount(density?: number | null): number {
-  return Math.max(11, Math.min(18, Math.round(14 * clamp(density ?? 1, 0.35, 2))));
-}
-
-export function animalChainRoles(animal: AnimalChain, spine: number): AnimalRole[] {
-  if (animal === "off" || spine < 2) return [];
-  return Array.from({ length: spine }, (_, i) => (i === 0 ? "head" : i === spine - 1 ? "tail" : "body"));
-}
-
-export function animalChainAppendages(
-  animal: AnimalChain,
-  spine: number,
-): { role: "leg" | "nub"; attach: number; side: number }[] {
-  if (animal === "off" || spine < 4) return [];
-  if (animal === "caterpillar") {
-    const out: { role: "nub"; attach: number; side: number }[] = [];
-    for (let i = 1; i < spine - 1; i++) {
-      out.push({ role: "nub", attach: i, side: -1 });
-      out.push({ role: "nub", attach: i, side: 1 });
-    }
-    return out;
-  }
-  const fore = Math.max(1, Math.round((spine - 1) * 0.22));
-  const hind = Math.max(fore + 2, Math.round((spine - 1) * 0.62));
-  return [
-    { role: "leg", attach: fore, side: -1 },
-    { role: "leg", attach: fore, side: 1 },
-    { role: "leg", attach: hind, side: -1 },
-    { role: "leg", attach: hind, side: 1 },
-  ];
-}
-
-export function animalChainLayout(animal: AnimalChain, density = 1) {
-  const spine = animal === "off" ? 0 : animalChainSpineCount(density);
-  return {
-    spine,
-    roles: animalChainRoles(animal, spine),
-    appendages: animalChainAppendages(animal, spine),
-  };
-}
-
 export interface ChainPoint {
   x: number;
   y: number;
@@ -513,7 +397,6 @@ export function stepIndex(clock: number, bpm: number, subdiv = 1, offset = 0): n
 export function generatorForMove(move: CollageMove): GeneratorType {
   if (move === "rush") return "wallpaper";
   if (move === "tunnel") return "giants";
-  if (move === "bounce") return "shower";
   return "heraldry";
 }
 
@@ -521,7 +404,6 @@ export function sceneFromGenerator(kind?: string | null, move?: string | null): 
   if (move && COLLAGE_MOVES.includes(move as CollageMove)) return move as CollageMove;
   if (kind === "wallpaper") return "rush";
   if (kind === "giants") return "tunnel";
-  if (kind === "shower") return "bounce";
   return "rush";
 }
 
@@ -754,20 +636,7 @@ type Kind =
   | "globe"
   | "backpack"
   | "ruler"
-  | "bell"
-  | "aBody"
-  | "aLeg"
-  | "aNub"
-  | "aDragHead"
-  | "aDragTail"
-  | "aDogHead"
-  | "aDogTail"
-  | "aFerrHead"
-  | "aFerrTail"
-  | "aCatpHead"
-  | "aCatpTail"
-  | "aZebrHead"
-  | "aZebrTail";
+  | "bell";
 
 type Pattern = "plain" | "polka" | "hoop" | "half" | "bar" | "stripe";
 
@@ -871,7 +740,6 @@ export interface HeraldryPaintOpts {
   chainMorph?: number;
   chainVary?: number;
   chainSmooth?: number;
-  chainAnimal?: string | null;
   springStrength?: number;
   springDamp?: number;
   springDist?: number;
@@ -902,12 +770,7 @@ export interface HeraldryPaintOpts {
   fieldFlow?: number;
   fieldCurl?: number;
   fieldFlowScale?: number;
-  fieldAttract?: number;
-  fieldRepel?: number;
   fieldRadius?: number;
-  fieldInertia?: number;
-  fieldDamp?: number;
-  fieldMaxV?: number;
   fieldScaleAmp?: number;
   fieldMinScale?: number;
   fieldMaxScale?: number;
@@ -917,23 +780,6 @@ export interface HeraldryPaintOpts {
   fieldContrast?: number;
   fieldMotion?: number;
   fieldPattern?: string;
-  camera?: string | null;
-  cameraFeel?: string | null;
-  huntWideMin?: number;
-  huntWideMax?: number;
-  huntFollowMin?: number;
-  huntFollowMax?: number;
-  huntSnap?: number;
-  huntZoom?: number;
-  huntTight?: number;
-  huntReactMin?: number;
-  huntReactMax?: number;
-  huntPrecision?: number;
-  huntSelect?: string | null;
-  huntFocus?: boolean;
-  huntFocusSpeed?: number;
-  huntFocusError?: number;
-  huntVariation?: number;
 }
 
 const STAMP = 256;
@@ -2747,165 +2593,6 @@ function bellPath(ctx: CanvasRenderingContext2D, r: number) {
   ctx.arc(0, r * 0.32, r * 0.16, 0, Math.PI * 2);
 }
 
-function aBodyPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.7, 0);
-  ctx.quadraticCurveTo(-r * 0.58, -r * 0.58, 0, -r * 0.52);
-  ctx.quadraticCurveTo(r * 0.58, -r * 0.58, r * 0.7, 0);
-  ctx.quadraticCurveTo(r * 0.58, r * 0.58, 0, r * 0.52);
-  ctx.quadraticCurveTo(-r * 0.58, r * 0.58, -r * 0.7, 0);
-  ctx.closePath();
-}
-
-function aDragHeadPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.82, 0);
-  ctx.quadraticCurveTo(-r * 0.45, -r * 0.55, r * 0.08, -r * 0.32);
-  ctx.lineTo(r * 0.98, -r * 0.12);
-  ctx.lineTo(r * 0.62, r * 0.06);
-  ctx.lineTo(r * 0.88, r * 0.38);
-  ctx.lineTo(r * 0.22, r * 0.22);
-  ctx.quadraticCurveTo(-r * 0.2, r * 0.52, -r * 0.82, 0);
-  ctx.closePath();
-  ctx.moveTo(-r * 0.02, -r * 0.3);
-  ctx.lineTo(r * 0.18, -r * 0.98);
-  ctx.lineTo(r * 0.38, -r * 0.22);
-  ctx.closePath();
-  ctx.moveTo(-r * 0.38, -r * 0.28);
-  ctx.lineTo(-r * 0.18, -r * 0.88);
-  ctx.lineTo(r * 0.08, -r * 0.2);
-  ctx.closePath();
-}
-
-function aDogHeadPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.42, r * 0.18);
-  ctx.quadraticCurveTo(-r * 0.35, -r * 0.28, r * 0.22, -r * 0.2);
-  ctx.quadraticCurveTo(r * 0.62, -r * 0.06, r * 0.95, r * 0.16);
-  ctx.quadraticCurveTo(r * 0.9, r * 0.42, r * 0.4, r * 0.42);
-  ctx.quadraticCurveTo(0, r * 0.5, -r * 0.42, r * 0.18);
-  ctx.closePath();
-  ctx.moveTo(-r * 0.12, -r * 0.08);
-  ctx.quadraticCurveTo(-r * 0.85, -r * 0.42, -r * 0.98, r * 0.42);
-  ctx.quadraticCurveTo(-r * 0.48, r * 0.48, 0, r * 0.08);
-  ctx.closePath();
-  ctx.moveTo(r * 0.12, -r * 0.16);
-  ctx.quadraticCurveTo(-r * 0.22, -r * 0.95, -r * 0.72, -r * 0.22);
-  ctx.quadraticCurveTo(r * 0.02, -r * 0.22, r * 0.22, 0.02 * r);
-  ctx.closePath();
-}
-
-function aFerrHeadPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.72, r * 0.08);
-  ctx.quadraticCurveTo(-r * 0.52, -r * 0.4, -r * 0.02, -r * 0.3);
-  ctx.quadraticCurveTo(r * 0.48, -r * 0.1, r * 0.98, r * 0.08);
-  ctx.quadraticCurveTo(r * 0.48, r * 0.26, 0, r * 0.3);
-  ctx.quadraticCurveTo(-r * 0.48, r * 0.4, -r * 0.72, r * 0.08);
-  ctx.closePath();
-  ctx.moveTo(-r * 0.22, -r * 0.26);
-  ctx.lineTo(-r * 0.32, -r * 0.7);
-  ctx.lineTo(0, -r * 0.26);
-  ctx.closePath();
-  ctx.moveTo(r * 0.06, -r * 0.2);
-  ctx.lineTo(r * 0.04, -r * 0.6);
-  ctx.lineTo(r * 0.24, -r * 0.16);
-  ctx.closePath();
-}
-
-function aCatpHeadPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.arc(r * 0.06, r * 0.08, r * 0.62, 0, Math.PI * 2);
-  ctx.moveTo(-r * 0.04, -r * 0.46);
-  ctx.quadraticCurveTo(-r * 0.32, -r * 0.95, -r * 0.55, -r * 0.52);
-  ctx.quadraticCurveTo(-r * 0.2, -r * 0.6, r * 0.02, -r * 0.38);
-  ctx.closePath();
-  ctx.moveTo(r * 0.28, -r * 0.46);
-  ctx.quadraticCurveTo(r * 0.42, -r * 0.98, r * 0.68, -r * 0.5);
-  ctx.quadraticCurveTo(r * 0.38, -r * 0.56, r * 0.22, -r * 0.36);
-  ctx.closePath();
-}
-
-function aZebrHeadPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.58, r * 0.1);
-  ctx.quadraticCurveTo(-r * 0.4, -r * 0.42, r * 0.12, -r * 0.22);
-  ctx.quadraticCurveTo(r * 0.58, 0, r * 0.98, r * 0.16);
-  ctx.quadraticCurveTo(r * 0.55, r * 0.4, r * 0.08, r * 0.38);
-  ctx.quadraticCurveTo(-r * 0.38, r * 0.38, -r * 0.58, r * 0.1);
-  ctx.closePath();
-  ctx.moveTo(-r * 0.08, -r * 0.2);
-  ctx.lineTo(-r * 0.22, -r * 0.95);
-  ctx.lineTo(r * 0.14, -r * 0.18);
-  ctx.closePath();
-  ctx.moveTo(r * 0.16, -r * 0.14);
-  ctx.lineTo(r * 0.22, -r * 0.88);
-  ctx.lineTo(r * 0.42, -r * 0.1);
-  ctx.closePath();
-}
-
-function aDragTailPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(r * 0.92, -r * 0.16);
-  ctx.quadraticCurveTo(r * 0.15, -r * 0.3, -r * 0.32, -r * 0.1);
-  ctx.lineTo(-r * 0.95, -r * 0.42);
-  ctx.lineTo(-r * 0.52, 0);
-  ctx.lineTo(-r * 0.95, r * 0.42);
-  ctx.lineTo(-r * 0.32, r * 0.1);
-  ctx.quadraticCurveTo(r * 0.15, r * 0.3, r * 0.92, r * 0.16);
-  ctx.closePath();
-}
-
-function aDogTailPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(r * 0.88, -r * 0.1);
-  ctx.quadraticCurveTo(r * 0.18, -r * 0.55, -r * 0.35, -r * 0.52);
-  ctx.quadraticCurveTo(-r * 0.95, -r * 0.12, -r * 0.52, r * 0.22);
-  ctx.quadraticCurveTo(-r * 0.12, r * 0.4, r * 0.48, r * 0.12);
-  ctx.quadraticCurveTo(r * 0.75, r * 0.04, r * 0.88, r * 0.1);
-  ctx.closePath();
-}
-
-function aFerrTailPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(r * 0.95, -r * 0.2);
-  ctx.quadraticCurveTo(r * 0.12, -r * 0.48, -r * 0.55, -r * 0.2);
-  ctx.quadraticCurveTo(-r * 0.98, 0, -r * 0.55, r * 0.2);
-  ctx.quadraticCurveTo(r * 0.12, r * 0.48, r * 0.95, r * 0.2);
-  ctx.closePath();
-}
-
-function aCatpTailPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(r * 0.88, 0);
-  ctx.quadraticCurveTo(r * 0.68, -r * 0.5, r * 0.08, -r * 0.46);
-  ctx.quadraticCurveTo(-r * 0.52, -r * 0.52, -r * 0.82, -r * 0.06);
-  ctx.lineTo(-r * 0.98, -r * 0.4);
-  ctx.lineTo(-r * 0.68, 0);
-  ctx.lineTo(-r * 0.98, r * 0.4);
-  ctx.lineTo(-r * 0.82, r * 0.06);
-  ctx.quadraticCurveTo(-r * 0.52, r * 0.52, r * 0.08, r * 0.46);
-  ctx.quadraticCurveTo(r * 0.68, r * 0.5, r * 0.88, 0);
-  ctx.closePath();
-}
-
-function aZebrTailPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(r * 0.92, -r * 0.08);
-  ctx.quadraticCurveTo(r * 0.18, -r * 0.16, -r * 0.22, -r * 0.06);
-  ctx.lineTo(-r * 0.85, -r * 0.4);
-  ctx.lineTo(-r * 0.52, 0);
-  ctx.lineTo(-r * 0.9, r * 0.36);
-  ctx.lineTo(-r * 0.22, r * 0.08);
-  ctx.quadraticCurveTo(r * 0.18, r * 0.16, r * 0.92, r * 0.08);
-  ctx.closePath();
-}
-
-function aLegPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.95, -r * 0.2);
-  ctx.quadraticCurveTo(-r * 0.15, r * 0.28, r * 0.28, -r * 0.12);
-  ctx.quadraticCurveTo(r * 0.68, -r * 0.38, r * 0.98, r * 0.28);
-  ctx.quadraticCurveTo(r * 0.48, r * 0.52, r * 0.08, r * 0.22);
-  ctx.quadraticCurveTo(-r * 0.38, r * 0.62, -r * 0.92, r * 0.24);
-  ctx.closePath();
-}
-
-function aNubPath(ctx: CanvasRenderingContext2D, r: number) {
-  ctx.moveTo(-r * 0.68, -r * 0.2);
-  ctx.quadraticCurveTo(r * 0.12, -r * 0.52, r * 0.85, 0);
-  ctx.quadraticCurveTo(r * 0.12, r * 0.52, -r * 0.68, r * 0.2);
-  ctx.closePath();
-}
-
 function drawKind(ctx: CanvasRenderingContext2D, kind: Kind, r: number) {
   ctx.beginPath();
   switch (kind) {
@@ -3420,74 +3107,9 @@ function drawKind(ctx: CanvasRenderingContext2D, kind: Kind, r: number) {
     case "bell":
       bellPath(ctx, r);
       break;
-    case "aBody":
-      aBodyPath(ctx, r);
-      break;
-    case "aLeg":
-      aLegPath(ctx, r);
-      break;
-    case "aNub":
-      aNubPath(ctx, r);
-      break;
-    case "aDragHead":
-      aDragHeadPath(ctx, r);
-      break;
-    case "aDragTail":
-      aDragTailPath(ctx, r);
-      break;
-    case "aDogHead":
-      aDogHeadPath(ctx, r);
-      break;
-    case "aDogTail":
-      aDogTailPath(ctx, r);
-      break;
-    case "aFerrHead":
-      aFerrHeadPath(ctx, r);
-      break;
-    case "aFerrTail":
-      aFerrTailPath(ctx, r);
-      break;
-    case "aCatpHead":
-      aCatpHeadPath(ctx, r);
-      break;
-    case "aCatpTail":
-      aCatpTailPath(ctx, r);
-      break;
-    case "aZebrHead":
-      aZebrHeadPath(ctx, r);
-      break;
-    case "aZebrTail":
-      aZebrTailPath(ctx, r);
-      break;
     default:
       housePath(ctx, r);
       break;
-  }
-}
-
-function drawAnimalMarks(ctx: CanvasRenderingContext2D, c: Charge, r: number) {
-  const eye = (x: number, y: number, rad: number) => {
-    ctx.beginPath();
-    ctx.arc(x, y, rad, 0, Math.PI * 2);
-    ctx.fill();
-  };
-  ctx.fillStyle = luma(c.a) > 0.55 ? "#141414" : "#f6f1e6";
-  if (c.kind === "aDragHead") eye(r * 0.18, -r * 0.04, r * 0.08);
-  if (c.kind === "aDogHead") eye(r * 0.28, 0, r * 0.075);
-  if (c.kind === "aFerrHead") eye(r * 0.08, -r * 0.02, r * 0.055);
-  if (c.kind === "aCatpHead") {
-    eye(-r * 0.08, r * 0.02, r * 0.07);
-    eye(r * 0.22, r * 0.02, r * 0.07);
-  }
-  if (c.kind === "aZebrHead") eye(r * 0.12, -r * 0.02, r * 0.06);
-  if (c.kind === "aBody" && c.pattern === "bar") {
-    ctx.beginPath();
-    ctx.moveTo(0, -r * 0.16);
-    ctx.lineTo(r * 0.14, 0);
-    ctx.lineTo(0, r * 0.16);
-    ctx.lineTo(-r * 0.14, 0);
-    ctx.closePath();
-    ctx.fill();
   }
 }
 
@@ -3497,12 +3119,10 @@ function drawSilhouette(ctx: CanvasRenderingContext2D, c: Charge, r: number) {
     ctx.save();
     ctx.scale(-1, 1);
     fillPattern(ctx, path, c, r);
-    drawAnimalMarks(ctx, c, r);
     ctx.restore();
     return;
   }
   fillPattern(ctx, path, c, r);
-  drawAnimalMarks(ctx, c, r);
 }
 
 function makeStamp(c: Charge): HTMLCanvasElement {
@@ -3516,138 +3136,6 @@ function makeStamp(c: Charge): HTMLCanvasElement {
   return canvas;
 }
 
-const ANIMAL_INK: Record<AnimalChainOn, { a: string; b: string; pattern: Pattern }> = {
-  dragon: { a: "#2a7a38", b: "#e8b830", pattern: "bar" },
-  dog: { a: "#c9922e", b: "#f2d98a", pattern: "half" },
-  ferret: { a: "#c49a62", b: "#f0e2c4", pattern: "half" },
-  caterpillar: { a: "#5aa84a", b: "#e8c840", pattern: "hoop" },
-  zebra: { a: "#f4f4f4", b: "#141414", pattern: "stripe" },
-};
-
-function animalCharge(animal: AnimalChainOn, role: AnimalRole): Charge {
-  const ink = ANIMAL_INK[animal];
-  const kind: Kind =
-    role === "body"
-      ? "aBody"
-      : role === "leg"
-        ? "aLeg"
-        : role === "nub"
-          ? "aNub"
-          : role === "head"
-            ? animal === "dragon"
-              ? "aDragHead"
-              : animal === "dog"
-                ? "aDogHead"
-                : animal === "ferret"
-                  ? "aFerrHead"
-                  : animal === "caterpillar"
-                    ? "aCatpHead"
-                    : "aZebrHead"
-            : animal === "dragon"
-              ? "aDragTail"
-              : animal === "dog"
-                ? "aDogTail"
-                : animal === "ferret"
-                  ? "aFerrTail"
-                  : animal === "caterpillar"
-                    ? "aCatpTail"
-                    : "aZebrTail";
-  return {
-    kind,
-    pattern: role === "leg" || role === "nub" ? "plain" : ink.pattern,
-    a: ink.a,
-    b: ink.b,
-    mirror: false,
-  };
-}
-
-function wrapAngle(a: number): number {
-  return Math.atan2(Math.sin(a), Math.cos(a));
-}
-
-function projectChainPoint(s: number, morphT: number, vary: number, smooth: number, spacing: number, size: number) {
-  const pt = chainPath(s, morphT, vary, smooth);
-  const nxt = chainPath(wrap01(s + spacing), morphT, vary, smooth);
-  const depth = Math.max(0.42, 1.05 - pt.z * 0.55);
-  const nd = Math.max(0.42, 1.05 - nxt.z * 0.55);
-  const x = pt.x / depth;
-  const y = pt.y / depth;
-  const rot = Math.atan2(nxt.y / nd - y, nxt.x / nd - x);
-  const near = clamp(1.12 / depth, 0.55, 1.85);
-  return {
-    x,
-    y,
-    rot,
-    ux: Math.cos(rot),
-    uy: Math.sin(rot),
-    nx: -Math.sin(rot),
-    ny: Math.cos(rot),
-    px: clamp((0.072 + size * 0.028) * near, 0.05, 0.24),
-    alpha: clamp(0.52 + near * 0.42, 0.5, 1),
-  };
-}
-
-function paintAnimalChain(
-  draw: (charge: Charge, pose: Pose) => void,
-  animal: AnimalChainOn,
-  clock: number,
-  chain: ChainOpts,
-  density: number,
-) {
-  const n = animalChainSpineCount(density);
-  const spacing = 0.72 / n;
-  const plump = animal === "caterpillar" ? 1.08 : 1;
-  const spines: ReturnType<typeof projectChainPoint>[] = [];
-  for (let i = 0; i < n; i++) {
-    const s = wrap01(clock * chain.travel * 0.14 - i * spacing);
-    const morphT = clock * chain.morph;
-    const size = i === 0 ? 1.05 : i === n - 1 ? 0.78 : 0.48 * plump;
-    spines.push(projectChainPoint(s, morphT, chain.vary, chain.smooth, spacing, size));
-  }
-  for (const app of animalChainAppendages(animal, n)) {
-    const now = spines[app.attach];
-    const lag = app.role === "nub" ? 0.07 : 0.13;
-    const thenS = wrap01((clock - lag) * chain.travel * 0.14 - app.attach * spacing);
-    const then = projectChainPoint(thenS, (clock - lag) * chain.morph, chain.vary, chain.smooth, spacing, 0.55);
-    const vx = now.x - then.x;
-    const vy = now.y - then.y;
-    const hang = app.role === "nub" ? 0.038 : 0.09;
-    const trail = app.role === "nub" ? 0.32 : 0.7;
-    const grav = app.role === "nub" ? 0.008 : 0.024;
-    const x = now.x + now.nx * app.side * hang - vx * trail;
-    const y = now.y + now.ny * app.side * hang - vy * trail + grav;
-    draw(animalCharge(animal, app.role), {
-      x,
-      y,
-      px: clamp(now.px * (app.role === "nub" ? 0.55 : 0.92), 0.04, 0.18),
-      rot: Math.atan2(y - now.y, x - now.x),
-      alpha: now.alpha * 0.94,
-    });
-  }
-  for (let i = n - 1; i >= 0; i--) {
-    const role: AnimalRole = i === 0 ? "head" : i === n - 1 ? "tail" : "body";
-    let x = spines[i].x;
-    let y = spines[i].y;
-    let rot = spines[i].rot;
-    if (role === "tail") {
-      const thenS = wrap01((clock - 0.14) * chain.travel * 0.14 - (n - 1) * spacing);
-      const then = projectChainPoint(thenS, (clock - 0.14) * chain.morph, chain.vary, chain.smooth, spacing, 0.78);
-      const vx = spines[i].x - then.x;
-      const vy = spines[i].y - then.y;
-      x -= vx * 0.55;
-      y -= vy * 0.55;
-      rot += wrapAngle(spines[i].rot - then.rot) * 0.85;
-    }
-    draw(animalCharge(animal, role), {
-      x,
-      y,
-      px: spines[i].px * (role === "head" ? 1.28 : role === "tail" ? 1.18 : 1),
-      rot,
-      alpha: spines[i].alpha,
-    });
-  }
-}
-
 export class HeraldryField {
   private canvas = typeof document !== "undefined" ? document.createElement("canvas") : (null as unknown as HTMLCanvasElement);
   private stamps = new Map<string, HTMLCanvasElement>();
@@ -3655,7 +3143,6 @@ export class HeraldryField {
   private sim: FieldSim | null = null;
   private agents: PatternField | null = null;
   private fieldPoses: AgentPose[] = [];
-  private hunt: HuntState | null = null;
   private builtSeed = -1;
   private builtInk = "";
   private builtKit: CollageKit = "sailor";
@@ -3686,7 +3173,6 @@ export class HeraldryField {
     this.stamps.clear();
     this.sim = null;
     this.agents = null;
-    this.hunt = null;
     this.builtSeed = seed;
     this.builtInk = ink;
     this.builtKit = kit;
@@ -3722,7 +3208,6 @@ export class HeraldryField {
       vary: clampCollageChainVary(opts.chainVary),
       smooth: clampCollageChainSmooth(opts.chainSmooth),
     };
-    const animal = animalFromUnknown(opts.chainAnimal);
     paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, beat, bass, !!opts.night, ink);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
@@ -3733,24 +3218,20 @@ export class HeraldryField {
     const t = clock * pace;
     const aspect = w / Math.max(h, 1);
     const baseCount =
-      scene === "bounce" || scene === "flip" || scene === "hop" || scene === "kick" || scene === "jelly"
-        ? 36
-        : scene === "drop"
-          ? 40
-          : scene === "spot"
-            ? 36
-            : scene === "tide" ||
-                scene === "rings" ||
-                scene === "loom" ||
-                scene === "petal" ||
-                scene === "flock" ||
-                scene === "wheel" ||
-                scene === "silk" ||
-                isMusicMove(scene)
-              ? 48
-              : scene === "glow" || scene === "flash"
-                ? 28
-                : scene === "prism"
+      scene === "drop"
+        ? 40
+        : scene === "spot"
+          ? 36
+          : scene === "tide" ||
+              scene === "rings" ||
+              scene === "loom" ||
+              scene === "petal" ||
+              scene === "flock" ||
+              scene === "wheel" ||
+              scene === "silk" ||
+              isMusicMove(scene)
+            ? 48
+            : scene === "prism"
                   ? 64
                   : scene === "helix" || scene === "braid"
                     ? 130
@@ -3782,12 +3263,7 @@ export class HeraldryField {
         flow: opts.fieldFlow,
         curl: opts.fieldCurl,
         flowScale: opts.fieldFlowScale,
-        attract: opts.fieldAttract,
-        repel: opts.fieldRepel,
         radius: opts.fieldRadius,
-        inertia: opts.fieldInertia,
-        damp: opts.fieldDamp,
-        maxV: opts.fieldMaxV,
         scaleAmp: opts.fieldScaleAmp,
         minScale: opts.fieldMinScale,
         maxScale: opts.fieldMaxScale,
@@ -3843,9 +3319,9 @@ export class HeraldryField {
       isFlyMove(scene) || scene === "chain"
         ? 0.26
         : 0.22;
-    const blitStamp = (stamp: HTMLCanvasElement, pose: Pose, view?: HuntView) => {
-      const framed = view ? { ...pose, ...applyHuntPose(pose, view) } : pose;
-      const dim = Math.min(framed.px * scale, view ? 0.72 : cap) * Math.min(w, h);
+    const blitStamp = (stamp: HTMLCanvasElement, pose: Pose) => {
+      const framed = pose;
+      const dim = Math.min(framed.px * scale, cap) * Math.min(w, h);
       if (dim < 5) return;
       const sx = (0.5 + framed.x) * w;
       const sy = (0.5 + framed.y / aspect) * h;
@@ -3878,10 +3354,7 @@ export class HeraldryField {
     const record = (stamp: HTMLCanvasElement, pose: Pose) => {
       drawn.push({ stamp, pose });
     };
-    if (scene === "chain" && animal !== "off") {
-      paintAnimalChain((charge, pose) => record(this.stamp(charge), pose), animal, clock, chain, density);
-    } else {
-      for (let i = 0; i < count; i++) {
+    for (let i = 0; i < count; i++) {
         const fieldPose = isFieldMove(scene) && this.agents ? this.fieldPoses[i] ?? null : null;
         const morph = fieldPose?.morph ?? 0;
         const chargeA = Math.floor(fieldPose?.charge ?? i);
@@ -3911,43 +3384,8 @@ export class HeraldryField {
           record(this.stamp(src.charge), pose);
         }
       }
-    }
 
-    let view: HuntView | undefined;
-    if (cameraFromUnknown(opts.camera) === "hunt") {
-      const huntOpts = huntParamsFrom({
-        huntWideMin: opts.huntWideMin,
-        huntWideMax: opts.huntWideMax,
-        huntFollowMin: opts.huntFollowMin,
-        huntFollowMax: opts.huntFollowMax,
-        huntSnap: opts.huntSnap,
-        huntZoom: opts.huntZoom,
-        huntTight: opts.huntTight,
-        huntReactMin: opts.huntReactMin,
-        huntReactMax: opts.huntReactMax,
-        huntPrecision: opts.huntPrecision,
-        huntSelect: opts.huntSelect,
-        huntFocus: opts.huntFocus,
-        huntFocusSpeed: opts.huntFocusSpeed,
-        huntFocusError: opts.huntFocusError,
-        huntVariation: opts.huntVariation,
-        cameraFeel: opts.cameraFeel,
-      });
-      this.hunt = stepHunt(
-        this.hunt,
-        drawn.map((item, id) => ({ id, x: item.pose.x, y: item.pose.y, px: item.pose.px })),
-        clock,
-        huntOpts,
-        opts.seed >>> 0,
-      );
-      view = huntView(this.hunt, huntOpts);
-      if (view.focus > 0.03) ctx.filter = `blur(${(1.1 + view.focus * 2.4).toFixed(2)}px)`;
-    } else {
-      this.hunt = null;
-    }
-
-    for (const item of drawn) blitStamp(item.stamp, item.pose, view);
-    ctx.filter = "none";
+    for (const item of drawn) blitStamp(item.stamp, item.pose);
 
     if (
       (scene === "bars" ||
@@ -4040,93 +3478,6 @@ function poseParticle(
   const music = isMusicMove(scene);
   const tick = tempoTick(clock, bpm);
   const punch = clamp(Math.max(beat * (music ? 0.48 : 0.85), tick * (music ? 0.72 : 0.22)), 0, 1);
-  if (scene === "bounce") {
-    const sx = 0.11 + Math.abs(p.vx) * 2.4;
-    const sy = 0.09 + Math.abs(p.vy) * 2.1;
-    return {
-      x: screenBounce(p.x + sx * t),
-      y: screenBounce(p.y + sy * t * 0.92),
-      px: clamp((0.1 + p.size * 0.07) * (1 + punch * 0.22), 0.08, 0.28),
-      glow: punch * 0.45,
-      rot: p.rot + p.vr * t * 1.6,
-      alpha: 1,
-    };
-  }
-  if (scene === "flip") {
-    const spin = t * (2.2 + audio * 0.25) + i * 0.55;
-    const flip = Math.cos(spin);
-    return {
-      x: screenBounce(p.x + p.vx * t * 0.45),
-      y: screenBounce(p.y + p.vy * t * 0.38),
-      px: clamp((0.12 + p.size * 0.06) * (1 + punch * 0.18), 0.08, 0.26),
-      glow: punch * 0.35,
-      rot: p.rot + Math.sin(spin) * 0.15,
-      alpha: clamp(0.28 + Math.abs(flip) * 0.72, 0.2, 1),
-      flip,
-    };
-  }
-  if (scene === "glow") {
-    const pulse = 0.45 + 0.55 * Math.sin(t * 2.4 + i * 0.7);
-    const lit = clamp(pulse * 0.4 + punch * 0.55 + bass * 0.18, 0, 1);
-    return {
-      x: (p.x - 0.5) * 0.86 + Math.sin(t * 0.55 + p.y * 7) * 0.07,
-      y: (p.y - 0.5) * 0.74 + Math.cos(t * 0.48 + p.x * 6) * 0.06,
-      px: clamp((0.1 + p.size * 0.08) * (0.9 + lit * 0.16), 0.07, 0.24),
-      rot: p.rot + t * 0.12 * p.vr,
-      alpha: clamp(0.5 + lit * 0.45, 0.35, 1),
-      glow: lit,
-    };
-  }
-  if (scene === "flash") {
-    const blink = 0.7 + 0.3 * Math.sin(t * 5.2 + i) + punch * 0.12;
-    const tint = TINCTURES[(Math.floor(t * 3.2 + i * 3) >>> 0) % TINCTURES.length];
-    return {
-      x: screenBounce(p.x + p.vx * t * 0.32),
-      y: screenBounce(p.y + p.vy * t * 0.28),
-      px: clamp((0.11 + p.size * 0.07) * (1 + punch * 0.18), 0.08, 0.26),
-      rot: p.rot + t * 0.4 * p.vr,
-      alpha: clamp(blink, 0.4, 1),
-      glow: 0.16 + punch * 0.45,
-      tint,
-    };
-  }
-  if (scene === "hop") {
-    const rate = bpm > 40 ? bpm / 60 : 0.85;
-    const phase = wrap01(t * rate + p.z);
-    const hop = Math.abs(Math.sin(phase * Math.PI)) * (0.72 + punch * 0.45) + punch * 0.14;
-    const flip = Math.cos(phase * Math.PI * 2);
-    return {
-      x: screenBounce(p.x + (0.1 + Math.abs(p.vx) * 1.8) * t),
-      y: screenBounce(p.y) * 0.62 - hop * 0.2,
-      px: clamp(0.1 + p.size * 0.07 + hop * 0.02, 0.08, 0.22),
-      rot: p.rot + hop * 0.55,
-      alpha: 1,
-      flip,
-    };
-  }
-  if (scene === "kick") {
-    const sx = 0.1 + Math.abs(p.vx) * 2.1;
-    const sy = 0.08 + Math.abs(p.vy) * 1.8;
-    return {
-      x: screenBounce(p.x + sx * t),
-      y: screenBounce(p.y + sy * t),
-      px: clamp((0.1 + p.size * 0.07) * (1 + punch * 0.28), 0.08, 0.28),
-      rot: p.rot + p.vr * t,
-      alpha: 1,
-      glow: punch * 0.7,
-    };
-  }
-  if (scene === "jelly") {
-    const wobble = 1 + Math.sin(t * 5.2 + i) * 0.08 + punch * 0.2;
-    return {
-      x: screenBounce(p.x + p.vx * t * 0.5),
-      y: screenBounce(p.y + p.vy * t * 0.42),
-      px: clamp(0.12 + p.size * 0.07, 0.08, 0.24),
-      rot: p.rot + Math.sin(t * 3 + i) * 0.2,
-      alpha: 1,
-      squash: wobble,
-    };
-  }
   if (scene === "tide") {
     const cols = 8;
     const rows = 6;
