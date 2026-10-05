@@ -3687,9 +3687,11 @@ export class HeraldryField {
                   ? 64
                   : scene === "helix" || scene === "braid"
                     ? 130
-                    : scene === "tunnel" || scene === "well" || scene === "hall"
+                    : scene === "tunnel" || scene === "well"
                       ? 120
-                      : scene === "bloom" || scene === "gyre" || scene === "drift" || scene === "sway"
+                      : scene === "hall"
+                        ? 148
+                        : scene === "bloom" || scene === "gyre" || scene === "drift" || scene === "sway"
                         ? 140
                         : scene === "chain"
                           ? 40
@@ -4511,13 +4513,13 @@ function poseParticle(
     if (!fly) return null;
     const { depth, fade } = fly;
     const orbit = t * 0.2 + p.x * Math.PI * 2;
-    const rad = 0.2 + p.y * 0.48;
+    const rad = 0.22 + p.y * 0.5;
     const cx = Math.cos(orbit) * rad;
-    const cy = Math.sin(orbit * 0.82) * rad * 0.58;
+    const cy = Math.sin(orbit * 0.93) * rad * 0.86;
     const spun = rot2(cx, cy, t * 0.12);
     return {
       x: spun.x / depth,
-      y: spun.y / depth + Math.sin(t * 0.16) * 0.06,
+      y: spun.y / depth + Math.sin(t * 0.16) * 0.05,
       px: clamp((0.22 * p.size * (0.93 + bass * 0.1 + punch * 0.26)) / depth, 0.04, 0.55),
       glow: punch * 0.42,
       rot: p.rot + orbit * 0.2 + p.vr * t * 0.08,
@@ -4529,7 +4531,7 @@ function poseParticle(
     if (!fly) return null;
     const { depth, fade } = fly;
     const ang = p.x * Math.PI * 2 + t * 0.16 + 2.6 * Math.log(depth + 0.18);
-    const rad = (0.1 + p.y * 0.48) / Math.pow(depth, 0.82);
+    const rad = (0.2 + (i % 8) * 0.028) / Math.pow(depth, 0.82);
     return {
       x: Math.cos(ang) * rad,
       y: Math.sin(ang) * rad,
@@ -4549,17 +4551,17 @@ function poseParticle(
     let x = 0;
     let y = 0;
     if (wall === 0) {
-      x = -0.46 / depth - bow;
+      x = -0.52 / depth - bow;
       y = along / depth;
     } else if (wall === 1) {
-      x = 0.46 / depth + bow;
+      x = 0.52 / depth + bow;
       y = along / depth;
     } else if (wall === 2) {
       x = along / depth;
-      y = -0.34 / depth - bow;
+      y = -0.4 / depth - bow;
     } else {
       x = along / depth;
-      y = 0.34 / depth + bow;
+      y = 0.4 / depth + bow;
     }
     const twist = rot2(x, y, 0.42 / depth + t * 0.08);
     return {
