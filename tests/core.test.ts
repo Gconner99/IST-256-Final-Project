@@ -1528,11 +1528,11 @@ describe("pattern field", () => {
     expect(hi).toBeGreaterThan(lo * 1.4);
     const K = 7;
     const at = (idx: number) => vis(field2.posesAt(300, period * ((idx + 0.12) / K), 3, aspect, params, 0, 0, "snake"));
-    const giants = at(4);
+    const giants = at(5);
     expect(giants.length).toBeGreaterThan(6);
     expect(giants.length).toBeLessThan(40);
     expect(giants.filter((p) => p.px > 0.12).length).toBeGreaterThan(4);
-    const glyph = at(5);
+    const glyph = at(6);
     const xs = glyph.map((p) => p.x);
     const ys = glyph.map((p) => p.y / (aspect * aspect));
     expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(0.55);

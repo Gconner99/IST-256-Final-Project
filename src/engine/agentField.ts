@@ -1286,14 +1286,27 @@ function occFrom(d: number, soft = 0.04): number {
   return smoother(clamp(0.5 - d / (soft * 2), 0, 1));
 }
 
+function ping01(u: number): number {
+  const t = ((u % 1) + 1) % 1;
+  return t < 0.5 ? t * 4 - 1 : 3 - t * 4;
+}
+
 interface GiantSite {
   x: number;
   y: number;
   r: number;
 }
 
+type SnakeMode = "pack" | "stick" | "giant";
+
 interface SnakeSil {
   occ: (x: number, y: number) => number;
+  /** Radius of a DVD-crawling void punched through a packed sheet. 0 = none. */
+  hole: number;
+  mode: SnakeMode;
+  nStick: number;
+  stickR: number;
+  crawl: number;
   giants: GiantSite[] | null;
 }
 
@@ -1341,52 +1354,116 @@ function pickGiant(pts: { x: number; y: number }[], sites: GiantSite[], used: bo
   return hits;
 }
 
+function punchHole(occ: number, x: number, y: number, u: number, hw: number, hy: number, r: number): number {
+  if (r <= 0) return occ;
+  const hx = ping01(u * 2) * hw * 0.34;
+  const hyy = ping01(u * 2 + 0.31) * hy * 0.34;
+  const hd = Math.hypot(x - hx, y - hyy) - r;
+  return occ * smoother(clamp(hd / 0.045, 0, 1));
+}
+
+function pickStick(pts: { x: number; y: number }[], occ: (x: number, y: number) => number, nWant: number, minDist: number): number[] {
+  const scored = pts
+    .map((p, i) => ({ i, o: occ(p.x, p.y), a: Math.atan2(p.y, p.x) }))
+    .filter((s) => s.o > 0.38)
+    .sort((a, b) => a.a - b.a || b.o - a.o);
+  const chosen: number[] = [];
+  for (const s of scored) {
+    if (chosen.length >= nWant) break;
+    const p = pts[s.i];
+    let ok = true;
+    for (const j of chosen) {
+      if (Math.hypot(p.x - pts[j].x, p.y - pts[j].y) < minDist) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) chosen.push(s.i);
+  }
+  return chosen;
+}
+
 /**
- * Heraldic silhouettes from the reference, in loop order: packed sheet, C-hole, scatter,
- * creature with limbs, a few giants, a long glyph stroke, then a winding ribbon.
+ * Heraldic silhouettes from the screen recording: packed sheet with a crawling hole,
+ * packed C, a frame of large stickers, a sparse bouncing flock, a creature, giants, glyph.
  */
 function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
   const rng = mulberry32((seed >>> 0) ^ 0x9e3779b1);
   const hw = 0.47 * (0.86 + p.fieldStrength * 0.12);
   const hy = hh * 0.93 * (0.86 + p.fieldStrength * 0.12);
   const thick = 0.062 + p.density * 0.01;
-
-  const sheet: SnakeSil = {
-    occ: (x, y) => occFrom(sdBox(x, y, 0, 0, hw, hy), 0.05),
-    giants: null,
-  };
-
   const holeSide = rng() > 0.5 ? 1 : -1;
-  const holeY = (rng() - 0.45) * hy * 0.35;
-  const cee: SnakeSil = {
-    occ: (x, y) => {
-      const body = sdBox(x, y, 0, 0, hw, hy);
-      const hole = sdBox(x, y, holeSide * hw * 0.42, holeY, hw * 0.58, hy * 0.52);
-      return occFrom(Math.max(body, -hole), 0.03);
-    },
-    giants: null,
-  };
+  const pack = (occ: (x: number, y: number) => number, hole = 0): SnakeSil => ({
+    occ, hole, mode: "pack", nStick: 0, stickR: 0, crawl: 0, giants: null,
+  });
+  const flock = (sites: GiantSite[], crawl: number, occ: (x: number, y: number) => number): SnakeSil => ({
+    occ, hole: 0, mode: "stick", nStick: sites.length, stickR: 0, crawl, giants: sites,
+  });
 
-  const blobs: { x: number; y: number; r: number }[] = [];
-  const nBlob = 12 + Math.floor(rng() * 6);
-  for (let k = 0; k < nBlob; k++) {
-    blobs.push({
-      x: (rng() * 2 - 1) * hw * 0.82,
-      y: (rng() * 2 - 1) * hy * 0.82,
-      r: 0.045 + rng() * 0.055,
+  const sheet = pack((x, y) => occFrom(sdBox(x, y, 0, 0, hw, hy), 0.045), 0.2 + rng() * 0.06);
+
+  const holeY = (rng() - 0.45) * hy * 0.28;
+  const cee = pack((x, y) => {
+    const body = sdBox(x, y, 0, 0, hw, hy);
+    const voidBox = sdBox(x, y, holeSide * hw * 0.38, holeY, hw * 0.55, hy * 0.48);
+    return occFrom(Math.max(body, -voidBox), 0.03);
+  });
+
+  const frameSites: GiantSite[] = [];
+  const pushRing = (n: number, sx: number, sy: number, rad: number) => {
+    const PW = 2 * sx;
+    const PH = 2 * sy;
+    const peri = 2 * PW + 2 * PH;
+    for (let k = 0; k < n; k++) {
+      let s = ((k + 0.5) / n) * peri;
+      let x: number;
+      let y: number;
+      if (s < PW) {
+        x = -sx + s;
+        y = -sy;
+      } else if (s < PW + PH) {
+        x = sx;
+        y = -sy + (s - PW);
+      } else if (s < 2 * PW + PH) {
+        x = sx - (s - PW - PH);
+        y = sy;
+      } else {
+        x = -sx;
+        y = sy - (s - 2 * PW - PH);
+      }
+      if (holeSide > 0 && x > sx * 0.25 && Math.abs(y) < sy * 0.48) continue;
+      if (holeSide < 0 && x < -sx * 0.25 && Math.abs(y) < sy * 0.48) continue;
+      frameSites.push({
+        x: x + (rng() - 0.5) * 0.05,
+        y: y + (rng() - 0.5) * 0.05,
+        r: rad + rng() * 0.025,
+      });
+    }
+  };
+  pushRing(48, hw * 0.94, hy * 0.94, 0.1);
+  pushRing(36, hw * 0.72, hy * 0.72, 0.088);
+  const frame = flock(frameSites, 0.02, (x, y) => {
+    const outer = sdBox(x, y, 0, 0, hw, hy);
+    const inner = sdBox(x, y, 0, 0, hw * 0.5, hy * 0.42);
+    return occFrom(Math.max(outer, -inner), 0.05);
+  });
+
+  const blobSites: GiantSite[] = [];
+  const Bn = 30;
+  for (let k = 0; k < Bn; k++) {
+    const q = (k + 0.5) / Bn;
+    const rad = 0.24 * Math.sqrt(q);
+    const a = k * GOLDEN + rng() * 0.2;
+    blobSites.push({
+      x: Math.cos(a) * rad * hw * 1.7,
+      y: Math.sin(a) * rad * hy * 1.7,
+      r: 0.078 + rng() * 0.025,
     });
   }
-  const sparse: SnakeSil = {
-    occ: (x, y) => {
-      let d = 1e9;
-      for (const b of blobs) d = Math.min(d, sdCircle(x, y, b.x, b.y, b.r));
-      return occFrom(d, 0.035);
-    },
-    giants: null,
-  };
+  const scatter = flock(blobSites, 0.14, (x, y) => occFrom(sdCircle(x, y, 0, 0, 0.28), 0.05));
 
-  const cx = (rng() - 0.5) * hw * 0.18;
-  const cy = (rng() - 0.4) * hy * 0.12;
+  const cx = (rng() - 0.5) * hw * 0.16;
+  const cy = (rng() - 0.4) * hy * 0.1;
   const bodyRad = (0.2 + rng() * 0.05) * Math.max(hw, hy) / 0.42;
   const limbs: number[][] = [];
   const nLimb = 6 + Math.floor(rng() * 3);
@@ -1401,14 +1478,11 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
       0.05 + rng() * 0.03,
     ]);
   }
-  const creature: SnakeSil = {
-    occ: (x, y) => {
-      let d = sdCircle(x, y, cx, cy, bodyRad);
-      for (const L of limbs) d = Math.min(d, sdCapsule(x, y, L[0], L[1], L[2], L[3], L[4]));
-      return occFrom(d, 0.035);
-    },
-    giants: null,
-  };
+  const creature = pack((x, y) => {
+    let d = sdCircle(x, y, cx, cy, bodyRad);
+    for (const L of limbs) d = Math.min(d, sdCapsule(x, y, L[0], L[1], L[2], L[3], L[4]));
+    return occFrom(d, 0.035);
+  });
 
   const Ng = 8 + Math.floor(rng() * 4);
   const gCols = 3;
@@ -1423,7 +1497,7 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
       r: 0.155 + rng() * 0.07,
     });
   }
-  const giantSil: SnakeSil = { occ: () => 0, giants };
+  const giantSil: SnakeSil = { occ: () => 0, hole: 0, mode: "giant", nStick: 0, stickR: 0, crawl: 0.05, giants };
 
   const glyphKind = Math.floor(rng() * 3);
   let glyphPts: number[];
@@ -1434,66 +1508,54 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
   } else {
     glyphPts = [-hw * 0.85, hy * 0.15, -hw * 0.15, hy * 0.72, hw * 0.35, hy * 0.55, hw * 0.15, 0, hw * 0.72, -hy * 0.35, hw * 0.2, -hy * 0.82, -hw * 0.55, -hy * 0.55];
   }
-  const glyphR = thick * 1.15;
-  const glyph: SnakeSil = {
-    occ: (x, y) => occFrom(sdPoly(x, y, glyphPts, glyphR), 0.04),
-    giants: null,
-  };
+  const glyph = pack((x, y) => occFrom(sdPoly(x, y, glyphPts, thick * 1.2), 0.04));
 
-  const ribbonPts: number[] = [];
-  const waves = 2 + (rng() > 0.5 ? 1 : 0);
-  const amp = hy * (0.42 + rng() * 0.18);
-  const phase = rng() * TAU;
-  for (let s = 0; s <= 10; s++) {
-    const t = s / 10;
-    ribbonPts.push(-hw + t * 2 * hw, Math.sin(t * Math.PI * waves + phase) * amp);
-  }
-  const ribbon: SnakeSil = {
-    occ: (x, y) => occFrom(sdPoly(x, y, ribbonPts, thick * 1.05), 0.035),
-    giants: null,
-  };
-
-  return [sheet, cee, sparse, creature, giantSil, glyph, ribbon];
+  return [sheet, cee, frame, scatter, creature, giantSil, glyph];
 }
 
 /**
- * Packed stamps fill a silhouette that morphs through the heraldic cycle while every
- * icon crossfades into a different one. Lattice points hold still so it reads as a
- * sticker-sheet, not a flock; a small billiard crawl slides the whole mass.
+ * Packed wallpaper with a crawling void, then large-sticker frames and flocks,
+ * then a creature / giants / glyph. Icons morph. No hard cuts.
  */
 function snake(c: LoopCtx, emit: Emit) {
   const { n, hh, u, p, seed } = c;
   const sils = snakeSils(seed, hh, p);
+  const hw = 0.47 * (0.86 + p.fieldStrength * 0.12);
+  const hy = hh * 0.93 * (0.86 + p.fieldStrength * 0.12);
   const K = sils.length;
   const t = u * K;
   const seg = Math.min(K - 1, Math.floor(t));
-  const f = t - seg;
-  const m = smoother(clamp((f - 0.34) / 0.66, 0, 1));
+  const frac = t - seg;
+  const m = smoother(clamp((frac - 0.32) / 0.68, 0, 1));
   const A = sils[seg];
   const B = sils[(seg + 1) % K];
   const pts = snakeLattice(n, hh, seed);
-  const ping = (uu: number) => {
-    const t = ((uu % 1) + 1) % 1;
-    return t < 0.5 ? t * 4 - 1 : 3 - t * 4;
-  };
-  const crawlX = ping(u) * 0.05 * (0.4 + p.motion);
-  const crawlY = ping(u * 0.5 + 0.25) * hh * 0.08 * (0.4 + p.motion);
+  const crawl = (0.05 + A.crawl * (1 - m) + B.crawl * m) * (0.5 + p.motion * 0.55);
+  const crawlX = ping01(u * 2) * crawl;
+  const crawlY = ping01(u * 2 + 0.33) * crawl * (hy / Math.max(1e-6, hw));
+  const sample = (sil: SnakeSil, x: number, y: number) => punchHole(sil.occ(x, y), x, y, u, hw, hy, sil.hole);
   const usedA = new Array<boolean>(n).fill(false);
   const usedB = new Array<boolean>(n).fill(false);
   const gA = A.giants ? pickGiant(pts, A.giants, usedA) : [];
   const gB = B.giants ? pickGiant(pts, B.giants, usedB) : [];
   const giantA = new Map(gA.map((g) => [g.i, g]));
   const giantB = new Map(gB.map((g) => [g.i, g]));
+  const stickA = A.mode === "stick" && !A.giants ? new Set(pickStick(pts, A.occ, A.nStick, Math.max(0.05, A.stickR * 0.72))) : null;
+  const stickB = B.mode === "stick" && !B.giants ? new Set(pickStick(pts, B.occ, B.nStick, Math.max(0.05, B.stickR * 0.72))) : null;
   const spacing = Math.sqrt((2 * hh) / Math.max(1, n));
-  const packD = spacing * 1.82 * packMul(p) * sizeScale(p);
+  const packD = spacing * 1.58 * packMul(p) * sizeScale(p);
   const rate = 1.35 + p.warp * 2.1;
   for (let i = 0; i < n; i++) {
     const lx = pts[i].x;
     const ly = pts[i].y;
-    const occ = A.occ(lx, ly) * (1 - m) + B.occ(lx, ly) * m;
+    const oA = A.mode === "pack" ? sample(A, lx, ly) : 0;
+    const oB = B.mode === "pack" ? sample(B, lx, ly) : 0;
+    const occ = oA * (1 - m) + oB * m;
     let x = clamp(lx + crawlX, -0.5, 0.5);
     let y = clamp(ly + crawlY, -hh, hh);
     let d = packD * occ;
+    if (stickA?.has(i)) d = Math.max(d, A.stickR * (1 - m));
+    if (stickB?.has(i)) d = Math.max(d, B.stickR * m);
     const ga = giantA.get(i);
     const gb = giantB.get(i);
     if (ga || gb) {
@@ -1505,12 +1567,14 @@ function snake(c: LoopCtx, emit: Emit) {
         d = Math.max(d, site.r * (p.maxScale / 1.85) * blend);
       }
     }
-    if (occ < 0.32 && !ga && !gb) d = 0;
+    const isStick = !!(stickA?.has(i) || stickB?.has(i));
+    if (occ < 0.32 && !isStick && !ga && !gb) d = 0;
     const phase = rate * u + hash01(i * 3.1) * (0.35 + p.perturb * 2.2);
     const pf = phase - Math.floor(phase);
     const morph = smoother(clamp((pf - 0.78) / 0.16, 0, 1));
     const chargeA = Math.floor(phase) * 13 + i;
-    const sized = d * ((ga || gb) ? Math.max(0.92, sizeMul(i, p)) : sizeMul(i, p));
+    const hero = ga || gb || isStick;
+    const sized = d * (hero ? Math.max(0.9, sizeMul(i, p)) : sizeMul(i, p));
     emit(i, x, y, sized, 0, chargeA, 1, chargeA + 13, morph);
   }
 }
