@@ -9,7 +9,7 @@ import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../s
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
 import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
-import { agentFieldAt, agentParamsFrom, coverageAt, densityAt, initAgentField, sampleTarget, stepAgentField } from "../src/engine/agentField";
+import { agentParamsFrom, buildFormation, fieldCycle, FORMATION_KINDS, formationKinds, FormationField, isDenseFormation } from "../src/engine/agentField";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -1431,126 +1431,121 @@ describe("field sim", () => {
   });
 });
 
-describe("emergent agent field", () => {
-  const seeds = Array.from({ length: 36 }, (_, i) => ({
-    x: (i % 6) / 6,
-    y: Math.floor(i / 6) / 6,
-    z: (i * 0.17) % 1,
-    vx: 0.4 + (i % 5) * 0.05,
-    vy: 0.55,
-  }));
+describe("formation field", () => {
+  const aspect = 16 / 9;
+  const hh = 0.5 / aspect;
 
-  function occupy(field: { n: number; px: Float32Array; py: Float32Array; alpha: Float32Array }) {
+  function occupancy(poses: { x: number; y: number; alpha: number }[]) {
     const cells = new Set<string>();
-    for (let i = 0; i < field.n; i++) {
-      if (field.alpha[i] < 0.12) continue;
-      const cx = Math.floor((field.px[i] + 0.5) * 8);
-      const cy = Math.floor((field.py[i] + 0.5) * 8);
-      cells.add(`${cx}:${cy}`);
+    for (const p of poses) {
+      if (p.alpha < 0.5) continue;
+      cells.add(`${Math.floor((p.x + 0.5) * 12)}:${Math.floor((p.y / (aspect * aspect) + hh) * 12)}`);
     }
     return cells.size;
   }
 
-  it("keeps nearby samples mapped to nearby places", () => {
+  it("starts as a full sheet and alternates dense and open formations", () => {
     const params = agentParamsFrom();
-    const a = sampleTarget(0.08, 0.04, 0, 0.25, params);
-    const b = sampleTarget(0.1, 0.055, 0, 0.25, params);
-    expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeLessThan(0.14);
-    const fa = agentFieldAt(0.08, 0.04, 0, 0.25, params);
-    const fb = agentFieldAt(0.1, 0.055, 0, 0.25, params);
-    const na = Math.hypot(fa.x, fa.y);
-    const nb = Math.hypot(fb.x, fb.y);
-    if (na > 0.02 && nb > 0.02) {
-      expect((fa.x * fb.x + fa.y * fb.y) / (na * nb)).toBeGreaterThan(0.35);
+    const kinds = formationKinds(11, params, 24);
+    expect(kinds[0]).toBe("sheet");
+    expect(kinds.some((k) => !isDenseFormation(k))).toBe(true);
+    for (let i = 1; i < kinds.length; i++) {
+      if (isDenseFormation(kinds[i - 1])) expect(isDenseFormation(kinds[i])).toBe(false);
     }
+    expect(new Set(kinds).size).toBeGreaterThan(3);
+    expect(formationKinds(11, params, 24)).toEqual(kinds);
   });
 
-  it("integrates velocity toward a deforming sample instead of snapping", () => {
-    const params = agentParamsFrom({ sparsity: 1.4, contrast: 1.6, warp: 1.4 });
-    let field = initAgentField(seeds, 0);
-    const home = field.homeX[3];
-    field = stepAgentField(field, seeds, 0.04, params);
-    expect(Math.abs(field.vx[3]) + Math.abs(field.vy[3])).toBeGreaterThan(0);
-    expect(field.homeX[3]).toBeCloseTo(home, 8);
-  });
-
-  it("redistributes density instead of collapsing, and varies scale", () => {
+  it("every formation places every stamp inside the frame", () => {
     const params = agentParamsFrom();
-    let field = initAgentField(seeds, 0);
-    for (let k = 1; k <= 80; k++) field = stepAgentField(field, seeds, k * 0.04, params);
-    let cx = 0;
-    let cy = 0;
-    const scales: number[] = [];
-    for (let i = 0; i < field.n; i++) {
-      cx += field.px[i];
-      cy += field.py[i];
-      scales.push(field.scale[i]);
-    }
-    cx /= field.n;
-    cy /= field.n;
-    let spread = 0;
-    for (let i = 0; i < field.n; i++) spread += (field.px[i] - cx) ** 2 + (field.py[i] - cy) ** 2;
-    spread = Math.sqrt(spread / field.n);
-    expect(spread).toBeGreaterThan(0.06);
-    expect(spread).toBeLessThan(0.75);
-    expect(Math.max(...scales)).toBeGreaterThan(Math.min(...scales) * 1.05);
-  });
-
-  it("opens negative space at low coverage and fills the frame at high coverage", () => {
-    const params = agentParamsFrom();
-    expect(coverageAt(0, params)).toBeGreaterThanOrEqual(0);
-    expect(coverageAt(0, params)).toBeLessThanOrEqual(1);
-    let field = initAgentField(seeds, 0);
-    let highVis = 0;
-    let lowVis = seeds.length;
-    let highOcc = 0;
-    let lowOcc = 64;
-    for (let k = 1; k <= 360; k++) {
-      field = stepAgentField(field, seeds, k * 0.05, params);
-      let vis = 0;
-      for (let i = 0; i < field.n; i++) if (field.alpha[i] > 0.15) vis++;
-      const occ = occupy(field);
-      highVis = Math.max(highVis, vis);
-      lowVis = Math.min(lowVis, vis);
-      highOcc = Math.max(highOcc, occ);
-      lowOcc = Math.min(lowOcc, occ);
-    }
-    expect(highVis).toBeGreaterThan(seeds.length * 0.85);
-    expect(lowVis).toBeGreaterThan(seeds.length * 0.85);
-    expect(highOcc).toBeGreaterThan(lowOcc + 6);
-    expect(Number.isFinite(densityAt(0.04, 0.02, 4, params))).toBe(true);
-    let denseMin = 1;
-    for (let x = -0.4; x <= 0.4; x += 0.1) {
-      for (let y = -0.32; y <= 0.32; y += 0.1) {
-        denseMin = Math.min(denseMin, densityAt(x, y, 0, params));
+    for (const kind of FORMATION_KINDS) {
+      const f = buildFormation(kind, 7, 3, 300, hh, params);
+      expect(f.x.length).toBe(300);
+      for (let i = 0; i < 300; i++) {
+        expect(Math.abs(f.x[i])).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(f.y[i])).toBeLessThanOrEqual(hh + 1e-6);
+        expect(Number.isFinite(f.d[i])).toBe(true);
       }
     }
-    expect(denseMin).toBeGreaterThan(0.4);
-    let tSparse = 2;
-    for (let t = 0; t <= 8; t += 0.5) {
-      if (coverageAt(t, params) < 0.25) {
-        tSparse = t;
-        break;
-      }
-    }
-    expect(coverageAt(tSparse, params)).toBeLessThan(0.35);
-    expect(Number.isFinite(densityAt(0, 0, tSparse, params))).toBe(true);
   });
 
-  it("reinits after a rewind so export scrub stays stable", () => {
-    const params = agentParamsFrom({ sparsity: 1.5, warp: 1.5, contrast: 1.6 });
-    let field = initAgentField(seeds, 0);
-    for (let k = 1; k <= 30; k++) field = stepAgentField(field, seeds, k * 0.04, params);
-    let drift = 0;
-    for (let i = 0; i < field.n; i++) {
-      drift = Math.max(drift, Math.abs(field.px[i] - field.homeX[i]) + Math.abs(field.py[i] - field.homeY[i]));
+  function snap(field: InstanceType<typeof FormationField>, t: number, params: ReturnType<typeof agentParamsFrom>, bpm = 0, offset = 0) {
+    return field.posesAt(240, t, 3, aspect, params, bpm, offset).map((p) => ({ ...p }));
+  }
+
+  function maxStep(a: { x: number; y: number }[], b: { x: number; y: number }[]) {
+    let m = 0;
+    for (let i = 0; i < a.length; i++) m = Math.max(m, Math.hypot(a[i].x - b[i].x, (a[i].y - b[i].y) / (aspect * aspect)));
+    return m;
+  }
+
+  it("morphs steadily inside a segment and cuts on the bar", () => {
+    const params = agentParamsFrom({ motion: 0 });
+    const field = new FormationField();
+    const { period } = fieldCycle(params);
+    let inside = 0;
+    let moved = 0;
+    for (let t = 1 / 30; t < period - 1 / 30; t += 1 / 30) {
+      const d = maxStep(snap(field, t - 1 / 30, params), snap(field, t, params));
+      inside = Math.max(inside, d);
+      moved += d;
     }
-    expect(drift).toBeGreaterThan(0.02);
-    const before = field.px[8];
-    field = stepAgentField(field, seeds, 0.1, params);
-    expect(field.lastClock).toBeCloseTo(0.1, 5);
-    expect(field.px[8]).toBeCloseTo(field.homeX[8], 5);
-    expect(field.px[8]).not.toBe(before);
+    expect(moved).toBeGreaterThan(0.05);
+    expect(inside).toBeLessThan(0.08);
+    const cut = maxStep(snap(field, period - 0.01, params), snap(field, period + 0.01, params));
+    expect(cut).toBeGreaterThan(inside * 2);
+  });
+
+  it("glide eases into the next layout without jumps", () => {
+    const params = agentParamsFrom({ damp: 0.4, motion: 0 });
+    const field = new FormationField();
+    let prev = snap(field, 0, params);
+    let jump = 0;
+    for (let t = 1 / 30; t < 6; t += 1 / 30) {
+      const cur = snap(field, t, params);
+      jump = Math.max(jump, maxStep(prev, cur));
+      prev = cur;
+    }
+    expect(jump).toBeLessThan(0.12);
+  });
+
+  it("locks segments to whole bars of the song tempo", () => {
+    const params = agentParamsFrom();
+    expect(fieldCycle(params, 120).period).toBeCloseTo(2, 6);
+    expect(fieldCycle(agentParamsFrom({ fieldEvolve: 2 }), 120).period).toBeCloseTo(1, 6);
+    const field = new FormationField();
+    const offset = 0.3;
+    const before = snap(field, offset + 2 - 0.01, params, 120, offset);
+    const after = snap(field, offset + 2 + 0.01, params, 120, offset);
+    const mid = snap(field, offset + 1, params, 120, offset);
+    const mid2 = snap(field, offset + 1.02, params, 120, offset);
+    expect(maxStep(before, after)).toBeGreaterThan(maxStep(mid, mid2) * 2);
+  });
+
+  it("swings between a packed frame and open negative space", () => {
+    const params = agentParamsFrom();
+    const field = new FormationField();
+    const { period } = fieldCycle(params);
+    let hi = 0;
+    let lo = 999;
+    for (let k = 0; k < 10; k++) {
+      const occ = occupancy(field.posesAt(320, k * period + 0.05, 5, aspect, params));
+      hi = Math.max(hi, occ);
+      lo = Math.min(lo, occ);
+    }
+    expect(hi).toBeGreaterThan(lo * 1.8);
+  });
+
+  it("is a pure function of time so scrubbing back matches", () => {
+    const params = agentParamsFrom();
+    const field = new FormationField();
+    const a = field.posesAt(200, 4.2, 9, aspect, params).map((p) => ({ ...p }));
+    field.posesAt(200, 9.7, 9, aspect, params);
+    const b = new FormationField().posesAt(200, 4.2, 9, aspect, params);
+    for (let i = 0; i < 200; i++) {
+      expect(b[i].x).toBeCloseTo(a[i].x, 6);
+      expect(b[i].y).toBeCloseTo(a[i].y, 6);
+    }
   });
 });
 

@@ -179,7 +179,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tunnel / spiral / helix / bloom / prism plus Gyre, Well, Hall, Drift, Braid, and Sway are 3D fly-throughs — stamps travel in depth and around the frame so a big screen feels like you are moving through the picture. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Field is a deforming sheet: stamps pack into a texture, tear into stretched ribbons and islands with huge empty ground, then fill again. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Chain can optionally wear Animal Chain parts (dragon, dog, ferret, caterpillar, zebra) on the same path. Hunt is a documentary camera on top of any move: watch wide, notice a stamp, snap in, follow, return. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
+        <p>A collage machine. Stamp kits fly at the camera or ride a locked pattern on a warm ground. Rush is the fly-at-the-lens. Tunnel / spiral / helix / bloom / prism plus Gyre, Well, Hall, Drift, Braid, and Sway are 3D fly-throughs — stamps travel in depth and around the frame so a big screen feels like you are moving through the picture. Tide / rings / loom / petal / flock / wheel / silk are looping patterns. Field is a formation edit: for one bar the stamps morph inside a pattern — a full sheet, bands, a sunflower bloom, brush-stroke glyphs, packed clusters, a few giants, or a sweeping line — then cut on the bar to the next pattern. With a song loaded the cuts land on its bars. Glide eases between patterns instead of cutting. Music moves stay on a smooth path and punch glow on the beat — not the travel. Drum / illusion moves (pong, fall, snap, step, moire, poly, grid, zip, liss, ghost) lock to the tempo grid like a drum pattern: bounce, zoetrope steps, counter-spin, 3-against-4, afterimages. Chain can optionally wear Animal Chain parts (dragon, dog, ferret, caterpillar, zebra) on the same path. Hunt is a documentary camera on top of any move: watch wide, notice a stamp, snap in, follow, return. Drop an MP3 and the stamps hit with the drums without jittering off their path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -892,30 +892,19 @@ function paintRail(n: HTMLElement) {
     </div>
     ${
       collage?.collageMove === "field"
-        ? `<div class="sec">Emergent current</div>
-    ${num("collage-field-strength", "Field Strength", clampFieldStrength(collage.collageFieldStrength), 0.2, 2.2, 0.05)}
-    ${num("collage-field-scale", "Field Scale", clampFieldScale(collage.collageFieldScale), 0.28, 2.4, 0.05)}
-    ${num("collage-field-evolve", "Field Evolution", clampFieldEvolve(collage.collageFieldEvolve), 0.08, 2.2, 0.05)}
-    ${num("collage-field-density", "Density Strength", clampFieldDensity(collage.collageFieldDensity), 0, 2.2, 0.05)}
-    ${num("collage-field-density-scale", "Density Scale", clampFieldDensityScale(collage.collageFieldDensityScale), 0.28, 2.4, 0.05)}
-    ${num("collage-field-density-evolve", "Density Evolution", clampFieldDensityEvolve(collage.collageFieldDensityEvolve), 0.08, 2.2, 0.05)}
-    ${num("collage-field-flow", "Flow Strength", clampFieldFlow(collage.collageFieldFlow), 0, 2.2, 0.05)}
-    ${num("collage-field-curl", "Flow Curl", clampFieldCurl(collage.collageFieldCurl), 0, 2.2, 0.05)}
-    ${num("collage-field-flow-scale", "Flow Scale", clampFieldFlowScale(collage.collageFieldFlowScale), 0.28, 2.4, 0.05)}
-    ${num("collage-field-attract", "Attraction", clampFieldAttract(collage.collageFieldAttract), 0, 2.2, 0.05)}
-    ${num("collage-field-repel", "Repulsion", clampFieldRepel(collage.collageFieldRepel), 0, 2.4, 0.05)}
-    ${num("collage-field-radius", "Interaction Radius", clampFieldRadius(collage.collageFieldRadius), 0.02, 0.22, 0.005)}
-    ${num("collage-field-inertia", "Inertia", clampFieldInertia(collage.collageFieldInertia), 0.25, 2.2, 0.05)}
-    ${num("collage-field-damp", "Damping", clampFieldDamp(collage.collageFieldDamp), 0.08, 1, 0.02)}
-    ${num("collage-field-max-v", "Max Velocity", clampFieldMaxV(collage.collageFieldMaxV), 0.25, 2.2, 0.05)}
-    ${num("collage-field-scale-amp", "Scale Field", clampFieldScaleAmp(collage.collageFieldScaleAmp), 0, 2.2, 0.05)}
-    ${num("collage-field-min-scale", "Min Scale", clampFieldMinScale(collage.collageFieldMinScale), 0.12, 1, 0.02)}
-    ${num("collage-field-max-scale", "Max Scale", clampFieldMaxScale(collage.collageFieldMaxScale), 0.6, 3.2, 0.05)}
-    ${num("collage-field-perturb", "Local Perturbation", clampFieldPerturb(collage.collageFieldPerturb), 0, 2, 0.05)}
-    ${num("collage-field-warp", "Large-Scale Warp", clampFieldWarp(collage.collageFieldWarp), 0, 2.2, 0.05)}
-    ${num("collage-field-sparsity", "Sparsity", clampFieldSparsity(collage.collageFieldSparsity), 0, 2, 0.05)}
-    ${num("collage-field-contrast", "Density Contrast", clampFieldContrast(collage.collageFieldContrast), 0, 2.2, 0.05)}
-    ${num("collage-field-motion", "Global Motion", clampFieldMotion(collage.collageFieldMotion), 0, 2, 0.05)}`
+        ? `<div class="sec">Formations</div>
+    ${num("collage-field-evolve", "Tempo", clampFieldEvolve(collage.collageFieldEvolve), 0.08, 2.2, 0.05)}
+    ${num("collage-field-damp", "Glide", clampFieldDamp(collage.collageFieldDamp), 0, 0.9, 0.02)}
+    ${num("collage-field-strength", "Spread", clampFieldStrength(collage.collageFieldStrength), 0.2, 2.2, 0.05)}
+    ${num("collage-field-density", "Pack", clampFieldDensity(collage.collageFieldDensity), 0, 2.2, 0.05)}
+    ${num("collage-field-sparsity", "Open Share", clampFieldSparsity(collage.collageFieldSparsity), 0, 2, 0.05)}
+    ${num("collage-field-perturb", "Shuffle", clampFieldPerturb(collage.collageFieldPerturb), 0, 2, 0.05)}
+    ${num("collage-field-curl", "Swirl", clampFieldCurl(collage.collageFieldCurl), 0, 2.2, 0.05)}
+    ${num("collage-field-warp", "Morph", clampFieldWarp(collage.collageFieldWarp), 0, 2.2, 0.05)}
+    ${num("collage-field-motion", "Drift", clampFieldMotion(collage.collageFieldMotion), 0, 2, 0.05)}
+    ${num("collage-field-contrast", "Size Contrast", clampFieldContrast(collage.collageFieldContrast), 0, 2.2, 0.05)}
+    ${num("collage-field-min-scale", "Dense Size", clampFieldMinScale(collage.collageFieldMinScale), 0.12, 1, 0.02)}
+    ${num("collage-field-max-scale", "Giant Size", clampFieldMaxScale(collage.collageFieldMaxScale), 0.6, 3.2, 0.05)}`
         : ""
     }
     <div class="sec">Matter</div>

@@ -1,25 +1,14 @@
 import { ANIMAL_CHAINS, COLLAGE_KITS, HERALDRY_ROOMS, MOVE_LABEL, generatorForMove, inkForSeed, isHeraldry, kitForSeed, paperForSeed, pleasingMoveForSeed } from "../engine/heraldry";
 import {
-  clampFieldAttract,
   clampFieldContrast,
   clampFieldCurl,
   clampFieldDamp,
   clampFieldDensity,
-  clampFieldDensityEvolve,
-  clampFieldDensityScale,
   clampFieldEvolve,
-  clampFieldFlow,
-  clampFieldFlowScale,
-  clampFieldInertia,
   clampFieldMaxScale,
-  clampFieldMaxV,
   clampFieldMinScale,
   clampFieldMotion,
   clampFieldPerturb,
-  clampFieldRadius,
-  clampFieldRepel,
-  clampFieldScale,
-  clampFieldScaleAmp,
   clampFieldSparsity,
   clampFieldStrength,
   clampFieldWarp,
@@ -366,32 +355,21 @@ function rollBetween(rng: () => number, a: number, b: number) {
 
 /** Pleasing Field-slider ranges. Keeps pack/tear readable without frantic extremes. */
 export function rollFieldParams(rng: () => number) {
-  const minScale = clampFieldMinScale(rollBetween(rng, 0.4, 0.85));
-  const maxScale = clampFieldMaxScale(Math.max(minScale + 0.08, rollBetween(rng, 1.2, 2.4)));
+  const minScale = clampFieldMinScale(rollBetween(rng, 0.45, 0.85));
+  const maxScale = clampFieldMaxScale(Math.max(minScale + 0.08, rollBetween(rng, 1.3, 2.4)));
   return {
-    collageFieldStrength: clampFieldStrength(rollBetween(rng, 0.7, 1.8)),
-    collageFieldScale: clampFieldScale(rollBetween(rng, 0.55, 1.45)),
-    collageFieldEvolve: clampFieldEvolve(rollBetween(rng, 0.55, 1.7)),
-    collageFieldDensity: clampFieldDensity(rollBetween(rng, 0.7, 1.7)),
-    collageFieldDensityScale: clampFieldDensityScale(rollBetween(rng, 0.55, 1.4)),
-    collageFieldDensityEvolve: clampFieldDensityEvolve(rollBetween(rng, 0.7, 1.6)),
-    collageFieldFlow: clampFieldFlow(rollBetween(rng, 0.35, 1.45)),
-    collageFieldCurl: clampFieldCurl(rollBetween(rng, 0.35, 1.5)),
-    collageFieldFlowScale: clampFieldFlowScale(rollBetween(rng, 0.5, 1.35)),
-    collageFieldAttract: clampFieldAttract(rollBetween(rng, 0.15, 0.9)),
-    collageFieldRepel: clampFieldRepel(rollBetween(rng, 0.45, 1.45)),
-    collageFieldRadius: clampFieldRadius(rollBetween(rng, 0.04, 0.1)),
-    collageFieldInertia: clampFieldInertia(rollBetween(rng, 0.35, 0.95)),
-    collageFieldDamp: clampFieldDamp(rollBetween(rng, 0.22, 0.58)),
-    collageFieldMaxV: clampFieldMaxV(rollBetween(rng, 0.7, 1.6)),
-    collageFieldScaleAmp: clampFieldScaleAmp(rollBetween(rng, 0.45, 1.4)),
+    collageFieldEvolve: clampFieldEvolve(rollBetween(rng, 0.75, 1.35)),
+    collageFieldDamp: clampFieldDamp(rng() < 0.7 ? 0 : rollBetween(rng, 0.12, 0.45)),
+    collageFieldStrength: clampFieldStrength(rollBetween(rng, 0.8, 1.6)),
+    collageFieldDensity: clampFieldDensity(rollBetween(rng, 0.8, 1.5)),
+    collageFieldSparsity: clampFieldSparsity(rollBetween(rng, 0.4, 1.4)),
+    collageFieldPerturb: clampFieldPerturb(rollBetween(rng, 0.02, 0.5)),
+    collageFieldCurl: clampFieldCurl(rollBetween(rng, 0.1, 0.9)),
+    collageFieldWarp: clampFieldWarp(rollBetween(rng, 0.6, 1.6)),
+    collageFieldMotion: clampFieldMotion(rollBetween(rng, 0.15, 0.8)),
+    collageFieldContrast: clampFieldContrast(rollBetween(rng, 0.6, 1.6)),
     collageFieldMinScale: minScale,
     collageFieldMaxScale: maxScale,
-    collageFieldPerturb: clampFieldPerturb(rollBetween(rng, 0.04, 0.35)),
-    collageFieldWarp: clampFieldWarp(rollBetween(rng, 0.55, 1.7)),
-    collageFieldSparsity: clampFieldSparsity(rollBetween(rng, 0.45, 1.4)),
-    collageFieldContrast: clampFieldContrast(rollBetween(rng, 0.7, 1.8)),
-    collageFieldMotion: clampFieldMotion(rollBetween(rng, 0.15, 0.85)),
   };
 }
 

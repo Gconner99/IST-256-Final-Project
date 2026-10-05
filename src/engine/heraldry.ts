@@ -2,10 +2,9 @@ import { clamp, mulberry32 } from "../core/random";
 import type { GeneratorType } from "../core/types";
 import {
   agentParamsFrom,
-  agentPose,
+  FormationField,
   isFieldMove,
-  stepAgentField,
-  type AgentField,
+  type AgentPose,
 } from "./agentField";
 import {
   isSimMove,
@@ -3649,7 +3648,8 @@ export class HeraldryField {
   private stamps = new Map<string, HTMLCanvasElement>();
   private particles: Particle[] = [];
   private sim: FieldSim | null = null;
-  private agents: AgentField | null = null;
+  private agents: FormationField | null = null;
+  private fieldPoses: AgentPose[] = [];
   private hunt: HuntState | null = null;
   private builtSeed = -1;
   private builtInk = "";
@@ -3758,11 +3758,13 @@ export class HeraldryField {
                         : scene === "chain"
                           ? 40
                           : isFieldMove(scene)
-                            ? 200
+                            ? 360
                             : isSimMove(scene)
                             ? 42
                             : this.particles.length;
-    const count = Math.max(8, Math.min(this.particles.length, Math.round(baseCount * density)));
+    const count = isFieldMove(scene)
+      ? Math.max(40, Math.min(560, Math.round(baseCount * density)))
+      : Math.max(8, Math.min(this.particles.length, Math.round(baseCount * density)));
     const prisms = scene === "prism" ? 3 : 1;
     if (isFieldMove(scene)) {
       const params = agentParamsFrom({
@@ -3790,7 +3792,8 @@ export class HeraldryField {
         contrast: opts.fieldContrast,
         motion: opts.fieldMotion,
       });
-      this.agents = stepAgentField(this.agents, this.particles.slice(0, count), clock, params);
+      this.agents = this.agents ?? new FormationField();
+      this.fieldPoses = this.agents.posesAt(count, clock, opts.seed >>> 0, aspect, params, bpm, beatOffset);
       this.sim = null;
     } else if (isSimMove(scene)) {
       this.agents = null;
@@ -3874,9 +3877,9 @@ export class HeraldryField {
       paintAnimalChain((charge, pose) => record(this.stamp(charge), pose), animal, clock, chain, density);
     } else {
       for (let i = 0; i < count; i++) {
-        const p = this.particles[i];
+        const p = this.particles[i % this.particles.length];
         let pose: Pose | null = isFieldMove(scene) && this.agents
-          ? agentPose(this.agents, i, p.size)
+          ? this.fieldPoses[i] ?? null
           : isSimMove(scene) && this.sim
             ? simPose(this.sim, i, p.size)
             : poseParticle(p, i, scene, t, audio, bass, beat, bpm, count, clock, chain);
