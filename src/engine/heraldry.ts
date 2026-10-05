@@ -3831,7 +3831,7 @@ export class HeraldryField {
 
     const cap =
       scene === "spot" ? 0.34 :
-      isFieldMove(scene) ? 0.4 :
+      isFieldMove(scene) ? 0.5 :
       isFlyMove(scene) || scene === "chain"
         ? 0.26
         : 0.22;

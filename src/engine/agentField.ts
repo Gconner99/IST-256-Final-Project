@@ -44,25 +44,25 @@ export function clampFieldRadius(value?: number | null): number {
   return clamp(value ?? 0.055, 0.02, 0.22);
 }
 export function clampFieldInertia(value?: number | null): number {
-  return clamp(value ?? 0.85, 0.25, 2.2);
+  return clamp(value ?? 0.55, 0.25, 2.2);
 }
 export function clampFieldDamp(value?: number | null): number {
-  return clamp(value ?? 0.42, 0.08, 1);
+  return clamp(value ?? 0.38, 0.08, 1);
 }
 export function clampFieldMaxV(value?: number | null): number {
-  return clamp(value ?? 0.8, 0.25, 2.2);
+  return clamp(value ?? 1.15, 0.25, 2.2);
 }
 export function clampFieldScaleAmp(value?: number | null): number {
   return clamp(value ?? 0.85, 0, 2.2);
 }
 export function clampFieldMinScale(value?: number | null): number {
-  return clamp(value ?? 0.72, 0.12, 1);
+  return clamp(value ?? 0.62, 0.12, 1);
 }
 export function clampFieldMaxScale(value?: number | null): number {
-  return clamp(value ?? 2.35, 0.6, 3.2);
+  return clamp(value ?? 1.85, 0.6, 3.2);
 }
 export function clampFieldPerturb(value?: number | null): number {
-  return clamp(value ?? 0.18, 0, 2);
+  return clamp(value ?? 0.12, 0, 2);
 }
 export function clampFieldWarp(value?: number | null): number {
   return clamp(value ?? 1.1, 0, 2.2);
@@ -170,21 +170,15 @@ export interface AgentField {
 }
 
 export function fieldClocks(clock: number, fieldEvolve: number, densityEvolve: number) {
-  const t = clock;
   return {
-    fast: t * 2.43,
-    medium: t * 0.61 * densityEvolve,
-    slow: t * 0.27 * fieldEvolve,
-    glacial: t * 0.205 * densityEvolve,
+    fast: clock * 2.15,
+    medium: clock * 0.64 * densityEvolve,
+    slow: clock * 0.78 * fieldEvolve,
+    glacial: clock * 1.38 * densityEvolve,
   };
 }
 
-const EPS = 0.012;
-
-function smooth01(v: number): number {
-  const x = clamp(v, 0, 1);
-  return x * x * (3 - 2 * x);
-}
+const EPS = 0.014;
 
 function bump(x: number, center: number, width: number): number {
   const t = (x - center) / Math.max(1e-6, width);
@@ -193,58 +187,21 @@ function bump(x: number, center: number, width: number): number {
 }
 
 /**
- * How much of the frame should be filled. Lingers near packed sheet and
- * open ground so the picture actually spends time as each.
+ * Pack ↔ empty envelope. Fast enough that an 8s clip packs and tears more than once.
+ * t=0 starts packed, like the reference.
  */
 export function coverageAt(clock: number, params: AgentParams): number {
   const g = fieldClocks(clock, params.fieldEvolve, params.densityEvolve).glacial;
-  const s =
-    Math.sin(g + 0.35) +
-    0.42 * Math.sin(g * 1.618 + 1.6) +
-    0.18 * Math.sin(g * 0.414 + 2.2);
-  let cov = 0.5 + 0.58 * Math.tanh(s * 1.25);
-  cov += (0.75 - params.sparsity) * 0.22;
+  const s = Math.sin(g + 1.25) + 0.32 * Math.sin(g * 1.618 + 0.4);
+  let cov = 0.5 + 0.54 * Math.tanh(s * 1.85);
+  cov += (0.72 - params.sparsity) * 0.16;
   return clamp(cov, 0, 1);
 }
 
-/** Which spatial family dominates: bands, islands, ribbons, contours. */
 function structureKind(clock: number, params: AgentParams): number {
-  const { glacial, slow } = fieldClocks(clock, params.fieldEvolve, params.densityEvolve);
-  const s = Math.sin(glacial * 0.73 + 0.2) + 0.38 * Math.sin(slow * 0.31 + 1.4);
-  return 0.5 + 0.5 * Math.tanh(s * 1.65);
-}
-
-function deformAmp(cov: number, params: AgentParams): number {
-  return (0.1 + 0.9 * Math.pow(1 - cov, 1.08)) * (0.42 + params.fieldStrength * 0.72);
-}
-
-function spaceWarp(
-  x: number,
-  y: number,
-  clock: number,
-  params: AgentParams,
-  deform: number,
-): [number, number] {
-  const { slow, glacial, medium } = fieldClocks(clock, params.fieldEvolve, params.densityEvolve);
-  const s = params.fieldScale;
-  const a1 = params.warp * deform;
-  let u = x + a1 * 0.22 * Math.sin(y * (1.72 * s) + glacial * 0.71);
-  let v = y + a1 * 0.2 * Math.cos(x * (1.48 * s) + glacial * 0.53);
-  u += a1 * 0.1 * Math.sin(u * (2.18 * s) + v * 0.85 + slow * 0.8);
-  v += a1 * 0.09 * Math.cos(u * 0.74 + v * (2.05 * s) + medium * 0.6);
-  const stretch = Math.sin(glacial * 1.414 + 0.3) * a1 * 0.48;
-  const shear = Math.sin(glacial * 0.93 + 1.1) * a1 * 0.32;
-  const ang = glacial * 0.19 * a1;
-  const ca = Math.cos(ang);
-  const sa = Math.sin(ang);
-  let rx = u * ca - v * sa;
-  let ry = u * sa + v * ca;
-  rx *= 1 + stretch;
-  ry *= 1 - stretch * 0.86;
-  rx += ry * shear;
-  rx += params.motion * deform * 0.15 * Math.sin(glacial * 0.71);
-  ry += params.motion * deform * 0.12 * Math.cos(glacial * 0.53 + 0.8);
-  return intoFrame(rx, ry);
+  const { medium, slow } = fieldClocks(clock, params.fieldEvolve, params.densityEvolve);
+  const s = Math.sin(medium * 1.07 + 0.3) + 0.4 * Math.sin(slow * 0.51 + 1.2);
+  return 0.5 + 0.5 * Math.tanh(s * 1.4);
 }
 
 function intoFrame(x: number, y: number): [number, number] {
@@ -257,84 +214,137 @@ function intoFrame(x: number, y: number): [number, number] {
   return [nx, ny];
 }
 
-function streamPsi(x: number, y: number, slow: number, medium: number, scale: number, curl: number): number {
-  const wx = x + 0.16 * Math.sin(y * 2.07 + slow * 0.81);
-  const wy = y + 0.16 * Math.cos(x * 1.83 + medium * 0.67);
-  const qx = wx * scale;
-  const qy = wy * scale;
-  return (
-    Math.sin(qx + slow) * Math.cos(qy * 0.86 + slow * 0.71) +
-    curl * 0.55 * Math.sin(qx * 1.618 + qy * 0.41 + medium) +
-    curl * 0.38 * Math.cos(qx * 0.52 - qy * 1.27 + slow * 0.33)
+function spaceWarp(
+  x: number,
+  y: number,
+  clock: number,
+  params: AgentParams,
+  deform: number,
+): [number, number] {
+  const { slow, glacial, medium } = fieldClocks(clock, params.fieldEvolve, params.densityEvolve);
+  const s = params.fieldScale;
+  const a1 = params.warp * deform;
+  let u = x + a1 * 0.2 * Math.sin(y * (1.55 * s) + slow * 0.9);
+  let v = y + a1 * 0.18 * Math.cos(x * (1.38 * s) + medium * 0.7);
+  const stretch = Math.sin(glacial * 0.71 + 0.4) * a1 * 0.55;
+  const shear = Math.sin(slow * 0.83 + 1.1) * a1 * 0.28;
+  u *= 1 + stretch;
+  v *= 1 - stretch * 0.82;
+  u += v * shear;
+  u += params.motion * deform * 0.12 * Math.sin(slow * 0.55);
+  v += params.motion * deform * 0.1 * Math.cos(slow * 0.41 + 0.7);
+  return [u, v];
+}
+
+function lineA(x: number, y: number, clock: number, params: AgentParams): number {
+  const { slow, medium } = fieldClocks(clock, params.fieldEvolve, params.densityEvolve);
+  const s = params.densityScale;
+  const u = x * s;
+  const v = y * s;
+  return v - 0.34 * Math.sin(u * (1.95 + s * 0.35) + slow * 1.15) - 0.1 * Math.sin(u * 0.68 + medium);
+}
+
+function lineB(x: number, y: number, clock: number, params: AgentParams): number {
+  const { slow, medium } = fieldClocks(clock, params.fieldEvolve, params.densityEvolve);
+  const s = params.densityScale;
+  const u = x * s;
+  const v = y * s;
+  return u - 0.3 * Math.sin(v * (1.7 + s * 0.28) + medium * 1.05) - 0.09 * Math.cos(v * 0.8 + slow * 0.6);
+}
+
+function phiLine(x: number, y: number, clock: number, params: AgentParams): number {
+  const { slow, medium } = fieldClocks(clock, params.fieldEvolve, params.densityEvolve);
+  const s = params.densityScale;
+  return Math.sin(x * (1.55 * s) + y * 0.4 + slow * 0.7) + 0.45 * Math.cos(y * (1.25 * s) + medium * 0.5);
+}
+
+function projectToZero(x: number, y: number, fn: (x: number, y: number) => number): [number, number] {
+  let px = x;
+  let py = y;
+  for (let i = 0; i < 5; i++) {
+    const v = fn(px, py);
+    const gx = (fn(px + EPS, py) - fn(px - EPS, py)) / (2 * EPS);
+    const gy = (fn(px, py + EPS) - fn(px, py - EPS)) / (2 * EPS);
+    const g2 = gx * gx + gy * gy + 1e-8;
+    px -= (v * gx) / g2;
+    py -= (v * gy) / g2;
+  }
+  return [px, py];
+}
+
+function islandCenters(clock: number, params: AgentParams): Array<[number, number]> {
+  const c = clock * 0.52 * params.fieldEvolve;
+  return [
+    [0.3 * Math.sin(c + 0.2), 0.34 * Math.cos(c * 0.71 + 0.4)],
+    [-0.28 * Math.cos(c * 0.83 + 1.1), 0.24 * Math.sin(c * 0.61 + 2)],
+    [0.2 * Math.sin(c * 1.07 + 2.2), -0.32 * Math.cos(c * 0.55 + 0.8)],
+    [-0.24 * Math.sin(c * 0.49 + 3), -0.2 * Math.cos(c * 0.91 + 1.5)],
+  ];
+}
+
+function nearestIsland(x: number, y: number, clock: number, params: AgentParams): [number, number] {
+  const spots = islandCenters(clock, params);
+  let best = spots[0];
+  let bestD = Infinity;
+  for (let i = 0; i < spots.length; i++) {
+    const dx = x - spots[i][0];
+    const dy = y - spots[i][1];
+    const d = dx * dx + dy * dy;
+    if (d < bestD) {
+      bestD = d;
+      best = spots[i];
+    }
+  }
+  return best;
+}
+
+function nearestRibbon(x: number, y: number, clock: number, params: AgentParams): [number, number] {
+  const [ax, ay] = projectToZero(x, y, (u, v) => lineA(u, v, clock, params));
+  const [bx, by] = projectToZero(x, y, (u, v) => lineB(u, v, clock, params));
+  const dA = (x - ax) * (x - ax) + (y - ay) * (y - ay);
+  const dB = (x - bx) * (x - bx) + (y - by) * (y - by);
+  return dA < dB ? [ax, ay] : [bx, by];
+}
+
+function structureHome(x: number, y: number, clock: number, params: AgentParams): [number, number] {
+  const kind = structureKind(clock, params);
+  const wRibbon = bump(kind, 0.18, 0.4);
+  const wIsland = bump(kind, 0.6, 0.3);
+  const wContour = bump(kind, 0.92, 0.26);
+  if (wIsland >= wRibbon && wIsland >= wContour && wIsland > 0.04) {
+    return nearestIsland(x, y, clock, params);
+  }
+  if (wContour >= wRibbon && wContour > 0.04) {
+    return projectToZero(x, y, (u, v) => phiLine(u, v, clock, params));
+  }
+  return nearestRibbon(x, y, clock, params);
+}
+
+function contractAmt(cov: number, params: AgentParams): number {
+  return clamp(
+    Math.pow(1 - cov, 1.12) * (0.42 + params.density * 0.32 + params.attract * 0.28) * (0.55 + params.fieldStrength * 0.4),
+    0,
+    1,
   );
 }
 
-function ridgeWidth(cov: number): number {
-  return 0.0048 + Math.pow(cov, 1.38) * 0.24;
+function deformAmt(cov: number, params: AgentParams): number {
+  return (0.1 + 0.9 * (1 - cov)) * (0.4 + params.warp * 0.45);
 }
 
-function islandSigma(cov: number): number {
-  return 0.026 + Math.pow(cov, 1.25) * 0.16;
-}
-
-function densityRaw(x: number, y: number, clock: number, params: AgentParams, cov: number): number {
-  const { medium, slow, glacial } = fieldClocks(clock, params.fieldEvolve, params.densityEvolve);
-  const s = params.densityScale;
-  const kind = structureKind(clock, params);
-  const u = x * s + 0.2 * Math.sin(y * 1.62 * s + medium * 0.55);
-  const v = y * s + 0.18 * Math.cos(x * 1.38 * s + slow * 0.42);
-  const width = ridgeWidth(cov);
-  const lineA = v - 0.3 * Math.sin(u * (2.05 + s * 0.35) + slow) - 0.1 * Math.sin(u * 0.72 + glacial);
-  const lineB = u - 0.26 * Math.sin(v * (1.82 + s * 0.28) + medium * 0.8) - 0.09 * Math.cos(v * 0.88 + glacial * 0.6);
-  const lineC = (u + v) * 0.72 - 0.22 * Math.sin((u - v) * 1.55 + slow * 0.77);
-  const bands = Math.exp(-(lineA * lineA) / width);
-  const cross = Math.exp(-(lineB * lineB) / (width * 1.12));
-  const diag = Math.exp(-(lineC * lineC) / (width * 0.9));
-  const phi = Math.sin(u * (1.35 + s * 0.4) + slow * 0.48) + 0.32 * Math.cos(v * 1.15 + glacial * 0.55);
-  const contourW = 0.006 + cov * 0.03;
-  const contour = Math.exp(-(phi * phi) / contourW);
-  const sig = islandSigma(cov);
-  let islands = 0;
-  for (let k = 0; k < 4; k++) {
-    const cx = 0.3 * Math.sin(glacial * (0.68 + k * 0.19) + k * 2.05);
-    const cy = 0.26 * Math.cos(glacial * (0.51 + k * 0.14) + k * 1.62);
-    const amp = 0.55 + 0.45 * Math.sin(slow * 0.41 + k * 1.3);
-    const dx = u / s - cx;
-    const dy = v / s - cy;
-    islands += amp * Math.exp(-0.5 * (dx * dx + dy * dy) / (sig * sig));
-  }
-  islands = clamp(islands, 0, 1);
-  let holes = 0;
-  const hx = 0.22 * Math.sin(glacial * 0.81 + 2.4);
-  const hy = 0.18 * Math.cos(glacial * 0.67 + 0.9);
-  holes += Math.exp(-((x - hx) * (x - hx) + (y - hy) * (y - hy)) / (0.012 + cov * 0.05));
-  const hx2 = -0.18 * Math.cos(glacial * 0.54 + 1.1);
-  const hy2 = 0.2 * Math.sin(slow * 0.36 + 0.4);
-  holes += 0.75 * Math.exp(-((x - hx2) * (x - hx2) + (y - hy2) * (y - hy2)) / (0.01 + cov * 0.04));
-
-  const wBand = bump(kind, 0.16, 0.34) * (0.4 + cov * 0.7) + cov * 0.22 + (1 - cov) * 0.12;
-  const wIsland = bump(kind, 0.84, 0.32) * (0.25 + cov * 0.5 + (1 - cov) * 0.4);
-  const wRibbon = bump(kind, 0.48, 0.3) * (0.3 + (1 - cov) * 0.85) + (1 - cov) * 0.18;
-  const wContour = bump(1 - cov, 0.88, 0.24) * (0.45 + (1 - kind) * 0.6);
-  const peaked =
-    bands * (0.55 * wBand + 0.2 * wRibbon) +
-    cross * (0.35 * wBand + 0.45 * wRibbon) +
-    diag * (0.25 * wRibbon + 0.2 * wBand) +
-    islands * wIsland * (0.55 + cov * 0.35) +
-    contour * wContour * (0.7 + (1 - cov) * 0.9);
-  const punched = Math.max(0, peaked - holes * (0.25 + cov * 0.55));
-  return clamp(punched * (0.55 + params.density * 0.4), 0, 1);
-}
-
-/** High = matter. Low = negative space. Thickness follows coverage. */
+/**
+ * High = on a structure. Packed coverage flattens this toward a full sheet.
+ */
 export function densityAt(x: number, y: number, clock: number, params: AgentParams): number {
   const cov = coverageAt(clock, params);
-  const peaked = densityRaw(x, y, clock, params, cov);
-  const contrast = 0.55 + params.contrast * (0.55 + (1 - cov) * 1.15);
-  const sharp = Math.tanh((peaked - (0.18 + (1 - cov) * 0.08)) * contrast) * 0.5 + 0.5;
-  if (cov > 0.8) {
-    const fill = clamp((cov - 0.8) / 0.2, 0, 1);
-    return clamp(sharp + fill * fill * (0.93 - sharp), 0, 1);
+  const [sx, sy] = structureHome(x, y, clock, params);
+  const dist = Math.hypot(x - sx, y - sy);
+  const peaked = Math.exp(-(dist * dist) / (0.028 + cov * 0.14));
+  const contrast = 0.7 + params.contrast * 0.8;
+  const sharp = Math.tanh((peaked - 0.22) * contrast * (1.2 + (1 - cov))) * 0.5 + 0.5;
+  if (cov > 0.78) {
+    const fill = clamp((cov - 0.78) / 0.22, 0, 1);
+    return clamp(sharp + fill * fill * (0.94 - sharp), 0, 1);
   }
   return sharp;
 }
@@ -345,49 +355,55 @@ export interface FieldSample {
   z: number;
 }
 
-function curlOffset(
-  x: number,
-  y: number,
-  clock: number,
-  params: AgentParams,
-  deform: number,
-): [number, number, number] {
-  const { fast, medium, slow } = fieldClocks(clock, params.fieldEvolve, params.densityEvolve);
-  const flowS = params.flowScale * 2.05;
-  const psi = (u: number, v: number) => streamPsi(u, v, slow, medium, flowS, params.curl);
-  const curlAmp = params.flow * (0.012 + deform * 0.11);
-  let dx = ((psi(x, y + EPS) - psi(x, y - EPS)) / (2 * EPS)) * curlAmp;
-  let dy = -((psi(x + EPS, y) - psi(x - EPS, y)) / (2 * EPS)) * curlAmp;
-  const amp = 0.01 * params.perturb * (0.4 + deform);
-  dx += amp * Math.sin(x * 15.3 + y * 4.1 + fast);
-  dy += amp * Math.cos(y * 13.7 + x * 3.6 + fast * 0.81);
-  return [dx, dy, 0.05 * Math.sin(x * 2.4 + y * 1.8 + slow * 0.6) * params.flow * deform];
+function mapPoint(x: number, y: number, z: number, clock: number, params: AgentParams): FieldSample {
+  const cov = coverageAt(clock, params);
+  const deform = deformAmt(cov, params);
+  const contract = contractAmt(cov, params);
+  const [wx, wy] = spaceWarp(x, y, clock, params, deform);
+  const [sx, sy] = structureHome(wx, wy, clock, params);
+  let px = wx + (sx - wx) * contract;
+  let py = wy + (sy - wy) * contract;
+  const { fast, slow } = fieldClocks(clock, params.fieldEvolve, params.densityEvolve);
+  const curl = params.flow * params.curl * deform * 0.045;
+  px += curl * Math.sin(wy * params.flowScale * 2.1 + slow);
+  py += curl * Math.cos(wx * params.flowScale * 1.8 + slow * 0.7);
+  const jig = params.perturb * 0.01 * (0.3 + deform);
+  px += jig * Math.sin(x * 11 + fast);
+  py += jig * Math.cos(y * 10 + fast * 0.8);
+  const [fx, fy] = intoFrame(px, py);
+  return {
+    x: fx,
+    y: fy,
+    z: z * (1 - contract * 0.5) + 0.04 * Math.sin(z * 3 + clock * 0.5) * deform,
+  };
 }
 
-/**
- * Lagrangian displacement of a home sample. Nearby homes stay related.
- * No gathering onto ridges — the density field selects who is visible.
- */
+/** Lagrangian map of a home sample. Nearby homes stay related unless they split across basins. */
 export function displacementAt(x: number, y: number, z: number, clock: number, params: AgentParams): FieldSample {
-  const cov = coverageAt(clock, params);
-  const deform = deformAmp(cov, params);
-  const [wx, wy] = spaceWarp(x, y, clock, params, deform);
-  const [cx, cy, cz] = curlOffset(wx, wy, clock, params, deform);
-  const [px, py] = intoFrame(wx + cx, wy + cy);
-  return {
-    x: px - x,
-    y: py - y,
-    z: cz * 0.8 + 0.03 * Math.sin(z * 3.1 + clock * 0.4) * deform,
-  };
+  const p = mapPoint(x, y, z, clock, params);
+  return { x: p.x - x, y: p.y - y, z: p.z - z };
 }
 
 export function sampleTarget(x: number, y: number, z: number, clock: number, params: AgentParams): FieldSample {
-  const d = displacementAt(x, y, z, clock, params);
+  const p = mapPoint(x, y, z, clock, params);
   return {
-    x: clamp(x + d.x, -0.48, 0.48),
-    y: clamp(y + d.y, -0.82, 0.82),
-    z: clamp(z + d.z, -0.32, 0.32),
+    x: clamp(p.x, -0.48, 0.48),
+    y: clamp(p.y, -0.82, 0.82),
+    z: clamp(p.z, -0.32, 0.32),
   };
+}
+
+function strainSquash(x: number, y: number, z: number, clock: number, params: AgentParams): number {
+  const t0 = sampleTarget(x, y, z, clock, params);
+  const tx = sampleTarget(x + EPS, y, z, clock, params);
+  const ty = sampleTarget(x, y + EPS, z, clock, params);
+  const jxx = (tx.x - t0.x) / EPS;
+  const jyx = (tx.y - t0.y) / EPS;
+  const jxy = (ty.x - t0.x) / EPS;
+  const jyy = (ty.y - t0.y) / EPS;
+  const sx = Math.hypot(jxx, jyx) || 1;
+  const sy = Math.hypot(jxy, jyy) || 1;
+  return clamp(sx / sy, 0.38, 2.6);
 }
 
 function homeOnLattice(i: number, n: number, seed: AgentSeed): [number, number, number] {
@@ -446,36 +462,21 @@ export function initAgentField(seeds: AgentSeed[], clock: number): AgentField {
 function integrate(field: AgentField, dt: number, clock: number, params: AgentParams) {
   const n = field.n;
   const cov = coverageAt(clock, params);
-  const deform = Math.pow(1 - cov, 1.05);
-  const pull = (7.4 + deform * 1.8) / (0.32 + params.inertia);
-  const drag = Math.exp(-(0.45 + params.damp * 1.2) * dt);
-  const maxV = (0.12 + params.maxV * 0.22) * (0.7 + deform * 0.85);
-  const rad = params.radius * (0.35 + deform * 0.55);
+  const contract = contractAmt(cov, params);
+  const pull = (15.5 + contract * 6) / (0.22 + params.inertia);
+  const drag = Math.exp(-(0.55 + params.damp * 1.1) * dt);
+  const maxV = (0.2 + params.maxV * 0.32) * (0.85 + contract * 0.7);
+  const rad = params.radius * (0.22 + contract * 0.28);
   const rad2 = rad * rad;
-  const { slow, glacial } = fieldClocks(clock, params.fieldEvolve, params.densityEvolve);
-  const stretch = Math.sin(glacial * 1.414 + 0.3) * params.warp * (0.12 + deform * 0.7);
-  const globalSquash = clamp(1 + stretch * 0.42, 0.58, 1.65);
-  const thresh = 0.18 + params.sparsity * 0.1 + (1 - cov) * 0.26 - params.attract * 0.05;
-  const sharp = 2.2 + params.contrast * (2 + (1 - cov) * 2.2);
-
-  const live: number[] = [];
-  for (let i = 0; i < n; i++) {
-    const d = densityAt(field.homeX[i], field.homeY[i], clock, params);
-    let alpha = smooth01((d - thresh) * sharp);
-    if (cov > 0.68) alpha = Math.max(alpha, smooth01((cov - 0.68) * 7.5));
-    if (cov < 0.1) alpha *= alpha;
-    field.alpha[i] = alpha;
-    if (alpha > 0.12) live.push(i);
-  }
+  const { slow } = fieldClocks(clock, params.fieldEvolve, params.densityEvolve);
 
   for (let i = 0; i < n; i++) {
     const target = sampleTarget(field.homeX[i], field.homeY[i], field.homeZ[i], clock, params);
     let ax = (target.x - field.px[i]) * pull;
     let ay = (target.y - field.py[i]) * pull;
-    let az = (target.z - field.pz[i]) * pull * 0.45;
-    if (params.repel > 0.01 && field.alpha[i] > 0.12) {
-      for (let k = 0; k < live.length; k++) {
-        const j = live[k];
+    let az = (target.z - field.pz[i]) * pull * 0.4;
+    if (params.repel > 0.02 && contract > 0.12) {
+      for (let j = 0; j < n; j++) {
         if (i === j) continue;
         const dx = field.px[i] - field.px[j];
         const dy = field.py[i] - field.py[j];
@@ -483,7 +484,7 @@ function integrate(field: AgentField, dt: number, clock: number, params: AgentPa
         if (d2 > rad2 || d2 < 1e-10) continue;
         const dist = Math.sqrt(d2);
         const u = 1 - dist / rad;
-        const push = u * u * params.repel * 0.55;
+        const push = u * u * params.repel * 0.28 * contract;
         ax += (dx / dist) * push;
         ay += (dy / dist) * push;
       }
@@ -502,16 +503,16 @@ function integrate(field: AgentField, dt: number, clock: number, params: AgentPa
     field.py[i] += field.vy[i] * dt;
     field.pz[i] += field.vz[i] * dt;
     const sf =
-      Math.sin(field.homeX[i] * 4.2 + field.homeY[i] * 3.1 + slow * 0.55) *
-      Math.cos(field.homeY[i] * 2.6 + slow * 0.29);
-    const bulk = params.minScale + (1 - cov) * (params.maxScale - params.minScale) * 0.92;
-    let mul =
-      bulk *
-      (0.82 + field.bias[i] * 0.22) *
-      (1 + params.scaleAmp * sf * 0.22 * (0.35 + deform));
-    mul = clamp(mul, params.minScale, params.maxScale);
-    field.scale[i] = mul;
-    field.squash[i] = globalSquash;
+      Math.sin(field.homeX[i] * 3.4 + field.homeY[i] * 2.6 + slow * 0.4) *
+      Math.cos(field.homeY[i] * 2.1 + slow * 0.22);
+    const bulk = params.minScale + (1 - cov) * (params.maxScale - params.minScale) * 0.9;
+    field.scale[i] = clamp(
+      bulk * (0.88 + field.bias[i] * 0.14) * (1 + params.scaleAmp * sf * 0.16 * (0.3 + contract)),
+      params.minScale,
+      params.maxScale,
+    );
+    field.squash[i] = strainSquash(field.homeX[i], field.homeY[i], field.homeZ[i], clock, params);
+    field.alpha[i] = 1;
   }
 }
 
@@ -557,16 +558,14 @@ export function stepAgentField(
 
 export function agentPose(field: AgentField, i: number, size: number): AgentPose | null {
   if (i < 0 || i >= field.n) return null;
-  const depth = Math.max(0.52, 1.03 - field.pz[i] * 0.35);
-  const near = clamp(1.04 / depth, 0.7, 1.4);
-  const speed = Math.hypot(field.vx[i], field.vy[i]);
-  const rot = speed > 0.01 ? Math.atan2(field.vy[i], field.vx[i]) : field.homeX[i] * 2.4 + field.bias[i];
+  const depth = Math.max(0.62, 1.02 - field.pz[i] * 0.22);
+  const near = clamp(1.02 / depth, 0.78, 1.28);
   return {
     x: clamp(field.px[i] / depth, -0.48, 0.48),
     y: clamp(field.py[i] / depth, -0.82, 0.82),
-    px: clamp((0.038 + size * 0.02) * near * field.scale[i], 0.022, 0.34),
-    rot,
-    alpha: clamp(field.alpha[i], 0, 1),
+    px: clamp((0.036 + size * 0.019) * near * field.scale[i], 0.02, 0.32),
+    rot: (field.bias[i] - 1.05) * 0.14,
+    alpha: 1,
     squash: field.squash ? field.squash[i] : 1,
   };
 }
