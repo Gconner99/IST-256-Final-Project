@@ -152,6 +152,7 @@ export interface AgentPose {
 export interface AgentField {
   n: number;
   lastClock: number;
+  phase: number;
   homeX: Float32Array;
   homeY: Float32Array;
   homeZ: Float32Array;
@@ -293,6 +294,7 @@ export function initAgentField(seeds: AgentSeed[], clock: number): AgentField {
   const field: AgentField = {
     n,
     lastClock: clock,
+    phase: clock,
     homeX: new Float32Array(n),
     homeY: new Float32Array(n),
     homeZ: new Float32Array(n),
@@ -338,7 +340,6 @@ function integrate(field: AgentField, dt: number, clock: number, params: AgentPa
     let ax = (target.x - field.px[i]) * pull;
     let ay = (target.y - field.py[i]) * pull;
     let az = (target.z - field.pz[i]) * pull * 0.55;
-    const dHere = densityAt(field.px[i], field.py[i], clock, params);
     const ddx = (densityAt(field.px[i] + EPS, field.py[i], clock, params) - densityAt(field.px[i] - EPS, field.py[i], clock, params)) / (2 * EPS);
     const ddy = (densityAt(field.px[i], field.py[i] + EPS, clock, params) - densityAt(field.px[i], field.py[i] - EPS, clock, params)) / (2 * EPS);
     ax += ddx * params.attract * 0.35;
@@ -397,15 +398,29 @@ export function stepAgentField(
 ): AgentField {
   const n = seeds.length;
   let field = prev;
-  if (!field || field.n !== n || clock < field.lastClock - 0.04 || clock - field.lastClock > 1.6) {
+  if (!field || field.n !== n || clock - (field.lastClock ?? 0) > 1.6) {
     field = initAgentField(seeds, clock);
   }
   let dt = clock - field.lastClock;
-  if (dt <= 1e-5) return field;
+  if (dt < -0.04) {
+    const looped = field.lastClock > 2 && clock < 0.8;
+    if (looped) dt = Math.min(0.05, 1 / 30);
+    else {
+      field = initAgentField(seeds, clock);
+      dt = 0;
+    }
+  }
+  if (dt <= 1e-5) {
+    field.lastClock = clock;
+    return field;
+  }
   dt = Math.min(dt, 0.05);
   const steps = dt > 0.028 ? 2 : 1;
   const slice = dt / steps;
-  for (let s = 0; s < steps; s++) integrate(field, slice, clock, params);
+  for (let s = 0; s < steps; s++) {
+    field.phase += slice;
+    integrate(field, slice, field.phase, params);
+  }
   field.lastClock = clock;
   return field;
 }
