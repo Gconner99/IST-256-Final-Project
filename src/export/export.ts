@@ -18,7 +18,7 @@ import { downloadBlob } from "../core/project";
 import { evenSize, fitEven } from "../core/random";
 import { clipLoopFade, encodeBitrateMbps, encodeDuration, encodeFps, EXPORT_FULL_LONG, EXPORT_STILL_QUALITY } from "../core/exportSize";
 import { mediaTime } from "../core/timeline";
-import { ensureSoundtrackPcm, getSoundtrack, sliceSoundtrack } from "../media/audio";
+import { ensureSoundtrackPcm, getSoundtrack, sliceSoundtrack, soundtrackExportOrigin } from "../media/audio";
 import type { Renderer } from "../engine/renderer";
 
 const CLIP_MAX = EXPORT_FULL_LONG;
@@ -47,12 +47,13 @@ export async function exportImageSequence(
 ): Promise<void> {
   const { fps, duration, filename, quality } = project.exportSettings;
   const { width, height } = videoFrameSize(project, false);
+  const origin = soundtrackExportOrigin(project);
   const n = Math.max(1, Math.round(duration * fps));
   const zip = new JSZip();
   const folder = zip.folder(filename) ?? zip;
   const frame = document.createElement("canvas");
   for (let i = 0; i < n; i++) {
-    const t = i / fps;
+    const t = origin + i / fps;
     onProgress?.(i, n);
     renderer.paintFrame(project, t, width, height, frame);
     const blob = await canvasBlob(frame, "image/png", quality);
@@ -122,7 +123,8 @@ async function exportMp4WebCodecs(
     keyFrameInterval: 1,
   });
   output.addVideoTrack(videoSource, { frameRate: fps });
-  const music = await attachSoundtrack(output, format, project, duration);
+  const origin = soundtrackExportOrigin(project);
+  const music = await attachSoundtrack(output, format, project, duration, origin);
   renderer.resetTemporal();
   const frame = document.createElement("canvas");
   await output.start();
@@ -133,7 +135,7 @@ async function exportMp4WebCodecs(
     const close = project.exportSettings.loopClose !== false;
     let first: HTMLCanvasElement | null = null;
     for (let i = 0; i < n; i++) {
-      const t = mediaTime(i / fps, duration, project.playback.mode, 1, true);
+      const t = origin + mediaTime(i / fps, duration, project.playback.mode, 1, true);
       onProgress?.(i, n);
       renderer.paintFrame(project, t, width, height, frame);
       if (i === 0 && close) first = keepFirstFrame(frame);
@@ -164,13 +166,14 @@ async function attachSoundtrack(
   format: Mp4OutputFormat,
   project: Project,
   duration: number,
+  origin = 0,
 ): Promise<{ audioSource: AudioBufferSource; buffer: AudioBuffer } | null> {
   const pcm = await ensureSoundtrackPcm(getSoundtrack(project));
   if (!pcm || pcm.length < 32 || pcm.duration <= 0) return null;
   const close = project.exportSettings.loopClose !== false;
   let sliced: AudioBuffer;
   try {
-    sliced = sliceSoundtrack(pcm, duration, close);
+    sliced = sliceSoundtrack(pcm, duration, close, origin);
   } catch {
     return null;
   }
@@ -219,12 +222,13 @@ async function recordCanvasVideo(
   };
   renderer.resetTemporal();
   rec.start(200);
+  const origin = soundtrackExportOrigin(project);
   const n = Math.max(1, Math.round(duration * fps));
   const frame = document.createElement("canvas");
   const close = project.exportSettings.loopClose !== false;
   let first: HTMLCanvasElement | null = null;
   for (let i = 0; i < n; i++) {
-    const t = mediaTime(i / fps, duration, project.playback.mode, 1, true);
+    const t = origin + mediaTime(i / fps, duration, project.playback.mode, 1, true);
     onProgress?.(i, n);
     renderer.paintFrame(project, t, width, height, frame);
     if (i === 0 && close) first = keepFirstFrame(frame);

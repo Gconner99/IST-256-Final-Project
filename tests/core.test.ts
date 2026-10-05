@@ -19,7 +19,7 @@ import { BOOT_GENERATOR_GLSL, COMIC_GENERATOR_GLSL, CONFETTI_GENERATOR_GLSL, COR
 import { GEN_INDEX } from "../src/engine/gl";
 import type { Keyframe } from "../src/core/types";
 import { buildPrompt, hexToInk, samplePaletteFromImageData, snapGenSize, stillUrl } from "../src/generate/imagine";
-import { beatEnvelope, copyWrappedChannel, detectBeats, estimateBpm, estimateTempo, isAudioFile, lockBeatsToGrid, sampleLevelsFromSamples, tempoPulse } from "../src/media/audio";
+import { beatEnvelope, copyWrappedChannel, detectBeats, estimateBpm, estimateTempo, isAudioFile, lockBeatsToGrid, sampleLevelsFromSamples, soundtrackExportOrigin, tempoPulse } from "../src/media/audio";
 import { setSoundtrack } from "../src/ui/actions";
 import { seekVideo } from "../src/media/sources";
 
@@ -962,6 +962,39 @@ describe("soundtrack", () => {
     expect(faded[7]).toBe(1);
     expect(faded[8]).toBeCloseTo(0.5, 5);
     expect(faded[9]).toBeCloseTo(0, 5);
+  });
+
+  it("starts a soundtrack slice from a later playhead and wraps", () => {
+    const src = new Float32Array([10, 20, 30, 40, 50]);
+    const dst = new Float32Array(4);
+    copyWrappedChannel(src, dst, 0, 3);
+    expect(Array.from(dst)).toEqual([40, 50, 10, 20]);
+    const faded = new Float32Array(5);
+    copyWrappedChannel(src, faded, 0.2, 4);
+    expect(Array.from(faded.slice(0, 4))).toEqual([50, 10, 20, 30]);
+    expect(faded[4]).toBeCloseTo(0, 5);
+  });
+
+  it("uses the live playhead as the soundtrack export origin", () => {
+    const p = createDefaultProject();
+    expect(soundtrackExportOrigin(p)).toBe(0);
+    p.sources.push({
+      id: "src_audio",
+      name: "clip.mp3",
+      kind: "audio",
+      width: 0,
+      height: 0,
+      duration: 180,
+    });
+    p.playback.time = 47.25;
+    expect(soundtrackExportOrigin(p)).toBe(47.25);
+    expect(47.25 + mediaTime(0, 8, "forward", 1, true)).toBeCloseTo(47.25);
+    expect(47.25 + mediaTime(2, 8, "forward", 1, true)).toBeCloseTo(49.25);
+    p.playback.time = Number.NaN;
+    expect(soundtrackExportOrigin(p)).toBe(0);
+    p.playback.time = 12;
+    p.sources = p.sources.filter((s) => s.kind !== "audio");
+    expect(soundtrackExportOrigin(p)).toBe(0);
   });
 });
 

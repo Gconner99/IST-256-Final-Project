@@ -7,7 +7,7 @@ export function isAudioFile(file: { name: string; type?: string }): boolean {
   return (file.type ?? "").startsWith("audio/") || AUDIO_EXT.test(file.name);
 }
 
-export function getSoundtrack(project: Project): MediaSource | undefined {
+export function getSoundtrack(project: Pick<Project, "sources">): MediaSource | undefined {
   return project.sources.find((s) => s.kind === "audio");
 }
 
@@ -345,7 +345,7 @@ export function sampleAudio(
 }
 
 /** Copy a channel, wrapping the source so a short song still fills the clip. */
-export function copyWrappedChannel(src: Float32Array, dst: Float32Array, fadeTail = 0): void {
+export function copyWrappedChannel(src: Float32Array, dst: Float32Array, fadeTail = 0, startIndex = 0): void {
   const n = dst.length;
   const m = src.length;
   if (n < 1) return;
@@ -353,21 +353,32 @@ export function copyWrappedChannel(src: Float32Array, dst: Float32Array, fadeTai
     dst.fill(0);
     return;
   }
-  for (let i = 0; i < n; i++) dst[i] = src[i % m];
+  const start = ((Math.round(startIndex) % m) + m) % m;
+  for (let i = 0; i < n; i++) dst[i] = src[(start + i) % m];
   if (fadeTail <= 0) return;
   const span = Math.max(1, Math.round(n * fadeTail));
   for (let i = 0; i < span; i++) dst[n - span + i] *= 1 - (i + 1) / span;
 }
 
-/** A clip-length AudioBuffer that matches the exported frames (from t=0, wrapping). */
-export function sliceSoundtrack(pcm: AudioBuffer, duration: number, fadeTail = false): AudioBuffer {
+/** Seconds into the song to start an export. No song (or t=0) stays at the start. */
+export function soundtrackExportOrigin(project: Pick<Project, "sources" | "playback">): number {
+  if (!getSoundtrack(project)) return 0;
+  const t = project.playback.time;
+  if (!Number.isFinite(t) || t <= 0) return 0;
+  return t;
+}
+
+/** A clip-length AudioBuffer matching the exported frames, from startTime, wrapping. */
+export function sliceSoundtrack(pcm: AudioBuffer, duration: number, fadeTail = false, startTime = 0): AudioBuffer {
   const sampleRate = pcm.sampleRate;
   const frames = Math.max(1, Math.round(Math.max(0.05, duration) * sampleRate));
   const numberOfChannels = Math.max(1, pcm.numberOfChannels);
   const out = new AudioBuffer({ length: frames, numberOfChannels, sampleRate });
   const fade = fadeTail ? 0.12 : 0;
+  const origin = Number.isFinite(startTime) && startTime > 0 ? startTime : 0;
+  const startIndex = Math.round(origin * sampleRate);
   for (let c = 0; c < numberOfChannels; c++) {
-    copyWrappedChannel(pcm.getChannelData(c), out.getChannelData(c), fade);
+    copyWrappedChannel(pcm.getChannelData(c), out.getChannelData(c), fade, startIndex);
   }
   return out;
 }

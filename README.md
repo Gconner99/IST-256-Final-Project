@@ -42,7 +42,7 @@ Requires a browser (or Electron) with **WebGL2**.
 ## MVP
 
 - Image + video import (drag/drop, replace, freeze a video frame as a still)
-- **Soundtrack**: drop an MP3 / wav / ogg / m4a. Playback follows the song; the collage fly-through follows the mix. MP4 export keeps the music when a song is loaded.
+- **Soundtrack**: drop an MP3 / wav / ogg / m4a. Playback follows the song; the collage fly-through follows the mix. MP4 export keeps the part of the song currently playing (rewind first to start from the beginning).
 - Procedural generators including a **heraldic collage** (tour / paper / giants / shower) so it makes pictures with no files
 - Real-time WebGL2 preview (draft / preview / full quality)
 - Layers: opacity, blend modes, transform, enable, duplicate
@@ -57,7 +57,7 @@ Requires a browser (or Electron) with **WebGL2**.
 - Basic masks (rect, circle, gradient, noise)
 - Simple keyframe automation
 - JSON project files (`.phos.json`) and source-independent presets
-- Export: PNG, JPG, **MP4 clips up to 32s at 720p/1080p 30fps** (optional close-loop fade, song kept when loaded), WebM, PNG image sequence (zip)
+- Export: PNG, JPG, **MP4 clips up to 32s at 720p/1080p 30fps** (optional close-loop fade, song window from the live playhead), WebM, PNG image sequence (zip)
 - Collage mash (two kits), named **color packs** (Brine / Candy / Ember / Neon…), live ground wash, night/neon wash, 3D fly-throughs (Rush / Tunnel / Gyre / Well / Hall / Drift / Braid / Sway), Drop / Spot music moves, stamp size / density / pace, a freeform 3D Chain move with an optional Animal Chain dress (Dragon / Dog / Ferret / Caterpillar / Zebra), Matter moves (Spring / Flow / Boids / Poles) with their own sliders, and a Documentary Search camera (Hunt) that snap-zooms from the wide frame onto individual stamps
 - Extra stamp packs: Kitchen, Sky, Street, Arcade, plus more icons in Circus / Fruit / Grove / Sweet
 - Calmer randomizer (smaller, slower rolls) and **Cut edit** (beat-synced cuts through music-reactive looks)

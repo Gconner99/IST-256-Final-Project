@@ -114,5 +114,7 @@ HOW TO USE IT
 - Move the sliders. Click Export to save.
 - Click 720 or 1080, then 2s / 4s / 8s / 16s / 32s mp4 for a video
   clip. Clips save at 30 fps in HD. Wait until the status says saved.
-  If an MP3 is loaded, the MP4 keeps the music. Stills stay silent.
+  If an MP3 is loaded, the MP4 keeps the part of the song you
+  are on (the window playing now, with matching visuals).
+  Rewind to export from the start. Stills stay silent.
   Check "close loop" so the last beats fade into the first frame.
