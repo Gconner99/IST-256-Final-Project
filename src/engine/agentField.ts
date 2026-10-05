@@ -180,6 +180,13 @@ export const FIELD_PATTERNS = [
   "tiles",
   "petal",
   "coil",
+  "traffic",
+  "cascade",
+  "circuit",
+  "chevron",
+  "checker",
+  "shear",
+  "scan",
 ] as const;
 export type FieldPattern = (typeof FIELD_PATTERNS)[number];
 export type FieldPatternChoice = FieldPattern | "auto";
@@ -201,6 +208,13 @@ export const FIELD_PATTERN_LABEL: Record<FieldPatternChoice, string> = {
   tiles: "Tiles",
   petal: "Petal",
   coil: "Coil",
+  traffic: "Traffic",
+  cascade: "Cascade",
+  circuit: "Circuit",
+  chevron: "Chevron",
+  checker: "Checker",
+  shear: "Shear",
+  scan: "Scan",
 };
 
 export function clampFieldPattern(value?: string | null): FieldPatternChoice {
@@ -1004,6 +1018,238 @@ function coil(c: LoopCtx, emit: Emit) {
   }
 }
 
+function frac(v: number): number {
+  return v - Math.floor(v);
+}
+
+function wrapSpan(f: number, span: number): number {
+  return (frac(f) - 0.5) * span;
+}
+
+/** Clockwise rectangle perimeter, t in [0,1). Starts at the top-left corner. */
+function rectAt(t: number, hw: number, hh: number): [number, number] {
+  const w = 2 * hw;
+  const h = 2 * hh;
+  let s = frac(t) * 2 * (w + h);
+  if (s < w) return [-hw + s, -hh];
+  s -= w;
+  if (s < h) return [hw, -hh + s];
+  s -= h;
+  if (s < w) return [hw - s, hh];
+  s -= w;
+  return [-hw, hh - s];
+}
+
+/** City grid: stamps locked to east-west streets or north-south avenues, wrapping off-screen. */
+function traffic(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, p } = c;
+  const streets = Math.floor(n / 2);
+  const W = 1.2;
+  const H = 2 * hh * 1.2;
+  const rows = Math.max(3, Math.round(Math.sqrt(streets * H / W)));
+  const cols = Math.max(3, Math.ceil(streets / rows));
+  const sx = W / cols;
+  const sy = H / rows;
+  const d0 = Math.min(sx, sy) * 1.05 * packMul(p) * sizeScale(p);
+  let i = 0;
+  for (let r = 0; r < rows && i < streets; r++) {
+    const y = -H / 2 + (r + 0.5) * sy;
+    const dir = r % 2 ? 1 : -1;
+    const speed = 1 + (r % 3) * 0.35 * p.curl;
+    for (let q = 0; q < cols && i < streets; q++, i++) {
+      emit(i, wrapSpan((q + 0.5) / cols + dir * speed * u, W), y, d0 * sizeMul(i, p), 0, chargeFor(i, r, p));
+    }
+  }
+  const avenues = n - i;
+  const aCols = Math.max(3, Math.round(Math.sqrt(avenues * W / H)));
+  const aRows = Math.max(3, Math.ceil(avenues / aCols));
+  const ax = W / aCols;
+  const ay = H / aRows;
+  const d1 = Math.min(ax, ay) * 1.05 * packMul(p) * sizeScale(p);
+  for (let q = 0; q < aCols && i < n; q++) {
+    const x = -W / 2 + (q + 0.5) * ax;
+    const dir = q % 2 ? 1 : -1;
+    const speed = 1 + (q % 3) * 0.35 * p.curl;
+    for (let r = 0; r < aRows && i < n; r++, i++) {
+      emit(i, x, wrapSpan((r + 0.5) / aRows + dir * speed * u, H), d1 * sizeMul(i, p), 0, chargeFor(i, 8 + q, p));
+    }
+  }
+}
+
+/** Columns falling on a vertical grid, wrapping off the top and bottom. */
+function cascade(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, p, seed } = c;
+  const W = 1.04;
+  const H = 2 * hh * 1.22;
+  const s0 = Math.sqrt((W * H) / n);
+  const cols = Math.max(2, Math.round(W / s0));
+  const rows = Math.max(3, Math.ceil(n / cols));
+  const sx = W / cols;
+  const sy = H / rows;
+  const d0 = Math.min(sx, sy) * 1.08 * packMul(p) * sizeScale(p);
+  const flip = seed % 2 ? 1 : -1;
+  let i = 0;
+  for (let q = 0; q < cols && i < n; q++) {
+    const x = -W / 2 + (q + 0.5) * sx;
+    const dir = (q % 2 ? 1 : -1) * flip;
+    const speed = 1 + (q % 4) * 0.25 * p.curl;
+    for (let r = 0; r < rows && i < n; r++, i++) {
+      emit(i, x, wrapSpan((r + 0.5) / rows + dir * speed * u, H), d0 * sizeMul(i, p), 0, chargeFor(i, q, p));
+    }
+  }
+}
+
+/** Concentric frame-shaped rectangles. Stamps march the perimeter, turning only at right angles. */
+function circuit(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, p, seed } = c;
+  const K = Math.round(clamp(3 + p.fieldStrength * 2.4, 3, 8));
+  const hw0 = 0.48;
+  const hh0 = hh * 0.96;
+  const perims = Array.from({ length: K }, (_, k) => {
+    const t = (k + 0.7) / (K + 0.15);
+    return 2 * (2 * hw0 * t + 2 * hh0 * t);
+  });
+  const sum = perims.reduce((a, b) => a + b, 0);
+  const d0 = Math.min(hw0, hh0) / K * 1.35 * packMul(p) * sizeScale(p);
+  const flip = seed % 2 ? 1 : -1;
+  let i = 0;
+  for (let k = 0; k < K && i < n; k++) {
+    const t = (k + 0.7) / (K + 0.15);
+    const hw = hw0 * t;
+    const hy = hh0 * t;
+    const cnt = k === K - 1 ? n - i : Math.max(8, Math.round((n * perims[k]) / sum));
+    const dir = ((k + seed) % 2 ? 1 : -1) * flip;
+    const speed = 1 + k * 0.2 * p.curl;
+    for (let s = 0; s < cnt && i < n; s++, i++) {
+      const [x, y] = rectAt((s + 0.5) / cnt + dir * speed * u, hw, hy);
+      emit(i, x, y, d0 * sizeMul(i, p), 0, chargeFor(i, k, p));
+    }
+  }
+}
+
+/** Parallel 45° bands sliding along the diagonal, wrapping off-screen. */
+function chevron(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, p, seed } = c;
+  const B = Math.round(clamp(4 + p.fieldStrength * 3, 4, 11));
+  const span = Math.hypot(1, 2 * hh) + 0.28;
+  const gap = (Math.min(1, 2 * hh) * 1.15) / B;
+  const along = Math.max(4, Math.ceil(n / B));
+  const d0 = Math.min(span / along, gap) * 1.2 * packMul(p) * sizeScale(p);
+  const flip = seed % 2 ? 1 : -1;
+  const inv = Math.SQRT1_2;
+  let i = 0;
+  for (let b = 0; b < B && i < n; b++) {
+    const v = (b - (B - 1) / 2) * gap;
+    const dir = (b % 2 ? 1 : -1) * flip;
+    const speed = 1 + (b % 3) * 0.3 * p.curl;
+    for (let s = 0; s < along && i < n; s++, i++) {
+      const uax = wrapSpan((s + 0.5) / along + dir * speed * u, span);
+      const x = (uax + v) * inv;
+      const y = (uax - v) * inv;
+      emit(i, x, y, d0 * sizeMul(i, p), 0, chargeFor(i, b, p));
+    }
+  }
+}
+
+/** Checkerboard lattice: one color slides east-west, the other north-south. */
+function checker(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, p, seed } = c;
+  const W = 1.22;
+  const H = 2 * hh * 1.22;
+  const s = Math.sqrt((W * H) / n);
+  const cols = Math.max(4, Math.round(W / s));
+  const rows = Math.max(4, Math.ceil(n / cols));
+  const sx = W / cols;
+  const sy = H / rows;
+  const d0 = Math.min(sx, sy) * 0.98 * packMul(p) * sizeScale(p);
+  const flip = seed % 2 ? 1 : -1;
+  let i = 0;
+  for (let r = 0; r < rows && i < n; r++) {
+    for (let q = 0; q < cols && i < n; q++, i++) {
+      const cx = -W / 2 + (q + 0.5) * sx;
+      const cy = -H / 2 + (r + 0.5) * sy;
+      const even = (r + q) % 2 === 0;
+      const dir = flip * (even ? 1 : -1);
+      const x = even ? wrapSpan((q + 0.5) / cols + dir * u, W) : cx;
+      const y = even ? cy : wrapSpan((r + 0.5) / rows + dir * u, H);
+      emit(i, x, y, d0 * sizeMul(i, p), 0, chargeFor(i, even ? q % 3 : 3 + (r % 3), p));
+    }
+  }
+}
+
+/** Square lattice, each row a belt at a different constant speed. */
+function shear(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, p, seed } = c;
+  const W = 1.22;
+  const H = 2 * hh * 1.04;
+  const s = Math.sqrt((W * H) / n);
+  const cols = Math.max(4, Math.round(W / s));
+  const rows = Math.max(3, Math.ceil(n / cols));
+  const sx = W / cols;
+  const sy = H / rows;
+  const d0 = Math.min(sx, sy) * 1.05 * packMul(p) * sizeScale(p);
+  const flip = seed % 2 ? 1 : -1;
+  let i = 0;
+  for (let r = 0; r < rows && i < n; r++) {
+    const y = -H / 2 + (r + 0.5) * sy;
+    const speed = flip * (1 + r * (0.35 + p.curl * 0.4));
+    for (let q = 0; q < cols && i < n; q++, i++) {
+      emit(i, wrapSpan((q + 0.5) / cols + speed * u, W), y, d0 * sizeMul(i, p), 0, chargeFor(i, r % 4, p));
+    }
+  }
+}
+
+/** Plotter scan: a serpentine of straight rows, closing off-screen so the loop never jumps. */
+function scan(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, p } = c;
+  const rows = Math.max(4, Math.round(clamp(5 + p.fieldStrength * 3, 4, 12)));
+  const d0 = (2 * hh) / rows * 0.95 * packMul(p) * sizeScale(p);
+  const margin = d0 * STAMP_PAD * 0.7 + 0.04;
+  const Wt = 1 + 2 * margin;
+  const yTop = -hh * 0.96;
+  const yBot = hh * 0.96;
+  const sy = (yBot - yTop) / Math.max(1, rows - 1);
+  const pts: number[] = [];
+  const push = (x: number, y: number) => {
+    pts.push(x, y);
+  };
+  for (let r = 0; r < rows; r++) {
+    const y = yTop + r * sy;
+    if (r % 2 === 0) {
+      push(-Wt / 2, y);
+      push(Wt / 2, y);
+    } else {
+      push(Wt / 2, y);
+      push(-Wt / 2, y);
+    }
+  }
+  push(-Wt / 2, yBot + margin);
+  push(-Wt / 2, yTop - margin);
+  const segs = pts.length / 2 - 1;
+  const len: number[] = [];
+  let total = 0;
+  for (let s = 0; s < segs; s++) {
+    const dx = pts[2 * (s + 1)] - pts[2 * s];
+    const dy = pts[2 * (s + 1) + 1] - pts[2 * s + 1];
+    const L = Math.hypot(dx, dy);
+    len.push(L);
+    total += L;
+  }
+  total = total || 1;
+  for (let i = 0; i < n; i++) {
+    let dist = frac((i + 0.5) / n + u * 0.55) * total;
+    let s = 0;
+    while (s < segs - 1 && dist > len[s]) {
+      dist -= len[s];
+      s++;
+    }
+    const f = dist / Math.max(1e-6, len[s]);
+    const x = pts[2 * s] + (pts[2 * (s + 1)] - pts[2 * s]) * f;
+    const y = pts[2 * s + 1] + (pts[2 * (s + 1) + 1] - pts[2 * s + 1]) * f;
+    emit(i, x, y, d0 * sizeMul(i, p), 0, chargeFor(i, s % 5, p));
+  }
+}
+
 function drift(f: Formation, i: number, ang: number, params: AgentParams, hh: number): [number, number] {
   const amp = f.bend + params.motion * 0.008;
   if (amp <= 0) return [f.x[i], f.y[i]];
@@ -1088,6 +1334,13 @@ export class PatternField {
     else if (pattern === "tiles") tiles(ctx, emit);
     else if (pattern === "petal") petal(ctx, emit);
     else if (pattern === "coil") coil(ctx, emit);
+    else if (pattern === "traffic") traffic(ctx, emit);
+    else if (pattern === "cascade") cascade(ctx, emit);
+    else if (pattern === "circuit") circuit(ctx, emit);
+    else if (pattern === "chevron") chevron(ctx, emit);
+    else if (pattern === "checker") checker(ctx, emit);
+    else if (pattern === "shear") shear(ctx, emit);
+    else if (pattern === "scan") scan(ctx, emit);
     else {
       const sig = `${seed}|${n}|${asp.toFixed(3)}|${Object.values(params).map((v) => v.toFixed(3)).join(",")}`;
       if (sig !== this.sig) {
