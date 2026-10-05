@@ -311,7 +311,7 @@ function buildSheet(rng: () => number, n: number, hh: number, params: AgentParam
     }
   }
   while (cells.length > n) cells.splice(Math.floor(rng() * cells.length), 1);
-  const base = Math.max(sx, sy) * 1.3 * packMul(params) * (params.minScale / 0.62);
+  const base = Math.max(sx, sy) * 1.1 * packMul(params) * (params.minScale / 0.62);
   for (const [x, y] of cells) push(out, x, y, base * vary(rng, params));
 }
 
