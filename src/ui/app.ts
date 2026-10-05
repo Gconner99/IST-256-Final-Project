@@ -2,7 +2,8 @@ import type { Renderer } from "../engine/renderer";
 import { store } from "../core/store";
 import { BLEND_MODES, type GeneratorType, type Layer, type MediaSource, type ParamDef } from "../core/types";
 import { runExport } from "../export/export";
-import { EXPORT_ASPECTS, matchAspectId, sizeForAspect, sizeFromSource } from "../core/exportSize";
+import { EXPORT_ASPECTS, EXPORT_EASY_LONG, EXPORT_FULL_LONG, matchAspectId, sizeForAspect, sizeFromSource } from "../core/exportSize";
+import { COLOR_PACK_LABEL, COLOR_PACKS, groundsForLook, inkForLook, packFromUnknown } from "../core/colorPacks";
 import {
   addEffect,
   addKeyframe,
@@ -91,7 +92,6 @@ import {
   clampSpringDist,
   clampSpringElast,
   clampSpringStrength,
-  groundsForKit,
   isHeraldry,
   kitButtonLabel,
   kitFromUnknown,
@@ -166,10 +166,10 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><strong>Cut edit</strong> is the other randomizer. It listens to the MP3, finds the first downbeat, and cuts on that grid — not every stray onset. Snap / step / spot flip on the same frames. Some shots hold a bar or two. Some are two quick hits that settle.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music, Kitchen, Sky, Street, Arcade, Haunt, Sport, School. Each pack is its own stamp set — switching a kit replaces every icon. Move buttons keep the current kit.</li>
-          <li><strong>Mash</strong> — mix a second kit’s stamps onto the same ground. <strong>Wash</strong> taps a kit color without rolling a new move. <strong>Night</strong> is a darker club wash that breathes on bass.</li>
+          <li><strong>Mash</strong> — mix a second kit’s stamps onto the same ground. <strong>Color</strong> packs (Brine, Candy, Ember, Neon…) recast washes and inks across any kit. <strong>Wash</strong> taps a color from the active pack. <strong>Night</strong> is a darker club wash that breathes on bass.</li>
           <li><strong>Size / Storm</strong> — few giants or a sticker storm.</li>
           <li><strong>Soundtrack</strong> — hit <em>MP3</em> or drop a clip (mp3/wav/ogg/m4a). It does not replace your picture. Playback starts and the stamps breathe on the beat without jumping off their path. Export an MP4 while a song is loaded and the clip keeps the music (aligned from the start of the clip). Stills and PNG sequences stay silent. Check <em>close loop</em> so the last beats fade into the first frame.</li>
-          <li>Bottom-right: pick a shape, pick <strong>2s / 4s / 8s / 16s / 32s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
+          <li>Bottom-right: pick a shape, tap <strong>720</strong> or <strong>1080</strong>, pick <strong>2s / 4s / 8s / 16s / 32s</strong>, then hit the green <strong>Export</strong> button (also in the top bar). Clips save at 30 fps in HD so they stay sharp without a long wait. The live preview pauses while a clip cooks. Chrome or Edge can do MP4; if a browser can’t, it saves WebM instead.</li>
         </ul>
         <p>Add a GLSL effect by implementing <code>vec4 apply(vec2 uv)</code> — see <code>src/effects/HOW_TO_ADD.md</code>.</p>
         <button class="btn acid" data-act="help">close</button>
@@ -293,6 +293,29 @@ function bind(root: HTMLElement) {
         }
       }
     }
+    if (act === "color-pack") {
+      const pack = packFromUnknown(t.dataset.pack);
+      const current = selectedCollageSource();
+      if (!current) {
+        const src = defaultGeneratorSource("wallpaper", "sailor", "rush", { colorPack: pack });
+        addSource(src, true);
+        store.patchUi({ status: `color · ${COLOR_PACK_LABEL[pack]}` });
+      } else {
+        const kit = kitFromUnknown(current.collageKit);
+        const grounds = groundsForLook(kit, pack);
+        const live = (current.colorA ?? "").toLowerCase();
+        const keep = grounds.some((hex) => hex.toLowerCase() === live);
+        patchCollage(
+          (s) => ({
+            ...s,
+            collageColorPack: pack,
+            colorA: keep ? s.colorA : grounds[0],
+            colorB: inkForLook(kit, pack),
+          }),
+          `color · ${COLOR_PACK_LABEL[pack]}`,
+        );
+      }
+    }
     if (act === "night") {
       const current = selectedCollageSource();
       const next = !current?.collageNight;
@@ -366,8 +389,8 @@ function bind(root: HTMLElement) {
           ...p.exportSettings,
           duration: secs,
           format: "mp4",
-          fps: 24,
-          bitrate: Math.min(p.exportSettings.bitrate, 8),
+          fps: 30,
+          bitrate: Math.max(p.exportSettings.bitrate, 12),
         },
       }));
       store.patchUi({ status: `${secs}s clip ready — hit Export` });
@@ -375,12 +398,22 @@ function bind(root: HTMLElement) {
     if (act === "exp-aspect" && id) {
       const aspect = EXPORT_ASPECTS.find((a) => a.id === id);
       if (aspect) {
-        const size = sizeForAspect(aspect.rw, aspect.rh, 1280);
+        const long = Math.max(store.project.exportSettings.width, store.project.exportSettings.height, EXPORT_EASY_LONG);
+        const size = sizeForAspect(aspect.rw, aspect.rh, Math.min(EXPORT_FULL_LONG, Math.max(EXPORT_EASY_LONG, long)));
         store.setProject((p) => ({
           ...p,
           exportSettings: { ...p.exportSettings, width: size.width, height: size.height },
         }));
       }
+    }
+    if (act === "exp-size") {
+      const long = Number(t.dataset.long || EXPORT_EASY_LONG);
+      const p = store.project;
+      const size = sizeFromSource(p.exportSettings.width, p.exportSettings.height, long);
+      store.setProject((pr) => ({
+        ...pr,
+        exportSettings: { ...pr.exportSettings, width: size.width, height: size.height, bitrate: long >= EXPORT_FULL_LONG ? Math.max(pr.exportSettings.bitrate, 12) : pr.exportSettings.bitrate },
+      }));
     }
     if (act === "exp-aspect-src") {
       const p = store.project;
@@ -389,7 +422,8 @@ function bind(root: HTMLElement) {
       const pic = src?.kind === "audio"
         ? p.sources.find((s) => s.kind !== "audio")
         : src;
-      const size = sizeFromSource(pic?.width ?? 1280, pic?.height ?? 720, 1280);
+      const long = Math.max(p.exportSettings.width, p.exportSettings.height, EXPORT_EASY_LONG);
+      const size = sizeFromSource(pic?.width ?? 1280, pic?.height ?? 720, Math.min(EXPORT_FULL_LONG, long));
       store.setProject((pr) => ({
         ...pr,
         exportSettings: { ...pr.exportSettings, width: size.width, height: size.height },
@@ -712,9 +746,16 @@ function paintRail(n: HTMLElement) {
         return `<button class="btn tiny ${on ? "acid" : ""}" data-act="mash" data-kit="${k}">${kitButtonLabel(k)}</button>`;
       }).join("")}
     </div>
+    <div class="sec">Color</div>
+    <div class="row">
+      ${COLOR_PACKS.map((pack) => {
+        const on = packFromUnknown(collage?.collageColorPack) === pack;
+        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="color-pack" data-pack="${pack}">${COLOR_PACK_LABEL[pack]}</button>`;
+      }).join("")}
+    </div>
     <div class="sec">Wash</div>
     <div class="row">
-      ${groundsForKit(kitFromUnknown(collage?.collageKit)).map((hex) => {
+      ${groundsForLook(kitFromUnknown(collage?.collageKit), collage?.collageColorPack).map((hex) => {
         const on = (collage?.colorA ?? "").toLowerCase() === hex.toLowerCase();
         return `<button class="wash-chip ${on ? "on" : ""}" data-act="wash" data-hex="${hex}" style="background:${hex}" title="${hex}"></button>`;
       }).join("")}
@@ -1122,6 +1163,11 @@ function paintTransport(n: HTMLElement) {
         <input id="exp-w" type="number" style="width:64px" value="${exp.width}" title="width" />
         <span>×</span>
         <input id="exp-h" type="number" style="width:64px" value="${exp.height}" title="height" />
+        ${(() => {
+          const long = Math.max(exp.width, exp.height);
+          return `<button class="btn tiny ${long <= EXPORT_EASY_LONG ? "acid" : ""}" data-act="exp-size" data-long="${EXPORT_EASY_LONG}">720</button>
+        <button class="btn tiny ${long > EXPORT_EASY_LONG ? "acid" : ""}" data-act="exp-size" data-long="${EXPORT_FULL_LONG}">1080</button>`;
+        })()}
         <select id="exp-format">
           ${["png","jpg","webm","mp4","sequence"].map((f) => `<option ${exp.format===f?"selected":""} value="${f}">${f}</option>`).join("")}
         </select>
@@ -1166,6 +1212,7 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
   return {
     kitB: src.collageKitB,
     night: src.collageNight,
+    colorPack: src.collageColorPack,
     scale: src.collageScale,
     density: src.collageDensity,
     pace: src.collagePace,

@@ -50,17 +50,16 @@ import {
   clampSpringElast,
   clampSpringStrength,
   generatorForMove,
-  inkForKit,
   isHeraldry,
   kitFromUnknown,
   MOVE_LABEL,
   moveFromUnknown,
-  paperForKit,
   pleasingMoveForSeed,
   sceneFromGenerator,
   type CollageKit,
   type CollageMove,
 } from "../engine/heraldry";
+import { inkForLook, packFromUnknown, paperForLook, type ColorPackId } from "./colorPacks";
 import { uid } from "./ids";
 import type {
   EffectInstance,
@@ -120,13 +119,13 @@ export function defaultPlayback(): PlaybackState {
 
 export function defaultExportSettings(): ExportSettings {
   return {
-    width: 960,
-    height: 540,
-    fps: 24,
+    width: 1280,
+    height: 720,
+    fps: 30,
     duration: 4,
     format: "png",
-    quality: 0.92,
-    bitrate: 8,
+    quality: 0.97,
+    bitrate: 12,
     filename: "phosphene",
     loopClose: true,
   };
@@ -197,6 +196,7 @@ export interface CollageExtras {
   density?: number;
   pace?: number;
   wash?: string | null;
+  colorPack?: ColorPackId | string | null;
   chainTravel?: number;
   chainMorph?: number;
   chainVary?: number;
@@ -287,13 +287,15 @@ export function defaultGeneratorSource(
             ? "SKETCH"
             : place;
   const wash = extras?.wash && /^#[0-9a-fA-F]{6}$/.test(extras.wash) ? extras.wash : undefined;
+  const colorPack = collageKit ? packFromUnknown(extras?.colorPack) : undefined;
   return {
     id: uid("src"),
     name,
     kind: "generator",
     generator,
-    colorA: wash ?? (collageKit ? paperForKit(collageKit, collageMove === "rush" ? 1 : collageMove === "tunnel" ? 5 : collageMove === "bounce" ? 7 : 11) : ink.a),
-    colorB: collageKit ? inkForKit(collageKit) : ink.b,
+    colorA: wash ?? (collageKit ? paperForLook(collageKit, collageMove === "rush" ? 1 : collageMove === "tunnel" ? 5 : collageMove === "bounce" ? 7 : 11, colorPack) : ink.a),
+    colorB: collageKit ? inkForLook(collageKit, colorPack) : ink.b,
+    collageColorPack: colorPack,
     collageKit,
     collageKitB,
     collageMove,

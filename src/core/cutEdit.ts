@@ -1,5 +1,6 @@
 import { mulberry32 } from "./random";
-import { groundsForKit, inkForKit, kitForSeed, type CollageKit, type MusicMove } from "../engine/heraldry";
+import { kitForSeed, type CollageKit, type MusicMove } from "../engine/heraldry";
+import { groundsForLook, inkForLook, pickColorPack } from "./colorPacks";
 
 export interface CutLook {
   kit: CollageKit;
@@ -117,7 +118,8 @@ export function buildCutReel(opts: {
     const night = phrase % 5 === 2 || rng() > 0.82;
     const mash = rng() > 0.72 ? kitForSeed((opts.seed + phrase * 99 + 7) >>> 0) : undefined;
     const kitB = mash && mash !== phraseKit ? mash : undefined;
-    const grounds = groundsForKit(phraseKit);
+    const pack = pickColorPack(rng);
+    const grounds = groundsForLook(phraseKit, pack);
     for (const beats of lengths) {
       if (i >= grid.length - 1 || grid[i] >= duration) break;
       const endIdx = Math.min(grid.length - 1, i + beats);
@@ -134,7 +136,7 @@ export function buildCutReel(opts: {
           move,
           night,
           wash,
-          ink: inkForKit(phraseKit),
+          ink: inkForLook(phraseKit, pack),
           scale: 0.62 + rng() * 0.22,
           density: 0.74 + rng() * 0.28,
           pace: 0.5 + rng() * 0.26,
@@ -155,8 +157,8 @@ export function buildCutReel(opts: {
         kit,
         move: "bars",
         night: false,
-        wash: groundsForKit(kit)[0],
-        ink: inkForKit(kit),
+        wash: groundsForLook(kit)[0],
+        ink: inkForLook(kit),
         scale: 0.78,
         density: 0.88,
         pace: 0.62,
@@ -176,8 +178,8 @@ export function shotAtTime(reel: CutShot[], time: number, duration?: number): Cu
         kit,
         move: "bars",
         night: false,
-        wash: groundsForKit(kit)[0],
-        ink: inkForKit(kit),
+        wash: groundsForLook(kit)[0],
+        ink: inkForLook(kit),
         scale: 0.78,
         density: 0.88,
         pace: 0.62,

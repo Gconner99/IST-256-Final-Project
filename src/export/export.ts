@@ -16,13 +16,13 @@ import {
 import type { Project } from "../core/types";
 import { downloadBlob } from "../core/project";
 import { evenSize, fitEven } from "../core/random";
-import { clipLoopFade } from "../core/exportSize";
+import { clipLoopFade, encodeBitrateMbps, encodeDuration, encodeFps, EXPORT_FULL_LONG, EXPORT_STILL_QUALITY } from "../core/exportSize";
 import { mediaTime } from "../core/timeline";
 import { ensureSoundtrackPcm, getSoundtrack, sliceSoundtrack } from "../media/audio";
 import type { Renderer } from "../engine/renderer";
 
-const CLIP_MAX = 960;
-const FULL_MAX = 1920;
+const CLIP_MAX = EXPORT_FULL_LONG;
+const FULL_MAX = EXPORT_FULL_LONG;
 
 export function videoFrameSize(project: Project, clip = false) {
   const max = clip ? CLIP_MAX : FULL_MAX;
@@ -36,7 +36,7 @@ export function clipFrameSize(project: Project) {
 export async function exportStill(renderer: Renderer, project: Project, time: number): Promise<void> {
   const { width, height, format, quality, filename } = project.exportSettings;
   const mime = format === "jpg" ? "image/jpeg" : "image/png";
-  const blob = await renderer.capture(project, time, evenSize(width), evenSize(height), mime, quality);
+  const blob = await renderer.capture(project, time, evenSize(width), evenSize(height), mime, format === "jpg" ? Math.max(quality, EXPORT_STILL_QUALITY) : quality);
   downloadBlob(`${filename}.${format === "jpg" ? "jpg" : "png"}`, blob);
 }
 
@@ -102,10 +102,10 @@ async function exportMp4WebCodecs(
   clip = false,
 ): Promise<boolean> {
   if (typeof VideoEncoder === "undefined") throw new Error("this browser has no video encoder");
-  const fps = Math.min(24, Math.max(12, project.exportSettings.fps || 24));
-  const duration = Math.min(32, Math.max(1, project.exportSettings.duration || 4));
+  const fps = encodeFps(project.exportSettings.fps);
+  const duration = encodeDuration(project.exportSettings.duration);
   const { width, height } = videoFrameSize(project, clip);
-  const quality = new Quality({ bitrate: Math.max(3, Math.min(8, project.exportSettings.bitrate)) * 1_000_000 });
+  const quality = new Quality({ bitrate: encodeBitrateMbps(project.exportSettings.bitrate, width, height) * 1_000_000 });
   const format = new Mp4OutputFormat({ fastStart: "in-memory" });
   const prefer: VideoCodec[] = ["avc", "hevc"];
   const codec = await getFirstEncodableVideoCodec(
@@ -199,8 +199,8 @@ async function recordCanvasVideo(
   onProgress?: (i: number, n: number) => void,
   clip = false,
 ): Promise<Blob> {
-  const fps = Math.min(24, Math.max(12, project.exportSettings.fps || 24));
-  const duration = Math.min(32, Math.max(1, project.exportSettings.duration || 4));
+  const fps = encodeFps(project.exportSettings.fps);
+  const duration = encodeDuration(project.exportSettings.duration);
   const { width, height } = videoFrameSize(project, clip);
   const recCanvas = document.createElement("canvas");
   recCanvas.width = width;
@@ -211,7 +211,7 @@ async function recordCanvasVideo(
   const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack & { requestFrame?: () => void };
   const rec = new MediaRecorder(stream, {
     mimeType: mime,
-    videoBitsPerSecond: Math.max(3, Math.min(8, project.exportSettings.bitrate)) * 1_000_000,
+    videoBitsPerSecond: encodeBitrateMbps(project.exportSettings.bitrate, width, height) * 1_000_000,
   });
   const chunks: Blob[] = [];
   rec.ondataavailable = (e) => {

@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { clamp, evenSize, fitEven, lerp, mulberry32 } from "../src/core/random";
-import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade } from "../src/core/exportSize";
+import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade, encodeBitrateMbps, encodeFps, encodeDuration, EXPORT_FULL_LONG } from "../src/core/exportSize";
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
 import { beatGrid, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
+import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
 import { ANIMAL_CHAINS, animalChainLayout, animalFromUnknown, applyHuntPose, buildField, cameraFromUnknown, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampHuntWideMax, clampHuntWideMin, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, huntParamsFrom, huntSelectFromUnknown, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, pickHuntSubject, sceneAt, sceneFromGenerator, spotIndex, stepHunt, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
 import { store } from "../src/core/store";
@@ -74,6 +75,18 @@ describe("export aspect sizes", () => {
     expect(s.height).toBe(1280);
     expect(s.width).toBe(720);
     expect(matchAspectId(s.width, s.height)).toBe("9:16");
+  });
+
+  it("builds a full-HD 16:9 frame", () => {
+    expect(sizeForAspect(16, 9, EXPORT_FULL_LONG)).toEqual({ width: 1920, height: 1080 });
+  });
+
+  it("encodes 30 fps and scales bitrate for 1080p", () => {
+    expect(encodeFps(24)).toBe(24);
+    expect(encodeFps(60)).toBe(30);
+    expect(encodeDuration(40)).toBe(32);
+    expect(encodeBitrateMbps(12, 1280, 720)).toBe(12);
+    expect(encodeBitrateMbps(12, 1920, 1080)).toBeGreaterThanOrEqual(16);
   });
 });
 
@@ -1192,12 +1205,35 @@ describe("heraldry collage", () => {
   it("gives each kit a wider wash of ground colors", () => {
     for (const kit of COLLAGE_KITS) {
       const grounds = groundsForKit(kit);
-      expect(grounds.length).toBeGreaterThanOrEqual(8);
+      expect(grounds.length).toBeGreaterThanOrEqual(14);
       expect(new Set(grounds).size).toBe(grounds.length);
       for (const hex of grounds) expect(hex).toMatch(/^#[0-9a-f]{6}$/i);
     }
     expect(groundsForKit("sailor")).toContain("#c98a4a");
     expect(groundsForKit("love")).toContain("#f0a0b8");
+  });
+
+  it("ships named color packs that work on any kit", () => {
+    expect(COLOR_PACKS.length).toBeGreaterThanOrEqual(18);
+    expect(packFromUnknown("ember")).toBe("ember");
+    expect(packFromUnknown("nope")).toBe("kit");
+    expect(EFFECT_PALETTES.length).toBeGreaterThanOrEqual(24);
+    const kitWash = groundsForLook("sailor", "kit");
+    const brine = groundsForLook("sailor", "brine");
+    expect(brine).not.toEqual(kitWash);
+    expect(new Set(brine).size).toBe(brine.length);
+    expect(inkForLook("sailor", "neon")).toBe("#7cff6a");
+    expect(inkForLook("love", "kit")).toBe(inkForLook("love"));
+    for (const pack of COLOR_PACKS) {
+      const grounds = groundsForLook("circus", pack);
+      expect(grounds.length).toBeGreaterThanOrEqual(10);
+      expect(new Set(grounds).size).toBe(grounds.length);
+    }
+  });
+
+  it("defaults to an HD easy export", () => {
+    const p = createDefaultProject();
+    expect(p.exportSettings).toMatchObject({ width: 1280, height: 720, fps: 30, bitrate: 12, quality: 0.97 });
   });
 
   it("starts on a colored-ground sailor tour", () => {

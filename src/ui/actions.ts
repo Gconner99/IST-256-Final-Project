@@ -9,6 +9,7 @@ import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } fro
 import { resumeAudio } from "../media/audio";
 import { buildPrompt, generateStill, samplePalette } from "../generate/imagine";
 import { fitEven } from "../core/random";
+import { EXPORT_FULL_LONG, EXPORT_STILL_QUALITY } from "../core/exportSize";
 import type { Renderer } from "../engine/renderer";
 
 export function selectedLayer(p: Project): Layer | undefined {
@@ -233,9 +234,9 @@ export function stampChaos() {
 
 export async function reprintFrame(renderer: Renderer) {
   const p = store.project;
-  const { width, height } = fitEven(p.exportSettings.width || 960, p.exportSettings.height || 540, 1280, 1280);
+  const { width, height } = fitEven(p.exportSettings.width || 1280, p.exportSettings.height || 720, EXPORT_FULL_LONG, EXPORT_FULL_LONG);
   try {
-    const blob = await renderer.capture(p, p.playback.time, width, height, "image/png", 0.92);
+    const blob = await renderer.capture(p, p.playback.time, width, height, "image/png", EXPORT_STILL_QUALITY);
     const image = await loadImageFromBlob(blob, `print_${Date.now()}.png`);
     addSource(image, true);
     store.patchUi({ status: "printed the live frame as a new still" });

@@ -157,6 +157,8 @@ export interface MediaSource {
   /** Optional generator inks. */
   colorA?: string;
   colorB?: string;
+  /** Named color pack for washes / inks across kits. */
+  collageColorPack?: "kit" | "brine" | "candy" | "citrus" | "moss" | "dusk" | "cream" | "neon" | "ice" | "ember" | "grape" | "soda" | "gold" | "lagoon" | "copper" | "mint" | "wine" | "peach" | "violet" | "sand" | "cobalt";
   /** Collage stamp drawer. */
   collageKit?: "sailor" | "circus" | "fruit" | "nature" | "love" | "space" | "sweet" | "music" | "kitchen" | "weather" | "city" | "arcade" | "haunt" | "sport" | "school";
   /** Second kit mixed into odd stamps. */

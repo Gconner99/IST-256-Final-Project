@@ -1,4 +1,5 @@
-import { ANIMAL_CHAINS, COLLAGE_KITS, HERALDRY_ROOMS, MOVE_LABEL, generatorForMove, inkForKit, inkForSeed, isHeraldry, kitForSeed, paperForKit, paperForSeed, pleasingMoveForSeed } from "../engine/heraldry";
+import { ANIMAL_CHAINS, COLLAGE_KITS, HERALDRY_ROOMS, MOVE_LABEL, generatorForMove, inkForSeed, isHeraldry, kitForSeed, paperForSeed, pleasingMoveForSeed } from "../engine/heraldry";
+import { inkForLook, paperForLook, pickColorPack, pickEffectPalette, EFFECT_PALETTES } from "./colorPacks";
 import { allEffects, getEffect } from "../effects/registry";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
@@ -6,13 +7,7 @@ import type { BlendMode, EffectInstance, GeneratorType, Layer, ParamDef, Project
 
 type Mood = "lush" | "outsider" | "mix";
 
-interface Palette {
-  shadow: string;
-  highlight: string;
-  leak: string;
-  inkA: string;
-  inkB: string;
-}
+type Palette = import("./colorPacks").ColorPalette;
 
 interface Look {
   name: string;
@@ -22,20 +17,6 @@ interface Look {
   wacky?: boolean;
 }
 
-const PALETTES: Palette[] = [
-  { shadow: "#1a1024", highlight: "#f4e2c4", leak: "#ff8a5c", inkA: "#120814", inkB: "#f2d2a8" },
-  { shadow: "#0d1f18", highlight: "#e8f5d0", leak: "#b6ff7a", inkA: "#07140f", inkB: "#d7f0b8" },
-  { shadow: "#101428", highlight: "#c9d4ff", leak: "#7aa2ff", inkA: "#070b18", inkB: "#dce4ff" },
-  { shadow: "#2a1220", highlight: "#ffd5e5", leak: "#ff6a8a", inkA: "#180810", inkB: "#ffd0dc" },
-  { shadow: "#1a1208", highlight: "#ffe7b3", leak: "#ff9a3c", inkA: "#140c04", inkB: "#ffe2a8" },
-  { shadow: "#041820", highlight: "#b8fff2", leak: "#3dffd0", inkA: "#031018", inkB: "#c8fff6" },
-  { shadow: "#1c1010", highlight: "#ffd8c2", leak: "#ff7a4a", inkA: "#140808", inkB: "#ffc8a8" },
-  { shadow: "#0a0a0a", highlight: "#f2f0e6", leak: "#ffeeaa", inkA: "#050505", inkB: "#efece0" },
-  { shadow: "#1a0820", highlight: "#d0ff3d", leak: "#ff4ad2", inkA: "#100414", inkB: "#e8ff88" },
-  { shadow: "#3a0018", highlight: "#ffee55", leak: "#ff3355", inkA: "#220010", inkB: "#ffe98a" },
-  { shadow: "#2a0830", highlight: "#ffe66d", leak: "#ff4ad2", inkA: "#180420", inkB: "#ffd6f4" },
-  { shadow: "#082428", highlight: "#7dffc4", leak: "#ff8ad4", inkA: "#041418", inkB: "#d8fff0" },
-];
 
 const LOOKS: Look[] = [
   { name: "herald tour", mood: "mix", wacky: true, stack: [], blend: "normal" },
@@ -274,12 +255,12 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
 
 function makeCrittersInstance(seed: number, mood: Mood = "mix"): EffectInstance {
   const rng = mulberry32(seed >>> 0);
-  return applyMood(makeFx("critters", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
+  return applyMood(makeFx("critters", seed, 0.85), mood, EFFECT_PALETTES[seed % EFFECT_PALETTES.length], rng);
 }
 
 function makeIdolInstance(seed: number, mood: Mood = "mix"): EffectInstance {
   const rng = mulberry32(seed >>> 0);
-  return applyMood(makeFx("dancer", seed, 0.85), mood, PALETTES[seed % PALETTES.length], rng);
+  return applyMood(makeFx("dancer", seed, 0.85), mood, EFFECT_PALETTES[seed % EFFECT_PALETTES.length], rng);
 }
 
 /** Drop a dancing idol onto every layer that doesn't already have one. */
@@ -336,7 +317,7 @@ function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false,
   const mood: Mood = wacky
     ? rng() > 0.5 ? "outsider" : "mix"
     : rng() > 0.55 ? "lush" : rng() > 0.35 ? "mix" : "outsider";
-  const palette = PALETTES[Math.floor(rng() * PALETTES.length)];
+  const palette = pickEffectPalette(rng);
   const effects = includeEffects
     ? pickPanelStack(seed, wacky).map((typeId, i) =>
         applyMood(makeFx(typeId, seed + i * 3331, amount), mood, palette, mulberry32((seed + i * 1117) >>> 0)),
@@ -421,18 +402,20 @@ export function randomizeProject(
   const sources = project.sources.map((src, i) => {
     if (mode !== "all" || src.kind !== "generator") return src;
     const prng = mulberry32(seed + i * 131);
-    const pal = PALETTES[Math.floor(prng() * PALETTES.length)];
+    const pal = pickEffectPalette(prng);
     if (isHeraldry(src.generator) || HERALDRY_ROOMS.includes(src.generator as (typeof HERALDRY_ROOMS)[number])) {
       const kit = kitForSeed(seed + i * 41);
       const move = pleasingMoveForSeed(seed + i * 73);
       const mashRoll = kitForSeed(seed + i * 99);
       const kitB = prng() > 0.74 && mashRoll !== kit ? mashRoll : undefined;
+      const pack = pickColorPack(prng);
       return {
         ...src,
         generator: generatorForMove(move),
         collageKit: kit,
         collageKitB: kitB,
         collageMove: move,
+        collageColorPack: pack,
         collageNight: prng() > 0.8,
         collageScale: 0.62 + prng() * 0.24,
         collageDensity: 0.72 + prng() * 0.3,
@@ -459,8 +442,8 @@ export function randomizeProject(
         collageHuntFocusSpeed: src.collageHuntFocusSpeed,
         collageHuntFocusError: src.collageHuntFocusError,
         collageHuntVariation: src.collageHuntVariation,
-        colorA: paperForKit(kit, seed + i * 17),
-        colorB: inkForKit(kit),
+        colorA: paperForLook(kit, seed + i * 17, pack),
+        colorB: inkForLook(kit, pack),
         name: kitB ? `${MOVE_LABEL[move]} · ${kit} · ${kitB}` : `${MOVE_LABEL[move]} · ${kit}`,
       };
     }
@@ -471,14 +454,16 @@ export function randomizeProject(
         ? src.generator
         : places[Math.floor(prng() * places.length)];
     const kit = kitForSeed(seed + i * 41);
-    const paper = isHeraldry(generator) ? paperForKit(kit, seed + i * 17) : pal.inkA;
-    const ink = isHeraldry(generator) ? inkForKit(kit) : pal.inkB;
+    const pack = pickColorPack(prng);
+    const paper = isHeraldry(generator) ? paperForLook(kit, seed + i * 17, pack) : pal.inkA;
+    const ink = isHeraldry(generator) ? inkForLook(kit, pack) : pal.inkB;
     return {
       ...src,
       generator,
       collageKit: isHeraldry(generator) ? kit : src.collageKit,
+      collageColorPack: isHeraldry(generator) ? pack : src.collageColorPack,
       colorA: pinned ? pinned.a : paper,
-      colorB: pinned ? inkForKit(kit) : ink,
+      colorB: pinned ? inkForLook(kit, pack) : ink,
     };
   });
 
@@ -513,11 +498,13 @@ export function chaosStamp(project: Project): Project {
       if (!isHeraldry(src.generator)) return src;
       const kit = COLLAGE_KITS[Math.floor(rng() * COLLAGE_KITS.length)];
       const move = pleasingMoveForSeed(seed + i * 59);
+      const pack = pickColorPack(rng);
       return {
         ...src,
         generator: generatorForMove(move),
         collageKit: kit,
         collageMove: move,
+        collageColorPack: pack,
         collageScale: 0.64 + rng() * 0.22,
         collageDensity: 0.74 + rng() * 0.28,
         collagePace: 0.72 + rng() * 0.2,
@@ -531,8 +518,8 @@ export function chaosStamp(project: Project): Project {
         collageHuntSelect: src.collageHuntSelect,
         collageHuntFocus: src.collageHuntFocus,
         collageHuntVariation: src.collageHuntVariation,
-        colorA: paperForKit(kit, seed + i * 13),
-        colorB: inkForSeed(seed + i * 29),
+        colorA: paperForLook(kit, seed + i * 13, pack),
+        colorB: inkForLook(kit, pack),
         name: `${MOVE_LABEL[move]} · ${kit}`,
       };
     }),

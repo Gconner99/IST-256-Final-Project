@@ -83,12 +83,13 @@ HOW TO USE IT
   Sport, School. Each pack has its own icons — switching
   a kit replaces the whole stamp set.
 - Mash mixes a second kit's stamps onto the same ground (Love on Music,
-  and so on). Wash taps a kit color without rolling a new move. Night
-  is a darker club wash that breathes on bass. Size / Storm sliders
-  go from a few giants to a sticker storm.
+  and so on). Color packs (Brine, Candy, Ember, Neon, Ice, and more)
+  recast washes and inks on any kit. Wash taps a color from the
+  active pack. Night is a darker club wash that breathes on bass.
+  Size / Storm sliders go from a few giants to a sticker storm.
 - Grounds are warm colored washes — each kit has a bigger set of
-  colors now. Kits also have more stamp shapes (crabs, roses, guitars,
-  aliens, and so on). Kit buttons keep the last move.
+  colors, plus extra color packs that work across the whole
+  program. Kit buttons keep the last move.
 - Rand all / Rand wacky rolls a new kit and a calmer move.
   Check EFFECTS (top bar, or under Effects on the right) if
   you also want a short stack from the right panel. Uncheck
@@ -106,7 +107,7 @@ HOW TO USE IT
 - Click Print frame to turn the live picture into a still
 - Click New at the top to start over
 - Move the sliders. Click Export to save.
-- Click 2s / 4s / 8s / 16s / 32s mp4 for a video clip. Wait until
-  the status says saved.
+- Click 720 or 1080, then 2s / 4s / 8s / 16s / 32s mp4 for a video
+  clip. Clips save at 30 fps in HD. Wait until the status says saved.
   If an MP3 is loaded, the MP4 keeps the music. Stills stay silent.
   Check "close loop" so the last beats fade into the first frame.

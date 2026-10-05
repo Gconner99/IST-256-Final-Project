@@ -692,7 +692,7 @@ export class Renderer {
     drawTri(gl);
   }
 
-  capture(project: Project, time: number, width: number, height: number, mime = "image/png", quality = 0.92): Promise<Blob> {
+  capture(project: Project, time: number, width: number, height: number, mime = "image/png", quality = 0.97): Promise<Blob> {
     const canvas = this.paintFrame(project, time, width, height);
     return new Promise((resolve, reject) => {
       canvas.toBlob(

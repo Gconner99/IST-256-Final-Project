@@ -1,4 +1,13 @@
-import { evenSize } from "./random";
+import { clamp, evenSize } from "./random";
+
+/** Longest side for easy 720p clips. */
+export const EXPORT_EASY_LONG = 1280;
+/** Longest side for full HD. Clips still encode in a few seconds. */
+export const EXPORT_FULL_LONG = 1920;
+export const EXPORT_FPS_MAX = 30;
+export const EXPORT_BITRATE_MIN = 8;
+export const EXPORT_BITRATE_MAX = 16;
+export const EXPORT_STILL_QUALITY = 0.97;
 
 export const EXPORT_ASPECTS = [
   { id: "16:9", label: "16:9", rw: 16, rh: 9 },
@@ -48,4 +57,19 @@ export function clipLoopFade(i: number, n: number): number {
   const start = n - span;
   if (i < start) return 0;
   return (i - start + 1) / span;
+}
+
+export function encodeFps(fps: number): number {
+  return Math.min(EXPORT_FPS_MAX, Math.max(12, Math.round(fps || 30)));
+}
+
+export function encodeDuration(duration: number): number {
+  return Math.min(32, Math.max(1, duration || 4));
+}
+
+/** Bitrate in Mbps. 720p stays near the request; 1080p steps up so it does not crush. */
+export function encodeBitrateMbps(bitrate: number, width: number, height: number): number {
+  const requested = clamp(bitrate || 12, EXPORT_BITRATE_MIN, EXPORT_BITRATE_MAX);
+  const scale = (width * height) / (EXPORT_EASY_LONG * 720);
+  return Math.min(20, Math.max(EXPORT_BITRATE_MIN, Math.round(requested * Math.max(1, scale))));
 }
