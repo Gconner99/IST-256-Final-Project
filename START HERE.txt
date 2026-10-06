@@ -33,7 +33,7 @@ HOW TO OPEN IT (Windows)
    A black command window flashes, then a NEW Chrome or Edge window
    opens. THAT window is the program.
 
-   You should see a colored-ground collage flying at the camera (not idols).
+   You should see a packed sailor Field / Snake collage on flat paper (not idols).
 
    If that window crashes: double-click  Start Phosphene Safe.bat
    instead. The picture will be softer, but Chrome should stay up.

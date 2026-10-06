@@ -142,6 +142,19 @@ button { cursor: pointer; }
   );
   mix-blend-mode: var(--scan-mix);
 }
+.safe-frame {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  display: none;
+  z-index: 2;
+}
+.safe-frame.on { display: block; }
+.safe-frame .box {
+  position: absolute;
+  border: 1px dashed rgba(214, 255, 61, 0.42);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.28);
+}
 .hud {
   position: absolute;
   left: 8px; top: 8px;

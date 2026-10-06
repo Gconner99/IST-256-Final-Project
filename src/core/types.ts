@@ -264,6 +264,10 @@ export interface MediaSource {
   collageFieldContrast?: number;
   collageFieldMotion?: number;
   collageFieldPattern?: string;
+  /** Master that ties Field Tempo + Breathe + Pack. */
+  collageFieldTrance?: number;
+  /** Paper plus one or two inks. No rainbow tincture mix. */
+  collageTwoInk?: boolean;
 }
 
 export interface Keyframe {
@@ -356,6 +360,10 @@ export interface AppUi {
   /** When on, Rand all / Rand wacky plant a short right-panel effect stack. */
   includeEffects: boolean;
   exporting: boolean;
+  /** Poster hides fly-throughs; Club shows the second instrument. */
+  desk: "poster" | "club";
+  /** 4:5 phone compose overlay on the preview. */
+  safeFrame: boolean;
 }
 
 export interface AppState {

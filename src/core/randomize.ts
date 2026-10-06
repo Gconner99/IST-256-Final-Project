@@ -2,15 +2,13 @@ import { COLLAGE_KITS, HERALDRY_ROOMS, MOVE_LABEL, generatorForMove, inkForSeed,
 import {
   clampFieldContrast,
   clampFieldCurl,
-  clampFieldDensity,
-  clampFieldEvolve,
   clampFieldMaxScale,
   clampFieldMinScale,
   clampFieldMotion,
   clampFieldPerturb,
   clampFieldSparsity,
   clampFieldStrength,
-  clampFieldWarp,
+  fieldFromTrance,
   FIELD_PATTERNS,
 } from "../engine/agentField";
 import { inkForLook, paperForLook, pickColorPack, pickEffectPalette, EFFECT_PALETTES } from "./colorPacks";
@@ -350,23 +348,23 @@ function rollBetween(rng: () => number, a: number, b: number) {
   return lerp(a, b, rng());
 }
 
-/** Pleasing Field-slider ranges. Picks one looping pattern and keeps it readable. */
+/** Trance-safe Field rolls: slow Tempo, high Pack, low Shuffle, committed scale polarity. */
 export function rollFieldParams(rng: () => number) {
-  const minScale = clampFieldMinScale(rollBetween(rng, 0.45, 0.85));
-  const maxScale = clampFieldMaxScale(Math.max(minScale + 0.08, rollBetween(rng, 1.3, 2.4)));
+  const heroes = rng() > 0.5;
+  const minScale = clampFieldMinScale(heroes ? rollBetween(rng, 0.38, 0.58) : rollBetween(rng, 0.72, 0.92));
+  const maxScale = clampFieldMaxScale(heroes ? rollBetween(rng, 2.1, 2.9) : rollBetween(rng, 0.85, 1.15));
   return {
     collageFieldPattern: FIELD_PATTERNS[Math.floor(rng() * FIELD_PATTERNS.length)],
-    collageFieldEvolve: clampFieldEvolve(rollBetween(rng, 0.75, 1.35)),
-    collageFieldStrength: clampFieldStrength(rollBetween(rng, 0.8, 1.6)),
-    collageFieldDensity: clampFieldDensity(rollBetween(rng, 0.8, 1.5)),
-    collageFieldSparsity: clampFieldSparsity(rollBetween(rng, 0.4, 1.4)),
-    collageFieldPerturb: clampFieldPerturb(rollBetween(rng, 0.02, 0.5)),
-    collageFieldCurl: clampFieldCurl(rollBetween(rng, 0.1, 0.9)),
-    collageFieldWarp: clampFieldWarp(rollBetween(rng, 0.6, 1.6)),
-    collageFieldMotion: clampFieldMotion(rollBetween(rng, 0.15, 0.8)),
-    collageFieldContrast: clampFieldContrast(rollBetween(rng, 0.6, 1.6)),
+    ...fieldFromTrance(rollBetween(rng, 0.55, 1.35)),
+    collageFieldStrength: clampFieldStrength(rollBetween(rng, 0.9, 1.4)),
+    collageFieldSparsity: clampFieldSparsity(rollBetween(rng, 0.5, 1.2)),
+    collageFieldPerturb: clampFieldPerturb(rollBetween(rng, 0, 0.2)),
+    collageFieldCurl: clampFieldCurl(rollBetween(rng, 0.05, 0.45)),
+    collageFieldMotion: clampFieldMotion(rollBetween(rng, 0.05, 0.35)),
+    collageFieldContrast: clampFieldContrast(rollBetween(rng, 0.9, 1.8)),
     collageFieldMinScale: minScale,
-    collageFieldMaxScale: maxScale,
+    collageFieldMaxScale: Math.max(minScale + 0.08, maxScale),
+    collageTwoInk: true,
   };
 }
 
