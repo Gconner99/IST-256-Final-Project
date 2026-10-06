@@ -80,8 +80,12 @@ import {
   clampFieldStrength,
   clampFieldTrance,
   clampFieldWarp,
+  clampFieldHold,
+  clampFieldBlink,
+  clampFieldCast,
   clampCollageLook,
   fieldFromTrance,
+  fieldFromCast,
   clampPoleAttract,
   clampPoleCount,
   clampPoleFalloff,
@@ -134,6 +138,8 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <button class="btn tiny ${store.project.cutEdit?.enabled ? "acid" : ""}" data-act="cut-edit" title="Cut to the beat through music-reactive looks">Cut edit</button>
       <button class="btn tiny" data-act="rand-sel">Rand sel</button>
       <button class="btn tiny" data-act="rand-param">Rand param</button>
+      <button class="btn tiny" data-act="look" data-look="hypnotic" title="Flat paper, two inks, held occupancy looks.">Hypnotic</button>
+      <button class="btn tiny" data-act="look" data-look="classic" title="Washes, full inks, the previous Snake motion.">Classic</button>
       <button class="btn tiny" data-act="rand-field" title="Reroll Field sliders only. Keeps kit, mash, wash, size, and pace.">Rand field</button>
       <select id="quality">
         <option value="draft">Draft</option>
@@ -156,7 +162,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. <strong>Hypnotic</strong> is the flat two-ink poster look: Snake holds each silhouette, then occupancy eases; icons blink. <strong>Classic</strong> is the previous washed, full-ink Field — more glyphs, drifting ground, and Snake’s older 7-look crossfade. Poster desk hides fly-throughs; Club shows them. Field locks one stamp pattern and loops it seamlessly. Trance ties Tempo, Breathe, and Pack. Music punches glow, not the path.</p>
+        <p>A collage machine. <strong>Hypnotic</strong> is the flat two-ink poster look: occupancy holds each silhouette, then eases; icons blink. <strong>Classic</strong> is the previous washed, full-ink Field — more glyphs, drifting ground, and Snake’s older 7-look crossfade. Look lives in the top bar and the left rail. Poster desk hides fly-throughs; Club shows them. Field locks one stamp pattern and loops it seamlessly. Trance ties Tempo, Breathe, and Pack. Music punches glow, not the path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -165,7 +171,9 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>?</kbd> this card</li>
           <li>Drop an MP3 the same way as a picture — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Check <em>effects</em> (top bar, or under Effects on the right) if you also want a short stack from the right panel. Uncheck it for a clean collage. Wacky rolls a thicker stack when effects are on. No dancer. Rolls stay small and slower. When the rolled move is Field, the Field sliders roll too.</li>
-          <li><strong>Hypnotic / Classic</strong> — Hypnotic is the flat two-ink poster Field. Classic restores the previous washed, full-ink look and Snake’s older motion. <strong>Poster / Club</strong> hides or shows fly-throughs, Matter, and music.</li>
+          <li><strong>Hypnotic / Classic</strong> — top bar and left rail. Hypnotic is the flat two-ink poster Field. Classic restores the previous washed, full-ink look and Snake’s older motion. <strong>Poster / Club</strong> hides or shows fly-throughs, Matter, and music.</li>
+          <li><strong>Ink flip</strong> swaps paper and ink. <strong>Trio</strong> locks the kit to three glyphs. <strong>Sheet / Giants</strong> writes stamp size: a packed wallpaper or a few huge stickers.</li>
+          <li><strong>Snake / Stripe / Arch</strong> are occupancy loops — looks hold, then ease. <strong>Hold</strong> is how long each look stays. <strong>Blink</strong> snaps icons; lower it to ease them.</li>
           <li><strong>Rand field</strong> picks a new looping pattern and rerolls sliders for the active look. Kit, mash, wash, size, and pace stay. Switches the clip to Field if it is on another move. On Poster, Rand all stays on Field.</li>
           <li><strong>Cut edit</strong> is the other randomizer. Drop an MP3 first. It finds the first downbeat (the kick, not the snare) and cuts on that metronome — bars and half-bars, not stray 8th notes. Snap / step / spot flip on the same frames as the drums. Some shots hold a bar or two. Some are two-beat fills that land back on 1.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
@@ -253,6 +261,24 @@ function bind(root: HTMLElement) {
       const next = !(current?.collageTwoInk !== false);
       if (!patchCollage((s) => ({ ...s, collageTwoInk: next }), next ? "two ink" : "full inks")) {
         store.patchUi({ status: "two ink" });
+      }
+    }
+    if (act === "ink-flip") {
+      if (!patchCollage((s) => ({ ...s, colorA: s.colorB, colorB: s.colorA }), "ink flip")) {
+        store.patchUi({ status: "ink flip" });
+      }
+    }
+    if (act === "trio") {
+      const current = selectedCollageSource();
+      const next = !current?.collageTrio;
+      if (!patchCollage((s) => ({ ...s, collageTrio: next }), next ? "trio" : "full kit")) {
+        store.patchUi({ status: "trio" });
+      }
+    }
+    if (act === "field-cast") {
+      const next = clampFieldCast(t.dataset.cast);
+      if (!patchCollage((s) => ({ ...s, ...fieldFromCast(next) }), `cast · ${next}`)) {
+        store.patchUi({ status: `cast · ${next}` });
       }
     }
     if (act === "rand-param") {
@@ -587,6 +613,8 @@ function bind(root: HTMLElement) {
     if (t.id === "collage-field-strength") patchCollage((s) => ({ ...s, collageFieldStrength: clampFieldStrength(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-scale") patchCollage((s) => ({ ...s, collageFieldScale: clampFieldScale(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-trance") patchCollage((s) => ({ ...s, ...fieldFromTrance(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-field-hold") patchCollage((s) => ({ ...s, collageFieldHold: clampFieldHold(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-field-blink") patchCollage((s) => ({ ...s, collageFieldBlink: clampFieldBlink(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-evolve") patchCollage((s) => ({ ...s, collageFieldEvolve: clampFieldEvolve(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-density") patchCollage((s) => ({ ...s, collageFieldDensity: clampFieldDensity(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-density-scale") patchCollage((s) => ({ ...s, collageFieldDensityScale: clampFieldDensityScale(Number(t.value)) }), undefined, true);
@@ -691,6 +719,10 @@ function paint(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>('[data-act="cut-edit"]').forEach((el) => {
     el.classList.toggle("acid", !!p.cutEdit?.enabled);
   });
+  const look = clampCollageLook(selectedCollageSource()?.collageLook);
+  root.querySelectorAll<HTMLElement>('[data-act="look"]').forEach((el) => {
+    el.classList.toggle("acid", clampCollageLook(el.dataset.look) === look);
+  });
   paintRail(root.querySelector("#rail")!);
   paintStack(root.querySelector("#stack")!);
   paintTransport(root.querySelector("#transport")!);
@@ -760,6 +792,8 @@ function paintRail(n: HTMLElement) {
       }).join("")}
       <button class="btn tiny ${collage?.collageNight ? "acid" : ""}" data-act="night">Night</button>
       <button class="btn tiny ${collage?.collageTwoInk !== false ? "acid" : ""}" data-act="two-ink" title="Paper plus one or two inks.">Two ink</button>
+      <button class="btn tiny" data-act="ink-flip" title="Swap paper and ink.">Ink flip</button>
+      <button class="btn tiny ${collage?.collageTrio ? "acid" : ""}" data-act="trio" title="Lock the kit to three glyphs.">Trio</button>
     </div>
     <div class="sec">Look</div>
     <div class="row">
@@ -851,12 +885,18 @@ function paintRail(n: HTMLElement) {
       collage?.collageMove === "field"
         ? `<div class="sec">Pattern</div>
     <div class="row">
-      ${(["auto", "sunflower", "orbit", "traffic", "cascade", "checker", "scan", "snake"] as const).map((id) => {
+      ${(["auto", "sunflower", "orbit", "traffic", "cascade", "checker", "scan", "snake", "stripe", "arch"] as const).map((id) => {
         const on = clampFieldPattern(collage.collageFieldPattern) === id;
         return `<button class="btn tiny ${on ? "acid" : ""}" data-act="field-pattern" data-pattern="${id}">${FIELD_PATTERN_LABEL[id]}</button>`;
       }).join("")}
     </div>
+    <div class="row">
+      <button class="btn tiny ${collage.collageFieldCast === "sheet" ? "acid" : ""}" data-act="field-cast" data-cast="sheet" title="Packed wallpaper sizes.">Sheet</button>
+      <button class="btn tiny ${collage.collageFieldCast === "giants" ? "acid" : ""}" data-act="field-cast" data-cast="giants" title="A few huge stickers.">Giants</button>
+    </div>
     ${num("collage-field-trance", "Trance", clampFieldTrance(collage.collageFieldTrance), 0, 2, 0.05)}
+    ${num("collage-field-hold", "Hold", clampFieldHold(collage.collageFieldHold), 0.2, 0.9, 0.02)}
+    ${num("collage-field-blink", "Blink", clampFieldBlink(collage.collageFieldBlink), 0, 1, 0.05)}
     ${num("collage-field-evolve", "Tempo", clampFieldEvolve(collage.collageFieldEvolve), 0.08, 2.2, 0.05)}
     ${num("collage-field-strength", "Spread", clampFieldStrength(collage.collageFieldStrength), 0.2, 2.2, 0.05)}
     ${num("collage-field-density", "Pack", clampFieldDensity(collage.collageFieldDensity), 0, 2.2, 0.05)}
@@ -1267,6 +1307,10 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     fieldMotion: src.collageFieldMotion,
     fieldPattern: src.collageFieldPattern,
     fieldTrance: src.collageFieldTrance,
+    fieldHold: src.collageFieldHold,
+    fieldBlink: src.collageFieldBlink,
+    fieldCast: src.collageFieldCast,
+    trio: src.collageTrio,
     twoInk: src.collageTwoInk,
     look: src.collageLook,
     wash: keepWash ? src.colorA : undefined,

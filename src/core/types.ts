@@ -266,6 +266,14 @@ export interface MediaSource {
   collageFieldPattern?: string;
   /** Master that ties Field Tempo + Breathe + Pack. */
   collageFieldTrance?: number;
+  /** How long occupancy looks stay before easing. */
+  collageFieldHold?: number;
+  /** 0 eases icons; 1 blinks them. */
+  collageFieldBlink?: number;
+  /** Sheet is a packed wallpaper. Giants is a few huge stickers. */
+  collageFieldCast?: "sheet" | "giants";
+  /** Lock the kit to three glyphs. */
+  collageTrio?: boolean;
   /** Paper plus one or two inks. No rainbow tincture mix. */
   collageTwoInk?: boolean;
   /** Hypnotic is the flat two-ink poster look. Classic is the previous washed, full-ink Field. */

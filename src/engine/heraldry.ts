@@ -35,14 +35,18 @@ export {
   clampFieldWarp,
   clampFieldPattern,
   clampFieldTrance,
+  clampFieldHold,
+  clampFieldBlink,
+  clampFieldCast,
   clampCollageLook,
   fieldFromTrance,
+  fieldFromCast,
   FIELD_PATTERNS,
   FIELD_PATTERN_LABEL,
   isFieldMove,
   FIELD_MOVE,
 } from "./agentField";
-export type { FieldPattern, FieldPatternChoice } from "./agentField";
+export type { FieldCast, FieldPattern, FieldPatternChoice } from "./agentField";
 export {
   clampBoidAlign,
   clampBoidCohere,
@@ -804,6 +808,10 @@ export interface HeraldryPaintOpts {
   fieldMotion?: number;
   fieldPattern?: string;
   fieldTrance?: number;
+  fieldHold?: number;
+  fieldBlink?: number;
+  fieldCast?: string;
+  trio?: boolean;
   twoInk?: boolean;
   look?: string;
 }
@@ -830,6 +838,19 @@ export function kindsForKit(kit: CollageKit, scene: HeraldryScene = "rush"): Kin
   return KIT_PAPER[kit];
 }
 
+/** Shuffle the bold kit and keep three glyphs. */
+export function trioKinds(kit: CollageKit, seed: number): Kind[] {
+  const src = [...KIT_BOLD[kit]];
+  let h = (seed >>> 0) ^ 0x811c9dc5;
+  for (let i = 0; i < kit.length; i++) h = Math.imul(h ^ kit.charCodeAt(i), 16777619);
+  const rng = mulberry32(h >>> 0);
+  for (let i = src.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [src[i], src[j]] = [src[j], src[i]];
+  }
+  return src.slice(0, 3);
+}
+
 function makeCharge(
   rng: () => number,
   scene: HeraldryScene,
@@ -837,11 +858,12 @@ function makeCharge(
   kit: CollageKit,
   twoInk = false,
   paper?: string,
+  trio?: Kind[] | null,
 ): Charge {
-  const pool = twoInk ? KIT_BOLD[kit] : kindsForKit(kit, scene === "bloom" ? "rush" : scene);
+  const pool = trio && trio.length ? trio : twoInk ? KIT_BOLD[kit] : kindsForKit(kit, scene === "bloom" ? "rush" : scene);
   let kind = pick(rng, pool);
-  if (!twoInk && scene === "lattice" && rng() < 0.4) kind = pick(rng, KIT_SHOWER[kit]);
-  if (!twoInk && scene === "tunnel" && rng() < 0.28) kind = pick(rng, KIT_GIANTS[kit]);
+  if (!trio && !twoInk && scene === "lattice" && rng() < 0.4) kind = pick(rng, KIT_SHOWER[kit]);
+  if (!trio && !twoInk && scene === "tunnel" && rng() < 0.28) kind = pick(rng, KIT_GIANTS[kit]);
   const a = twoInk ? bias : mixInk(rng, bias);
   let b = twoInk
     ? paper && paper.toLowerCase() !== a.toLowerCase()
@@ -890,10 +912,13 @@ export function buildField(
   kitB?: CollageKit | null,
   twoInk = true,
   paper?: string,
+  trio = false,
 ): Particle[] {
   const rng = mulberry32(seed >>> 0);
   const n = 240;
   const mash = kitB && kitB !== kit ? kitB : null;
+  const poolA = trio ? trioKinds(kit, seed) : null;
+  const poolB = trio && mash ? trioKinds(mash, seed) : null;
   const out: Particle[] = [];
   for (let i = 0; i < n; i++) {
     const sceneHint: HeraldryScene = i < 70 ? "lattice" : i < 130 ? "tunnel" : "rush";
@@ -907,7 +932,7 @@ export function buildField(
       vx: (rng() - 0.5) * 0.06,
       vy: (rng() - 0.35) * 0.08,
       vr: (rng() - 0.5) * 0.25,
-      charge: makeCharge(rng, sceneHint, bias, drawer, twoInk, paper),
+      charge: makeCharge(rng, sceneHint, bias, drawer, twoInk, paper, drawer === mash ? poolB : poolA),
     });
   }
   return out;
@@ -3199,6 +3224,7 @@ export class HeraldryField {
   private builtKitB = "";
   private builtTwoInk = true;
   private builtPaper = "";
+  private builtTrio = false;
 
   private stamp(c: Charge): HTMLCanvasElement {
     const key = chargeKey(c);
@@ -3210,7 +3236,7 @@ export class HeraldryField {
     return g;
   }
 
-  private ensure(seed: number, ink: string, kit: CollageKit, kitB?: CollageKit | null, twoInk = true, paper = "") {
+  private ensure(seed: number, ink: string, kit: CollageKit, kitB?: CollageKit | null, twoInk = true, paper = "", trio = false) {
     const mash = kitB && kitB !== kit ? kitB : "";
     if (
       this.builtSeed === seed &&
@@ -3219,11 +3245,12 @@ export class HeraldryField {
       this.builtKitB === mash &&
       this.builtTwoInk === twoInk &&
       this.builtPaper === paper &&
+      this.builtTrio === trio &&
       this.particles.length
     ) {
       return;
     }
-    this.particles = buildField(seed, ink, kit, mash || null, twoInk, paper);
+    this.particles = buildField(seed, ink, kit, mash || null, twoInk, paper, trio);
     this.stamps.clear();
     this.sim = null;
     this.agents = null;
@@ -3233,6 +3260,7 @@ export class HeraldryField {
     this.builtKitB = mash;
     this.builtTwoInk = twoInk;
     this.builtPaper = paper;
+    this.builtTrio = trio;
   }
 
   paint(opts: HeraldryPaintOpts): HTMLCanvasElement {
@@ -3250,7 +3278,8 @@ export class HeraldryField {
     const ink = hexOk(opts.ink, KIT_INK[kit]);
     const classic = clampCollageLook(opts.look) === "classic";
     const twoInk = classic ? opts.twoInk === true : opts.twoInk !== false;
-    this.ensure(opts.seed >>> 0, ink, kit, kitB, twoInk, paper);
+    const trio = !!opts.trio;
+    this.ensure(opts.seed >>> 0, ink, kit, kitB, twoInk, paper, trio);
 
     const scene = sceneFromGenerator(opts.generator, opts.move);
     const audio = clamp(opts.audio, 0, 1);
@@ -3332,6 +3361,9 @@ export class HeraldryField {
         motion: opts.fieldMotion,
         trance: opts.fieldTrance,
         classic,
+        hold: opts.fieldHold,
+        blink: opts.fieldBlink,
+        cast: opts.fieldCast as "sheet" | "giants" | undefined,
       });
       this.agents = this.agents ?? new PatternField();
       this.fieldPoses = this.agents.posesAt(count, clock, opts.seed >>> 0, aspect, params, bpm, beatOffset, opts.fieldPattern ?? "auto");

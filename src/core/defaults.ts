@@ -36,6 +36,9 @@ import {
   clampFieldStrength,
   clampFieldTrance,
   clampFieldWarp,
+  clampFieldHold,
+  clampFieldBlink,
+  clampFieldCast,
   clampCollageLook,
   clampPoleAttract,
   clampPoleCount,
@@ -241,6 +244,10 @@ export interface CollageExtras {
   fieldMotion?: number;
   fieldPattern?: string;
   fieldTrance?: number;
+  fieldHold?: number;
+  fieldBlink?: number;
+  fieldCast?: string;
+  trio?: boolean;
   twoInk?: boolean;
   look?: string;
 }
@@ -349,6 +356,10 @@ export function defaultGeneratorSource(
     collageFieldMotion: collageKit ? clampFieldMotion(extras?.fieldMotion) : undefined,
     collageFieldPattern: collageKit ? clampFieldPattern(extras?.fieldPattern) : undefined,
     collageFieldTrance: collageKit ? clampFieldTrance(extras?.fieldTrance) : undefined,
+    collageFieldHold: collageKit ? clampFieldHold(extras?.fieldHold) : undefined,
+    collageFieldBlink: collageKit ? clampFieldBlink(extras?.fieldBlink) : undefined,
+    collageFieldCast: collageKit && extras?.fieldCast ? clampFieldCast(extras.fieldCast) : undefined,
+    collageTrio: collageKit ? !!extras?.trio : undefined,
     collageTwoInk: collageKit ? extras?.twoInk !== false : undefined,
     collageLook: collageKit ? clampCollageLook(extras?.look) : undefined,
     width: 1280,
