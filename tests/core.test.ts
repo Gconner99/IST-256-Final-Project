@@ -1482,11 +1482,17 @@ describe("pattern field", () => {
     const a = field.posesAt(240, 0.4, 3, aspect, params, 0, 0, "snake").map((p) => ({ ...p }));
     const b = field.posesAt(240, 0.4 + fieldLoop(params) * 0.35, 3, aspect, params, 0, 0, "snake").map((p) => ({ ...p }));
     expect(a.every((p) => (p.morph ?? 0) === 0 || (p.morph ?? 0) === 1)).toBe(true);
-    expect(a.some((p) => (p.morph ?? 0) === 1)).toBe(true);
+    const period = fieldLoop(params);
+    let snapped = false;
+    for (let t = 0; t < period; t += period / 24) {
+      const poses = field.posesAt(240, t, 3, aspect, params, 0, 0, "snake");
+      expect(poses.every((p) => (p.morph ?? 0) === 0 || (p.morph ?? 0) === 1)).toBe(true);
+      if (poses.some((p) => (p.morph ?? 0) === 1)) snapped = true;
+    }
+    expect(snapped).toBe(true);
     expect(a.filter((p, i) => p.charge !== b[i].charge).length).toBeGreaterThan(40);
     const vis = (poses: { alpha: number; px: number; x: number; y: number }[]) => poses.filter((p) => p.alpha > 0.5 && p.px > 0.02);
     const field2 = new PatternField();
-    const period = fieldLoop(params);
     let hi = 0;
     let lo = 999;
     for (let k = 0; k < 8; k++) {
