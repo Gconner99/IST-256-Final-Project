@@ -83,6 +83,44 @@ export function clampCollageLook(value?: string | null): CollageLook {
   return value === "classic" ? "classic" : "hypnotic";
 }
 
+/** How long each occupancy look stays before easing. */
+export function clampFieldHold(value?: number | null): number {
+  return clamp(value ?? 0.7, 0.2, 0.9);
+}
+/** 0 eases icons; 1 blinks them. */
+export function clampFieldBlink(value?: number | null): number {
+  return clamp(value ?? 1, 0, 1);
+}
+
+export type FieldCast = "sheet" | "giants";
+
+export function clampFieldCast(value?: string | null): FieldCast {
+  return value === "giants" ? "giants" : "sheet";
+}
+
+/** Sheet is a packed wallpaper. Giants is a few huge stickers. */
+export function fieldFromCast(cast?: string | null): {
+  collageFieldCast: FieldCast;
+  collageFieldMinScale: number;
+  collageFieldMaxScale: number;
+  collageFieldContrast: number;
+} {
+  if (clampFieldCast(cast) === "giants") {
+    return {
+      collageFieldCast: "giants",
+      collageFieldMinScale: clampFieldMinScale(0.4),
+      collageFieldMaxScale: clampFieldMaxScale(2.65),
+      collageFieldContrast: clampFieldContrast(1.75),
+    };
+  }
+  return {
+    collageFieldCast: "sheet",
+    collageFieldMinScale: clampFieldMinScale(0.82),
+    collageFieldMaxScale: clampFieldMaxScale(1.08),
+    collageFieldContrast: clampFieldContrast(0.4),
+  };
+}
+
 /** Map Trance onto the three sliders it owns. Size Contrast stays independent. */
 export function fieldFromTrance(trance?: number | null): {
   collageFieldTrance: number;
@@ -121,6 +159,9 @@ export interface AgentParams {
   motion: number;
   trance: number;
   classic: boolean;
+  hold: number;
+  blink: number;
+  cast: FieldCast;
 }
 
 export function agentParamsFrom(raw?: Partial<AgentParams> | null): AgentParams {
@@ -147,6 +188,9 @@ export function agentParamsFrom(raw?: Partial<AgentParams> | null): AgentParams 
     motion: clampFieldMotion(raw?.motion),
     trance: clampFieldTrance(raw?.trance),
     classic: !!raw?.classic,
+    hold: clampFieldHold(raw?.hold),
+    blink: clampFieldBlink(raw?.blink),
+    cast: clampFieldCast(raw?.cast),
   };
 }
 
@@ -180,6 +224,8 @@ export const FIELD_PATTERNS = [
   "checker",
   "scan",
   "snake",
+  "stripe",
+  "arch",
 ] as const;
 export type FieldPattern = (typeof FIELD_PATTERNS)[number];
 export type FieldPatternChoice = FieldPattern | "auto";
@@ -193,6 +239,8 @@ export const FIELD_PATTERN_LABEL: Record<FieldPatternChoice, string> = {
   checker: "Checker",
   scan: "Scan",
   snake: "Snake",
+  stripe: "Stripe",
+  arch: "Arch",
 };
 
 export function clampFieldPattern(value?: string | null): FieldPatternChoice {
@@ -246,11 +294,24 @@ function sizeScale(p: AgentParams): number {
   return p.minScale / 0.62;
 }
 
-/** Per-stamp size spread plus the occasional hero stamp. */
+/** Per-stamp size spread plus the occasional hero stamp. Giants raise hero chance. */
 function sizeMul(i: number, p: AgentParams): number {
   const base = 1 + (hash01(i * 3.1 + 7) - 0.5) * 0.5 * p.contrast;
-  const hero = hash01(i * 5.7 + 3) < 0.035 * p.contrast ? (p.maxScale / 1.85) * (1.5 + hash01(i * 2.3 + 1) * 0.5) : 1;
+  const chance = (p.cast === "giants" ? 0.055 : 0.02) * p.contrast;
+  const hero = hash01(i * 5.7 + 3) < chance ? (p.maxScale / 1.85) * (1.5 + hash01(i * 2.3 + 1) * 0.5) : 1;
   return base * hero;
+}
+
+function occupancyHold(p: AgentParams): number {
+  return p.classic ? SNAKE_HOLD_CLASSIC : p.hold;
+}
+
+/** 0 eases the next icon in; 1 blinks. Classic keeps the older smear. */
+function occupancyMorph(pf: number, p: AgentParams): number {
+  if (p.classic) return smoother(clamp((pf - 0.78) / 0.16, 0, 1));
+  const snap = pf > 0.92 ? 1 : 0;
+  const ease = smoother(clamp((pf - 0.78) / 0.16, 0, 1));
+  return snap * p.blink + ease * (1 - p.blink);
 }
 
 /** Shuffle 0 keeps icons on the pattern's own repeat; higher trades in random icons. */
@@ -741,17 +802,16 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
  * Packed wallpaper with a crawling void, then a C, a sticker frame,
  * giants, and a glyph. Looks hold, then occupancy eases. Icons blink.
  */
-function snake(c: LoopCtx, emit: Emit) {
+function occupancyLoop(c: LoopCtx, emit: Emit, sils: SnakeSil[]) {
   const { n, hh, u, p, seed } = c;
-  const sils = snakeSils(seed, hh, p);
   const hw = 0.47 * (0.86 + p.fieldStrength * 0.12);
   const hy = hh * 0.93 * (0.86 + p.fieldStrength * 0.12);
   const K = sils.length;
   const t = u * K;
   const seg = Math.min(K - 1, Math.floor(t));
-  const frac = t - seg;
-  const hold = p.classic ? SNAKE_HOLD_CLASSIC : SNAKE_HOLD;
-  const m = smoother(clamp((frac - hold) / (1 - hold), 0, 1));
+  const local = t - seg;
+  const hold = occupancyHold(p);
+  const m = smoother(clamp((local - hold) / Math.max(1e-4, 1 - hold), 0, 1));
   const A = sils[seg];
   const B = sils[(seg + 1) % K];
   const pts = snakeLattice(n, hh, seed);
@@ -796,12 +856,73 @@ function snake(c: LoopCtx, emit: Emit) {
     if (occ < 0.32 && !isStick && !ga && !gb) d = 0;
     const phase = rate * u + hash01(i * 3.1) * (0.35 + p.perturb * 2.2);
     const pf = phase - Math.floor(phase);
-    const morph = p.classic ? smoother(clamp((pf - 0.78) / 0.16, 0, 1)) : pf > 0.92 ? 1 : 0;
+    const morph = occupancyMorph(pf, p);
     const chargeA = Math.floor(phase) * 13 + i;
     const hero = ga || gb || isStick;
     const sized = d * (hero ? Math.max(0.9, sizeMul(i, p)) : sizeMul(i, p));
     emit(i, x, y, sized, 0, chargeA, 1, chargeA + 13, morph);
   }
+}
+
+/**
+ * Packed wallpaper with a crawling void, then a C, a sticker frame,
+ * giants, and a glyph. Looks hold, then occupancy eases. Icons blink.
+ */
+function snake(c: LoopCtx, emit: Emit) {
+  occupancyLoop(c, emit, snakeSils(c.seed, c.hh, c.p));
+}
+
+function stripeSils(hh: number, p: AgentParams): SnakeSil[] {
+  const hw = 0.47 * (0.86 + p.fieldStrength * 0.12);
+  const hy = hh * 0.93 * (0.86 + p.fieldStrength * 0.12);
+  const barH = hy * 0.2;
+  const barW = hw * 0.16;
+  const pack = (occ: (x: number, y: number) => number): SnakeSil => ({
+    occ, hole: 0, mode: "pack", nStick: 0, stickR: 0, crawl: 0.04, giants: null,
+  });
+  const horiz = pack((x, y) => occFrom(Math.min(
+    sdBox(x, y, 0, -hy * 0.64, hw, barH),
+    sdBox(x, y, 0, 0, hw, barH),
+    sdBox(x, y, 0, hy * 0.64, hw, barH),
+  ), 0.04));
+  const vert = pack((x, y) => occFrom(Math.min(
+    sdBox(x, y, -hw * 0.64, 0, barW, hy),
+    sdBox(x, y, 0, 0, barW, hy),
+    sdBox(x, y, hw * 0.64, 0, barW, hy),
+  ), 0.04));
+  const band = pack((x, y) => occFrom(sdBox(x, y, 0, 0, hw, hy * 0.3), 0.05));
+  return [horiz, vert, band];
+}
+
+function archSils(hh: number, p: AgentParams): SnakeSil[] {
+  const hw = 0.47 * (0.86 + p.fieldStrength * 0.12);
+  const hy = hh * 0.93 * (0.86 + p.fieldStrength * 0.12);
+  const pack = (occ: (x: number, y: number) => number): SnakeSil => ({
+    occ, hole: 0, mode: "pack", nStick: 0, stickR: 0, crawl: 0.035, giants: null,
+  });
+  const horse = pack((x, y) => {
+    const outer = sdBox(x, y, 0, -hy * 0.06, hw * 0.74, hy * 0.8);
+    const inner = sdBox(x, y, 0, hy * 0.16, hw * 0.42, hy * 0.86);
+    return occFrom(Math.max(outer, -inner), 0.04);
+  });
+  const frame = pack((x, y) => {
+    const outer = sdBox(x, y, 0, 0, hw, hy);
+    const inner = sdBox(x, y, 0, 0, hw * 0.58, hy * 0.52);
+    return occFrom(Math.max(outer, -inner), 0.045);
+  });
+  const cols = pack((x, y) => occFrom(Math.min(
+    sdBox(x, y, -hw * 0.42, 0, hw * 0.2, hy * 0.88),
+    sdBox(x, y, hw * 0.42, 0, hw * 0.2, hy * 0.88),
+  ), 0.04));
+  return [horse, frame, cols];
+}
+
+function stripe(c: LoopCtx, emit: Emit) {
+  occupancyLoop(c, emit, stripeSils(c.hh, c.p));
+}
+
+function arch(c: LoopCtx, emit: Emit) {
+  occupancyLoop(c, emit, archSils(c.hh, c.p));
 }
 
 /** One locked pattern looping seamlessly. Poses are a pure function of the clock, so scrubbing and export stay stable. */
@@ -853,6 +974,8 @@ export class PatternField {
     else if (pattern === "checker") checker(ctx, emit);
     else if (pattern === "scan") scan(ctx, emit);
     else if (pattern === "snake") snake(ctx, emit);
+    else if (pattern === "stripe") stripe(ctx, emit);
+    else if (pattern === "arch") arch(ctx, emit);
     else sunflower(ctx, emit);
     return this.poses;
   }

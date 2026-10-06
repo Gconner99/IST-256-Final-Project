@@ -420,6 +420,10 @@ export class Renderer {
       fieldMotion: look.collageFieldMotion,
       fieldPattern: look.collageFieldPattern,
       fieldTrance: look.collageFieldTrance,
+      fieldHold: look.collageFieldHold,
+      fieldBlink: look.collageFieldBlink,
+      fieldCast: look.collageFieldCast,
+      trio: look.collageTrio,
       twoInk: look.collageTwoInk,
       look: look.collageLook,
     });

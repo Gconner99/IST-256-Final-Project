@@ -7,9 +7,9 @@ import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeFieldSource, randomizeProject, rollFieldParams, FIELD_ROOMS } from "../src/core/randomize";
 import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
-import { buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
+import { buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, trioKinds, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
-import { agentParamsFrom, clampCollageLook, FIELD_PATTERNS, fieldFromTrance, fieldLoop, PatternField, resolveFieldPattern, SNAKE_LOOKS, SNAKE_LOOKS_CLASSIC } from "../src/engine/agentField";
+import { agentParamsFrom, clampCollageLook, clampFieldCast, FIELD_PATTERNS, fieldFromCast, fieldFromTrance, fieldLoop, PatternField, resolveFieldPattern, SNAKE_LOOKS, SNAKE_LOOKS_CLASSIC } from "../src/engine/agentField";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -770,6 +770,12 @@ describe("randomize + presets", () => {
     expect(classic.collageTwoInk).toBe(false);
     expect(classic.collageFieldPerturb).toBeGreaterThan(0);
     expect(classic.collageFieldEvolve).toBeGreaterThan(0.7);
+    const sheet = fieldFromCast("sheet");
+    const giants = fieldFromCast("giants");
+    expect(clampFieldCast("giants")).toBe("giants");
+    expect(sheet.collageFieldMaxScale - sheet.collageFieldMinScale).toBeLessThan(0.4);
+    expect(giants.collageFieldMaxScale - giants.collageFieldMinScale).toBeGreaterThan(1.5);
+    expect(giants.collageFieldContrast).toBeGreaterThan(sheet.collageFieldContrast);
   });
 
   it("rand all rolls Field sliders when the move is field", () => {
@@ -1270,6 +1276,13 @@ describe("heraldry collage", () => {
     expect(mashed.length).toBe(240);
     expect(mashed[0].charge).toEqual(a[0].charge);
     expect(mashed.some((p, i) => (i & 1) === 1 && p.charge.kind !== a[i].charge.kind)).toBe(true);
+    const locked = trioKinds("sailor", 7);
+    expect(locked).toHaveLength(3);
+    expect(new Set(locked).size).toBe(3);
+    expect(trioKinds("sailor", 7)).toEqual(locked);
+    const trio = buildField(7, "#1c4db8", "sailor", null, true, "#ffffff", true);
+    expect(new Set(trio.map((p) => p.charge.kind)).size).toBe(3);
+    expect(trio.every((p) => locked.includes(p.charge.kind))).toBe(true);
   });
 
   it("gives each kit its own stamp drawer", () => {
@@ -1463,7 +1476,7 @@ describe("pattern field", () => {
       }
       expect(jump).toBeLessThan(0.06);
       expect(moved / 300).toBeGreaterThan(0.08);
-      expect(visible).toBeGreaterThan(pattern === "snake" ? 6 : 120);
+      expect(visible).toBeGreaterThan(pattern === "snake" || pattern === "stripe" || pattern === "arch" ? 6 : 120);
     });
   }
 
@@ -1520,6 +1533,41 @@ describe("pattern field", () => {
     expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(0.55);
     expect(glyph.length).toBeGreaterThan(40);
     expect(Math.max(...ys) - Math.min(...ys) > 0.12 || Math.max(...xs) - Math.min(...xs) > 0.7).toBe(true);
+    const held = agentParamsFrom({ warp: 1.2, hold: 0.85, blink: 1 });
+    const eased = agentParamsFrom({ warp: 1.2, hold: 0.85, blink: 0 });
+    const snapField = new PatternField();
+    const easeField = new PatternField();
+    let mid = false;
+    for (let t = 0; t < period; t += period / 20) {
+      expect(snapField.posesAt(180, t, 3, aspect, held, 0, 0, "snake").every((p) => (p.morph ?? 0) === 0 || (p.morph ?? 0) === 1)).toBe(true);
+      if (easeField.posesAt(180, t, 3, aspect, eased, 0, 0, "snake").some((p) => (p.morph ?? 0) > 0.08 && (p.morph ?? 0) < 0.92)) mid = true;
+    }
+    expect(mid).toBe(true);
+  });
+
+  it("stripe and arch stay occupancy loops", () => {
+    const params = agentParamsFrom({ warp: 1.1, hold: 0.7, blink: 1 });
+    const field = new PatternField();
+    const period = fieldLoop(params);
+    const vis = (poses: { alpha: number; px: number }[]) => poses.filter((p) => p.alpha > 0.5 && p.px > 0.02);
+    for (const pattern of ["stripe", "arch"] as const) {
+      const a = field.posesAt(240, 0.3, 11, aspect, params, 0, 0, pattern).map((p) => ({ ...p }));
+      const b = field.posesAt(240, 0.3 + period * 3, 11, aspect, params, 0, 0, pattern);
+      for (let i = 0; i < a.length; i++) {
+        expect(b[i].x).toBeCloseTo(a[i].x, 4);
+        expect(b[i].y).toBeCloseTo(a[i].y, 4);
+      }
+      expect(a.every((p) => (p.morph ?? 0) === 0 || (p.morph ?? 0) === 1)).toBe(true);
+      let hi = 0;
+      let lo = 999;
+      for (let k = 0; k < 6; k++) {
+        const nVis = vis(field.posesAt(260, k * period * 0.16, 11, aspect, params, 0, 0, pattern)).length;
+        hi = Math.max(hi, nVis);
+        lo = Math.min(lo, nVis);
+      }
+      expect(hi).toBeGreaterThan(lo * 1.15);
+      expect(hi).toBeGreaterThan(20);
+    }
   });
 
   it("classic snake keeps the older 7-look crossfade", () => {

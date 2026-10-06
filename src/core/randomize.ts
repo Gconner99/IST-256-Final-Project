@@ -11,7 +11,10 @@ import {
   clampFieldSparsity,
   clampFieldStrength,
   clampFieldWarp,
+  clampFieldHold,
+  clampFieldBlink,
   fieldFromTrance,
+  fieldFromCast,
   FIELD_PATTERNS,
 } from "../engine/agentField";
 import { inkForLook, paperForLook, pickColorPack, pickEffectPalette, EFFECT_PALETTES } from "./colorPacks";
@@ -369,23 +372,26 @@ export function rollFieldParams(rng: () => number, look: "hypnotic" | "classic" 
       collageFieldContrast: clampFieldContrast(rollBetween(rng, 0.6, 1.6)),
       collageFieldMinScale: minScale,
       collageFieldMaxScale: maxScale,
+      collageFieldHold: clampFieldHold(rollBetween(rng, 0.25, 0.5)),
+      collageFieldBlink: clampFieldBlink(rollBetween(rng, 0, 0.4)),
+      collageFieldCast: rng() > 0.5 ? "giants" as const : "sheet" as const,
+      collageTrio: false,
       collageTwoInk: false,
     };
   }
-  const heroes = rng() > 0.5;
-  const minScale = clampFieldMinScale(heroes ? rollBetween(rng, 0.38, 0.58) : rollBetween(rng, 0.72, 0.92));
-  const maxScale = clampFieldMaxScale(heroes ? rollBetween(rng, 2.1, 2.9) : rollBetween(rng, 0.85, 1.15));
+  const sized = fieldFromCast(rng() > 0.5 ? "giants" : "sheet");
   return {
     collageFieldPattern: FIELD_PATTERNS[Math.floor(rng() * FIELD_PATTERNS.length)],
     ...fieldFromTrance(rollBetween(rng, 0.55, 1.35)),
+    ...sized,
     collageFieldStrength: clampFieldStrength(rollBetween(rng, 0.9, 1.4)),
     collageFieldSparsity: clampFieldSparsity(rollBetween(rng, 0.5, 1.2)),
     collageFieldPerturb: clampFieldPerturb(rollBetween(rng, 0, 0.2)),
     collageFieldCurl: clampFieldCurl(rollBetween(rng, 0.05, 0.45)),
     collageFieldMotion: clampFieldMotion(rollBetween(rng, 0.05, 0.35)),
-    collageFieldContrast: clampFieldContrast(rollBetween(rng, 0.9, 1.8)),
-    collageFieldMinScale: minScale,
-    collageFieldMaxScale: Math.max(minScale + 0.08, maxScale),
+    collageFieldHold: clampFieldHold(rollBetween(rng, 0.55, 0.85)),
+    collageFieldBlink: clampFieldBlink(rng() > 0.4 ? 1 : rollBetween(rng, 0, 0.45)),
+    collageTrio: rng() > 0.45,
     collageTwoInk: true,
   };
 }
