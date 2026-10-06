@@ -264,6 +264,12 @@ export interface MediaSource {
   collageFieldContrast?: number;
   collageFieldMotion?: number;
   collageFieldPattern?: string;
+  /** Master that ties Field Tempo + Breathe + Pack. */
+  collageFieldTrance?: number;
+  /** Paper plus one or two inks. No rainbow tincture mix. */
+  collageTwoInk?: boolean;
+  /** Hypnotic is the flat two-ink poster look. Classic is the previous washed, full-ink Field. */
+  collageLook?: "hypnotic" | "classic";
 }
 
 export interface Keyframe {
@@ -356,6 +362,8 @@ export interface AppUi {
   /** When on, Rand all / Rand wacky plant a short right-panel effect stack. */
   includeEffects: boolean;
   exporting: boolean;
+  /** Poster hides fly-throughs; Club shows the second instrument. */
+  desk: "poster" | "club";
 }
 
 export interface AppState {

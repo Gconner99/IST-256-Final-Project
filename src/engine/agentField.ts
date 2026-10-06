@@ -72,6 +72,33 @@ export function clampFieldContrast(value?: number | null): number {
 export function clampFieldMotion(value?: number | null): number {
   return clamp(value ?? 0.45, 0, 2);
 }
+/** Trance: one slider for Tempo + Breathe + Pack. */
+export function clampFieldTrance(value?: number | null): number {
+  return clamp(value ?? 1, 0, 2);
+}
+
+export type CollageLook = "hypnotic" | "classic";
+
+export function clampCollageLook(value?: string | null): CollageLook {
+  return value === "classic" ? "classic" : "hypnotic";
+}
+
+/** Map Trance onto the three sliders it owns. Size Contrast stays independent. */
+export function fieldFromTrance(trance?: number | null): {
+  collageFieldTrance: number;
+  collageFieldEvolve: number;
+  collageFieldWarp: number;
+  collageFieldDensity: number;
+} {
+  const t = clampFieldTrance(trance);
+  const u = t / 2;
+  return {
+    collageFieldTrance: t,
+    collageFieldEvolve: clampFieldEvolve(0.5 + u * 0.45),
+    collageFieldWarp: clampFieldWarp(0.4 + u * 0.95),
+    collageFieldDensity: clampFieldDensity(1.2 + u * 0.6),
+  };
+}
 
 export interface AgentParams {
   fieldStrength: number;
@@ -92,6 +119,8 @@ export interface AgentParams {
   sparsity: number;
   contrast: number;
   motion: number;
+  trance: number;
+  classic: boolean;
 }
 
 export function agentParamsFrom(raw?: Partial<AgentParams> | null): AgentParams {
@@ -116,6 +145,8 @@ export function agentParamsFrom(raw?: Partial<AgentParams> | null): AgentParams 
     sparsity: clampFieldSparsity(raw?.sparsity),
     contrast: clampFieldContrast(raw?.contrast),
     motion: clampFieldMotion(raw?.motion),
+    trance: clampFieldTrance(raw?.trance),
+    classic: !!raw?.classic,
   };
 }
 
@@ -198,6 +229,12 @@ export function loopPhase(clock: number, params: AgentParams, bpm = 0, beatOffse
 
 function packMul(params: AgentParams): number {
   return 0.86 + params.density * 0.2;
+}
+
+/** First quarter of the loop: pack swells, then rests. Positions do not travel. */
+function packBreath(u: number, p: AgentParams): number {
+  const gate = u < 0.25 ? Math.sin((u / 0.25) * Math.PI) : 0;
+  return 1 + 0.07 * p.warp * gate;
 }
 
 function hash01(i: number): number {
@@ -561,9 +598,16 @@ function pickStick(pts: { x: number; y: number }[], occ: (x: number, y: number) 
   return chosen;
 }
 
+/** Held looks in Snake. Classic keeps the older 7-look smear. */
+export const SNAKE_LOOKS = 5;
+export const SNAKE_LOOKS_CLASSIC = 7;
+/** Fraction of each look that stays put before the occupancy morph. */
+export const SNAKE_HOLD = 0.7;
+export const SNAKE_HOLD_CLASSIC = 0.32;
+
 /**
- * Heraldic silhouettes from the screen recording: packed sheet with a crawling hole,
- * packed C, a frame of large stickers, a sparse bouncing flock, a creature, giants, glyph.
+ * Heraldic silhouettes: packed sheet with a bigger crawling hole,
+ * packed C, a frame of large stickers, giants, glyph.
  */
 function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
   const rng = mulberry32((seed >>> 0) ^ 0x9e3779b1);
@@ -578,7 +622,7 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
     occ, hole: 0, mode: "stick", nStick: sites.length, stickR: 0, crawl, giants: sites,
   });
 
-  const sheet = pack((x, y) => occFrom(sdBox(x, y, 0, 0, hw, hy), 0.045), 0.2 + rng() * 0.06);
+  const sheet = pack((x, y) => occFrom(sdBox(x, y, 0, 0, hw, hy), 0.045), p.classic ? 0.2 + rng() * 0.06 : 0.4 + rng() * 0.08);
 
   const holeY = (rng() - 0.45) * hy * 0.28;
   const cee = pack((x, y) => {
@@ -626,6 +670,34 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
     return occFrom(Math.max(outer, -inner), 0.05);
   });
 
+  const Ng = 8 + Math.floor(rng() * 4);
+  const gCols = 3;
+  const gRows = Math.ceil(Ng / gCols);
+  const giants: GiantSite[] = [];
+  for (let k = 0; k < Ng; k++) {
+    const gc = k % gCols;
+    const gr = Math.floor(k / gCols);
+    giants.push({
+      x: -hw * 0.7 + (gc + 0.5) * (1.4 * hw) / gCols + (rng() - 0.5) * hw * 0.16,
+      y: -hy * 0.7 + (gr + 0.5) * (1.4 * hy) / gRows + (rng() - 0.5) * hy * 0.16,
+      r: 0.155 + rng() * 0.07,
+    });
+  }
+  const giantSil: SnakeSil = { occ: () => 0, hole: 0, mode: "giant", nStick: 0, stickR: 0, crawl: 0.05, giants };
+
+  const glyphKind = Math.floor(rng() * 3);
+  let glyphPts: number[];
+  if (glyphKind === 0) {
+    glyphPts = [-hw * 0.92, -hy * 0.28, -hw * 0.05, -hy * 0.22, hw * 0.08, hy * 0.08, -hw * 0.02, hy * 0.88, hw * 0.22, hy * 0.12, hw * 0.88, -hy * 0.55];
+  } else if (glyphKind === 1) {
+    glyphPts = [-hw * 0.9, hy * 0.42, hw * 0.55, hy * 0.48, hw * 0.52, hy * 0.88, hw * 0.52, -hy * 0.88, hw * 0.55, -hy * 0.42, -hw * 0.9, -hy * 0.48];
+  } else {
+    glyphPts = [-hw * 0.85, hy * 0.15, -hw * 0.15, hy * 0.72, hw * 0.35, hy * 0.55, hw * 0.15, 0, hw * 0.72, -hy * 0.35, hw * 0.2, -hy * 0.82, -hw * 0.55, -hy * 0.55];
+  }
+  const glyph = pack((x, y) => occFrom(sdPoly(x, y, glyphPts, thick * 1.2), 0.04));
+
+  if (!p.classic) return [sheet, cee, frame, giantSil, glyph];
+
   const blobSites: GiantSite[] = [];
   const Bn = 30;
   for (let k = 0; k < Bn; k++) {
@@ -662,38 +734,12 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
     return occFrom(d, 0.035);
   });
 
-  const Ng = 8 + Math.floor(rng() * 4);
-  const gCols = 3;
-  const gRows = Math.ceil(Ng / gCols);
-  const giants: GiantSite[] = [];
-  for (let k = 0; k < Ng; k++) {
-    const gc = k % gCols;
-    const gr = Math.floor(k / gCols);
-    giants.push({
-      x: -hw * 0.7 + (gc + 0.5) * (1.4 * hw) / gCols + (rng() - 0.5) * hw * 0.16,
-      y: -hy * 0.7 + (gr + 0.5) * (1.4 * hy) / gRows + (rng() - 0.5) * hy * 0.16,
-      r: 0.155 + rng() * 0.07,
-    });
-  }
-  const giantSil: SnakeSil = { occ: () => 0, hole: 0, mode: "giant", nStick: 0, stickR: 0, crawl: 0.05, giants };
-
-  const glyphKind = Math.floor(rng() * 3);
-  let glyphPts: number[];
-  if (glyphKind === 0) {
-    glyphPts = [-hw * 0.92, -hy * 0.28, -hw * 0.05, -hy * 0.22, hw * 0.08, hy * 0.08, -hw * 0.02, hy * 0.88, hw * 0.22, hy * 0.12, hw * 0.88, -hy * 0.55];
-  } else if (glyphKind === 1) {
-    glyphPts = [-hw * 0.9, hy * 0.42, hw * 0.55, hy * 0.48, hw * 0.52, hy * 0.88, hw * 0.52, -hy * 0.88, hw * 0.55, -hy * 0.42, -hw * 0.9, -hy * 0.48];
-  } else {
-    glyphPts = [-hw * 0.85, hy * 0.15, -hw * 0.15, hy * 0.72, hw * 0.35, hy * 0.55, hw * 0.15, 0, hw * 0.72, -hy * 0.35, hw * 0.2, -hy * 0.82, -hw * 0.55, -hy * 0.55];
-  }
-  const glyph = pack((x, y) => occFrom(sdPoly(x, y, glyphPts, thick * 1.2), 0.04));
-
   return [sheet, cee, frame, scatter, creature, giantSil, glyph];
 }
 
 /**
- * Packed wallpaper with a crawling void, then large-sticker frames and flocks,
- * then a creature / giants / glyph. Icons morph. No hard cuts.
+ * Packed wallpaper with a crawling void, then a C, a sticker frame,
+ * giants, and a glyph. Looks hold, then occupancy eases. Icons blink.
  */
 function snake(c: LoopCtx, emit: Emit) {
   const { n, hh, u, p, seed } = c;
@@ -704,7 +750,8 @@ function snake(c: LoopCtx, emit: Emit) {
   const t = u * K;
   const seg = Math.min(K - 1, Math.floor(t));
   const frac = t - seg;
-  const m = smoother(clamp((frac - 0.32) / 0.68, 0, 1));
+  const hold = p.classic ? SNAKE_HOLD_CLASSIC : SNAKE_HOLD;
+  const m = smoother(clamp((frac - hold) / (1 - hold), 0, 1));
   const A = sils[seg];
   const B = sils[(seg + 1) % K];
   const pts = snakeLattice(n, hh, seed);
@@ -749,7 +796,7 @@ function snake(c: LoopCtx, emit: Emit) {
     if (occ < 0.32 && !isStick && !ga && !gb) d = 0;
     const phase = rate * u + hash01(i * 3.1) * (0.35 + p.perturb * 2.2);
     const pf = phase - Math.floor(phase);
-    const morph = smoother(clamp((pf - 0.78) / 0.16, 0, 1));
+    const morph = p.classic ? smoother(clamp((pf - 0.78) / 0.16, 0, 1)) : pf > 0.92 ? 1 : 0;
     const chargeA = Math.floor(phase) * 13 + i;
     const hero = ga || gb || isStick;
     const sized = d * (hero ? Math.max(0.9, sizeMul(i, p)) : sizeMul(i, p));
@@ -784,12 +831,13 @@ export class PatternField {
     for (const pose of this.poses) pose.alpha = 0;
     const toPx = Math.max(1, asp);
     const toY = asp * asp;
+    const breath = params.classic ? 1 : packBreath(u, params);
     const emit: Emit = (i, x, y, d, rot, charge, flip = 1, chargeB, morph = 0) => {
       const pose = this.poses[i];
       if (!pose) return;
       pose.x = x;
       pose.y = y * toY;
-      pose.px = Math.max(0, d) * toPx * STAMP_PAD;
+      pose.px = Math.max(0, d * breath) * toPx * STAMP_PAD;
       pose.rot = rot;
       pose.alpha = d > 0.004 ? 1 : 0;
       pose.squash = 1;

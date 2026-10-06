@@ -20,6 +20,7 @@ function defaultUi(project: Project): AppUi {
     includeIdol: false,
     includeEffects: true,
     exporting: false,
+    desk: "poster",
   };
 }
 

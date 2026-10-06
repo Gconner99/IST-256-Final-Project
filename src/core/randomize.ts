@@ -11,6 +11,7 @@ import {
   clampFieldSparsity,
   clampFieldStrength,
   clampFieldWarp,
+  fieldFromTrance,
   FIELD_PATTERNS,
 } from "../engine/agentField";
 import { inkForLook, paperForLook, pickColorPack, pickEffectPalette, EFFECT_PALETTES } from "./colorPacks";
@@ -350,23 +351,42 @@ function rollBetween(rng: () => number, a: number, b: number) {
   return lerp(a, b, rng());
 }
 
-/** Pleasing Field-slider ranges. Picks one looping pattern and keeps it readable. */
-export function rollFieldParams(rng: () => number) {
-  const minScale = clampFieldMinScale(rollBetween(rng, 0.45, 0.85));
-  const maxScale = clampFieldMaxScale(Math.max(minScale + 0.08, rollBetween(rng, 1.3, 2.4)));
+/** Field rolls. Hypnotic stays trance-safe; Classic uses the previous mid ranges. */
+export function rollFieldParams(rng: () => number, look: "hypnotic" | "classic" = "hypnotic") {
+  if (look === "classic") {
+    const minScale = clampFieldMinScale(rollBetween(rng, 0.45, 0.85));
+    const maxScale = clampFieldMaxScale(Math.max(minScale + 0.08, rollBetween(rng, 1.3, 2.4)));
+    return {
+      collageFieldPattern: FIELD_PATTERNS[Math.floor(rng() * FIELD_PATTERNS.length)],
+      collageFieldEvolve: clampFieldEvolve(rollBetween(rng, 0.75, 1.35)),
+      collageFieldStrength: clampFieldStrength(rollBetween(rng, 0.8, 1.6)),
+      collageFieldDensity: clampFieldDensity(rollBetween(rng, 0.8, 1.5)),
+      collageFieldSparsity: clampFieldSparsity(rollBetween(rng, 0.4, 1.4)),
+      collageFieldPerturb: clampFieldPerturb(rollBetween(rng, 0.02, 0.5)),
+      collageFieldCurl: clampFieldCurl(rollBetween(rng, 0.1, 0.9)),
+      collageFieldWarp: clampFieldWarp(rollBetween(rng, 0.6, 1.6)),
+      collageFieldMotion: clampFieldMotion(rollBetween(rng, 0.15, 0.8)),
+      collageFieldContrast: clampFieldContrast(rollBetween(rng, 0.6, 1.6)),
+      collageFieldMinScale: minScale,
+      collageFieldMaxScale: maxScale,
+      collageTwoInk: false,
+    };
+  }
+  const heroes = rng() > 0.5;
+  const minScale = clampFieldMinScale(heroes ? rollBetween(rng, 0.38, 0.58) : rollBetween(rng, 0.72, 0.92));
+  const maxScale = clampFieldMaxScale(heroes ? rollBetween(rng, 2.1, 2.9) : rollBetween(rng, 0.85, 1.15));
   return {
     collageFieldPattern: FIELD_PATTERNS[Math.floor(rng() * FIELD_PATTERNS.length)],
-    collageFieldEvolve: clampFieldEvolve(rollBetween(rng, 0.75, 1.35)),
-    collageFieldStrength: clampFieldStrength(rollBetween(rng, 0.8, 1.6)),
-    collageFieldDensity: clampFieldDensity(rollBetween(rng, 0.8, 1.5)),
-    collageFieldSparsity: clampFieldSparsity(rollBetween(rng, 0.4, 1.4)),
-    collageFieldPerturb: clampFieldPerturb(rollBetween(rng, 0.02, 0.5)),
-    collageFieldCurl: clampFieldCurl(rollBetween(rng, 0.1, 0.9)),
-    collageFieldWarp: clampFieldWarp(rollBetween(rng, 0.6, 1.6)),
-    collageFieldMotion: clampFieldMotion(rollBetween(rng, 0.15, 0.8)),
-    collageFieldContrast: clampFieldContrast(rollBetween(rng, 0.6, 1.6)),
+    ...fieldFromTrance(rollBetween(rng, 0.55, 1.35)),
+    collageFieldStrength: clampFieldStrength(rollBetween(rng, 0.9, 1.4)),
+    collageFieldSparsity: clampFieldSparsity(rollBetween(rng, 0.5, 1.2)),
+    collageFieldPerturb: clampFieldPerturb(rollBetween(rng, 0, 0.2)),
+    collageFieldCurl: clampFieldCurl(rollBetween(rng, 0.05, 0.45)),
+    collageFieldMotion: clampFieldMotion(rollBetween(rng, 0.05, 0.35)),
+    collageFieldContrast: clampFieldContrast(rollBetween(rng, 0.9, 1.8)),
     collageFieldMinScale: minScale,
-    collageFieldMaxScale: maxScale,
+    collageFieldMaxScale: Math.max(minScale + 0.08, maxScale),
+    collageTwoInk: true,
   };
 }
 
@@ -380,7 +400,7 @@ export function randomizeFieldSource(src: MediaSource, seed: number): MediaSourc
     ...src,
     generator: generatorForMove(move),
     collageMove: move,
-    ...rollFieldParams(rng),
+    ...rollFieldParams(rng, src.collageLook === "classic" ? "classic" : "hypnotic"),
     name: kit ? (kitB ? `${MOVE_LABEL[move]} · ${kit} · ${kitB}` : `${MOVE_LABEL[move]} · ${kit}`) : src.name,
   };
 }
@@ -477,7 +497,8 @@ export function randomizeProject(
         collageChainMorph: 0.35 + prng() * 0.85,
         collageChainVary: 0.65 + prng() * 0.8,
         collageChainSmooth: 0.4 + prng() * 0.45,
-        ...(move === "field" ? rollFieldParams(prng) : {}),
+        collageLook: src.collageLook === "classic" ? "classic" as const : "hypnotic" as const,
+        ...(move === "field" ? rollFieldParams(prng, src.collageLook === "classic" ? "classic" : "hypnotic") : {}),
         colorA: paperForLook(kit, seed + i * 17, pack),
         colorB: inkForLook(kit, pack),
         name: kitB ? `${MOVE_LABEL[move]} · ${kit} · ${kitB}` : `${MOVE_LABEL[move]} · ${kit}`,
@@ -548,7 +569,8 @@ export function chaosStamp(project: Project): Project {
         collageChainMorph: 0.35 + rng() * 0.85,
         collageChainVary: 0.65 + rng() * 0.8,
         collageChainSmooth: 0.4 + rng() * 0.45,
-        ...(move === "field" ? rollFieldParams(rng) : {}),
+        collageLook: src.collageLook === "classic" ? "classic" as const : "hypnotic" as const,
+        ...(move === "field" ? rollFieldParams(rng, src.collageLook === "classic" ? "classic" : "hypnotic") : {}),
         colorA: paperForLook(kit, seed + i * 13, pack),
         colorB: inkForLook(kit, pack),
         name: `${MOVE_LABEL[move]} · ${kit}`,

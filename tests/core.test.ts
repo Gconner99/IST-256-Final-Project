@@ -4,12 +4,12 @@ import { matchAspectId, sizeForAspect, sizeFromSource, clipLoopFade, encodeBitra
 import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
-import { ensureCritters, ensureIdol, chaosStamp, randomizeFieldSource, randomizeProject, FIELD_ROOMS } from "../src/core/randomize";
+import { ensureCritters, ensureIdol, chaosStamp, randomizeFieldSource, randomizeProject, rollFieldParams, FIELD_ROOMS } from "../src/core/randomize";
 import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
 import { buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
-import { agentParamsFrom, FIELD_PATTERNS, fieldLoop, PatternField, resolveFieldPattern } from "../src/engine/agentField";
+import { agentParamsFrom, clampCollageLook, FIELD_PATTERNS, fieldFromTrance, fieldLoop, PatternField, resolveFieldPattern, SNAKE_LOOKS, SNAKE_LOOKS_CLASSIC } from "../src/engine/agentField";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -735,18 +735,48 @@ describe("randomize + presets", () => {
     expect(a.collageFieldStrength).toEqual(b.collageFieldStrength);
     expect(a.collageFieldWarp).toEqual(b.collageFieldWarp);
     expect(a.collageFieldMinScale ?? 0).toBeLessThan((a.collageFieldMaxScale ?? 0) - 0.07);
+    expect(a.collageFieldPerturb ?? 0).toBeLessThanOrEqual(0.2);
+    expect(a.collageFieldEvolve ?? 1).toBeGreaterThanOrEqual(0.5);
+    expect(a.collageFieldEvolve ?? 1).toBeLessThanOrEqual(0.95);
+    expect(a.collageFieldDensity ?? 1).toBeGreaterThanOrEqual(1.2);
+    expect(a.collageFieldDensity ?? 1).toBeLessThanOrEqual(1.8);
     expect(
-      a.collageFieldStrength !== c.collageFieldStrength
-        || a.collageFieldWarp !== c.collageFieldWarp
-        || a.collageFieldDensityEvolve !== c.collageFieldDensityEvolve,
+      a.collageFieldPattern !== c.collageFieldPattern
+        || a.collageFieldEvolve !== c.collageFieldEvolve
+        || a.collageFieldDensity !== c.collageFieldDensity
+        || a.collageFieldContrast !== c.collageFieldContrast,
     ).toBe(true);
+  });
+
+  it("rollFieldParams stays trance-safe and commits scale polarity", () => {
+    const rng = mulberry32(12);
+    for (let i = 0; i < 20; i++) {
+      const rolled = rollFieldParams(rng);
+      expect(rolled.collageFieldEvolve).toBeGreaterThanOrEqual(0.5);
+      expect(rolled.collageFieldEvolve).toBeLessThanOrEqual(0.95);
+      expect(rolled.collageFieldDensity).toBeGreaterThanOrEqual(1.2);
+      expect(rolled.collageFieldDensity).toBeLessThanOrEqual(1.8);
+      expect(rolled.collageFieldPerturb).toBeLessThanOrEqual(0.2);
+      expect(rolled.collageTwoInk).toBe(true);
+      const span = (rolled.collageFieldMaxScale ?? 0) - (rolled.collageFieldMinScale ?? 0);
+      expect(span).toBeGreaterThan(0.07);
+    }
+    const tied = fieldFromTrance(1);
+    expect(tied.collageFieldEvolve).toBeCloseTo(0.725, 3);
+    expect(tied.collageFieldDensity).toBeCloseTo(1.5, 3);
+    expect(clampCollageLook("classic")).toBe("classic");
+    expect(clampCollageLook("hypnotic")).toBe("hypnotic");
+    const classic = rollFieldParams(mulberry32(12), "classic");
+    expect(classic.collageTwoInk).toBe(false);
+    expect(classic.collageFieldPerturb).toBeGreaterThan(0);
+    expect(classic.collageFieldEvolve).toBeGreaterThan(0.7);
   });
 
   it("rand all rolls Field sliders when the move is field", () => {
     const p = randomizeProject({ ...createDefaultProject(), seed: 42, randomAmount: 1 }, "all", null, null, null, false, false);
     expect(p.sources[0].collageMove).toBe("field");
     expect(p.sources[0].collageFieldStrength).toBeGreaterThan(0.6);
-    expect(p.sources[0].collageFieldWarp).toBeGreaterThan(0.5);
+    expect(p.sources[0].collageFieldWarp).toBeGreaterThan(0.35);
     expect(p.sources[0].collageFieldMinScale ?? 0).toBeLessThan((p.sources[0].collageFieldMaxScale ?? 0) - 0.07);
     const again = randomizeProject({ ...createDefaultProject(), seed: 42, randomAmount: 1 }, "all", null, null, null, false, false);
     expect(again.sources[0].collageFieldStrength).toBe(p.sources[0].collageFieldStrength);
@@ -1337,11 +1367,14 @@ describe("heraldry collage", () => {
     expect(p.exportSettings).toMatchObject({ width: 1280, height: 720, fps: 30, bitrate: 12, quality: 0.97 });
   });
 
-  it("starts on a colored-ground sailor tour", () => {
+  it("starts on a packed sailor Snake field", () => {
     const p = createDefaultProject();
-    expect(p.sources[0].generator).toBe("wallpaper");
+    expect(p.sources[0].generator).toBe("heraldry");
     expect(p.sources[0].collageKit).toBe("sailor");
-    expect(p.sources[0].collageMove).toBe("rush");
+    expect(p.sources[0].collageMove).toBe("field");
+    expect(p.sources[0].collageFieldPattern).toBe("snake");
+    expect(p.sources[0].collageLook).toBe("hypnotic");
+    expect(p.sources[0].collageTwoInk).toBe(true);
     expect(p.sources[0].colorA).toMatch(/^#[0-9a-f]{6}$/i);
     expect(p.sources[0].colorA).not.toBe("#ffffff");
     expect(p.layers[0].effects).toHaveLength(0);
@@ -1450,16 +1483,23 @@ describe("pattern field", () => {
     expect(fieldLoop(agentParamsFrom({ fieldEvolve: 2 }), 120)).toBeLessThan(loop);
   });
 
-  it("snake fills morphing silhouettes and swaps every icon", () => {
+  it("snake fills held silhouettes and snaps every icon", () => {
     const params = agentParamsFrom({ warp: 1.2 });
     const field = new PatternField();
     const a = field.posesAt(240, 0.4, 3, aspect, params, 0, 0, "snake").map((p) => ({ ...p }));
     const b = field.posesAt(240, 0.4 + fieldLoop(params) * 0.35, 3, aspect, params, 0, 0, "snake").map((p) => ({ ...p }));
-    expect(a.some((p) => (p.morph ?? 0) > 0.05 && (p.morph ?? 0) < 0.95)).toBe(true);
+    expect(a.every((p) => (p.morph ?? 0) === 0 || (p.morph ?? 0) === 1)).toBe(true);
+    const period = fieldLoop(params);
+    let snapped = false;
+    for (let t = 0; t < period; t += period / 24) {
+      const poses = field.posesAt(240, t, 3, aspect, params, 0, 0, "snake");
+      expect(poses.every((p) => (p.morph ?? 0) === 0 || (p.morph ?? 0) === 1)).toBe(true);
+      if (poses.some((p) => (p.morph ?? 0) === 1)) snapped = true;
+    }
+    expect(snapped).toBe(true);
     expect(a.filter((p, i) => p.charge !== b[i].charge).length).toBeGreaterThan(40);
     const vis = (poses: { alpha: number; px: number; x: number; y: number }[]) => poses.filter((p) => p.alpha > 0.5 && p.px > 0.02);
     const field2 = new PatternField();
-    const period = fieldLoop(params);
     let hi = 0;
     let lo = 999;
     for (let k = 0; k < 8; k++) {
@@ -1468,18 +1508,34 @@ describe("pattern field", () => {
       lo = Math.min(lo, nVis);
     }
     expect(hi).toBeGreaterThan(lo * 1.4);
-    const K = 7;
+    const K = SNAKE_LOOKS;
     const at = (idx: number) => vis(field2.posesAt(300, period * ((idx + 0.12) / K), 3, aspect, params, 0, 0, "snake"));
-    const giants = at(5);
+    const giants = at(3);
     expect(giants.length).toBeGreaterThan(6);
     expect(giants.length).toBeLessThan(40);
     expect(giants.filter((p) => p.px > 0.12).length).toBeGreaterThan(4);
-    const glyph = at(6);
+    const glyph = at(4);
     const xs = glyph.map((p) => p.x);
     const ys = glyph.map((p) => p.y / (aspect * aspect));
     expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(0.55);
     expect(glyph.length).toBeGreaterThan(40);
     expect(Math.max(...ys) - Math.min(...ys) > 0.12 || Math.max(...xs) - Math.min(...xs) > 0.7).toBe(true);
+  });
+
+  it("classic snake keeps the older 7-look crossfade", () => {
+    const params = agentParamsFrom({ warp: 1.2, classic: true });
+    const field = new PatternField();
+    const a = field.posesAt(240, 0.4, 3, aspect, params, 0, 0, "snake").map((p) => ({ ...p }));
+    expect(a.some((p) => (p.morph ?? 0) > 0.05 && (p.morph ?? 0) < 0.95)).toBe(true);
+    const vis = (poses: { alpha: number; px: number; x: number; y: number }[]) => poses.filter((p) => p.alpha > 0.5 && p.px > 0.02);
+    const period = fieldLoop(params);
+    const K = SNAKE_LOOKS_CLASSIC;
+    const at = (idx: number) => vis(field.posesAt(300, period * ((idx + 0.12) / K), 3, aspect, params, 0, 0, "snake"));
+    const giants = at(5);
+    expect(giants.length).toBeGreaterThan(6);
+    expect(giants.length).toBeLessThan(40);
+    const glyph = at(6);
+    expect(glyph.length).toBeGreaterThan(40);
   });
 
   it("is a pure function of time so scrubbing back matches", () => {

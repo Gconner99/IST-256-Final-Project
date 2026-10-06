@@ -34,7 +34,9 @@ import {
   clampFieldSparsity,
   clampFieldPattern,
   clampFieldStrength,
+  clampFieldTrance,
   clampFieldWarp,
+  clampCollageLook,
   clampPoleAttract,
   clampPoleCount,
   clampPoleFalloff,
@@ -238,6 +240,9 @@ export interface CollageExtras {
   fieldContrast?: number;
   fieldMotion?: number;
   fieldPattern?: string;
+  fieldTrance?: number;
+  twoInk?: boolean;
+  look?: string;
 }
 
 export function collageName(
@@ -343,6 +348,9 @@ export function defaultGeneratorSource(
     collageFieldContrast: collageKit ? clampFieldContrast(extras?.fieldContrast) : undefined,
     collageFieldMotion: collageKit ? clampFieldMotion(extras?.fieldMotion) : undefined,
     collageFieldPattern: collageKit ? clampFieldPattern(extras?.fieldPattern) : undefined,
+    collageFieldTrance: collageKit ? clampFieldTrance(extras?.fieldTrance) : undefined,
+    collageTwoInk: collageKit ? extras?.twoInk !== false : undefined,
+    collageLook: collageKit ? clampCollageLook(extras?.look) : undefined,
     width: 1280,
     height: 720,
     duration: 0,
@@ -373,7 +381,23 @@ export function defaultLayer(name: string, sourceId: string | null, effects: str
 }
 
 export function createDefaultProject(): Project {
-  const field = defaultGeneratorSource("wallpaper", "sailor", "rush");
+  const field = defaultGeneratorSource("heraldry", "sailor", "field", {
+    fieldPattern: "snake",
+    fieldEvolve: 0.75,
+    fieldDensity: 1.5,
+    fieldPerturb: 0.08,
+    fieldWarp: 0.85,
+    fieldContrast: 1.55,
+    fieldMinScale: 0.7,
+    fieldMaxScale: 2.2,
+    fieldStrength: 1.15,
+    fieldMotion: 0.2,
+    fieldCurl: 0.2,
+    fieldTrance: 1,
+    fieldSparsity: 0.85,
+    twoInk: true,
+    look: "hypnotic",
+  });
   const layer = defaultLayer("COLLAGE", field.id, []);
   const project: Project = {
     version: 1,

@@ -2,6 +2,7 @@ import { clamp, mulberry32 } from "../core/random";
 import type { GeneratorType } from "../core/types";
 import {
   agentParamsFrom,
+  clampCollageLook,
   PatternField,
   isFieldMove,
   type AgentPose,
@@ -33,6 +34,9 @@ export {
   clampFieldStrength,
   clampFieldWarp,
   clampFieldPattern,
+  clampFieldTrance,
+  clampCollageLook,
+  fieldFromTrance,
   FIELD_PATTERNS,
   FIELD_PATTERN_LABEL,
   isFieldMove,
@@ -676,6 +680,25 @@ const KIT_GIANTS: Record<CollageKit, Kind[]> = {
   school: ["globe", "backpack", "book", "bell"],
 };
 
+/** Fewer, bolder glyphs for the two-ink / Field lock. */
+const KIT_BOLD: Record<CollageKit, Kind[]> = {
+  sailor: ["fish", "anchor", "boat", "swallow", "helm"],
+  circus: ["elephant", "tent", "horse", "lion", "mask"],
+  fruit: ["pear", "lemon", "apple", "banana", "pineapple"],
+  nature: ["tree", "deer", "owl", "fox", "pine"],
+  love: ["heart", "swan", "rose", "dove", "crown"],
+  space: ["rocket", "saturn", "ufo", "planet", "astro"],
+  sweet: ["lolly", "cupcake", "donut", "waffle", "sundae"],
+  music: ["vinyl", "guitar", "piano", "sax", "headphone"],
+  kitchen: ["kettle", "toast", "pan", "chefhat", "mug"],
+  weather: ["rainbow", "umbrella", "sun", "cloud", "tornado"],
+  city: ["taxi", "bus", "house", "lamp", "skyline"],
+  arcade: ["stick", "cart", "invader", "ghostie", "pawn"],
+  haunt: ["skull", "pumpkin", "tomb", "cauldron", "bat"],
+  sport: ["trophy", "jersey", "goal", "skate", "whistle"],
+  school: ["globe", "backpack", "book", "bell", "pencil"],
+};
+
 const KIT_SHOWER: Record<CollageKit, Kind[]> = {
   sailor: ["starfish", "shell", "fish", "anchor", "crab", "compass", "hook"],
   circus: ["ball", "balloon", "bow", "ticket", "popcorn", "cane", "dice"],
@@ -780,6 +803,9 @@ export interface HeraldryPaintOpts {
   fieldContrast?: number;
   fieldMotion?: number;
   fieldPattern?: string;
+  fieldTrance?: number;
+  twoInk?: boolean;
+  look?: string;
 }
 
 const STAMP = 256;
@@ -804,17 +830,34 @@ export function kindsForKit(kit: CollageKit, scene: HeraldryScene = "rush"): Kin
   return KIT_PAPER[kit];
 }
 
-function makeCharge(rng: () => number, scene: HeraldryScene, bias: string, kit: CollageKit): Charge {
-  const pool = kindsForKit(kit, scene === "bloom" ? "rush" : scene);
+function makeCharge(
+  rng: () => number,
+  scene: HeraldryScene,
+  bias: string,
+  kit: CollageKit,
+  twoInk = false,
+  paper?: string,
+): Charge {
+  const pool = twoInk ? KIT_BOLD[kit] : kindsForKit(kit, scene === "bloom" ? "rush" : scene);
   let kind = pick(rng, pool);
-  if (scene === "lattice" && rng() < 0.4) kind = pick(rng, KIT_SHOWER[kit]);
-  if (scene === "tunnel" && rng() < 0.28) kind = pick(rng, KIT_GIANTS[kit]);
-  const a = mixInk(rng, bias);
-  let b = mixInk(rng, bias);
-  if (b === a) b = pick(rng, TINCTURES);
+  if (!twoInk && scene === "lattice" && rng() < 0.4) kind = pick(rng, KIT_SHOWER[kit]);
+  if (!twoInk && scene === "tunnel" && rng() < 0.28) kind = pick(rng, KIT_GIANTS[kit]);
+  const a = twoInk ? bias : mixInk(rng, bias);
+  let b = twoInk
+    ? paper && paper.toLowerCase() !== a.toLowerCase()
+      ? paper
+      : mixHex(bias, "#141414", 0.42)
+    : mixInk(rng, bias);
+  if (b === a) b = twoInk ? mixHex(bias, "#f4f0e4", 0.55) : pick(rng, TINCTURES);
   return {
     kind,
-    pattern: rng() < 0.58 ? "plain" : pick(rng, ["polka", "hoop", "half", "bar"] as Pattern[]),
+    pattern: twoInk
+      ? rng() < 0.82
+        ? "plain"
+        : "half"
+      : rng() < 0.58
+        ? "plain"
+        : pick(rng, ["polka", "hoop", "half", "bar"] as Pattern[]),
     a,
     b,
     mirror: rng() > 0.5,
@@ -840,7 +883,14 @@ export function clampCollageDensity(value?: number | null): number {
   return clamp(value ?? 1, 0.35, 2);
 }
 
-export function buildField(seed: number, bias: string, kit: CollageKit = "sailor", kitB?: CollageKit | null): Particle[] {
+export function buildField(
+  seed: number,
+  bias: string,
+  kit: CollageKit = "sailor",
+  kitB?: CollageKit | null,
+  twoInk = true,
+  paper?: string,
+): Particle[] {
   const rng = mulberry32(seed >>> 0);
   const n = 240;
   const mash = kitB && kitB !== kit ? kitB : null;
@@ -857,7 +907,7 @@ export function buildField(seed: number, bias: string, kit: CollageKit = "sailor
       vx: (rng() - 0.5) * 0.06,
       vy: (rng() - 0.35) * 0.08,
       vr: (rng() - 0.5) * 0.25,
-      charge: makeCharge(rng, sceneHint, bias, drawer),
+      charge: makeCharge(rng, sceneHint, bias, drawer, twoInk, paper),
     });
   }
   return out;
@@ -922,8 +972,8 @@ function fillPattern(ctx: CanvasRenderingContext2D, path: () => void, c: Charge,
   path();
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  ctx.lineWidth = Math.max(1.6, r * 0.07);
-  ctx.strokeStyle = luma(c.a) > 0.55 ? "#141414" : "#f6f1e6";
+  ctx.lineWidth = Math.max(2, r * 0.03);
+  ctx.strokeStyle = luma(c.a) < luma(c.b) ? c.a : c.b;
   ctx.stroke();
   ctx.restore();
 }
@@ -3147,6 +3197,8 @@ export class HeraldryField {
   private builtInk = "";
   private builtKit: CollageKit = "sailor";
   private builtKitB = "";
+  private builtTwoInk = true;
+  private builtPaper = "";
 
   private stamp(c: Charge): HTMLCanvasElement {
     const key = chargeKey(c);
@@ -3158,18 +3210,20 @@ export class HeraldryField {
     return g;
   }
 
-  private ensure(seed: number, ink: string, kit: CollageKit, kitB?: CollageKit | null) {
+  private ensure(seed: number, ink: string, kit: CollageKit, kitB?: CollageKit | null, twoInk = true, paper = "") {
     const mash = kitB && kitB !== kit ? kitB : "";
     if (
       this.builtSeed === seed &&
       this.builtInk === ink &&
       this.builtKit === kit &&
       this.builtKitB === mash &&
+      this.builtTwoInk === twoInk &&
+      this.builtPaper === paper &&
       this.particles.length
     ) {
       return;
     }
-    this.particles = buildField(seed, ink, kit, mash || null);
+    this.particles = buildField(seed, ink, kit, mash || null, twoInk, paper);
     this.stamps.clear();
     this.sim = null;
     this.agents = null;
@@ -3177,6 +3231,8 @@ export class HeraldryField {
     this.builtInk = ink;
     this.builtKit = kit;
     this.builtKitB = mash;
+    this.builtTwoInk = twoInk;
+    this.builtPaper = paper;
   }
 
   paint(opts: HeraldryPaintOpts): HTMLCanvasElement {
@@ -3192,7 +3248,9 @@ export class HeraldryField {
     const kitB = opts.kitB ? kitFromUnknown(opts.kitB) : null;
     const paper = hexOk(opts.paper, paperForKit(kit, opts.seed));
     const ink = hexOk(opts.ink, KIT_INK[kit]);
-    this.ensure(opts.seed >>> 0, ink, kit, kitB);
+    const classic = clampCollageLook(opts.look) === "classic";
+    const twoInk = classic ? opts.twoInk === true : opts.twoInk !== false;
+    this.ensure(opts.seed >>> 0, ink, kit, kitB, twoInk, paper);
 
     const scene = sceneFromGenerator(opts.generator, opts.move);
     const audio = clamp(opts.audio, 0, 1);
@@ -3208,7 +3266,7 @@ export class HeraldryField {
       vary: clampCollageChainVary(opts.chainVary),
       smooth: clampCollageChainSmooth(opts.chainSmooth),
     };
-    paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, beat, bass, !!opts.night, ink);
+    paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, beat, bass, !!opts.night, ink, twoInk, classic);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     const beatOffset = opts.beatOffset ?? 0;
@@ -3272,6 +3330,8 @@ export class HeraldryField {
         sparsity: opts.fieldSparsity,
         contrast: opts.fieldContrast,
         motion: opts.fieldMotion,
+        trance: opts.fieldTrance,
+        classic,
       });
       this.agents = this.agents ?? new PatternField();
       this.fieldPoses = this.agents.posesAt(count, clock, opts.seed >>> 0, aspect, params, bpm, beatOffset, opts.fieldPattern ?? "auto");
@@ -3385,6 +3445,7 @@ export class HeraldryField {
         }
       }
 
+    drawn.sort((a, b) => a.pose.y - b.pose.y || a.pose.px - b.pose.px);
     for (const item of drawn) blitStamp(item.stamp, item.pose);
 
     if (
@@ -4163,14 +4224,29 @@ function paintGround(
   bass = 0,
   night = false,
   ink = KIT_INK[kit],
+  twoInk = true,
+  classic = false,
 ) {
+  const ground = night ? mixHex(paper, "#08060a", 0.68) : paper;
+  ctx.fillStyle = ground;
+  ctx.fillRect(0, 0, w, h);
+  if (!classic) {
+    if (night) {
+      const neon = mixHex(ink, "#ffd8a8", 0.22);
+      const lin = ctx.createLinearGradient(0, 0, 0, h);
+      lin.addColorStop(0, mixHex(ground, neon, 0.1 + bass * 0.22 + beat * 0.04));
+      lin.addColorStop(1, ground);
+      ctx.fillStyle = lin;
+      ctx.globalAlpha = 0.88;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 1;
+    }
+    return;
+  }
   const rng = mulberry32((seed + 4) >>> 0);
   const wash = pick(rng, KIT_GROUNDS[kit]);
   const wash2 = pick(rng, KIT_GROUNDS[kit]);
   const wash3 = pick(rng, KIT_GROUNDS[kit]);
-  const ground = night ? mixHex(paper, "#08060a", 0.68) : paper;
-  ctx.fillStyle = ground;
-  ctx.fillRect(0, 0, w, h);
   const lin = ctx.createLinearGradient(0, 0, w, h);
   if (night) {
     const neon = mixHex(ink, "#ffd8a8", 0.3);
@@ -4200,6 +4276,7 @@ function paintGround(
   ctx.globalAlpha = night ? 0.92 : 0.88;
   ctx.fillRect(0, 0, w, h);
   ctx.globalAlpha = 1;
+  void twoInk;
 }
 
 export function paperForKit(kit: CollageKit, seed = 0): string {
