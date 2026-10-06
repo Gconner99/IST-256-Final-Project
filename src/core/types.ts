@@ -268,6 +268,8 @@ export interface MediaSource {
   collageFieldTrance?: number;
   /** Paper plus one or two inks. No rainbow tincture mix. */
   collageTwoInk?: boolean;
+  /** Hypnotic is the flat two-ink poster look. Classic is the previous washed, full-ink Field. */
+  collageLook?: "hypnotic" | "classic";
 }
 
 export interface Keyframe {
@@ -362,8 +364,6 @@ export interface AppUi {
   exporting: boolean;
   /** Poster hides fly-throughs; Club shows the second instrument. */
   desk: "poster" | "club";
-  /** 4:5 phone compose overlay on the preview. */
-  safeFrame: boolean;
 }
 
 export interface AppState {

@@ -36,6 +36,7 @@ import {
   clampFieldStrength,
   clampFieldTrance,
   clampFieldWarp,
+  clampCollageLook,
   clampPoleAttract,
   clampPoleCount,
   clampPoleFalloff,
@@ -241,6 +242,7 @@ export interface CollageExtras {
   fieldPattern?: string;
   fieldTrance?: number;
   twoInk?: boolean;
+  look?: string;
 }
 
 export function collageName(
@@ -348,6 +350,7 @@ export function defaultGeneratorSource(
     collageFieldPattern: collageKit ? clampFieldPattern(extras?.fieldPattern) : undefined,
     collageFieldTrance: collageKit ? clampFieldTrance(extras?.fieldTrance) : undefined,
     collageTwoInk: collageKit ? extras?.twoInk !== false : undefined,
+    collageLook: collageKit ? clampCollageLook(extras?.look) : undefined,
     width: 1280,
     height: 720,
     duration: 0,
@@ -393,6 +396,7 @@ export function createDefaultProject(): Project {
     fieldTrance: 1,
     fieldSparsity: 0.85,
     twoInk: true,
+    look: "hypnotic",
   });
   const layer = defaultLayer("COLLAGE", field.id, []);
   const project: Project = {

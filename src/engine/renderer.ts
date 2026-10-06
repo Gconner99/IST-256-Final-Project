@@ -421,6 +421,7 @@ export class Renderer {
       fieldPattern: look.collageFieldPattern,
       fieldTrance: look.collageFieldTrance,
       twoInk: look.collageTwoInk,
+      look: look.collageLook,
     });
     texImage(gl, this.heraldryTex, canvas);
     if (target) {

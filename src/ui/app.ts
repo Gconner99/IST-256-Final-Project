@@ -80,6 +80,7 @@ import {
   clampFieldStrength,
   clampFieldTrance,
   clampFieldWarp,
+  clampCollageLook,
   fieldFromTrance,
   clampPoleAttract,
   clampPoleCount,
@@ -146,7 +147,6 @@ export function mount(root: HTMLElement, renderer: Renderer) {
       <section class="stage">
         <div class="viewport" id="view">
           <div class="hud" id="hud"></div>
-          <div class="safe-frame" id="safe-frame"><div class="box" id="safe-frame-box"></div></div>
           <div class="dropveil" id="veil">DROP IMAGE / VIDEO / MP3</div>
         </div>
       </section>
@@ -156,7 +156,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
     <div class="help" id="help">
       <div class="card">
         <h3>PHOSPHENE</h3>
-        <p>A collage machine. Poster desk is the hypnotic instrument: flat paper, two inks, and Field. It opens on a packed Sailor Snake. Snake holds each silhouette, then occupancy eases; icons blink to the next stamp. Club desk brings back the fly-throughs, Matter, and music moves without deleting them. Field locks one stamp pattern and loops it seamlessly — Sunflower, Orbit, Traffic, Cascade, Checker, Scan, or Snake (sheet with a hole, a C, a sticker frame, giants, then a glyph). Trance ties Tempo, Breathe, and Pack. Size Contrast is the other axis. Rand field only rolls trance-safe settings. The 4:5 overlay is a phone compose guide. Music punches glow, not the path.</p>
+        <p>A collage machine. <strong>Hypnotic</strong> is the flat two-ink poster look: Snake holds each silhouette, then occupancy eases; icons blink. <strong>Classic</strong> is the previous washed, full-ink Field — more glyphs, drifting ground, and Snake’s older 7-look crossfade. Poster desk hides fly-throughs; Club shows them. Field locks one stamp pattern and loops it seamlessly. Trance ties Tempo, Breathe, and Pack. Music punches glow, not the path.</p>
         <ul>
           <li><kbd>Space</kbd> play / pause</li>
           <li><kbd>R</kbd> randomize selected &nbsp; <kbd>Shift+R</kbd> new look &nbsp; <kbd>Shift+W</kbd> wackier look</li>
@@ -165,8 +165,8 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><kbd>?</kbd> this card</li>
           <li>Drop an MP3 the same way as a picture — it becomes the soundtrack, not the picture.</li>
           <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Check <em>effects</em> (top bar, or under Effects on the right) if you also want a short stack from the right panel. Uncheck it for a clean collage. Wacky rolls a thicker stack when effects are on. No dancer. Rolls stay small and slower. When the rolled move is Field, the Field sliders roll too.</li>
-          <li><strong>Poster / Club</strong> — Poster hides the second instrument (fly-throughs, Matter, music). Club shows everything. <strong>4:5</strong> draws a phone safe-area on the preview.</li>
-          <li><strong>Rand field</strong> picks a new looping pattern and rerolls trance-safe sliders (slow Tempo, high Pack, low Shuffle, committed hero size). Kit, mash, wash, size, and pace stay. Switches the clip to Field if it is on another move. On Poster, Rand all stays on Field.</li>
+          <li><strong>Hypnotic / Classic</strong> — Hypnotic is the flat two-ink poster Field. Classic restores the previous washed, full-ink look and Snake’s older motion. <strong>Poster / Club</strong> hides or shows fly-throughs, Matter, and music.</li>
+          <li><strong>Rand field</strong> picks a new looping pattern and rerolls sliders for the active look. Kit, mash, wash, size, and pace stay. Switches the clip to Field if it is on another move. On Poster, Rand all stays on Field.</li>
           <li><strong>Cut edit</strong> is the other randomizer. Drop an MP3 first. It finds the first downbeat (the kick, not the snare) and cuts on that metronome — bars and half-bars, not stray 8th notes. Snap / step / spot flip on the same frames as the drums. Some shots hold a bar or two. Some are two-beat fills that land back on 1.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
           <li><strong>Kits</strong> — Sailor, Circus, Fruit, Grove, Love, Space, Sweet, Music, Kitchen, Sky, Street, Arcade, Haunt, Sport, School. Each pack is its own stamp set — switching a kit replaces every icon. Move buttons keep the current kit.</li>
@@ -242,9 +242,11 @@ function bind(root: HTMLElement) {
       const desk = t.dataset.desk === "club" ? "club" : "poster";
       store.patchUi({ desk, status: desk === "poster" ? "desk · poster" : "desk · club" });
     }
-    if (act === "safe-frame") {
-      const on = !store.state.ui.safeFrame;
-      store.patchUi({ safeFrame: on, status: on ? "4:5 guide on" : "4:5 guide off" });
+    if (act === "look") {
+      const next = clampCollageLook(t.dataset.look);
+      if (!patchCollage((s) => ({ ...s, collageLook: next, collageTwoInk: next !== "classic" }), `look · ${next}`)) {
+        store.patchUi({ status: `look · ${next}` });
+      }
     }
     if (act === "two-ink") {
       const current = selectedCollageSource();
@@ -689,8 +691,6 @@ function paint(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>('[data-act="cut-edit"]').forEach((el) => {
     el.classList.toggle("acid", !!p.cutEdit?.enabled);
   });
-  layoutSafeFrame(root);
-
   paintRail(root.querySelector("#rail")!);
   paintStack(root.querySelector("#stack")!);
   paintTransport(root.querySelector("#transport")!);
@@ -761,11 +761,15 @@ function paintRail(n: HTMLElement) {
       <button class="btn tiny ${collage?.collageNight ? "acid" : ""}" data-act="night">Night</button>
       <button class="btn tiny ${collage?.collageTwoInk !== false ? "acid" : ""}" data-act="two-ink" title="Paper plus one or two inks.">Two ink</button>
     </div>
+    <div class="sec">Look</div>
+    <div class="row">
+      <button class="btn tiny ${clampCollageLook(collage?.collageLook) !== "classic" ? "acid" : ""}" data-act="look" data-look="hypnotic" title="Flat paper, two inks, held Snake looks.">Hypnotic</button>
+      <button class="btn tiny ${clampCollageLook(collage?.collageLook) === "classic" ? "acid" : ""}" data-act="look" data-look="classic" title="Washes, full inks, the previous Snake motion.">Classic</button>
+    </div>
     <div class="sec">Desk</div>
     <div class="row">
-      <button class="btn tiny ${ui.desk !== "club" ? "acid" : ""}" data-act="desk" data-desk="poster" title="Hypnotic Field instrument. Hides fly-throughs.">Poster</button>
+      <button class="btn tiny ${ui.desk !== "club" ? "acid" : ""}" data-act="desk" data-desk="poster" title="Hides fly-throughs, Matter, and music.">Poster</button>
       <button class="btn tiny ${ui.desk === "club" ? "acid" : ""}" data-act="desk" data-desk="club" title="Show fly-throughs, Matter, and music moves.">Club</button>
-      <button class="btn tiny ${ui.safeFrame ? "acid" : ""}" data-act="safe-frame" title="4:5 phone compose guide">4:5</button>
     </div>
     <div class="sec">Stamp</div>
     <div class="param"><span>Size</span>
@@ -952,7 +956,7 @@ function paintRail(n: HTMLElement) {
     <div class="status" style="margin-top:4px">${
       club
         ? "Club desk. Fly-throughs, Matter, and music are here. Field still loops one pattern. Music punches glow, not the path."
-        : "Poster desk. Flat paper, two inks, Field on loop. Trance ties Tempo + Breathe + Pack. Size Contrast is the other axis. Switch to Club for fly-throughs."
+        : "Poster desk. Hypnotic is the flat two-ink Field. Classic is the previous washed look. Switch to Club for fly-throughs."
     }</div>
     <div style="margin-top:8px">
       ${p.sources.map((s) => {
@@ -1209,26 +1213,6 @@ function selectedCollageSource(): MediaSource | undefined {
   return p.sources.find((s) => isHeraldry(s.generator));
 }
 
-function layoutSafeFrame(root: HTMLElement) {
-  const frame = root.querySelector<HTMLElement>("#safe-frame");
-  const box = root.querySelector<HTMLElement>("#safe-frame-box");
-  const view = root.querySelector<HTMLElement>("#view");
-  if (!frame || !box || !view) return;
-  const on = store.state.ui.safeFrame;
-  frame.classList.toggle("on", on);
-  if (!on) return;
-  const r = view.getBoundingClientRect();
-  const target = 4 / 5;
-  let w = r.width;
-  let h = r.height;
-  if (w / Math.max(h, 1) > target) w = h * target;
-  else h = w / target;
-  box.style.width = `${Math.max(8, w)}px`;
-  box.style.height = `${Math.max(8, h)}px`;
-  box.style.left = `${(r.width - w) / 2}px`;
-  box.style.top = `${(r.height - h) / 2}px`;
-}
-
 function extrasFrom(src?: MediaSource, keepWash = true) {
   if (!src) return undefined;
   return {
@@ -1284,6 +1268,7 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     fieldPattern: src.collageFieldPattern,
     fieldTrance: src.collageFieldTrance,
     twoInk: src.collageTwoInk,
+    look: src.collageLook,
     wash: keepWash ? src.colorA : undefined,
   };
 }
@@ -1327,8 +1312,6 @@ export function resizeCanvas(canvas: HTMLCanvasElement, host: HTMLElement) {
     canvas.width = w;
     canvas.height = h;
   }
-  const shell = canvas.closest(".shell") as HTMLElement | null;
-  if (shell) layoutSafeFrame(shell);
 }
 
 export function tickHud(root: HTMLElement, fps: number, time: number) {

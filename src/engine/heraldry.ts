@@ -2,6 +2,7 @@ import { clamp, mulberry32 } from "../core/random";
 import type { GeneratorType } from "../core/types";
 import {
   agentParamsFrom,
+  clampCollageLook,
   PatternField,
   isFieldMove,
   type AgentPose,
@@ -34,6 +35,7 @@ export {
   clampFieldWarp,
   clampFieldPattern,
   clampFieldTrance,
+  clampCollageLook,
   fieldFromTrance,
   FIELD_PATTERNS,
   FIELD_PATTERN_LABEL,
@@ -803,6 +805,7 @@ export interface HeraldryPaintOpts {
   fieldPattern?: string;
   fieldTrance?: number;
   twoInk?: boolean;
+  look?: string;
 }
 
 const STAMP = 256;
@@ -3245,7 +3248,8 @@ export class HeraldryField {
     const kitB = opts.kitB ? kitFromUnknown(opts.kitB) : null;
     const paper = hexOk(opts.paper, paperForKit(kit, opts.seed));
     const ink = hexOk(opts.ink, KIT_INK[kit]);
-    const twoInk = opts.twoInk !== false;
+    const classic = clampCollageLook(opts.look) === "classic";
+    const twoInk = classic ? opts.twoInk === true : opts.twoInk !== false;
     this.ensure(opts.seed >>> 0, ink, kit, kitB, twoInk, paper);
 
     const scene = sceneFromGenerator(opts.generator, opts.move);
@@ -3262,7 +3266,7 @@ export class HeraldryField {
       vary: clampCollageChainVary(opts.chainVary),
       smooth: clampCollageChainSmooth(opts.chainSmooth),
     };
-    paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, beat, bass, !!opts.night, ink, twoInk);
+    paintGround(ctx, w, h, paper, kit, opts.time, opts.seed, beat, bass, !!opts.night, ink, twoInk, classic);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     const beatOffset = opts.beatOffset ?? 0;
@@ -3327,6 +3331,7 @@ export class HeraldryField {
         contrast: opts.fieldContrast,
         motion: opts.fieldMotion,
         trance: opts.fieldTrance,
+        classic,
       });
       this.agents = this.agents ?? new PatternField();
       this.fieldPoses = this.agents.posesAt(count, clock, opts.seed >>> 0, aspect, params, bpm, beatOffset, opts.fieldPattern ?? "auto");
@@ -4220,31 +4225,58 @@ function paintGround(
   night = false,
   ink = KIT_INK[kit],
   twoInk = true,
+  classic = false,
 ) {
-  void time;
-  void seed;
-  void kit;
   const ground = night ? mixHex(paper, "#08060a", 0.68) : paper;
   ctx.fillStyle = ground;
   ctx.fillRect(0, 0, w, h);
-  if (night) {
-    const neon = mixHex(ink, "#ffd8a8", 0.22);
-    const lin = ctx.createLinearGradient(0, 0, 0, h);
-    lin.addColorStop(0, mixHex(ground, neon, 0.1 + bass * 0.22 + beat * 0.04));
-    lin.addColorStop(1, ground);
-    ctx.fillStyle = lin;
-    ctx.globalAlpha = 0.88;
-    ctx.fillRect(0, 0, w, h);
-    ctx.globalAlpha = 1;
+  if (!classic) {
+    if (night) {
+      const neon = mixHex(ink, "#ffd8a8", 0.22);
+      const lin = ctx.createLinearGradient(0, 0, 0, h);
+      lin.addColorStop(0, mixHex(ground, neon, 0.1 + bass * 0.22 + beat * 0.04));
+      lin.addColorStop(1, ground);
+      ctx.fillStyle = lin;
+      ctx.globalAlpha = 0.88;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 1;
+    }
     return;
   }
-  if (!twoInk) {
-    const wash = mixHex(paper, ink, 0.08);
-    ctx.fillStyle = wash;
-    ctx.globalAlpha = 0.35;
-    ctx.fillRect(0, 0, w, h);
-    ctx.globalAlpha = 1;
+  const rng = mulberry32((seed + 4) >>> 0);
+  const wash = pick(rng, KIT_GROUNDS[kit]);
+  const wash2 = pick(rng, KIT_GROUNDS[kit]);
+  const wash3 = pick(rng, KIT_GROUNDS[kit]);
+  const lin = ctx.createLinearGradient(0, 0, w, h);
+  if (night) {
+    const neon = mixHex(ink, "#ffd8a8", 0.3);
+    const breathe = 0.16 + bass * 0.4 + beat * 0.06;
+    lin.addColorStop(0, mixHex(ground, neon, breathe * 0.55));
+    lin.addColorStop(0.48, mixHex(ground, wash, 0.2));
+    lin.addColorStop(1, mixHex(ground, wash2, 0.24));
+  } else {
+    lin.addColorStop(0, mixHex(paper, wash, 0.38));
+    lin.addColorStop(0.45, mixHex(paper, wash3, 0.28));
+    lin.addColorStop(1, mixHex(paper, wash2, 0.42));
   }
+  ctx.fillStyle = lin;
+  ctx.fillRect(0, 0, w, h);
+  const cx = w * (0.5 + Math.sin(time * 0.17) * 0.08);
+  const cy = h * (0.46 + Math.cos(time * 0.13) * 0.06);
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.72);
+  if (night) {
+    const neon = mixHex(ink, "#ffd8a8", 0.28);
+    g.addColorStop(0, mixHex(ground, neon, 0.22 + bass * 0.38 + beat * 0.05));
+    g.addColorStop(1, ground);
+  } else {
+    g.addColorStop(0, mixHex(paper, wash, 0.42 + beat * 0.1));
+    g.addColorStop(1, paper);
+  }
+  ctx.fillStyle = g;
+  ctx.globalAlpha = night ? 0.92 : 0.88;
+  ctx.fillRect(0, 0, w, h);
+  ctx.globalAlpha = 1;
+  void twoInk;
 }
 
 export function paperForKit(kit: CollageKit, seed = 0): string {

@@ -77,6 +77,12 @@ export function clampFieldTrance(value?: number | null): number {
   return clamp(value ?? 1, 0, 2);
 }
 
+export type CollageLook = "hypnotic" | "classic";
+
+export function clampCollageLook(value?: string | null): CollageLook {
+  return value === "classic" ? "classic" : "hypnotic";
+}
+
 /** Map Trance onto the three sliders it owns. Size Contrast stays independent. */
 export function fieldFromTrance(trance?: number | null): {
   collageFieldTrance: number;
@@ -114,6 +120,7 @@ export interface AgentParams {
   contrast: number;
   motion: number;
   trance: number;
+  classic: boolean;
 }
 
 export function agentParamsFrom(raw?: Partial<AgentParams> | null): AgentParams {
@@ -139,6 +146,7 @@ export function agentParamsFrom(raw?: Partial<AgentParams> | null): AgentParams 
     contrast: clampFieldContrast(raw?.contrast),
     motion: clampFieldMotion(raw?.motion),
     trance: clampFieldTrance(raw?.trance),
+    classic: !!raw?.classic,
   };
 }
 
@@ -468,6 +476,10 @@ function sdBox(x: number, y: number, cx: number, cy: number, hx: number, hy: num
   return Math.min(Math.max(dx, dy), 0) + Math.hypot(Math.max(dx, 0), Math.max(dy, 0));
 }
 
+function sdCircle(x: number, y: number, cx: number, cy: number, r: number): number {
+  return Math.hypot(x - cx, y - cy) - r;
+}
+
 function sdCapsule(x: number, y: number, ax: number, ay: number, bx: number, by: number, r: number): number {
   const px = x - ax;
   const py = y - ay;
@@ -586,10 +598,12 @@ function pickStick(pts: { x: number; y: number }[], occ: (x: number, y: number) 
   return chosen;
 }
 
-/** Held looks in Snake. Fewer than the old 7-look smear. */
+/** Held looks in Snake. Classic keeps the older 7-look smear. */
 export const SNAKE_LOOKS = 5;
+export const SNAKE_LOOKS_CLASSIC = 7;
 /** Fraction of each look that stays put before the occupancy morph. */
 export const SNAKE_HOLD = 0.7;
+export const SNAKE_HOLD_CLASSIC = 0.32;
 
 /**
  * Heraldic silhouettes: packed sheet with a bigger crawling hole,
@@ -608,7 +622,7 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
     occ, hole: 0, mode: "stick", nStick: sites.length, stickR: 0, crawl, giants: sites,
   });
 
-  const sheet = pack((x, y) => occFrom(sdBox(x, y, 0, 0, hw, hy), 0.045), 0.4 + rng() * 0.08);
+  const sheet = pack((x, y) => occFrom(sdBox(x, y, 0, 0, hw, hy), 0.045), p.classic ? 0.2 + rng() * 0.06 : 0.4 + rng() * 0.08);
 
   const holeY = (rng() - 0.45) * hy * 0.28;
   const cee = pack((x, y) => {
@@ -682,7 +696,45 @@ function snakeSils(seed: number, hh: number, p: AgentParams): SnakeSil[] {
   }
   const glyph = pack((x, y) => occFrom(sdPoly(x, y, glyphPts, thick * 1.2), 0.04));
 
-  return [sheet, cee, frame, giantSil, glyph];
+  if (!p.classic) return [sheet, cee, frame, giantSil, glyph];
+
+  const blobSites: GiantSite[] = [];
+  const Bn = 30;
+  for (let k = 0; k < Bn; k++) {
+    const q = (k + 0.5) / Bn;
+    const rad = 0.24 * Math.sqrt(q);
+    const a = k * GOLDEN + rng() * 0.2;
+    blobSites.push({
+      x: Math.cos(a) * rad * hw * 1.7,
+      y: Math.sin(a) * rad * hy * 1.7,
+      r: 0.078 + rng() * 0.025,
+    });
+  }
+  const scatter = flock(blobSites, 0.14, (x, y) => occFrom(sdCircle(x, y, 0, 0, 0.28), 0.05));
+
+  const cx = (rng() - 0.5) * hw * 0.16;
+  const cy = (rng() - 0.4) * hy * 0.1;
+  const bodyRad = (0.2 + rng() * 0.05) * Math.max(hw, hy) / 0.42;
+  const limbs: number[][] = [];
+  const nLimb = 6 + Math.floor(rng() * 3);
+  for (let k = 0; k < nLimb; k++) {
+    const a = (k / nLimb) * TAU + rng() * 0.35;
+    const reach = bodyRad + 0.16 + rng() * 0.14;
+    limbs.push([
+      cx + Math.cos(a) * bodyRad * 0.35,
+      cy + Math.sin(a) * bodyRad * 0.35,
+      cx + Math.cos(a) * reach,
+      cy + Math.sin(a) * reach,
+      0.05 + rng() * 0.03,
+    ]);
+  }
+  const creature = pack((x, y) => {
+    let d = sdCircle(x, y, cx, cy, bodyRad);
+    for (const L of limbs) d = Math.min(d, sdCapsule(x, y, L[0], L[1], L[2], L[3], L[4]));
+    return occFrom(d, 0.035);
+  });
+
+  return [sheet, cee, frame, scatter, creature, giantSil, glyph];
 }
 
 /**
@@ -698,7 +750,8 @@ function snake(c: LoopCtx, emit: Emit) {
   const t = u * K;
   const seg = Math.min(K - 1, Math.floor(t));
   const frac = t - seg;
-  const m = smoother(clamp((frac - SNAKE_HOLD) / (1 - SNAKE_HOLD), 0, 1));
+  const hold = p.classic ? SNAKE_HOLD_CLASSIC : SNAKE_HOLD;
+  const m = smoother(clamp((frac - hold) / (1 - hold), 0, 1));
   const A = sils[seg];
   const B = sils[(seg + 1) % K];
   const pts = snakeLattice(n, hh, seed);
@@ -743,7 +796,7 @@ function snake(c: LoopCtx, emit: Emit) {
     if (occ < 0.32 && !isStick && !ga && !gb) d = 0;
     const phase = rate * u + hash01(i * 3.1) * (0.35 + p.perturb * 2.2);
     const pf = phase - Math.floor(phase);
-    const morph = pf > 0.92 ? 1 : 0;
+    const morph = p.classic ? smoother(clamp((pf - 0.78) / 0.16, 0, 1)) : pf > 0.92 ? 1 : 0;
     const chargeA = Math.floor(phase) * 13 + i;
     const hero = ga || gb || isStick;
     const sized = d * (hero ? Math.max(0.9, sizeMul(i, p)) : sizeMul(i, p));
@@ -778,7 +831,7 @@ export class PatternField {
     for (const pose of this.poses) pose.alpha = 0;
     const toPx = Math.max(1, asp);
     const toY = asp * asp;
-    const breath = packBreath(u, params);
+    const breath = params.classic ? 1 : packBreath(u, params);
     const emit: Emit = (i, x, y, d, rot, charge, flip = 1, chargeB, morph = 0) => {
       const pose = this.poses[i];
       if (!pose) return;

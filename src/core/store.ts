@@ -21,7 +21,6 @@ function defaultUi(project: Project): AppUi {
     includeEffects: true,
     exporting: false,
     desk: "poster",
-    safeFrame: true,
   };
 }
 

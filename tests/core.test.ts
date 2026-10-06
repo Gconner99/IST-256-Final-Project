@@ -9,7 +9,7 @@ import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../s
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
 import { buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
-import { agentParamsFrom, FIELD_PATTERNS, fieldFromTrance, fieldLoop, PatternField, resolveFieldPattern, SNAKE_LOOKS } from "../src/engine/agentField";
+import { agentParamsFrom, clampCollageLook, FIELD_PATTERNS, fieldFromTrance, fieldLoop, PatternField, resolveFieldPattern, SNAKE_LOOKS, SNAKE_LOOKS_CLASSIC } from "../src/engine/agentField";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -764,6 +764,12 @@ describe("randomize + presets", () => {
     const tied = fieldFromTrance(1);
     expect(tied.collageFieldEvolve).toBeCloseTo(0.725, 3);
     expect(tied.collageFieldDensity).toBeCloseTo(1.5, 3);
+    expect(clampCollageLook("classic")).toBe("classic");
+    expect(clampCollageLook("hypnotic")).toBe("hypnotic");
+    const classic = rollFieldParams(mulberry32(12), "classic");
+    expect(classic.collageTwoInk).toBe(false);
+    expect(classic.collageFieldPerturb).toBeGreaterThan(0);
+    expect(classic.collageFieldEvolve).toBeGreaterThan(0.7);
   });
 
   it("rand all rolls Field sliders when the move is field", () => {
@@ -1367,6 +1373,7 @@ describe("heraldry collage", () => {
     expect(p.sources[0].collageKit).toBe("sailor");
     expect(p.sources[0].collageMove).toBe("field");
     expect(p.sources[0].collageFieldPattern).toBe("snake");
+    expect(p.sources[0].collageLook).toBe("hypnotic");
     expect(p.sources[0].collageTwoInk).toBe(true);
     expect(p.sources[0].colorA).toMatch(/^#[0-9a-f]{6}$/i);
     expect(p.sources[0].colorA).not.toBe("#ffffff");
@@ -1513,6 +1520,22 @@ describe("pattern field", () => {
     expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(0.55);
     expect(glyph.length).toBeGreaterThan(40);
     expect(Math.max(...ys) - Math.min(...ys) > 0.12 || Math.max(...xs) - Math.min(...xs) > 0.7).toBe(true);
+  });
+
+  it("classic snake keeps the older 7-look crossfade", () => {
+    const params = agentParamsFrom({ warp: 1.2, classic: true });
+    const field = new PatternField();
+    const a = field.posesAt(240, 0.4, 3, aspect, params, 0, 0, "snake").map((p) => ({ ...p }));
+    expect(a.some((p) => (p.morph ?? 0) > 0.05 && (p.morph ?? 0) < 0.95)).toBe(true);
+    const vis = (poses: { alpha: number; px: number; x: number; y: number }[]) => poses.filter((p) => p.alpha > 0.5 && p.px > 0.02);
+    const period = fieldLoop(params);
+    const K = SNAKE_LOOKS_CLASSIC;
+    const at = (idx: number) => vis(field.posesAt(300, period * ((idx + 0.12) / K), 3, aspect, params, 0, 0, "snake"));
+    const giants = at(5);
+    expect(giants.length).toBeGreaterThan(6);
+    expect(giants.length).toBeLessThan(40);
+    const glyph = at(6);
+    expect(glyph.length).toBeGreaterThan(40);
   });
 
   it("is a pure function of time so scrubbing back matches", () => {
