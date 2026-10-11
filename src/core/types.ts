@@ -270,6 +270,12 @@ export interface MediaSource {
   collageFieldHold?: number;
   /** 0 eases icons; 1 blinks them. */
   collageFieldBlink?: number;
+  /** How far occupancy lattices DVD-bounce. */
+  collageFieldCrawl?: number;
+  /** Occupancy thickness. */
+  collageFieldWeight?: number;
+  /** Flip occupancy figure and ground. */
+  collageFieldInvert?: boolean;
   /** Sheet is a packed wallpaper. Giants is a few huge stickers. */
   collageFieldCast?: "sheet" | "giants";
   /** Lock the kit to three glyphs. */

@@ -91,6 +91,14 @@ export function clampFieldHold(value?: number | null): number {
 export function clampFieldBlink(value?: number | null): number {
   return clamp(value ?? 1, 0, 1);
 }
+/** How far occupancy lattices DVD-bounce. 0 is locked. */
+export function clampFieldCrawl(value?: number | null): number {
+  return clamp(value ?? 0.5, 0, 1);
+}
+/** Occupancy thickness. 1 is the current silhouette. */
+export function clampFieldWeight(value?: number | null): number {
+  return clamp(value ?? 1, 0, 2);
+}
 
 export type FieldCast = "sheet" | "giants";
 
@@ -161,6 +169,9 @@ export interface AgentParams {
   classic: boolean;
   hold: number;
   blink: number;
+  crawl: number;
+  weight: number;
+  invert: boolean;
   cast: FieldCast;
 }
 
@@ -190,6 +201,9 @@ export function agentParamsFrom(raw?: Partial<AgentParams> | null): AgentParams 
     classic: !!raw?.classic,
     hold: clampFieldHold(raw?.hold),
     blink: clampFieldBlink(raw?.blink),
+    crawl: clampFieldCrawl(raw?.crawl),
+    weight: clampFieldWeight(raw?.weight),
+    invert: !!raw?.invert,
     cast: clampFieldCast(raw?.cast),
   };
 }
@@ -226,6 +240,10 @@ export const FIELD_PATTERNS = [
   "snake",
   "stripe",
   "arch",
+  "cross",
+  "ring",
+  "diamond",
+  "steps",
 ] as const;
 export type FieldPattern = (typeof FIELD_PATTERNS)[number];
 export type FieldPatternChoice = FieldPattern | "auto";
@@ -241,7 +259,17 @@ export const FIELD_PATTERN_LABEL: Record<FieldPatternChoice, string> = {
   snake: "Snake",
   stripe: "Stripe",
   arch: "Arch",
+  cross: "Cross",
+  ring: "Ring",
+  diamond: "Diamond",
+  steps: "Steps",
 };
+
+export const OCCUPANCY_PATTERNS = ["snake", "stripe", "arch", "cross", "ring", "diamond", "steps"] as const;
+
+export function isOccupancyPattern(value?: string | null): boolean {
+  return (OCCUPANCY_PATTERNS as readonly string[]).includes(value ?? "");
+}
 
 export function clampFieldPattern(value?: string | null): FieldPatternChoice {
   return (FIELD_PATTERNS as readonly string[]).includes(value ?? "") ? (value as FieldPattern) : "auto";
@@ -312,6 +340,33 @@ function occupancyMorph(pf: number, p: AgentParams): number {
   const snap = pf > 0.92 ? 1 : 0;
   const ease = smoother(clamp((pf - 0.78) / 0.16, 0, 1));
   return snap * p.blink + ease * (1 - p.blink);
+}
+
+/** Weight 1 is identity. Invert flips figure and ground. */
+function occupancyShape(raw: number, p: AgentParams): number {
+  const gain = 0.7 + p.weight * 0.3;
+  const bias = (p.weight - 1) * 0.14;
+  let occ = clamp(0.5 + (raw - 0.5) * gain + bias, 0, 1);
+  if (p.invert) occ = 1 - occ;
+  return occ;
+}
+
+function sdDiamond(x: number, y: number, cx: number, cy: number, rx: number, ry: number): number {
+  const dx = Math.abs(x - cx) / Math.max(1e-6, rx);
+  const dy = Math.abs(y - cy) / Math.max(1e-6, ry);
+  return (dx + dy - 1) * Math.min(rx, ry);
+}
+
+function sdRing(x: number, y: number, cx: number, cy: number, r: number, thick: number): number {
+  return Math.abs(Math.hypot(x - cx, y - cy) - r) - thick;
+}
+
+function sdBoxRot(x: number, y: number, cx: number, cy: number, hx: number, hy: number, ang: number): number {
+  const c = Math.cos(ang);
+  const s = Math.sin(ang);
+  const px = x - cx;
+  const py = y - cy;
+  return sdBox(px * c + py * s, -px * s + py * c, 0, 0, hx, hy);
 }
 
 /** Shuffle 0 keeps icons on the pattern's own repeat; higher trades in random icons. */
@@ -815,7 +870,7 @@ function occupancyLoop(c: LoopCtx, emit: Emit, sils: SnakeSil[]) {
   const A = sils[seg];
   const B = sils[(seg + 1) % K];
   const pts = snakeLattice(n, hh, seed);
-  const crawl = (0.05 + A.crawl * (1 - m) + B.crawl * m) * (0.5 + p.motion * 0.55);
+  const crawl = (0.05 + A.crawl * (1 - m) + B.crawl * m) * (0.5 + p.motion * 0.55) * (0.15 + p.crawl * 1.7);
   const crawlX = ping01(u * 2) * crawl;
   const crawlY = ping01(u * 2 + 0.33) * crawl * (hy / Math.max(1e-6, hw));
   const sample = (sil: SnakeSil, x: number, y: number) => punchHole(sil.occ(x, y), x, y, u, hw, hy, sil.hole);
@@ -835,7 +890,7 @@ function occupancyLoop(c: LoopCtx, emit: Emit, sils: SnakeSil[]) {
     const ly = pts[i].y;
     const oA = A.mode === "pack" ? sample(A, lx, ly) : 0;
     const oB = B.mode === "pack" ? sample(B, lx, ly) : 0;
-    const occ = oA * (1 - m) + oB * m;
+    const occ = occupancyShape(oA * (1 - m) + oB * m, p);
     let x = clamp(lx + crawlX, -0.5, 0.5);
     let y = clamp(ly + crawlY, -hh, hh);
     let d = packD * occ;
@@ -925,6 +980,95 @@ function arch(c: LoopCtx, emit: Emit) {
   occupancyLoop(c, emit, archSils(c.hh, c.p));
 }
 
+function silPack(occ: (x: number, y: number) => number, crawl = 0.035): SnakeSil {
+  return { occ, hole: 0, mode: "pack", nStick: 0, stickR: 0, crawl, giants: null };
+}
+
+function crossSils(hh: number, p: AgentParams): SnakeSil[] {
+  const hw = 0.47 * (0.86 + p.fieldStrength * 0.12);
+  const hy = hh * 0.93 * (0.86 + p.fieldStrength * 0.12);
+  const plus = silPack((x, y) => occFrom(Math.min(
+    sdBox(x, y, 0, 0, hw * 0.18, hy),
+    sdBox(x, y, 0, 0, hw, hy * 0.16),
+  ), 0.04));
+  const saltire = silPack((x, y) => occFrom(Math.min(
+    sdBoxRot(x, y, 0, 0, hw * 1.05, hy * 0.13, 0.7),
+    sdBoxRot(x, y, 0, 0, hw * 1.05, hy * 0.13, -0.7),
+  ), 0.04));
+  const hash = silPack((x, y) => occFrom(Math.min(
+    sdBox(x, y, 0, -hy * 0.28, hw, hy * 0.12),
+    sdBox(x, y, 0, hy * 0.28, hw, hy * 0.12),
+    sdBox(x, y, -hw * 0.28, 0, hw * 0.12, hy),
+    sdBox(x, y, hw * 0.28, 0, hw * 0.12, hy),
+  ), 0.04));
+  return [plus, saltire, hash];
+}
+
+function ringSils(hh: number, p: AgentParams): SnakeSil[] {
+  const hw = 0.47 * (0.86 + p.fieldStrength * 0.12);
+  const hy = hh * 0.93 * (0.86 + p.fieldStrength * 0.12);
+  const r = Math.min(hw, hy) * 0.82;
+  const fat = silPack((x, y) => occFrom(sdRing(x, y, 0, 0, r * 0.72, r * 0.28), 0.045), 0.03);
+  const thin = silPack((x, y) => occFrom(sdRing(x, y, 0, 0, r * 0.78, r * 0.12), 0.04), 0.04);
+  const broken = silPack((x, y) => {
+    const ring = sdRing(x, y, 0, 0, r * 0.7, r * 0.2);
+    const gap = sdBox(x, y, hw * 0.62, 0, hw * 0.42, hy * 0.28);
+    return occFrom(Math.max(ring, -gap), 0.04);
+  }, 0.03);
+  return [fat, thin, broken];
+}
+
+function diamondSils(hh: number, p: AgentParams): SnakeSil[] {
+  const hw = 0.47 * (0.86 + p.fieldStrength * 0.12);
+  const hy = hh * 0.93 * (0.86 + p.fieldStrength * 0.12);
+  const gem = silPack((x, y) => occFrom(sdDiamond(x, y, 0, 0, hw * 0.82, hy * 0.88), 0.045));
+  const hour = silPack((x, y) => occFrom(Math.min(
+    sdDiamond(x, y, 0, -hy * 0.34, hw * 0.55, hy * 0.4),
+    sdDiamond(x, y, 0, hy * 0.34, hw * 0.55, hy * 0.4),
+  ), 0.04));
+  const kite = silPack((x, y) => occFrom(sdDiamond(x, y, 0, -hy * 0.08, hw * 0.62, hy * 0.95), 0.04));
+  return [gem, hour, kite];
+}
+
+function stepsSils(hh: number, p: AgentParams): SnakeSil[] {
+  const hw = 0.47 * (0.86 + p.fieldStrength * 0.12);
+  const hy = hh * 0.93 * (0.86 + p.fieldStrength * 0.12);
+  const stair = silPack((x, y) => {
+    let d = 1e9;
+    for (let k = 0; k < 4; k++) {
+      const t = (k + 0.5) / 4;
+      d = Math.min(d, sdBox(x, y, -hw + t * 2 * hw, hy - t * 2 * hy, hw * 0.42, hy * 0.16));
+    }
+    return occFrom(d, 0.04);
+  });
+  const zigg = silPack((x, y) => occFrom(Math.min(
+    sdBox(x, y, 0, hy * 0.42, hw * 0.95, hy * 0.2),
+    sdBox(x, y, 0, 0, hw * 0.68, hy * 0.2),
+    sdBox(x, y, 0, -hy * 0.42, hw * 0.4, hy * 0.2),
+  ), 0.04));
+  const chev = silPack((x, y) => occFrom(Math.min(
+    sdCapsule(x, y, -hw * 0.72, hy * 0.55, hw * 0.08, 0, hy * 0.13),
+    sdCapsule(x, y, -hw * 0.72, -hy * 0.55, hw * 0.08, 0, hy * 0.13),
+  ), 0.04));
+  return [stair, zigg, chev];
+}
+
+function cross(c: LoopCtx, emit: Emit) {
+  occupancyLoop(c, emit, crossSils(c.hh, c.p));
+}
+
+function ring(c: LoopCtx, emit: Emit) {
+  occupancyLoop(c, emit, ringSils(c.hh, c.p));
+}
+
+function diamond(c: LoopCtx, emit: Emit) {
+  occupancyLoop(c, emit, diamondSils(c.hh, c.p));
+}
+
+function steps(c: LoopCtx, emit: Emit) {
+  occupancyLoop(c, emit, stepsSils(c.hh, c.p));
+}
+
 /** One locked pattern looping seamlessly. Poses are a pure function of the clock, so scrubbing and export stay stable. */
 export class PatternField {
   private poses: AgentPose[] = [];
@@ -976,6 +1120,10 @@ export class PatternField {
     else if (pattern === "snake") snake(ctx, emit);
     else if (pattern === "stripe") stripe(ctx, emit);
     else if (pattern === "arch") arch(ctx, emit);
+    else if (pattern === "cross") cross(ctx, emit);
+    else if (pattern === "ring") ring(ctx, emit);
+    else if (pattern === "diamond") diamond(ctx, emit);
+    else if (pattern === "steps") steps(ctx, emit);
     else sunflower(ctx, emit);
     return this.poses;
   }

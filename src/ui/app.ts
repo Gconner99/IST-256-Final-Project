@@ -82,6 +82,8 @@ import {
   clampFieldWarp,
   clampFieldHold,
   clampFieldBlink,
+  clampFieldCrawl,
+  clampFieldWeight,
   clampFieldCast,
   clampCollageLook,
   fieldFromTrance,
@@ -173,7 +175,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Check <em>effects</em> (top bar, or under Effects on the right) if you also want a short stack from the right panel. Uncheck it for a clean collage. Wacky rolls a thicker stack when effects are on. No dancer. Rolls stay small and slower. When the rolled move is Field, the Field sliders roll too.</li>
           <li><strong>Hypnotic / Classic</strong> — top bar and left rail. Hypnotic is the flat two-ink poster Field. Classic restores the previous washed, full-ink look and Snake’s older motion. <strong>Poster / Club</strong> hides or shows fly-throughs, Matter, and music.</li>
           <li><strong>Ink flip</strong> swaps paper and ink. <strong>Trio</strong> locks the kit to three glyphs. <strong>Sheet / Giants</strong> writes stamp size: a packed wallpaper or a few huge stickers.</li>
-          <li><strong>Snake / Stripe / Arch</strong> are occupancy loops — looks hold, then ease. <strong>Hold</strong> is how long each look stays. <strong>Blink</strong> snaps icons; lower it to ease them.</li>
+          <li><strong>Snake / Stripe / Arch / Cross / Ring / Diamond / Steps</strong> are occupancy loops — looks hold, then ease. <strong>Hold</strong> is how long each look stays. <strong>Blink</strong> snaps icons. <strong>Crawl</strong> is the DVD bounce. <strong>Weight</strong> fattens the silhouette. <strong>Invert</strong> flips figure and ground.</li>
           <li><strong>Rand field</strong> picks a new looping pattern and rerolls sliders for the active look. Kit, mash, wash, size, and pace stay. Switches the clip to Field if it is on another move. On Poster, Rand all stays on Field.</li>
           <li><strong>Cut edit</strong> is the other randomizer. Drop an MP3 first. It finds the first downbeat (the kick, not the snare) and cuts on that metronome — bars and half-bars, not stray 8th notes. Snap / step / spot flip on the same frames as the drums. Some shots hold a bar or two. Some are two-beat fills that land back on 1.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
@@ -273,6 +275,13 @@ function bind(root: HTMLElement) {
       const next = !current?.collageTrio;
       if (!patchCollage((s) => ({ ...s, collageTrio: next }), next ? "trio" : "full kit")) {
         store.patchUi({ status: "trio" });
+      }
+    }
+    if (act === "field-invert") {
+      const current = selectedCollageSource();
+      const next = !current?.collageFieldInvert;
+      if (!patchCollage((s) => ({ ...s, collageFieldInvert: next }), next ? "invert" : "occupy")) {
+        store.patchUi({ status: "invert" });
       }
     }
     if (act === "field-cast") {
@@ -615,6 +624,8 @@ function bind(root: HTMLElement) {
     if (t.id === "collage-field-trance") patchCollage((s) => ({ ...s, ...fieldFromTrance(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-hold") patchCollage((s) => ({ ...s, collageFieldHold: clampFieldHold(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-blink") patchCollage((s) => ({ ...s, collageFieldBlink: clampFieldBlink(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-field-crawl") patchCollage((s) => ({ ...s, collageFieldCrawl: clampFieldCrawl(Number(t.value)) }), undefined, true);
+    if (t.id === "collage-field-weight") patchCollage((s) => ({ ...s, collageFieldWeight: clampFieldWeight(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-evolve") patchCollage((s) => ({ ...s, collageFieldEvolve: clampFieldEvolve(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-density") patchCollage((s) => ({ ...s, collageFieldDensity: clampFieldDensity(Number(t.value)) }), undefined, true);
     if (t.id === "collage-field-density-scale") patchCollage((s) => ({ ...s, collageFieldDensityScale: clampFieldDensityScale(Number(t.value)) }), undefined, true);
@@ -885,7 +896,13 @@ function paintRail(n: HTMLElement) {
       collage?.collageMove === "field"
         ? `<div class="sec">Pattern</div>
     <div class="row">
-      ${(["auto", "sunflower", "orbit", "traffic", "cascade", "checker", "scan", "snake", "stripe", "arch"] as const).map((id) => {
+      ${(["auto", "sunflower", "orbit", "traffic", "cascade", "checker", "scan"] as const).map((id) => {
+        const on = clampFieldPattern(collage.collageFieldPattern) === id;
+        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="field-pattern" data-pattern="${id}">${FIELD_PATTERN_LABEL[id]}</button>`;
+      }).join("")}
+    </div>
+    <div class="row">
+      ${(["snake", "stripe", "arch", "cross", "ring", "diamond", "steps"] as const).map((id) => {
         const on = clampFieldPattern(collage.collageFieldPattern) === id;
         return `<button class="btn tiny ${on ? "acid" : ""}" data-act="field-pattern" data-pattern="${id}">${FIELD_PATTERN_LABEL[id]}</button>`;
       }).join("")}
@@ -893,10 +910,13 @@ function paintRail(n: HTMLElement) {
     <div class="row">
       <button class="btn tiny ${collage.collageFieldCast === "sheet" ? "acid" : ""}" data-act="field-cast" data-cast="sheet" title="Packed wallpaper sizes.">Sheet</button>
       <button class="btn tiny ${collage.collageFieldCast === "giants" ? "acid" : ""}" data-act="field-cast" data-cast="giants" title="A few huge stickers.">Giants</button>
+      <button class="btn tiny ${collage.collageFieldInvert ? "acid" : ""}" data-act="field-invert" title="Stamps fill the hole instead of the silhouette.">Invert</button>
     </div>
     ${num("collage-field-trance", "Trance", clampFieldTrance(collage.collageFieldTrance), 0, 2, 0.05)}
     ${num("collage-field-hold", "Hold", clampFieldHold(collage.collageFieldHold), 0.2, 0.9, 0.02)}
     ${num("collage-field-blink", "Blink", clampFieldBlink(collage.collageFieldBlink), 0, 1, 0.05)}
+    ${num("collage-field-crawl", "Crawl", clampFieldCrawl(collage.collageFieldCrawl), 0, 1, 0.05)}
+    ${num("collage-field-weight", "Weight", clampFieldWeight(collage.collageFieldWeight), 0, 2, 0.05)}
     ${num("collage-field-evolve", "Tempo", clampFieldEvolve(collage.collageFieldEvolve), 0.08, 2.2, 0.05)}
     ${num("collage-field-strength", "Spread", clampFieldStrength(collage.collageFieldStrength), 0.2, 2.2, 0.05)}
     ${num("collage-field-density", "Pack", clampFieldDensity(collage.collageFieldDensity), 0, 2.2, 0.05)}
@@ -1309,6 +1329,9 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     fieldTrance: src.collageFieldTrance,
     fieldHold: src.collageFieldHold,
     fieldBlink: src.collageFieldBlink,
+    fieldCrawl: src.collageFieldCrawl,
+    fieldWeight: src.collageFieldWeight,
+    fieldInvert: src.collageFieldInvert,
     fieldCast: src.collageFieldCast,
     trio: src.collageTrio,
     twoInk: src.collageTwoInk,

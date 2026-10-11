@@ -9,7 +9,7 @@ import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../s
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
 import { buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, trioKinds, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
-import { agentParamsFrom, clampCollageLook, clampFieldCast, FIELD_PATTERNS, fieldFromCast, fieldFromTrance, fieldLoop, PatternField, resolveFieldPattern, SNAKE_LOOKS, SNAKE_LOOKS_CLASSIC } from "../src/engine/agentField";
+import { agentParamsFrom, clampCollageLook, clampFieldCast, FIELD_PATTERNS, fieldFromCast, fieldFromTrance, fieldLoop, isOccupancyPattern, PatternField, resolveFieldPattern, SNAKE_LOOKS, SNAKE_LOOKS_CLASSIC } from "../src/engine/agentField";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -1476,7 +1476,7 @@ describe("pattern field", () => {
       }
       expect(jump).toBeLessThan(0.06);
       expect(moved / 300).toBeGreaterThan(0.08);
-      expect(visible).toBeGreaterThan(pattern === "snake" || pattern === "stripe" || pattern === "arch" ? 6 : 120);
+      expect(visible).toBeGreaterThan(isOccupancyPattern(pattern) ? 6 : 120);
     });
   }
 
@@ -1545,12 +1545,12 @@ describe("pattern field", () => {
     expect(mid).toBe(true);
   });
 
-  it("stripe and arch stay occupancy loops", () => {
+  it("stripe, arch, cross, ring, diamond, and steps stay occupancy loops", () => {
     const params = agentParamsFrom({ warp: 1.1, hold: 0.7, blink: 1 });
     const field = new PatternField();
     const period = fieldLoop(params);
     const vis = (poses: { alpha: number; px: number }[]) => poses.filter((p) => p.alpha > 0.5 && p.px > 0.02);
-    for (const pattern of ["stripe", "arch"] as const) {
+    for (const pattern of ["stripe", "arch", "cross", "ring", "diamond", "steps"] as const) {
       const a = field.posesAt(240, 0.3, 11, aspect, params, 0, 0, pattern).map((p) => ({ ...p }));
       const b = field.posesAt(240, 0.3 + period * 3, 11, aspect, params, 0, 0, pattern);
       for (let i = 0; i < a.length; i++) {
@@ -1568,6 +1568,40 @@ describe("pattern field", () => {
       expect(hi).toBeGreaterThan(lo * 1.15);
       expect(hi).toBeGreaterThan(20);
     }
+  });
+
+  it("invert flips occupancy figure and ground", () => {
+    const field = new PatternField();
+    const base = agentParamsFrom({ hold: 0.85, blink: 1, crawl: 0, invert: false });
+    const inv = agentParamsFrom({ hold: 0.85, blink: 1, crawl: 0, invert: true });
+    const a = field.posesAt(220, 0.2, 9, aspect, base, 0, 0, "cross").map((p) => ({ ...p }));
+    const b = field.posesAt(220, 0.2, 9, aspect, inv, 0, 0, "cross").map((p) => ({ ...p }));
+    let swapped = 0;
+    for (let i = 0; i < a.length; i++) {
+      const va = a[i].alpha > 0.5 && a[i].px > 0.02;
+      const vb = b[i].alpha > 0.5 && b[i].px > 0.02;
+      if (va !== vb) swapped++;
+    }
+    expect(swapped).toBeGreaterThan(40);
+  });
+
+  it("crawl scales occupancy bounce", () => {
+    const field = new PatternField();
+    const still = agentParamsFrom({ crawl: 0, motion: 0.2, hold: 0.85 });
+    const moving = agentParamsFrom({ crawl: 1, motion: 0.2, hold: 0.85 });
+    const dt = fieldLoop(still) * 0.12;
+    const a0 = field.posesAt(180, 0.1, 5, aspect, still, 0, 0, "stripe").map((p) => ({ ...p }));
+    const a1 = field.posesAt(180, 0.1 + dt, 5, aspect, still, 0, 0, "stripe").map((p) => ({ ...p }));
+    const b0 = field.posesAt(180, 0.1, 5, aspect, moving, 0, 0, "stripe").map((p) => ({ ...p }));
+    const b1 = field.posesAt(180, 0.1 + dt, 5, aspect, moving, 0, 0, "stripe").map((p) => ({ ...p }));
+    let dStill = 0;
+    let dMove = 0;
+    for (let i = 0; i < a0.length; i++) {
+      if (a0[i].alpha < 0.5 || a1[i].alpha < 0.5) continue;
+      dStill += Math.hypot(a1[i].x - a0[i].x, a1[i].y - a0[i].y);
+      dMove += Math.hypot(b1[i].x - b0[i].x, b1[i].y - b0[i].y);
+    }
+    expect(dMove).toBeGreaterThan(dStill * 2);
   });
 
   it("classic snake keeps the older 7-look crossfade", () => {
