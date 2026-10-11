@@ -422,6 +422,7 @@ export class Renderer {
       fieldTrance: look.collageFieldTrance,
       fieldHold: look.collageFieldHold,
       fieldBlink: look.collageFieldBlink,
+      fieldTravel: look.collageFieldTravel,
       fieldCast: look.collageFieldCast,
       trio: look.collageTrio,
       twoInk: look.collageTwoInk,

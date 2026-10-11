@@ -270,6 +270,8 @@ export interface MediaSource {
   collageFieldHold?: number;
   /** 0 eases icons; 1 blinks them. */
   collageFieldBlink?: number;
+  /** Bounce is DVD ping-pong. Wrap slides off one edge and back in the other. */
+  collageFieldTravel?: "bounce" | "wrap";
   /** Sheet is a packed wallpaper. Giants is a few huge stickers. */
   collageFieldCast?: "sheet" | "giants";
   /** Lock the kit to three glyphs. */

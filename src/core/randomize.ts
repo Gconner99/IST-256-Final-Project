@@ -13,6 +13,7 @@ import {
   clampFieldWarp,
   clampFieldHold,
   clampFieldBlink,
+  clampFieldTravel,
   fieldFromTrance,
   fieldFromCast,
   FIELD_PATTERNS,
@@ -374,6 +375,7 @@ export function rollFieldParams(rng: () => number, look: "hypnotic" | "classic" 
       collageFieldMaxScale: maxScale,
       collageFieldHold: clampFieldHold(rollBetween(rng, 0.25, 0.5)),
       collageFieldBlink: clampFieldBlink(rollBetween(rng, 0, 0.4)),
+      collageFieldTravel: clampFieldTravel(rng() > 0.55 ? "wrap" : "bounce"),
       collageFieldCast: rng() > 0.5 ? "giants" as const : "sheet" as const,
       collageTrio: false,
       collageTwoInk: false,
@@ -391,6 +393,7 @@ export function rollFieldParams(rng: () => number, look: "hypnotic" | "classic" 
     collageFieldMotion: clampFieldMotion(rollBetween(rng, 0.05, 0.35)),
     collageFieldHold: clampFieldHold(rollBetween(rng, 0.55, 0.85)),
     collageFieldBlink: clampFieldBlink(rng() > 0.4 ? 1 : rollBetween(rng, 0, 0.45)),
+    collageFieldTravel: clampFieldTravel(rng() > 0.55 ? "wrap" : "bounce"),
     collageTrio: rng() > 0.45,
     collageTwoInk: true,
   };

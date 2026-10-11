@@ -92,6 +92,12 @@ export function clampFieldBlink(value?: number | null): number {
   return clamp(value ?? 1, 0, 1);
 }
 
+export type FieldTravel = "bounce" | "wrap";
+
+export function clampFieldTravel(value?: string | null): FieldTravel {
+  return value === "wrap" ? "wrap" : "bounce";
+}
+
 export type FieldCast = "sheet" | "giants";
 
 export function clampFieldCast(value?: string | null): FieldCast {
@@ -161,6 +167,7 @@ export interface AgentParams {
   classic: boolean;
   hold: number;
   blink: number;
+  travel: FieldTravel;
   cast: FieldCast;
 }
 
@@ -190,6 +197,7 @@ export function agentParamsFrom(raw?: Partial<AgentParams> | null): AgentParams 
     classic: !!raw?.classic,
     hold: clampFieldHold(raw?.hold),
     blink: clampFieldBlink(raw?.blink),
+    travel: clampFieldTravel(raw?.travel),
     cast: clampFieldCast(raw?.cast),
   };
 }
@@ -333,6 +341,11 @@ function frac(v: number): number {
 
 function wrapSpan(f: number, span: number): number {
   return (frac(f) - 0.5) * span;
+}
+
+function wrapRange(v: number, lo: number, hi: number): number {
+  const span = hi - lo;
+  return lo + frac((v - lo) / Math.max(1e-6, span)) * span;
 }
 
 type Emit = (i: number, x: number, y: number, d: number, rot: number, charge: number, flip?: number, chargeB?: number, morph?: number) => void;
@@ -630,10 +643,10 @@ function pickGiant(pts: { x: number; y: number }[], sites: GiantSite[], used: bo
   return hits;
 }
 
-function punchHole(occ: number, x: number, y: number, u: number, hw: number, hy: number, r: number): number {
+function punchHole(occ: number, x: number, y: number, u: number, hw: number, hy: number, r: number, travel: FieldTravel = "bounce"): number {
   if (r <= 0) return occ;
-  const hx = ping01(u * 2) * hw * 0.34;
-  const hyy = ping01(u * 2 + 0.31) * hy * 0.34;
+  const hx = travel === "wrap" ? wrapRange(u * hw * 1.7, -hw * 0.92, hw * 0.92) : ping01(u * 2) * hw * 0.34;
+  const hyy = travel === "wrap" ? wrapRange(u * hy * 1.25 + hy * 0.2, -hy * 0.92, hy * 0.92) : ping01(u * 2 + 0.31) * hy * 0.34;
   const hd = Math.hypot(x - hx, y - hyy) - r;
   return occ * smoother(clamp(hd / 0.045, 0, 1));
 }
@@ -818,7 +831,16 @@ function occupancyLoop(c: LoopCtx, emit: Emit, sils: SnakeSil[]) {
   const crawl = (0.05 + A.crawl * (1 - m) + B.crawl * m) * (0.5 + p.motion * 0.55);
   const crawlX = ping01(u * 2) * crawl;
   const crawlY = ping01(u * 2 + 0.33) * crawl * (hy / Math.max(1e-6, hw));
-  const sample = (sil: SnakeSil, x: number, y: number) => punchHole(sil.occ(x, y), x, y, u, hw, hy, sil.hole);
+  const wrap = p.travel === "wrap";
+  const Wx = 1.2;
+  const Hy = 2 * hh * 1.2;
+  const ox = wrap ? u * Wx * (0.85 + p.motion * 0.35) : 0;
+  const oy = wrap ? u * Hy * (0.28 + p.motion * 0.18) : 0;
+  const place = (px: number, py: number) => {
+    if (wrap) return { x: wrapRange(px + ox, -Wx / 2, Wx / 2), y: wrapRange(py + oy, -Hy / 2, Hy / 2) };
+    return { x: clamp(px + crawlX, -0.5, 0.5), y: clamp(py + crawlY, -hh, hh) };
+  };
+  const sample = (sil: SnakeSil, x: number, y: number) => punchHole(sil.occ(x, y), x, y, u, hw, hy, sil.hole, p.travel);
   const usedA = new Array<boolean>(n).fill(false);
   const usedB = new Array<boolean>(n).fill(false);
   const gA = A.giants ? pickGiant(pts, A.giants, usedA) : [];
@@ -836,8 +858,9 @@ function occupancyLoop(c: LoopCtx, emit: Emit, sils: SnakeSil[]) {
     const oA = A.mode === "pack" ? sample(A, lx, ly) : 0;
     const oB = B.mode === "pack" ? sample(B, lx, ly) : 0;
     const occ = oA * (1 - m) + oB * m;
-    let x = clamp(lx + crawlX, -0.5, 0.5);
-    let y = clamp(ly + crawlY, -hh, hh);
+    let placed = place(lx, ly);
+    let x = placed.x;
+    let y = placed.y;
     let d = packD * occ;
     if (stickA?.has(i)) d = Math.max(d, A.stickR * (1 - m));
     if (stickB?.has(i)) d = Math.max(d, B.stickR * m);
@@ -847,8 +870,9 @@ function occupancyLoop(c: LoopCtx, emit: Emit, sils: SnakeSil[]) {
       const site = gb ?? ga;
       if (site) {
         const blend = ga && gb ? 1 : gb ? m : 1 - m;
-        x = clamp(lx + crawlX + (site.x - lx) * blend, -0.5, 0.5);
-        y = clamp(ly + crawlY + (site.y - ly) * blend, -hh, hh);
+        placed = place(lx + (site.x - lx) * blend, ly + (site.y - ly) * blend);
+        x = placed.x;
+        y = placed.y;
         d = Math.max(d, site.r * (p.maxScale / 1.85) * blend);
       }
     }
