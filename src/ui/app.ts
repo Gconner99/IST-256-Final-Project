@@ -82,6 +82,7 @@ import {
   clampFieldWarp,
   clampFieldHold,
   clampFieldBlink,
+  clampFieldTravel,
   clampFieldCast,
   clampCollageLook,
   fieldFromTrance,
@@ -173,7 +174,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><strong>Rand all</strong> / <strong>Rand wacky</strong> rolls a new kit, ground, and one locked move. Check <em>effects</em> (top bar, or under Effects on the right) if you also want a short stack from the right panel. Uncheck it for a clean collage. Wacky rolls a thicker stack when effects are on. No dancer. Rolls stay small and slower. When the rolled move is Field, the Field sliders roll too.</li>
           <li><strong>Hypnotic / Classic</strong> — top bar and left rail. Hypnotic is the flat two-ink poster Field. Classic restores the previous washed, full-ink look and Snake’s older motion. <strong>Poster / Club</strong> hides or shows fly-throughs, Matter, and music.</li>
           <li><strong>Ink flip</strong> swaps paper and ink. <strong>Trio</strong> locks the kit to three glyphs. <strong>Sheet / Giants</strong> writes stamp size: a packed wallpaper or a few huge stickers.</li>
-          <li><strong>Snake / Stripe / Arch</strong> are occupancy loops — looks hold, then ease. <strong>Hold</strong> is how long each look stays. <strong>Blink</strong> snaps icons; lower it to ease them.</li>
+          <li><strong>Snake / Stripe / Arch</strong> are occupancy loops — looks hold, then ease. <strong>Hold</strong> is how long each look stays. <strong>Blink</strong> snaps icons; lower it to ease them. <strong>Bounce</strong> is the DVD crawl. <strong>Wrap</strong> slides the sheet off one edge and back in the other.</li>
           <li><strong>Rand field</strong> picks a new looping pattern and rerolls sliders for the active look. Kit, mash, wash, size, and pace stay. Switches the clip to Field if it is on another move. On Poster, Rand all stays on Field.</li>
           <li><strong>Cut edit</strong> is the other randomizer. Drop an MP3 first. It finds the first downbeat (the kick, not the snare) and cuts on that metronome — bars and half-bars, not stray 8th notes. Snap / step / spot flip on the same frames as the drums. Some shots hold a bar or two. Some are two-beat fills that land back on 1.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
@@ -279,6 +280,12 @@ function bind(root: HTMLElement) {
       const next = clampFieldCast(t.dataset.cast);
       if (!patchCollage((s) => ({ ...s, ...fieldFromCast(next) }), `cast · ${next}`)) {
         store.patchUi({ status: `cast · ${next}` });
+      }
+    }
+    if (act === "field-travel") {
+      const next = clampFieldTravel(t.dataset.travel);
+      if (!patchCollage((s) => ({ ...s, collageFieldTravel: next }), `travel · ${next}`)) {
+        store.patchUi({ status: `travel · ${next}` });
       }
     }
     if (act === "rand-param") {
@@ -893,6 +900,8 @@ function paintRail(n: HTMLElement) {
     <div class="row">
       <button class="btn tiny ${collage.collageFieldCast === "sheet" ? "acid" : ""}" data-act="field-cast" data-cast="sheet" title="Packed wallpaper sizes.">Sheet</button>
       <button class="btn tiny ${collage.collageFieldCast === "giants" ? "acid" : ""}" data-act="field-cast" data-cast="giants" title="A few huge stickers.">Giants</button>
+      <button class="btn tiny ${clampFieldTravel(collage.collageFieldTravel) !== "wrap" ? "acid" : ""}" data-act="field-travel" data-travel="bounce" title="DVD ping-pong crawl.">Bounce</button>
+      <button class="btn tiny ${clampFieldTravel(collage.collageFieldTravel) === "wrap" ? "acid" : ""}" data-act="field-travel" data-travel="wrap" title="Slide off one edge and return on the other.">Wrap</button>
     </div>
     ${num("collage-field-trance", "Trance", clampFieldTrance(collage.collageFieldTrance), 0, 2, 0.05)}
     ${num("collage-field-hold", "Hold", clampFieldHold(collage.collageFieldHold), 0.2, 0.9, 0.02)}
@@ -1309,6 +1318,7 @@ function extrasFrom(src?: MediaSource, keepWash = true) {
     fieldTrance: src.collageFieldTrance,
     fieldHold: src.collageFieldHold,
     fieldBlink: src.collageFieldBlink,
+    fieldTravel: src.collageFieldTravel,
     fieldCast: src.collageFieldCast,
     trio: src.collageTrio,
     twoInk: src.collageTwoInk,

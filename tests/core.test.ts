@@ -1570,6 +1570,46 @@ describe("pattern field", () => {
     }
   });
 
+  it("wrap slides occupancy off one edge and back in the other", () => {
+    const params = agentParamsFrom({ travel: "wrap", hold: 0.85, blink: 1, motion: 0.3 });
+    const bounce = agentParamsFrom({ travel: "bounce", hold: 0.85, blink: 1, motion: 0.3 });
+    const field = new PatternField();
+    const period = fieldLoop(params);
+    const a = field.posesAt(200, 0.4, 8, aspect, params, 0, 0, "stripe").map((p) => ({ ...p }));
+    const b = field.posesAt(200, 0.4 + period * 2, 8, aspect, params, 0, 0, "stripe");
+    for (let i = 0; i < a.length; i++) {
+      expect(b[i].x).toBeCloseTo(a[i].x, 4);
+      expect(b[i].y).toBeCloseTo(a[i].y, 4);
+    }
+    const w0 = field.posesAt(200, 0.2, 8, aspect, params, 0, 0, "stripe").map((p) => ({ ...p }));
+    const w1 = field.posesAt(200, 0.2 + period * 0.35, 8, aspect, params, 0, 0, "stripe").map((p) => ({ ...p }));
+    const b0 = field.posesAt(200, 0.2, 8, aspect, bounce, 0, 0, "stripe").map((p) => ({ ...p }));
+    const b1 = field.posesAt(200, 0.2 + period * 0.35, 8, aspect, bounce, 0, 0, "stripe").map((p) => ({ ...p }));
+    let wrapMove = 0;
+    let bounceMove = 0;
+    let crossed = 0;
+    for (let i = 0; i < w0.length; i++) {
+      wrapMove += Math.hypot(w1[i].x - w0[i].x, w1[i].y - w0[i].y);
+      bounceMove += Math.hypot(b1[i].x - b0[i].x, b1[i].y - b0[i].y);
+      if (w0[i].alpha > 0.5 && w1[i].alpha > 0.5 && w0[i].x > 0.12 && w1[i].x < -0.12) crossed++;
+    }
+    expect(wrapMove).toBeGreaterThan(bounceMove * 1.3);
+    expect(crossed).toBeGreaterThan(3);
+    let jump = 0;
+    let prev = field.posesAt(200, 0, 8, aspect, params, 0, 0, "stripe").map((p) => ({ ...p }));
+    for (let t = 1 / 30; t <= period + 1e-6; t += 1 / 30) {
+      const cur = field.posesAt(200, t, 8, aspect, params, 0, 0, "stripe").map((p) => ({ ...p }));
+      for (let i = 0; i < cur.length; i++) {
+        const aOn = prev[i].alpha > 0.5 && Math.abs(prev[i].x) < 0.5 && Math.abs(prev[i].y / (aspect * aspect)) < hh;
+        const bOn = cur[i].alpha > 0.5 && Math.abs(cur[i].x) < 0.5 && Math.abs(cur[i].y / (aspect * aspect)) < hh;
+        if (!aOn || !bOn) continue;
+        jump = Math.max(jump, Math.hypot(cur[i].x - prev[i].x, cur[i].y - prev[i].y));
+      }
+      prev = cur;
+    }
+    expect(jump).toBeLessThan(0.08);
+  });
+
   it("classic snake keeps the older 7-look crossfade", () => {
     const params = agentParamsFrom({ warp: 1.2, classic: true });
     const field = new PatternField();

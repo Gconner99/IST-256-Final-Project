@@ -37,6 +37,7 @@ export {
   clampFieldTrance,
   clampFieldHold,
   clampFieldBlink,
+  clampFieldTravel,
   clampFieldCast,
   clampCollageLook,
   fieldFromTrance,
@@ -46,7 +47,7 @@ export {
   isFieldMove,
   FIELD_MOVE,
 } from "./agentField";
-export type { FieldCast, FieldPattern, FieldPatternChoice } from "./agentField";
+export type { FieldCast, FieldTravel, FieldPattern, FieldPatternChoice } from "./agentField";
 export {
   clampBoidAlign,
   clampBoidCohere,
@@ -810,6 +811,7 @@ export interface HeraldryPaintOpts {
   fieldTrance?: number;
   fieldHold?: number;
   fieldBlink?: number;
+  fieldTravel?: string;
   fieldCast?: string;
   trio?: boolean;
   twoInk?: boolean;
@@ -3363,6 +3365,7 @@ export class HeraldryField {
         classic,
         hold: opts.fieldHold,
         blink: opts.fieldBlink,
+        travel: opts.fieldTravel as "bounce" | "wrap" | undefined,
         cast: opts.fieldCast as "sheet" | "giants" | undefined,
       });
       this.agents = this.agents ?? new PatternField();
