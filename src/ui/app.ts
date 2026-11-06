@@ -175,6 +175,7 @@ export function mount(root: HTMLElement, renderer: Renderer) {
           <li><strong>Hypnotic / Classic</strong> — top bar and left rail. Hypnotic is the flat two-ink poster Field. Classic restores the previous washed, full-ink look and Snake’s older motion. <strong>Poster / Club</strong> hides or shows fly-throughs, Matter, and music.</li>
           <li><strong>Ink flip</strong> swaps paper and ink. <strong>Trio</strong> locks the kit to three glyphs. <strong>Sheet / Giants</strong> writes stamp size: a packed wallpaper or a few huge stickers.</li>
           <li><strong>Snake / Stripe / Arch</strong> are occupancy loops — looks hold, then ease. <strong>Hold</strong> is how long each look stays. <strong>Blink</strong> snaps icons; lower it to ease them. <strong>Bounce</strong> is the DVD crawl. <strong>Wrap</strong> slides the sheet off one edge and back in the other.</li>
+          <li><strong>Spray / Cluster / Spin / Float</strong> are mixed-size sticker fields: Spray grows outward and respawns, Cluster tucks small stamps around heroes, Spin turns in place, Float is parallax layers that wrap.</li>
           <li><strong>Rand field</strong> picks a new looping pattern and rerolls sliders for the active look. Kit, mash, wash, size, and pace stay. Switches the clip to Field if it is on another move. On Poster, Rand all stays on Field.</li>
           <li><strong>Cut edit</strong> is the other randomizer. Drop an MP3 first. It finds the first downbeat (the kick, not the snare) and cuts on that metronome — bars and half-bars, not stray 8th notes. Snap / step / spot flip on the same frames as the drums. Some shots hold a bar or two. Some are two-beat fills that land back on 1.</li>
           <li><strong>Print frame</strong> turns the live picture into a still.</li>
@@ -893,6 +894,12 @@ function paintRail(n: HTMLElement) {
         ? `<div class="sec">Pattern</div>
     <div class="row">
       ${(["auto", "sunflower", "orbit", "traffic", "cascade", "checker", "scan", "snake", "stripe", "arch"] as const).map((id) => {
+        const on = clampFieldPattern(collage.collageFieldPattern) === id;
+        return `<button class="btn tiny ${on ? "acid" : ""}" data-act="field-pattern" data-pattern="${id}">${FIELD_PATTERN_LABEL[id]}</button>`;
+      }).join("")}
+    </div>
+    <div class="row">
+      ${(["spray", "cluster", "spin", "float"] as const).map((id) => {
         const on = clampFieldPattern(collage.collageFieldPattern) === id;
         return `<button class="btn tiny ${on ? "acid" : ""}" data-act="field-pattern" data-pattern="${id}">${FIELD_PATTERN_LABEL[id]}</button>`;
       }).join("")}
