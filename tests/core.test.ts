@@ -1476,7 +1476,9 @@ describe("pattern field", () => {
       }
       expect(jump).toBeLessThan(0.06);
       expect(moved / 300).toBeGreaterThan(0.08);
-      expect(visible).toBeGreaterThan(pattern === "snake" || pattern === "stripe" || pattern === "arch" ? 6 : 120);
+      expect(visible).toBeGreaterThan(
+        pattern === "snake" || pattern === "stripe" || pattern === "arch" ? 6 : pattern === "cluster" ? 40 : 120,
+      );
     });
   }
 
@@ -1568,6 +1570,34 @@ describe("pattern field", () => {
       expect(hi).toBeGreaterThan(lo * 1.15);
       expect(hi).toBeGreaterThan(20);
     }
+  });
+
+  it("spray grows outward, cluster keeps heroes, spin turns", () => {
+    const params = agentParamsFrom({ warp: 1, motion: 0.4, curl: 0.5 });
+    const field = new PatternField();
+    const period = fieldLoop(params);
+    const sprayPos = field.posesAt(240, 0.8, 11, aspect, params, 0, 0, "spray").map((p) => ({ ...p }));
+    const vis = sprayPos.filter((p) => p.alpha > 0.5 && p.px > 0.02);
+    expect(vis.length).toBeGreaterThan(80);
+    const r = vis.map((p) => Math.hypot(p.x, p.y / (aspect * aspect)));
+    const near = vis.filter((_, i) => r[i] < 0.18);
+    const far = vis.filter((_, i) => r[i] > 0.32);
+    if (near.length && far.length) {
+      const nearPx = near.reduce((s, p) => s + p.px, 0) / near.length;
+      const farPx = far.reduce((s, p) => s + p.px, 0) / far.length;
+      expect(farPx).toBeGreaterThan(nearPx);
+    }
+    const a = field.posesAt(220, 0.4, 9, aspect, params, 0, 0, "spray").map((p) => ({ ...p }));
+    const b = field.posesAt(220, 0.4 + period, 9, aspect, params, 0, 0, "spray");
+    for (let i = 0; i < a.length; i++) expect(b[i].x).toBeCloseTo(a[i].x, 4);
+    const clustered = field.posesAt(220, 1.1, 5, aspect, params, 0, 0, "cluster").map((p) => ({ ...p }));
+    const big = clustered.filter((p) => p.alpha > 0.5 && p.px > 0.18);
+    expect(big.length).toBeGreaterThan(3);
+    expect(big.length).toBeLessThan(20);
+    const s0 = field.posesAt(180, 0.2, 7, aspect, params, 0, 0, "spin").map((p) => ({ ...p }));
+    const s1 = field.posesAt(180, 0.2 + period * 0.2, 7, aspect, params, 0, 0, "spin");
+    const spun = s0.filter((p, i) => Math.abs((s1[i].rot ?? 0) - (p.rot ?? 0)) > 0.2).length;
+    expect(spun).toBeGreaterThan(80);
   });
 
   it("wrap slides occupancy off one edge and back in the other", () => {

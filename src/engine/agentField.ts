@@ -234,6 +234,10 @@ export const FIELD_PATTERNS = [
   "snake",
   "stripe",
   "arch",
+  "spray",
+  "cluster",
+  "spin",
+  "float",
 ] as const;
 export type FieldPattern = (typeof FIELD_PATTERNS)[number];
 export type FieldPatternChoice = FieldPattern | "auto";
@@ -249,6 +253,10 @@ export const FIELD_PATTERN_LABEL: Record<FieldPatternChoice, string> = {
   snake: "Snake",
   stripe: "Stripe",
   arch: "Arch",
+  spray: "Spray",
+  cluster: "Cluster",
+  spin: "Spin",
+  float: "Float",
 };
 
 export function clampFieldPattern(value?: string | null): FieldPatternChoice {
@@ -949,6 +957,131 @@ function arch(c: LoopCtx, emit: Emit) {
   occupancyLoop(c, emit, archSils(c.hh, c.p));
 }
 
+/**
+ * Radial expand: stamps grow as they drift out, fade, and respawn at the center.
+ * Self-rotation is local; the loop never cuts.
+ */
+function spray(c: LoopCtx, emit: Emit) {
+  const { n, R, u, p, seed } = c;
+  const rad = R * (0.92 + p.fieldStrength * 0.18);
+  const d0 = 0.05 * packMul(p) * sizeScale(p);
+  const dir = seed % 2 ? 1 : -1;
+  for (let i = 0; i < n; i++) {
+    const q = frac((i + 0.37) / n + u);
+    const gate = q < 0.14 ? smoother(q / 0.14) : q > 0.82 ? smoother((1 - q) / 0.18) : 1;
+    const r = (0.03 + 0.97 * q) * rad;
+    const a = i * GOLDEN + dir * u * TAU * (0.06 + p.curl * 0.1);
+    const grow = p.minScale + q * Math.max(0.2, p.maxScale * 0.42);
+    const d = d0 * grow * (0.65 + 0.55 * sizeMul(i, p)) * gate;
+    const rot = tilt(i) + dir * u * TAU * (0.18 + hash01(i * 1.9) * 0.55) * (0.45 + p.curl * 0.4);
+    emit(i, Math.cos(a) * r, Math.sin(a) * r, d, rot, chargeFor(i, i % 5, p));
+  }
+}
+
+/** Hero stamps with small satellites tucked beside them, slowly turning. */
+function cluster(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, p, seed } = c;
+  const H = 5 + (seed % 4);
+  const rad = Math.min(0.36, hh * 0.9);
+  const crawl = 0.028 * (0.45 + p.motion * 0.4);
+  const ox = ping01(u) * crawl;
+  const oy = ping01(u + 0.31) * crawl * (hh / 0.45);
+  const sites: { x: number; y: number }[] = [];
+  const turn = (seed % 2 ? 1 : -1) * u * TAU * 0.04;
+  for (let h = 0; h < H; h++) {
+    const q = (h + 0.45) / H;
+    const a = h * GOLDEN + turn;
+    const r = rad * Math.sqrt(0.14 + 0.74 * q);
+    sites.push({
+      x: clamp(Math.cos(a) * r + ox, -0.5, 0.5),
+      y: clamp(Math.sin(a) * r * (hh / Math.max(0.22, rad)) * 0.78 + oy, -hh, hh),
+    });
+  }
+  const dHero = 0.092 * (p.maxScale / 1.85) * packMul(p) * sizeScale(p);
+  const dSat = 0.024 * packMul(p) * sizeScale(p);
+  const dMid = 0.042 * packMul(p) * sizeScale(p);
+  let i = 0;
+  for (let h = 0; h < H && i < n; h++, i++) {
+    const rot = u * TAU * (0.14 + hash01(h + 4) * 0.34) * (seed % 2 ? 1 : -1);
+    emit(i, sites[h].x, sites[h].y, dHero * Math.max(0.85, sizeMul(i, p)), rot, chargeFor(i, h, p));
+  }
+  const satsPer = Math.min(12, Math.max(7, Math.round(10 + p.density * 1.5)));
+  for (let h = 0; h < H && i < n; h++) {
+    for (let s = 0; s < satsPer && i < n; s++, i++) {
+      const ring = 0.1 + hash01(h * 11 + s + seed) * 0.11;
+      const a = (s / satsPer) * TAU + hash01(h * 3 + s) * 0.55 + u * TAU * (0.42 + h * 0.05);
+      emit(
+        i,
+        clamp(sites[h].x + Math.cos(a) * ring, -0.5, 0.5),
+        clamp(sites[h].y + Math.sin(a) * ring * 0.86, -hh, hh),
+        dSat * sizeMul(i, p),
+        a + u * TAU * 0.45,
+        chargeFor(i, h, p),
+      );
+    }
+  }
+  const fieldN = Math.min(n - i, Math.round(36 + p.density * 32));
+  for (let k = 0; k < fieldN && i < n; k++, i++) {
+    const q = hash01(i * 1.71 + seed);
+    const a = i * GOLDEN;
+    const r = Math.sqrt(0.08 + 0.92 * q) * Math.min(0.48, hh * 0.98);
+    const rot = u * TAU * (0.12 + hash01(i) * 0.4) * (i % 2 ? 1 : -1);
+    emit(
+      i,
+      clamp(Math.cos(a) * r + ox * 0.4, -0.5, 0.5),
+      clamp(Math.sin(a) * r * (hh / 0.42) + oy * 0.4, -hh, hh),
+      dMid * sizeMul(i, p),
+      rot,
+      chargeFor(i, i % 7, p),
+    );
+  }
+}
+
+/** Mixed-size scatter that stays put and slowly spins. */
+function spin(c: LoopCtx, emit: Emit) {
+  const { n, hh, R, u, p, seed } = c;
+  const crawl = 0.04 * (0.5 + p.motion * 0.55);
+  const ox = ping01(u) * crawl;
+  const oy = ping01(u + 0.37) * crawl * (hh / 0.45);
+  const d0 = (R / Math.sqrt(Math.max(8, n))) * 1.15 * packMul(p) * sizeScale(p);
+  const dir = seed % 2 ? 1 : -1;
+  for (let i = 0; i < n; i++) {
+    const q = (i + 0.5) / n;
+    const a = i * GOLDEN + seed * 0.17;
+    const r = Math.sqrt(q) * R * 0.92;
+    const rot = dir * u * TAU * (0.28 + hash01(i * 2.1) * 0.75) * (0.55 + p.curl * 0.5);
+    emit(
+      i,
+      clamp(Math.cos(a) * r + ox, -0.5, 0.5),
+      clamp(Math.sin(a) * r + oy, -hh, hh),
+      d0 * sizeMul(i, p) * (0.55 + 0.9 * hash01(i * 4.3)),
+      rot,
+      chargeFor(i, i % 6, p),
+    );
+  }
+}
+
+/** Parallax layers that wrap at different speeds, with local spin. */
+function floatLayer(c: LoopCtx, emit: Emit) {
+  const { n, hh, u, p, seed } = c;
+  const W = 1.2;
+  const H = 2 * hh * 1.2;
+  const weights = [0.24, 0.38, 0.38];
+  let i = 0;
+  for (let L = 0; L < 3 && i < n; L++) {
+    const cnt = L === 2 ? n - i : Math.max(4, Math.round(n * weights[L]));
+    const speed = (0.12 + L * 0.2) * (0.55 + p.motion * 0.5);
+    const dir = (L + seed) % 2 ? 1 : -1;
+    const d0 = (0.028 + (2 - L) * 0.038) * packMul(p) * sizeScale(p);
+    for (let k = 0; k < cnt && i < n; k++, i++) {
+      const x = wrapSpan(hash01(i * 1.71 + seed) + dir * speed * u, W);
+      const y = wrapSpan(hash01(i * 2.37 + seed) + 0.18 * speed * u, H);
+      const rot = dir * u * TAU * (0.12 + hash01(i * 1.3) * 0.45);
+      emit(i, x, y, d0 * sizeMul(i, p), rot, chargeFor(i, L * 3 + (k % 3), p));
+    }
+  }
+}
+
 /** One locked pattern looping seamlessly. Poses are a pure function of the clock, so scrubbing and export stay stable. */
 export class PatternField {
   private poses: AgentPose[] = [];
@@ -1000,6 +1133,10 @@ export class PatternField {
     else if (pattern === "snake") snake(ctx, emit);
     else if (pattern === "stripe") stripe(ctx, emit);
     else if (pattern === "arch") arch(ctx, emit);
+    else if (pattern === "spray") spray(ctx, emit);
+    else if (pattern === "cluster") cluster(ctx, emit);
+    else if (pattern === "spin") spin(ctx, emit);
+    else if (pattern === "float") floatLayer(ctx, emit);
     else sunflower(ctx, emit);
     return this.poses;
   }
