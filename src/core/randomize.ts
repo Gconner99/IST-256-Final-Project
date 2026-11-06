@@ -19,7 +19,7 @@ import {
   FIELD_PATTERNS,
 } from "../engine/agentField";
 import { inkForLook, paperForLook, pickColorPack, pickEffectPalette, EFFECT_PALETTES } from "./colorPacks";
-import { comboAngle, comboPulse, pickEffectCombo, type ComboMood } from "./effectCombos";
+import { comboAngle, comboLampSpeed, comboPulse, pickEffectCombo, type ComboMood } from "./effectCombos";
 import { getEffect } from "../effects/registry";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
@@ -184,37 +184,40 @@ function applyMood(
   const p = { ...fx.params };
   if (fx.typeId === "grade") {
     if (mood === "lush") {
-      p.saturation = 0.18 + rng() * 0.42;
-      p.brightness = -0.04 + rng() * 0.16;
-      p.contrast = 0.06 + rng() * 0.22;
-      p.gamma = 0.82 + rng() * 0.35;
-      p.hue = (rng() - 0.5) * 0.18;
-      p.exposure = -0.15 + rng() * 0.4;
+      p.saturation = 0.12 + rng() * 0.28;
+      p.brightness = -0.02 + rng() * 0.1;
+      p.contrast = 0.06 + rng() * 0.16;
+      p.gamma = 0.88 + rng() * 0.22;
+      p.hue = (rng() - 0.5) * 0.08;
+      p.exposure = -0.08 + rng() * 0.22;
     } else if (mood === "outsider") {
-      p.saturation = rng() > 0.5 ? -0.35 + rng() * 0.3 : 0.4 + rng() * 0.5;
-      p.contrast = 0.2 + rng() * 0.55;
-      p.gamma = 0.55 + rng() * 1.1;
-      p.hue = (rng() - 0.5) * 0.7;
+      p.saturation = rng() > 0.5 ? -0.12 + rng() * 0.18 : 0.22 + rng() * 0.28;
+      p.contrast = 0.14 + rng() * 0.28;
+      p.gamma = 0.75 + rng() * 0.4;
+      p.hue = (rng() - 0.5) * 0.18;
     } else {
-      p.saturation = 0.05 + rng() * 0.5;
-      p.contrast = 0.1 + rng() * 0.35;
-      p.hue = (rng() - 0.5) * 0.35;
+      p.saturation = 0.06 + rng() * 0.28;
+      p.contrast = 0.08 + rng() * 0.2;
+      p.hue = (rng() - 0.5) * 0.12;
     }
   }
   if (fx.typeId === "duotone") {
     p.shadow = palette.shadow;
     p.highlight = palette.highlight;
-    p.amount = mood === "lush" ? 0.45 + rng() * 0.4 : 0.7 + rng() * 0.3;
+    p.amount = mood === "lush" ? 0.42 + rng() * 0.32 : 0.62 + rng() * 0.28;
   }
   if (fx.typeId === "grain") {
     p.leakColor = palette.leak;
-    p.leak = mood === "lush" ? 0.18 + rng() * 0.35 : rng() * 0.22;
-    p.grain = mood === "lush" ? 0.12 + rng() * 0.22 : 0.2 + rng() * 0.4;
+    p.leak = mood === "lush" ? 0.08 + rng() * 0.18 : rng() * 0.12;
+    p.grain = mood === "lush" ? 0.08 + rng() * 0.14 : 0.12 + rng() * 0.18;
+    p.dust = rng() * 0.05;
+    p.scratches = rng() * 0.04;
   }
   if (fx.typeId === "bloom") {
-    p.amount = mood === "outsider" ? 0.15 + rng() * 0.3 : 0.4 + rng() * 0.45;
-    p.halation = mood === "lush" ? 0.22 + rng() * 0.4 : rng() * 0.25;
-    p.size = 1.4 + rng() * 2.2;
+    p.amount = mood === "outsider" ? 0.18 + rng() * 0.22 : 0.32 + rng() * 0.32;
+    p.halation = mood === "lush" ? 0.16 + rng() * 0.28 : rng() * 0.18;
+    p.size = 1.3 + rng() * 1.6;
+    p.threshold = 0.48 + rng() * 0.18;
   }
   if (fx.typeId === "warp") {
     p.amount = mood === "lush" ? 0.01 + rng() * 0.028 : 0.02 + rng() * 0.05;
@@ -235,8 +238,8 @@ function applyMood(
     p.weave = pulse * 0.08;
   }
   if (fx.typeId === "posterize") {
-    p.levels = 3 + Math.floor(rng() * 6);
-    p.dither = 0.08 + rng() * 0.35;
+    p.levels = 5 + Math.floor(rng() * 4);
+    p.dither = 0.06 + rng() * 0.18;
   }
   if (fx.typeId === "threshold") {
     p.mix = 0.35 + rng() * 0.45;
@@ -305,8 +308,41 @@ function applyMood(
     p.speed = pulse * 0.5;
   }
   if (fx.typeId === "echo") {
-    p.amount = 0.28 + rng() * 0.22;
-    p.decay = 0.52 + pulse * 0.28;
+    p.amount = 0.18 + rng() * 0.16;
+    p.decay = 0.58 + pulse * 0.22;
+  }
+  if (fx.typeId === "vignette") {
+    p.amount = mood === "outsider" ? 0.42 + rng() * 0.28 : 0.32 + rng() * 0.28;
+    p.inner = 0.22 + rng() * 0.18;
+    p.soft = 0.42 + rng() * 0.32;
+  }
+  if (fx.typeId === "lamp") {
+    p.amount = 0.22 + pulse * 0.35;
+    p.speed = comboLampSpeed(pulse);
+    p.warmth = mood === "outsider" ? rng() * 0.2 : 0.18 + rng() * 0.4;
+  }
+  if (fx.typeId === "cycle") {
+    p.amount = 0.12 + pulse * 0.22;
+    p.speed = comboLampSpeed(pulse);
+    p.shift = rng() * 0.12;
+  }
+  if (fx.typeId === "misprint") {
+    p.amount = mood === "lush" ? 0.22 + rng() * 0.2 : 0.3 + rng() * 0.22;
+    p.offset = 0.004 + rng() * 0.01;
+    p.angle = angle;
+  }
+  if (fx.typeId === "bleed") {
+    p.amount = mood === "outsider" ? 0.22 + rng() * 0.2 : 0.28 + rng() * 0.22;
+    p.size = 1.2 + rng() * 1.4;
+  }
+  if (fx.typeId === "relief") {
+    p.amount = 0.22 + rng() * 0.28;
+    p.angle = angle;
+  }
+  if (fx.typeId === "haze") {
+    p.amount = 0.16 + rng() * 0.22;
+    p.lift = 0.04 + rng() * 0.08;
+    p.tint = palette.leak;
   }
   if (fx.typeId === "stutter") {
     p.rate = 0.22 + pulse * 0.3;
@@ -403,8 +439,8 @@ function rollBetween(rng: () => number, a: number, b: number) {
 
 function rollFieldTravel(rng: () => number) {
   const u = rng();
-  if (u < 0.18) return clampFieldTravel("bounce");
-  if (u < 0.36) return clampFieldTravel("wrap");
+  if (u < 0.08) return clampFieldTravel("bounce");
+  if (u < 0.16) return clampFieldTravel("wrap");
   return clampFieldTravel("still");
 }
 
@@ -478,7 +514,6 @@ export function randomizeProject(
 ): Project {
   const amount = Math.max(project.randomAmount, mode === "all" ? 0.75 : 0);
   const seed = project.seed >>> 0;
-  const rng = mulberry32(seed ^ 0x9e3779b9);
 
   const layers = project.layers.map((layer, li) => {
     if (mode === "selected" && layer.id !== selectedLayerId) return layer;
@@ -588,16 +623,7 @@ export function randomizeProject(
 
   const globalFeedback =
     mode === "all"
-      ? wacky
-        ? { ...project.globalFeedback, amount: 0, opacity: 0.4, scale: 1, rotation: 0, distortion: 0 }
-        : {
-            ...project.globalFeedback,
-            amount: rng() > 0.72 ? 0.04 + rng() * 0.1 : 0,
-            opacity: 0.4 + rng() * 0.3,
-            scale: 1.004 + rng() * 0.02,
-            rotation: (rng() - 0.5) * 0.03,
-            distortion: rng() * 0.12,
-          }
+      ? { ...project.globalFeedback, amount: 0, opacity: 0.4, scale: 1, rotation: 0, distortion: 0 }
       : project.globalFeedback;
 
   return { ...project, layers, sources, globalFeedback };
