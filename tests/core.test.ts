@@ -6,10 +6,10 @@ import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaul
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeFieldSource, randomizeProject, rollFieldParams, FIELD_ROOMS } from "../src/core/randomize";
 import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
-import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES } from "../src/core/colorPacks";
+import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES, isWhitePaper, WHITE_PAPER } from "../src/core/colorPacks";
 import { buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, trioKinds, HERALDRY_ROOMS } from "../src/engine/heraldry";
 import { flowAt, initFieldSim, poleState, rebuildLinks, simParamsFrom, stepFieldSim } from "../src/engine/fieldSim";
-import { agentParamsFrom, clampCollageLook, clampFieldCast, FIELD_PATTERNS, fieldFromCast, fieldFromTrance, fieldLoop, PatternField, resolveFieldPattern, SNAKE_LOOKS, SNAKE_LOOKS_CLASSIC } from "../src/engine/agentField";
+import { agentParamsFrom, clampCollageLook, clampFieldCast, clampFieldTravel, FIELD_PATTERNS, fieldFromCast, fieldFromTrance, fieldLoop, PatternField, resolveFieldPattern, SNAKE_LOOKS, SNAKE_LOOKS_CLASSIC } from "../src/engine/agentField";
 import { store } from "../src/core/store";
 import { addSource } from "../src/ui/actions";
 import { applyPreset, extractPreset } from "../src/core/presets";
@@ -1388,8 +1388,11 @@ describe("heraldry collage", () => {
     expect(p.sources[0].collageFieldPattern).toBe("snake");
     expect(p.sources[0].collageLook).toBe("hypnotic");
     expect(p.sources[0].collageTwoInk).toBe(true);
+    expect(p.sources[0].collageFieldTravel).toBe("still");
     expect(p.sources[0].colorA).toMatch(/^#[0-9a-f]{6}$/i);
-    expect(p.sources[0].colorA).not.toBe("#ffffff");
+    expect(p.sources[0].colorA).not.toBe(WHITE_PAPER);
+    expect(isWhitePaper(p.sources[0].colorA)).toBe(false);
+    expect(isWhitePaper(WHITE_PAPER)).toBe(true);
     expect(p.layers[0].effects).toHaveLength(0);
     expect(isHeraldry("heraldry")).toBe(true);
     expect(isHeraldry("plasma")).toBe(false);
@@ -1475,8 +1478,9 @@ describe("pattern field", () => {
         prev = cur;
       }
       expect(jump).toBeLessThan(0.06);
-      expect(moved / 300).toBeGreaterThan(0.08);
-      expect(visible).toBeGreaterThan(pattern === "snake" || pattern === "stripe" || pattern === "arch" ? 6 : 120);
+      const occupancy = pattern === "snake" || pattern === "stripe" || pattern === "arch";
+      if (!occupancy) expect(moved / 300).toBeGreaterThan(0.08);
+      expect(visible).toBeGreaterThan(occupancy ? 6 : 120);
     });
   }
 
@@ -1568,6 +1572,34 @@ describe("pattern field", () => {
       expect(hi).toBeGreaterThan(lo * 1.15);
       expect(hi).toBeGreaterThan(20);
     }
+  });
+
+  it("still occupancy stays planted while bounce crawls", () => {
+    const still = agentParamsFrom({ travel: "still", hold: 0.85, blink: 1, motion: 0.8 });
+    const bounce = agentParamsFrom({ travel: "bounce", hold: 0.85, blink: 1, motion: 0.8 });
+    const field = new PatternField();
+    const period = fieldLoop(still);
+    const s0 = field.posesAt(200, period * 0.04, 8, aspect, still, 0, 0, "snake").map((p) => ({ ...p }));
+    const s1 = field.posesAt(200, period * 0.1, 8, aspect, still, 0, 0, "snake").map((p) => ({ ...p }));
+    const b0 = field.posesAt(200, period * 0.04, 8, aspect, bounce, 0, 0, "snake").map((p) => ({ ...p }));
+    const b1 = field.posesAt(200, period * 0.1, 8, aspect, bounce, 0, 0, "snake").map((p) => ({ ...p }));
+    let stillMove = 0;
+    let bounceMove = 0;
+    for (let i = 0; i < s0.length; i++) {
+      if (s0[i].alpha > 0.5 && s1[i].alpha > 0.5) {
+        stillMove += Math.hypot(s1[i].x - s0[i].x, s1[i].y - s0[i].y);
+      }
+      if (b0[i].alpha > 0.5 && b1[i].alpha > 0.5) {
+        bounceMove += Math.hypot(b1[i].x - b0[i].x, b1[i].y - b0[i].y);
+      }
+    }
+    expect(stillMove).toBeLessThan(0.02);
+    expect(bounceMove).toBeGreaterThan(stillMove + 0.4);
+    const later = field.posesAt(200, period * 0.62, 8, aspect, still, 0, 0, "snake");
+    const blinked = s0.filter((p, i) => Math.abs((later[i].charge ?? 0) - (p.charge ?? 0)) > 0.5).length;
+    expect(blinked).toBeGreaterThan(10);
+    expect(clampFieldTravel(undefined)).toBe("still");
+    expect(clampFieldTravel("bounce")).toBe("bounce");
   });
 
   it("wrap slides occupancy off one edge and back in the other", () => {

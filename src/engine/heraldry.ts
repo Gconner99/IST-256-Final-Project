@@ -3365,7 +3365,7 @@ export class HeraldryField {
         classic,
         hold: opts.fieldHold,
         blink: opts.fieldBlink,
-        travel: opts.fieldTravel as "bounce" | "wrap" | undefined,
+        travel: opts.fieldTravel as "still" | "bounce" | "wrap" | undefined,
         cast: opts.fieldCast as "sheet" | "giants" | undefined,
       });
       this.agents = this.agents ?? new PatternField();

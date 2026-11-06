@@ -355,6 +355,13 @@ function rollBetween(rng: () => number, a: number, b: number) {
   return lerp(a, b, rng());
 }
 
+function rollFieldTravel(rng: () => number) {
+  const u = rng();
+  if (u < 0.18) return clampFieldTravel("bounce");
+  if (u < 0.36) return clampFieldTravel("wrap");
+  return clampFieldTravel("still");
+}
+
 /** Field rolls. Hypnotic stays trance-safe; Classic uses the previous mid ranges. */
 export function rollFieldParams(rng: () => number, look: "hypnotic" | "classic" = "hypnotic") {
   if (look === "classic") {
@@ -375,7 +382,7 @@ export function rollFieldParams(rng: () => number, look: "hypnotic" | "classic" 
       collageFieldMaxScale: maxScale,
       collageFieldHold: clampFieldHold(rollBetween(rng, 0.25, 0.5)),
       collageFieldBlink: clampFieldBlink(rollBetween(rng, 0, 0.4)),
-      collageFieldTravel: clampFieldTravel(rng() > 0.55 ? "wrap" : "bounce"),
+      collageFieldTravel: rollFieldTravel(rng),
       collageFieldCast: rng() > 0.5 ? "giants" as const : "sheet" as const,
       collageTrio: false,
       collageTwoInk: false,
@@ -393,7 +400,7 @@ export function rollFieldParams(rng: () => number, look: "hypnotic" | "classic" 
     collageFieldMotion: clampFieldMotion(rollBetween(rng, 0.05, 0.35)),
     collageFieldHold: clampFieldHold(rollBetween(rng, 0.55, 0.85)),
     collageFieldBlink: clampFieldBlink(rng() > 0.4 ? 1 : rollBetween(rng, 0, 0.45)),
-    collageFieldTravel: clampFieldTravel(rng() > 0.55 ? "wrap" : "bounce"),
+    collageFieldTravel: rollFieldTravel(rng),
     collageTrio: rng() > 0.45,
     collageTwoInk: true,
   };
