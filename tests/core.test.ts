@@ -5,6 +5,7 @@ import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeFieldSource, randomizeProject, rollFieldParams, FIELD_ROOMS } from "../src/core/randomize";
+import { comboPulse, EFFECT_COMBOS, pickEffectCombo } from "../src/core/effectCombos";
 import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES, isWhitePaper, WHITE_PAPER } from "../src/core/colorPacks";
 import { buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, trioKinds, HERALDRY_ROOMS } from "../src/engine/heraldry";
@@ -689,6 +690,40 @@ describe("randomize + presets", () => {
       types.forEach((id) => seen.add(id));
     }
     expect(seen.size).toBeGreaterThan(4);
+  });
+
+  it("effect combos keep one job per layer and share a pulse", () => {
+    const geo = new Set(["kaleido", "mirror", "spin"]);
+    const motion = new Set(["warp", "displace", "smear", "lens"]);
+    const time = new Set(["echo", "stutter", "dropout", "slitscan"]);
+    for (const combo of EFFECT_COMBOS) {
+      expect(combo.stack).not.toContain("dancer");
+      expect(combo.stack).not.toContain("slitscan");
+      expect(new Set(combo.stack).size).toBe(combo.stack.length);
+      expect(combo.stack.length).toBeGreaterThanOrEqual(combo.wacky ? 3 : 2);
+      expect(combo.stack.length).toBeLessThanOrEqual(combo.wacky ? 5 : 4);
+      expect(combo.stack.filter((id) => geo.has(id)).length).toBeLessThanOrEqual(1);
+      expect(combo.stack.filter((id) => motion.has(id)).length).toBeLessThanOrEqual(1);
+      expect(combo.stack.filter((id) => time.has(id)).length).toBeLessThanOrEqual(1);
+    }
+    for (const seed of [1, 7, 99, 256, 90210, 404, 777, 12, 88]) {
+      const combo = pickEffectCombo(seed, false);
+      const p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null);
+      expect(p.layers[0].effects.map((e) => e.typeId)).toEqual([...combo.stack]);
+      const pulse = comboPulse(seed);
+      const warp = p.layers[0].effects.find((e) => e.typeId === "warp");
+      if (warp) {
+        const speed = Number(warp.params.speed);
+        expect(speed).toBeGreaterThan(pulse * 0.65);
+        expect(speed).toBeLessThan(pulse * 1.2);
+      }
+      const echo = p.layers[0].effects.find((e) => e.typeId === "echo");
+      if (echo) expect(Number(echo.params.decay)).toBeGreaterThan(0.5);
+      const kaleido = p.layers[0].effects.find((e) => e.typeId === "kaleido");
+      if (kaleido) expect([6, 8]).toContain(Number(kaleido.params.segments));
+      const mirror = p.layers[0].effects.find((e) => e.typeId === "mirror");
+      if (mirror) expect(Number(mirror.params.tiles)).toBe(1);
+    }
   });
 
   it("random collage rolls stay small, slow, and pleasing", () => {
