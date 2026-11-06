@@ -409,6 +409,7 @@ export function createDefaultProject(): Project {
     fieldCurl: 0.2,
     fieldTrance: 1,
     fieldSparsity: 0.85,
+    fieldTravel: "still",
     twoInk: true,
     look: "hypnotic",
   });

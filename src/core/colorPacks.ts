@@ -205,6 +205,14 @@ export function inkForLook(kit: CollageKit, pack?: string | null): string {
   return PACKS[id].ink;
 }
 
+/** Flat white paper. Kit wash chips restore the pack color. */
+export const WHITE_PAPER = "#ffffff";
+
+export function isWhitePaper(hex?: string | null): boolean {
+  const h = (hex ?? "").replace("#", "").toLowerCase();
+  return h === "fff" || h === "ffffff";
+}
+
 export function paperForLook(kit: CollageKit, seed = 0, pack?: string | null): string {
   const grounds = groundsForLook(kit, pack);
   const rng = mulberry32((seed + 17) >>> 0);

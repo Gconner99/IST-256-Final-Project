@@ -92,10 +92,11 @@ export function clampFieldBlink(value?: number | null): number {
   return clamp(value ?? 1, 0, 1);
 }
 
-export type FieldTravel = "bounce" | "wrap";
+export type FieldTravel = "still" | "bounce" | "wrap";
 
 export function clampFieldTravel(value?: string | null): FieldTravel {
-  return value === "wrap" ? "wrap" : "bounce";
+  if (value === "wrap" || value === "bounce") return value;
+  return "still";
 }
 
 export type FieldCast = "sheet" | "giants";
@@ -643,10 +644,10 @@ function pickGiant(pts: { x: number; y: number }[], sites: GiantSite[], used: bo
   return hits;
 }
 
-function punchHole(occ: number, x: number, y: number, u: number, hw: number, hy: number, r: number, travel: FieldTravel = "bounce"): number {
+function punchHole(occ: number, x: number, y: number, u: number, hw: number, hy: number, r: number, travel: FieldTravel = "still"): number {
   if (r <= 0) return occ;
-  const hx = travel === "wrap" ? wrapRange(u * hw * 1.7, -hw * 0.92, hw * 0.92) : ping01(u * 2) * hw * 0.34;
-  const hyy = travel === "wrap" ? wrapRange(u * hy * 1.25 + hy * 0.2, -hy * 0.92, hy * 0.92) : ping01(u * 2 + 0.31) * hy * 0.34;
+  const hx = travel === "wrap" ? wrapRange(u * hw * 1.7, -hw * 0.92, hw * 0.92) : travel === "bounce" ? ping01(u * 2) * hw * 0.34 : 0;
+  const hyy = travel === "wrap" ? wrapRange(u * hy * 1.25 + hy * 0.2, -hy * 0.92, hy * 0.92) : travel === "bounce" ? ping01(u * 2 + 0.31) * hy * 0.34 : 0;
   const hd = Math.hypot(x - hx, y - hyy) - r;
   return occ * smoother(clamp(hd / 0.045, 0, 1));
 }
@@ -832,13 +833,15 @@ function occupancyLoop(c: LoopCtx, emit: Emit, sils: SnakeSil[]) {
   const crawlX = ping01(u * 2) * crawl;
   const crawlY = ping01(u * 2 + 0.33) * crawl * (hy / Math.max(1e-6, hw));
   const wrap = p.travel === "wrap";
+  const bounce = p.travel === "bounce";
   const Wx = 1.2;
   const Hy = 2 * hh * 1.2;
   const ox = wrap ? u * Wx * (0.85 + p.motion * 0.35) : 0;
   const oy = wrap ? u * Hy * (0.28 + p.motion * 0.18) : 0;
   const place = (px: number, py: number) => {
     if (wrap) return { x: wrapRange(px + ox, -Wx / 2, Wx / 2), y: wrapRange(py + oy, -Hy / 2, Hy / 2) };
-    return { x: clamp(px + crawlX, -0.5, 0.5), y: clamp(py + crawlY, -hh, hh) };
+    if (bounce) return { x: clamp(px + crawlX, -0.5, 0.5), y: clamp(py + crawlY, -hh, hh) };
+    return { x: px, y: py };
   };
   const sample = (sil: SnakeSil, x: number, y: number) => punchHole(sil.occ(x, y), x, y, u, hw, hy, sil.hole, p.travel);
   const usedA = new Array<boolean>(n).fill(false);
