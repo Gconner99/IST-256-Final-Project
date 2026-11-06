@@ -19,12 +19,13 @@ import {
   FIELD_PATTERNS,
 } from "../engine/agentField";
 import { inkForLook, paperForLook, pickColorPack, pickEffectPalette, EFFECT_PALETTES } from "./colorPacks";
-import { allEffects, getEffect } from "../effects/registry";
+import { comboAngle, comboPulse, pickEffectCombo, type ComboMood } from "./effectCombos";
+import { getEffect } from "../effects/registry";
 import { uid } from "./ids";
 import { clamp, lerp, mulberry32 } from "./random";
 import type { BlendMode, EffectInstance, GeneratorType, Layer, MediaSource, ParamDef, Project } from "./types";
 
-type Mood = "lush" | "outsider" | "mix";
+type Mood = ComboMood;
 
 type Palette = import("./colorPacks").ColorPalette;
 
@@ -163,7 +164,23 @@ function makeFx(typeId: string, seed: number, amount: number): EffectInstance {
   return randomizeEffect({ id: uid("fx"), typeId, enabled: true, params }, seed, amount);
 }
 
-function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => number): EffectInstance {
+function makeDefaultFx(typeId: string): EffectInstance {
+  const def = getEffect(typeId);
+  const params: Record<string, number | string | boolean> = {};
+  if (def) {
+    for (const p of def.params) params[p.id] = p.default;
+  }
+  return { id: uid("fx"), typeId, enabled: true, params };
+}
+
+function applyMood(
+  fx: EffectInstance,
+  mood: Mood,
+  palette: Palette,
+  rng: () => number,
+  pulse = 0.45,
+  angle = 0,
+): EffectInstance {
   const p = { ...fx.params };
   if (fx.typeId === "grade") {
     if (mood === "lush") {
@@ -200,14 +217,22 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.size = 1.4 + rng() * 2.2;
   }
   if (fx.typeId === "warp") {
-    p.amount = mood === "lush" ? 0.012 + rng() * 0.04 : 0.04 + rng() * 0.12;
+    p.amount = mood === "lush" ? 0.01 + rng() * 0.028 : 0.02 + rng() * 0.05;
+    p.freq = 3.2 + rng() * 4.5;
+    p.speed = pulse * (0.7 + rng() * 0.35);
+    p.angle = angle;
   }
   if (fx.typeId === "chroma") {
-    p.amount = mood === "lush" ? 0.002 + rng() * 0.006 : 0.006 + rng() * 0.02;
+    p.amount = mood === "lush" ? 0.002 + rng() * 0.005 : 0.004 + rng() * 0.01;
+    p.angle = angle;
+    p.radial = 0.45 + rng() * 0.4;
   }
   if (fx.typeId === "analog") {
-    p.mixScan = mood === "lush" ? rng() * 0.2 : 0.25 + rng() * 0.5;
-    p.noise = mood === "lush" ? rng() * 0.1 : 0.12 + rng() * 0.35;
+    p.mixScan = mood === "lush" ? rng() * 0.18 : 0.18 + rng() * 0.32;
+    p.tracking = mood === "lush" ? rng() * 0.08 : 0.08 + rng() * 0.16;
+    p.noise = mood === "lush" ? rng() * 0.08 : 0.08 + rng() * 0.2;
+    p.flicker = pulse * (mood === "lush" ? 0.12 : 0.22);
+    p.weave = pulse * 0.08;
   }
   if (fx.typeId === "posterize") {
     p.levels = 3 + Math.floor(rng() * 6);
@@ -220,8 +245,8 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
   if (fx.typeId === "critters") {
     p.count = mood === "lush" ? 3 + Math.floor(rng() * 3) : 4 + Math.floor(rng() * 4);
     p.size = 0.85 + rng() * 0.7;
-    p.amount = 0.7 + rng() * 0.3;
-    p.speed = 0.7 + rng() * 1.3;
+    p.amount = 0.55 + rng() * 0.3;
+    p.speed = 0.32 + pulse * 0.55;
     p.seed = 1 + Math.floor(rng() * 9998);
     const roll = rng();
     if (mood === "lush") p.kit = roll > 0.72 ? "votives" : roll > 0.48 ? "charms" : roll > 0.22 ? "shapes" : "toy pop";
@@ -251,8 +276,46 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     else p.coat = c > 0.55 ? "night" : "wild";
   }
   if (fx.typeId === "kaleido") {
-    p.segments = mood === "lush" ? 4 + Math.floor(rng() * 4) : 5 + Math.floor(rng() * 8);
-    p.zoom = 0.7 + rng() * 0.8;
+    p.segments = mood === "lush" ? 6 : rng() > 0.5 ? 8 : 6;
+    p.zoom = 0.88 + rng() * 0.28;
+    p.offset = angle * 0.15;
+  }
+  if (fx.typeId === "mirror") {
+    p.axis = rng() > 0.55 ? "xy" : rng() > 0.4 ? "x" : "y";
+    p.tiles = 1;
+  }
+  if (fx.typeId === "spin") {
+    p.rotate = (rng() - 0.5) * 0.16;
+    p.scale = 0.96 + rng() * 0.08;
+    p.stretch = 1;
+    p.crop = 0;
+  }
+  if (fx.typeId === "lens") {
+    p.amount = (rng() - 0.5) * (mood === "lush" ? 0.28 : 0.4);
+    p.zoom = 0.96 + rng() * 0.1;
+  }
+  if (fx.typeId === "smear") {
+    p.amount = mood === "lush" ? 0.12 + rng() * 0.16 : 0.18 + rng() * 0.22;
+    p.threshold = 0.28 + rng() * 0.22;
+    p.angle = angle;
+  }
+  if (fx.typeId === "displace") {
+    p.amount = mood === "lush" ? 0.012 + rng() * 0.03 : 0.02 + rng() * 0.05;
+    p.scale = 3.2 + rng() * 5;
+    p.speed = pulse * 0.5;
+  }
+  if (fx.typeId === "echo") {
+    p.amount = 0.28 + rng() * 0.22;
+    p.decay = 0.52 + pulse * 0.28;
+  }
+  if (fx.typeId === "stutter") {
+    p.rate = 0.22 + pulse * 0.3;
+    p.mix = 0.55 + rng() * 0.25;
+  }
+  if (fx.typeId === "solarize") {
+    p.cut = 0.38 + rng() * 0.24;
+    p.mix = 0.42 + rng() * 0.28;
+    p.invert = rng() > 0.82;
   }
   if (fx.typeId === "channels") {
     p.tint = palette.leak;
@@ -265,9 +328,9 @@ function applyMood(fx: EffectInstance, mood: Mood, palette: Palette, rng: () => 
     p.invert = rng() > 0.72;
   }
   if (fx.typeId === "dropout") {
-    p.amount = 0.28 + rng() * 0.4;
-    p.rate = 0.18 + rng() * 0.4;
-    p.tear = mood === "outsider" ? 0.3 + rng() * 0.5 : rng() * 0.28;
+    p.amount = 0.16 + rng() * 0.22;
+    p.rate = 0.12 + pulse * 0.22;
+    p.tear = mood === "outsider" ? 0.16 + rng() * 0.22 : rng() * 0.12;
   }
   return { ...fx, params: p };
 }
@@ -313,33 +376,16 @@ function fieldLooks(): Look[] {
   );
 }
 
-function panelEffectIds(): string[] {
-  return allEffects().map((e) => e.id).filter((id) => id !== "dancer");
-}
-
-function pickPanelStack(seed: number, wacky: boolean): string[] {
-  const rng = mulberry32(seed >>> 0);
-  const remaining = panelEffectIds();
-  const min = wacky ? 3 : 2;
-  const max = wacky ? 5 : 4;
-  const count = Math.min(remaining.length, min + Math.floor(rng() * (max - min + 1)));
-  const picked: string[] = [];
-  for (let i = 0; i < count && remaining.length; i++) {
-    const idx = Math.floor(rng() * remaining.length);
-    picked.push(remaining.splice(idx, 1)[0]);
-  }
-  return picked;
-}
-
-function rebuildLayer(layer: Layer, seed: number, amount: number, wacky = false, includeEffects = true): Layer {
+function rebuildLayer(layer: Layer, seed: number, _amount = 1, wacky = false, includeEffects = true): Layer {
   const rng = mulberry32((seed + 17) >>> 0);
-  const mood: Mood = wacky
-    ? rng() > 0.5 ? "outsider" : "mix"
-    : rng() > 0.55 ? "lush" : rng() > 0.35 ? "mix" : "outsider";
+  const combo = pickEffectCombo(seed, wacky);
+  const mood = combo.mood;
   const palette = pickEffectPalette(rng);
+  const pulse = comboPulse(seed);
+  const angle = comboAngle(seed);
   const effects = includeEffects
-    ? pickPanelStack(seed, wacky).map((typeId, i) =>
-        applyMood(makeFx(typeId, seed + i * 3331, amount), mood, palette, mulberry32((seed + i * 1117) >>> 0)),
+    ? combo.stack.map((typeId, i) =>
+        applyMood(makeDefaultFx(typeId), mood, palette, mulberry32((seed + i * 1117) >>> 0), pulse, angle),
       )
     : [];
   return {

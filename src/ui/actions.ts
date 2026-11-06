@@ -4,6 +4,7 @@ import { createDefaultProject, defaultLayer, makeEffectInstance } from "../core/
 import { applyPreset, duplicatePreset, extractPreset, pickRandomPreset } from "../core/presets";
 import { downloadText, parseProject, serializeProject } from "../core/project";
 import { chaosStamp, ensureCritters, ensureIdol, randomizeFieldSource, randomizeProject } from "../core/randomize";
+import { pickEffectCombo } from "../core/effectCombos";
 import type { EffectInstance, Keyframe, Layer, MediaSource, Project } from "../core/types";
 import { isHeraldry } from "../engine/heraldry";
 import { freezeVideoFrame, loadImageFromBlob, loadMediaFile, disposeSource } from "../media/sources";
@@ -197,7 +198,8 @@ export function randomize(mode: "all" | "selected" | "param", wacky = false) {
     if (mode === "all" && ui.includeIdol) out = ensureIdol(out);
     return out;
   });
-  const names = store.project.layers[0]?.effects.map((e) => e.typeId).join(" · ");
+  const combo = mode === "all" && ui.includeEffects ? pickEffectCombo(store.project.seed, wacky) : null;
+  const names = combo?.name ?? store.project.layers[0]?.effects.map((e) => e.typeId).join(" · ");
   store.patchUi({ status: `${wacky ? "wacky look" : "look"} · ${names || mode} · seed ${store.project.seed}` });
 }
 
