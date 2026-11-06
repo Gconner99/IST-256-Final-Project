@@ -50,7 +50,7 @@ Requires a browser (or Electron) with **WebGL2**.
 - Floaters kits: lumpy shapes, toy-pop icons (notes, piano, guitar, trumpet, drums, sax, boombox), votives, moths, charms
 - Idol Grow (petals / halo / antenna / skirt / wings / horns / crystal / puff / quiet) and Coat (cream / moss / sodium / night / candy / jelly / grape / ice / lava)
 - Procedural backgrounds: plasma, noise, bars, plus **Stars**, **Marsh**, **Oil**, **Paper**, **Cave**, **Stage** (toy-pop piano / notes / instruments), **Sketch** (sticker-notebook paper), **Felt**, **Foil**, **Plush**, **Yarn**, **Sequins**, **Quilt**, **Cork**, **Gingham**, **Sprinkle**, and **Velvet**
-- ~20 effects including **Floaters**, **Idol**, **Luma key**, and **Dropout**
+- Effects including **Iris**, **Lamp**, **Hue cycle**, **Misprint**, **Bleed**, **Relief**, **Haze**, plus the older distort/geometry tools for manual use
 - Seeded randomization (all / selected / param) plus **Rand wacky** (outsider looks, short stacks)
 - **Stamp chaos** rerolls overlay seeds and generator inks; **Print frame** captures the live picture as a still
 - Global + per-layer **feedback bus** (amount, delay, opacity, scale, rotation, distortion)
@@ -60,7 +60,7 @@ Requires a browser (or Electron) with **WebGL2**.
 - Export: PNG, JPG, **MP4 clips up to 32s at 720p/1080p 30fps** (clips loop as-is; optional close-loop fade, song window from the live playhead), WebM, PNG image sequence (zip)
 - Collage mash (two kits), named **color packs** (Brine / Candy / Ember / Neon…), live ground wash, night/neon wash, **ink flip**, **white paper**, **trio** (three kit glyphs), **Hypnotic / Classic** looks (top bar + rail; flat two-ink poster vs the previous washed Field), **Poster / Club** desks (Poster hides fly-throughs), 3D fly-throughs (Rush / Tunnel / Gyre / Well / Hall / Drift / Braid / Sway) on Club, Drop / Spot music moves, stamp size / density / pace, a freeform 3D Chain move, **Field** (one stamp pattern looping seamlessly — Sunflower / Orbit plus Traffic / Cascade / Checker / Scan — plus occupancy **Snake / Stripe / Arch**), **Sheet / Giants**, **Still / Bounce / Wrap** travel (Still is the default; occupancy stays planted while icons hold and blink), **Hold / Blink**, a **Trance** slider that ties Tempo + Breathe + Pack, and Matter moves (Spring / Flow / Boids / Poles) with their own sliders
 - Extra stamp packs: Kitchen, Sky, Street, Arcade, plus more icons in Circus / Fruit / Grove / Sweet
-- Calmer randomizer (smaller, slower rolls) that plants **designed effect combos** (one motion, one color lock, one atmosphere, shared pulse) when Effects is on, and **Cut edit** (downbeat-locked cuts on bars and half-bars)
+- Calmer randomizer (smaller, slower rolls) that plants **designed paper combos** (iris, lamp, wet ink, misprint, hue cycle — occupancy stays readable; kaleido/warp/glitch are never rolled) when Effects is on, and **Cut edit** (downbeat-locked cuts on bars and half-bars)
 
 ## Architecture
 

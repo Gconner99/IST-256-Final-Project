@@ -5,11 +5,13 @@ import { ANALOG_EFFECTS } from "./analog";
 import { GEOMETRIC_EFFECTS } from "./geometric";
 import { TEMPORAL_EFFECTS } from "./temporal";
 import { WACKY_EFFECTS } from "./critters";
+import { PAPER_EFFECTS } from "./paper";
 
 const ALL: EffectType[] = [
   ...COLOR_EFFECTS,
   ...DISTORT_EFFECTS,
   ...ANALOG_EFFECTS,
+  ...PAPER_EFFECTS,
   ...GEOMETRIC_EFFECTS,
   ...TEMPORAL_EFFECTS,
   ...WACKY_EFFECTS,

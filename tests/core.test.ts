@@ -5,7 +5,7 @@ import { evalKeyframes, mediaTime } from "../src/core/timeline";
 import { createDefaultProject, defaultGeneratorSource } from "../src/core/defaults";
 import { parseProject, serializeProject } from "../src/core/project";
 import { ensureCritters, ensureIdol, chaosStamp, randomizeFieldSource, randomizeProject, rollFieldParams, FIELD_ROOMS } from "../src/core/randomize";
-import { comboPulse, EFFECT_COMBOS, pickEffectCombo } from "../src/core/effectCombos";
+import { comboLampSpeed, comboPulse, EFFECT_COMBOS, pickEffectCombo, RAND_EFFECT_BAN } from "../src/core/effectCombos";
 import { beatGrid, beatIndexAt, buildCutReel, reelStats, shotAtTime } from "../src/core/cutEdit";
 import { COLOR_PACKS, packFromUnknown, groundsForLook, inkForLook, EFFECT_PALETTES, isWhitePaper, WHITE_PAPER } from "../src/core/colorPacks";
 import { buildField, chainPath, clampCollageChainMorph, clampCollageChainSmooth, clampCollageChainTravel, clampCollageChainVary, clampCollageDensity, clampCollagePace, clampCollageScale, clampPoleCount, clampSpringStrength, COLLAGE_KITS, COLLAGE_MOVES, dropSlam, groundsForKit, isFieldMove, isFlyMove, isHeraldry, isMusicMove, isPleasingMove, isSimMove, kindsForKit, sceneAt, sceneFromGenerator, spotIndex, stepIndex, tempoTick, trioKinds, HERALDRY_ROOMS } from "../src/engine/heraldry";
@@ -325,7 +325,7 @@ describe("place buttons", () => {
 describe("effects registry", () => {
   it("ships a usable MVP library", () => {
     expect(allEffects().length).toBeGreaterThanOrEqual(15);
-    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer"]) {
+    for (const id of ["grade", "warp", "chroma", "analog", "kaleido", "echo", "bloom", "smear", "critters", "dancer", "vignette", "lamp", "cycle", "misprint", "bleed", "relief", "haze"]) {
       expect(getEffect(id)).toBeTruthy();
     }
     expect(getEffect("halftone")).toBeUndefined();
@@ -660,6 +660,7 @@ describe("randomize + presets", () => {
       expect(new Set(types).size).toBe(types.length);
       expect(types).not.toContain("dancer");
       expect(types.every((id) => panel.has(id))).toBe(true);
+      expect(types.every((id) => !(RAND_EFFECT_BAN as readonly string[]).includes(id))).toBe(true);
       expect(FIELD_ROOMS).toContain(p.sources[0].generator);
       expect(HERALDRY_ROOMS).toContain(p.sources[0].generator);
       expect(isHeraldry(p.sources[0].generator)).toBe(true);
@@ -687,42 +688,43 @@ describe("randomize + presets", () => {
       expect(new Set(types).size).toBe(types.length);
       expect(types).not.toContain("dancer");
       expect(types.every((id) => panel.has(id))).toBe(true);
+      expect(types.every((id) => !(RAND_EFFECT_BAN as readonly string[]).includes(id))).toBe(true);
       types.forEach((id) => seen.add(id));
     }
     expect(seen.size).toBeGreaterThan(4);
   });
 
-  it("effect combos keep one job per layer and share a pulse", () => {
-    const geo = new Set(["kaleido", "mirror", "spin"]);
-    const motion = new Set(["warp", "displace", "smear", "lens"]);
-    const time = new Set(["echo", "stutter", "dropout", "slitscan"]);
+  it("effect combos keep occupancy readable and share a pulse", () => {
+    const ban = new Set<string>(RAND_EFFECT_BAN);
+    const edge = new Set(["bleed", "misprint", "relief"]);
+    const light = new Set(["lamp", "cycle"]);
+    const air = new Set(["vignette", "haze"]);
     for (const combo of EFFECT_COMBOS) {
       expect(combo.stack).not.toContain("dancer");
-      expect(combo.stack).not.toContain("slitscan");
+      expect(combo.stack.every((id) => !ban.has(id))).toBe(true);
       expect(new Set(combo.stack).size).toBe(combo.stack.length);
       expect(combo.stack.length).toBeGreaterThanOrEqual(combo.wacky ? 3 : 2);
       expect(combo.stack.length).toBeLessThanOrEqual(combo.wacky ? 5 : 4);
-      expect(combo.stack.filter((id) => geo.has(id)).length).toBeLessThanOrEqual(1);
-      expect(combo.stack.filter((id) => motion.has(id)).length).toBeLessThanOrEqual(1);
-      expect(combo.stack.filter((id) => time.has(id)).length).toBeLessThanOrEqual(1);
+      expect(combo.stack.filter((id) => edge.has(id)).length).toBeLessThanOrEqual(1);
+      expect(combo.stack.filter((id) => light.has(id)).length).toBeLessThanOrEqual(1);
+      expect(combo.stack.filter((id) => air.has(id)).length).toBeLessThanOrEqual(1);
     }
     for (const seed of [1, 7, 99, 256, 90210, 404, 777, 12, 88]) {
       const combo = pickEffectCombo(seed, false);
       const p = randomizeProject({ ...createDefaultProject(), seed, randomAmount: 1 }, "all", null, null, null);
-      expect(p.layers[0].effects.map((e) => e.typeId)).toEqual([...combo.stack]);
+      const types = p.layers[0].effects.map((e) => e.typeId);
+      expect(types).toEqual([...combo.stack]);
+      expect(types.every((id) => !ban.has(id))).toBe(true);
+      expect(p.globalFeedback.amount).toBe(0);
       const pulse = comboPulse(seed);
-      const warp = p.layers[0].effects.find((e) => e.typeId === "warp");
-      if (warp) {
-        const speed = Number(warp.params.speed);
-        expect(speed).toBeGreaterThan(pulse * 0.65);
-        expect(speed).toBeLessThan(pulse * 1.2);
-      }
+      const lamp = p.layers[0].effects.find((e) => e.typeId === "lamp");
+      if (lamp) expect(Number(lamp.params.speed)).toBeCloseTo(comboLampSpeed(pulse), 5);
+      const cycle = p.layers[0].effects.find((e) => e.typeId === "cycle");
+      if (cycle) expect(Number(cycle.params.speed)).toBeCloseTo(comboLampSpeed(pulse), 5);
       const echo = p.layers[0].effects.find((e) => e.typeId === "echo");
       if (echo) expect(Number(echo.params.decay)).toBeGreaterThan(0.5);
-      const kaleido = p.layers[0].effects.find((e) => e.typeId === "kaleido");
-      if (kaleido) expect([6, 8]).toContain(Number(kaleido.params.segments));
-      const mirror = p.layers[0].effects.find((e) => e.typeId === "mirror");
-      if (mirror) expect(Number(mirror.params.tiles)).toBe(1);
+      const misprint = p.layers[0].effects.find((e) => e.typeId === "misprint");
+      if (misprint) expect(Number(misprint.params.offset)).toBeLessThan(0.02);
     }
   });
 
